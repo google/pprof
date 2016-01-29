@@ -1,0 +1,85 @@
+#!/bin/bash
+# Copyright 2014 Google Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# addr2line stub for testing of addr2liner.
+# Will recognize (and ignore) the -aiCfej options.
+#
+# Accepts addresses 1000 to 9000 and output multiple frames of the form:
+#   0x9000/fun9000/file9000:9000
+#   0x8000/fun8000/file8000:8000
+#   0x7000/fun7000/file7000:7000
+#   ...
+#   0x1000/fun1000/file1000:1000
+#
+# Returns ??/??/??:0 for all other inputs.
+
+while getopts aiCfe:j: opt; do
+  case "$opt" in
+    a|i|C|f|e|j) ;;
+    *)
+      echo "unrecognized option: $1" >&2
+      exit 1
+  esac
+done
+
+while read input
+do
+  address="$input"
+  
+  # remove 0x from input.
+  case "${address}" in
+    0x*)
+      address=$(printf '%x' "$address")
+      ;;
+    *)
+      address=$(printf '%x' "0x$address")
+  esac
+
+  printf '0x%x\n' "0x$address"
+  loop=1
+  while [ $loop -eq 1 ]
+  do
+    # prepare default output.
+    output2="fun${address}"
+    output3="file${address}:${address}"
+
+    # specialize output for selected cases.
+	  case "${address}" in
+      1000)
+        output2="_Z3fooid.clone2"
+        loop=0
+        ;;
+      2000)
+        output2="_ZNSaIiEC1Ev.clone18"
+        address=1000
+        ;;
+      3000)
+        output2="_ZNSt6vectorIS_IS_IiSaIiEESaIS1_EESaIS3_EEixEm"
+        address=2000
+        ;;
+      [4-9]000)
+        address=$(expr ${address} - 1000)
+        ;;
+      *)
+        output2='??'
+        output3='??:0'
+        loop=0
+    esac
+
+    echo "$output2"
+    echo "$output3"
+  done
+done
+exit 0

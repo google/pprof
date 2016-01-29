@@ -1,0 +1,53 @@
+events: inuse_space(MB)
+fl=(1) testdata/file2000.src
+fn=(1) line2001
+2 62
+cfl=(2) testdata/file1000.src
+cfn=(2) line1000
+calls=0 1
+2 0
+
+fl=(3) testdata/file3000.src
+fn=(3) line3002
+3 31
+cfl=(1)
+cfn=(4) line2000
+calls=0 3
+3 63
+
+fl=(2)
+fn=(2)
+1 4
+
+fl=(1)
+fn=(4)
+3 0
+cfl=(1)
+cfn=(1)
+calls=0 2
+3 63
+
+fl=(3)
+fn=(5) line3000
+4 0
+cfl=(3)
+cfn=(3)
+calls=0 3
+4 62
+cfl=(3)
+cfn=(6) line3001
+calls=0 2
+4 36
+
+fl=(3)
+fn=(6)
+2 0
+cfl=(3)
+cfn=(3)
+calls=0 3
+2 32
+cfl=(2)
+cfn=(2)
+calls=0 1
+2 3
+
