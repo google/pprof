@@ -24,12 +24,16 @@ them through the use of the native binutils tools (addr2line and nm).
 
 Prerequisites:
 
-- Go development kit: https://golang.org/dl/
-  Known to work with Go 1.5
+- Go development kit. Known to work with Go 1.5.
+  Follow [these instructions](http://golang.org/doc/code.html) to install the 
+  go tool and set up GOPATH.
+
 - Graphviz: http://www.graphviz.org/
   Optional, used to generate graphic visualizations of profiles
 
-To build it, run the COMPILE.sh script. The TEST.sh script runs unit tests.
+To build and install it, use the `go get` tool.
+
+    go get github.com/google/pprof
 
 # Basic usage
 
