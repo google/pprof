@@ -16,9 +16,7 @@ package binutils
 
 import (
 	"bytes"
-	"fmt"
 	"io"
-	"os/exec"
 	"regexp"
 	"strconv"
 
@@ -32,19 +30,12 @@ var (
 	objdumpOutputFileLine = regexp.MustCompile(`^(.*):([0-9]+)`)
 )
 
-func findSymbols(nm, file string, r *regexp.Regexp, address uint64) ([]*plugin.Sym, error) {
-	// Get from nm a list of symbols sorted by address.
-	cmd := exec.Command(nm, "-n", file)
-	out, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("%v: %v", cmd.Args, err)
-	}
-
+func findSymbols(syms []byte, file string, r *regexp.Regexp, address uint64) ([]*plugin.Sym, error) {
 	// Collect all symbols from the nm output, grouping names mapped to
 	// the same address into a single symbol.
 	var symbols []*plugin.Sym
 	names, start := []string{}, uint64(0)
-	buf := bytes.NewBuffer(out)
+	buf := bytes.NewBuffer(syms)
 	for symAddr, name, err := nextSymbol(buf); err == nil; symAddr, name, err = nextSymbol(buf) {
 		if err != nil {
 			return nil, err
@@ -88,19 +79,10 @@ func matchSymbol(names []string, start, end uint64, r *regexp.Regexp, address ui
 	return nil
 }
 
-// disassemble returns the assembly instructions in a function from a
-// binary file. It uses objdump to obtain the assembly listing.
-func disassemble(objdump string, file string, start, stop uint64) ([]plugin.Inst, error) {
-	cmd := exec.Command(objdump, "-d", "-C", "--no-show-raw-insn", "-l",
-		fmt.Sprintf("--start-address=%#x", start),
-		fmt.Sprintf("--stop-address=%#x", stop),
-		file)
-	out, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("%v: %v", cmd.Args, err)
-	}
-
-	buf := bytes.NewBuffer(out)
+// disassemble parses the output of the objdump command and returns
+// the assembly instructions in a slice.
+func disassemble(asm []byte) ([]plugin.Inst, error) {
+	buf := bytes.NewBuffer(asm)
 	file, line := "", 0
 	var assembly []plugin.Inst
 	for {

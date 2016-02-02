@@ -89,7 +89,16 @@ func (b *Binutils) Disasm(file string, start, end uint64) ([]plugin.Inst, error)
 		// Update the command invocations if not initialized.
 		b.SetTools("")
 	}
-	return disassemble(b.objdump, file, start, end)
+	cmd := exec.Command(b.objdump, "-d", "-C", "--no-show-raw-insn", "-l",
+		fmt.Sprintf("--start-address=%#x", start),
+		fmt.Sprintf("--stop-address=%#x", end),
+		file)
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("%v: %v", cmd.Args, err)
+	}
+
+	return disassemble(out)
 }
 
 // Open satisfies the plugin.ObjTool interface.
@@ -191,7 +200,14 @@ func (f *file) Close() error {
 }
 
 func (f *file) Symbols(r *regexp.Regexp, addr uint64) ([]*plugin.Sym, error) {
-	return findSymbols(f.b.nm, f.name, r, addr)
+	// Get from nm a list of symbols sorted by address.
+	cmd := exec.Command(f.b.nm, "-n", f.name)
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("%v: %v", cmd.Args, err)
+	}
+
+	return findSymbols(out, f.name, r, addr)
 }
 
 // fileNM implements the binutils.ObjFile interface, using 'nm' to map
@@ -235,7 +251,7 @@ func (f *fileAddr2Line) SourceLine(addr uint64) ([]plugin.Frame, error) {
 
 func (f *fileAddr2Line) Close() error {
 	if f.addr2liner != nil {
-		f.addr2liner.close()
+		f.addr2liner.rw.close()
 		f.addr2liner = nil
 	}
 	return nil

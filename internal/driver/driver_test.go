@@ -18,13 +18,12 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/google/pprof/internal/binutils"
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/internal/proftest"
 	"github.com/google/pprof/internal/symbolz"
@@ -34,9 +33,6 @@ import (
 func TestParse(t *testing.T) {
 	// Override weblist command to collect output in buffer
 	pprofCommands["weblist"].postProcess = nil
-
-	// Update PATH to use fake dot for svg output
-	os.Setenv("PATH", "testdata/wrapper"+":"+os.Getenv("PATH"))
 
 	testcase := []struct {
 		flags, source string
@@ -58,7 +54,6 @@ func TestParse(t *testing.T) {
 		{"dot,lines,flat,focus=[12]00", "heap"},
 		{"dot,addresses,flat,ignore=[X3]002,focus=[X1]000", "contention"},
 		{"dot,files,cum", "contention"},
-		{"svg", "cpu"},
 		{"tags", "cpu"},
 		{"tags,tagignore=tag[13],tagfocus=key[12]", "cpu"},
 		{"traces", "cpu"},
@@ -137,7 +132,7 @@ func TestParse(t *testing.T) {
 		o2 := setDefaults(nil)
 		o2.Flagset = f
 		o2.Sym = testSymbolizeDemangler{}
-		o2.Obj = new(binutils.Binutils)
+		o2.Obj = new(mockObjTool)
 
 		if err := PProf(o2); err != nil {
 			t.Errorf("%s: %v", tc.source, err)
@@ -325,8 +320,7 @@ func baseFlags() testFlags {
 			"divide_by":    1.0,
 		},
 		strings: map[string]string{
-			"tools": "testdata/wrapper",
-			"unit":  "minimum",
+			"unit": "minimum",
 		},
 	}
 }
@@ -972,7 +966,7 @@ func TestSymbolzAfterMerge(t *testing.T) {
 
 	o := setDefaults(nil)
 	o.Flagset = f
-	o.Obj = new(binutils.Binutils)
+	o.Obj = new(mockObjTool)
 	src, cmd, err := parseFlags(o)
 	if err != nil {
 		t.Fatalf("parseFlags: %v", err)
@@ -1001,4 +995,80 @@ func TestSymbolzAfterMerge(t *testing.T) {
 			t.Errorf("symbolz %#x, got %s, want %s", address, got, want)
 		}
 	}
+}
+
+type mockObjTool struct{}
+
+func (*mockObjTool) Open(file string, start, limit, offset uint64) (plugin.ObjFile, error) {
+	return &mockFile{file, "abcdef", 0}, nil
+}
+
+func (m *mockObjTool) Disasm(file string, start, end uint64) ([]plugin.Inst, error) {
+	switch start {
+	case 0x1000:
+		return []plugin.Inst{
+			{0x1000, "instruction one", "", 0},
+			{0x1001, "instruction two", "", 0},
+			{0x1002, "instruction three", "", 0},
+			{0x1003, "instruction four", "", 0},
+		}, nil
+	case 0x3000:
+		return []plugin.Inst{
+			{0x3000, "instruction one", "", 0},
+			{0x3001, "instruction two", "", 0},
+			{0x3002, "instruction three", "", 0},
+			{0x3003, "instruction four", "", 0},
+			{0x3004, "instruction five", "", 0},
+		}, nil
+	}
+	return nil, fmt.Errorf("unimplemented")
+}
+
+type mockFile struct {
+	name, buildId string
+	base          uint64
+}
+
+// Name returns the underlyinf file name, if available
+func (m *mockFile) Name() string {
+	return m.name
+}
+
+// Base returns the base address to use when looking up symbols in the file.
+func (m *mockFile) Base() uint64 {
+	return m.base
+}
+
+// BuildID returns the GNU build ID of the file, or an empty string.
+func (m *mockFile) BuildID() string {
+	return m.buildId
+}
+
+// SourceLine reports the source line information for a given
+// address in the file. Due to inlining, the source line information
+// is in general a list of positions representing a call stack,
+// with the leaf function first.
+func (*mockFile) SourceLine(addr uint64) ([]plugin.Frame, error) {
+	return nil, fmt.Errorf("unimplemented")
+}
+
+// Symbols returns a list of symbols in the object file.
+// If r is not nil, Symbols restricts the list to symbols
+// with names matching the regular expression.
+// If addr is not zero, Symbols restricts the list to symbols
+// containing that address.
+func (m *mockFile) Symbols(r *regexp.Regexp, addr uint64) ([]*plugin.Sym, error) {
+	switch r.String() {
+	case "line[13]":
+		return []*plugin.Sym{
+			{[]string{"line1000"}, m.name, 0x1000, 0x1003},
+			{[]string{"line3000"}, m.name, 0x3000, 0x3004},
+		}, nil
+	}
+	return nil, fmt.Errorf("unimplemented")
+}
+
+// Close closes the file, releasing associated resources.
+func (*mockFile) Close() error {
+	return nil
 }

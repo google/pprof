@@ -33,16 +33,41 @@ const (
 	sentinel = ^uint64(0)
 )
 
-// Addr2Liner is a connection to an addr2line command for obtaining
+// addr2Liner is a connection to an addr2line command for obtaining
 // address and line number information from a binary.
 type addr2Liner struct {
-	filename string
-	cmd      *exec.Cmd
-	in       io.WriteCloser
-	out      *bufio.Reader
-	err      error
-
+	rw   lineReaderWriter
 	base uint64
+}
+
+// lineReaderWriter is an interface to abstract the I/O to an addr2line
+// process. It writes a line of input to the job, and reads its output
+// one line at a time.
+type lineReaderWriter interface {
+	write(string) error
+	readLine() (string, error)
+	close()
+}
+
+type addr2LinerJob struct {
+	cmd *exec.Cmd
+	in  io.WriteCloser
+	out *bufio.Reader
+}
+
+func (a *addr2LinerJob) write(s string) error {
+	_, err := fmt.Fprint(a.in, s+"\n")
+	return err
+}
+
+func (a *addr2LinerJob) readLine() (string, error) {
+	return a.out.ReadString('\n')
+}
+
+// close releases any resources used by the addr2liner object.
+func (a *addr2LinerJob) close() {
+	a.in.Close()
+	a.cmd.Wait()
 }
 
 // newAddr2liner starts the given addr2liner command reporting
@@ -54,51 +79,49 @@ func newAddr2Liner(cmd, file string, base uint64) (*addr2Liner, error) {
 		cmd = defaultAddr2line
 	}
 
-	a := &addr2Liner{
-		filename: file,
-		base:     base,
-		cmd:      exec.Command(cmd, "-aif", "-e", file),
+	j := &addr2LinerJob{
+		cmd: exec.Command(cmd, "-aif", "-e", file),
 	}
 
 	var err error
-	if a.in, err = a.cmd.StdinPipe(); err != nil {
+	if j.in, err = j.cmd.StdinPipe(); err != nil {
 		return nil, err
 	}
 
-	outPipe, err := a.cmd.StdoutPipe()
+	outPipe, err := j.cmd.StdoutPipe()
 	if err != nil {
 		return nil, err
 	}
 
-	a.out = bufio.NewReader(outPipe)
-	if err := a.cmd.Start(); err != nil {
+	j.out = bufio.NewReader(outPipe)
+	if err := j.cmd.Start(); err != nil {
 		return nil, err
 	}
+
+	a := &addr2Liner{
+		rw:   j,
+		base: base,
+	}
+
 	return a, nil
 }
 
-// close releases any resources used by the addr2liner object.
-func (d *addr2Liner) close() {
-	d.in.Close()
-	d.cmd.Wait()
-}
-
-func (d *addr2Liner) readString() (s string) {
-	if d.err != nil {
-		return ""
+func (d *addr2Liner) readString() (string, error) {
+	s, err := d.rw.readLine()
+	if err != nil {
+		return "", err
 	}
-	if s, d.err = d.out.ReadString('\n'); d.err != nil {
-		return ""
-	}
-	return strings.TrimSpace(s)
+	return strings.TrimSpace(s), nil
 }
 
 // readFrame parses the addr2line output for a single address. It
 // returns a populated plugin.Frame and whether it has reached the end of the
 // data.
 func (d *addr2Liner) readFrame() (plugin.Frame, bool) {
-	funcname := d.readString()
-
+	funcname, err := d.readString()
+	if err != nil {
+		return plugin.Frame{}, true
+	}
 	if strings.HasPrefix(funcname, "0x") {
 		// If addr2line returns a hex address we can assume it is the
 		// sentinel.  Read and ignore next two lines of output from
@@ -108,8 +131,8 @@ func (d *addr2Liner) readFrame() (plugin.Frame, bool) {
 		return plugin.Frame{}, true
 	}
 
-	fileline := d.readString()
-	if d.err != nil {
+	fileline, err := d.readString()
+	if err != nil {
 		return plugin.Frame{}, true
 	}
 
@@ -142,26 +165,21 @@ func (d *addr2Liner) readFrame() (plugin.Frame, bool) {
 // addrInfo returns the stack frame information for a specific program
 // address. It returns nil if the address could not be identified.
 func (d *addr2Liner) addrInfo(addr uint64) ([]plugin.Frame, error) {
-	if d.err != nil {
-		return nil, d.err
+	if err := d.rw.write(fmt.Sprintf("%x", addr-d.base)); err != nil {
+		return nil, err
 	}
 
-	if _, d.err = fmt.Fprintf(d.in, "%x\n", addr-d.base); d.err != nil {
-		return nil, d.err
+	if err := d.rw.write(fmt.Sprintf("%x", sentinel)); err != nil {
+		return nil, err
 	}
 
-	if _, d.err = fmt.Fprintf(d.in, "%x\n", sentinel); d.err != nil {
-		return nil, d.err
-	}
-
-	resp := d.readString()
-	if d.err != nil {
-		return nil, d.err
+	resp, err := d.readString()
+	if err != nil {
+		return nil, err
 	}
 
 	if !strings.HasPrefix(resp, "0x") {
-		d.err = fmt.Errorf("unexpected addr2line output: %s", resp)
-		return nil, d.err
+		return nil, fmt.Errorf("unexpected addr2line output: %s", resp)
 	}
 
 	var stack []plugin.Frame
@@ -175,5 +193,5 @@ func (d *addr2Liner) addrInfo(addr uint64) ([]plugin.Frame, error) {
 			stack = append(stack, frame)
 		}
 	}
-	return stack, d.err
+	return stack, nil
 }

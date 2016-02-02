@@ -22,17 +22,29 @@ import (
 	"github.com/google/pprof/internal/plugin"
 )
 
-// TestFindSymbols tests the FindSymbols routine by using a fake nm
-// script.
+// TestFindSymbols tests the FindSymbols routine using a hardcoded nm output.
 func TestFindSymbols(t *testing.T) {
 	type testcase struct {
-		query string
-		want  []plugin.Sym
+		query, syms string
+		want        []plugin.Sym
 	}
 
+	testsyms := `0000000000001000 t lineA001
+0000000000001000 t lineA002
+0000000000001000 t line1000
+0000000000002000 t line200A
+0000000000002000 t line2000
+0000000000002000 t line200B
+0000000000003000 t line3000
+0000000000003000 t _ZNK4DumbclEPKc
+0000000000003000 t lineB00C
+0000000000003000 t line300D
+0000000000004000 t _the_end
+	`
 	testcases := []testcase{
 		{
 			"line.*[AC]",
+			testsyms,
 			[]plugin.Sym{
 				{[]string{"lineA001"}, "object.o", 0x1000, 0x1FFF},
 				{[]string{"line200A"}, "object.o", 0x2000, 0x2FFF},
@@ -41,15 +53,15 @@ func TestFindSymbols(t *testing.T) {
 		},
 		{
 			"Dumb::operator",
+			testsyms,
 			[]plugin.Sym{
 				{[]string{"Dumb::operator()(char const*) const"}, "object.o", 0x3000, 0x3FFF},
 			},
 		},
 	}
 
-	const nm = "testdata/wrapper/nm"
 	for _, tc := range testcases {
-		syms, err := findSymbols(nm, "object.o", regexp.MustCompile(tc.query), 0)
+		syms, err := findSymbols([]byte(tc.syms), "object.o", regexp.MustCompile(tc.query), 0)
 		if err != nil {
 			t.Fatalf("%q: findSymbols: %v", tc.query, err)
 		}
@@ -92,11 +104,17 @@ func checkSymbol(got []*plugin.Sym, want []plugin.Sym) error {
 func TestFunctionAssembly(t *testing.T) {
 	type testcase struct {
 		s    plugin.Sym
+		asm  string
 		want []plugin.Inst
 	}
 	testcases := []testcase{
 		{
 			plugin.Sym{[]string{"symbol1"}, "", 0x1000, 0x1FFF},
+			`  1000: instruction one
+  1001: instruction two
+  1002: instruction three
+  1003: instruction four
+`,
 			[]plugin.Inst{
 				{0x1000, "instruction one", "", 0},
 				{0x1001, "instruction two", "", 0},
@@ -106,6 +124,9 @@ func TestFunctionAssembly(t *testing.T) {
 		},
 		{
 			plugin.Sym{[]string{"symbol2"}, "", 0x2000, 0x2FFF},
+			`  2000: instruction one
+  2001: instruction two
+`,
 			[]plugin.Inst{
 				{0x2000, "instruction one", "", 0},
 				{0x2001, "instruction two", "", 0},
@@ -116,7 +137,7 @@ func TestFunctionAssembly(t *testing.T) {
 	const objdump = "testdata/wrapper/objdump"
 
 	for _, tc := range testcases {
-		insns, err := disassemble(objdump, "object.o", tc.s.Start, tc.s.End)
+		insns, err := disassemble([]byte(tc.asm))
 		if err != nil {
 			t.Fatalf("FunctionAssembly: %v", err)
 		}
