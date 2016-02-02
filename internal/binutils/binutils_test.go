@@ -37,11 +37,7 @@ func functionName(level int) (name string) {
 func TestAddr2Liner(t *testing.T) {
 	const offset = 0x500
 
-	a, err := newAddr2Liner("testdata/wrapper/addr2line", "executable", offset)
-	if err != nil {
-		t.Fatalf("Addr2Liner Open: %v", err)
-	}
-
+	a := addr2Liner{&mockAddr2liner{}, offset}
 	for i := 1; i < 8; i++ {
 		addr := i*0x1000 + offset
 		s, err := a.addrInfo(uint64(addr))
@@ -67,7 +63,52 @@ func TestAddr2Liner(t *testing.T) {
 	if len(s) != 0 {
 		t.Fatalf("AddrInfo(0xFFFF): got len==%d, want 0", len(s))
 	}
-	a.close()
+	a.rw.close()
+}
+
+type mockAddr2liner struct {
+	output []string
+}
+
+func (a *mockAddr2liner) write(s string) error {
+	var lines []string
+	switch s {
+	case "1000":
+		lines = []string{"_Z3fooid.clone2", "file1000:1000"}
+	case "2000":
+		lines = []string{"_ZNSaIiEC1Ev.clone18", "file2000:2000", "_Z3fooid.clone2", "file1000:1000"}
+	case "3000":
+		lines = []string{"_ZNSt6vectorIS_IS_IiSaIiEESaIS1_EESaIS3_EEixEm", "file3000:3000", "_ZNSaIiEC1Ev.clone18", "file2000:2000", "_Z3fooid.clone2", "file1000:1000"}
+	case "4000":
+		lines = []string{"fun4000", "file4000:4000", "_ZNSt6vectorIS_IS_IiSaIiEESaIS1_EESaIS3_EEixEm", "file3000:3000", "_ZNSaIiEC1Ev.clone18", "file2000:2000", "_Z3fooid.clone2", "file1000:1000"}
+	case "5000":
+		lines = []string{"fun5000", "file5000:5000", "fun4000", "file4000:4000", "_ZNSt6vectorIS_IS_IiSaIiEESaIS1_EESaIS3_EEixEm", "file3000:3000", "_ZNSaIiEC1Ev.clone18", "file2000:2000", "_Z3fooid.clone2", "file1000:1000"}
+	case "6000":
+		lines = []string{"fun6000", "file6000:6000", "fun5000", "file5000:5000", "fun4000", "file4000:4000", "_ZNSt6vectorIS_IS_IiSaIiEESaIS1_EESaIS3_EEixEm", "file3000:3000", "_ZNSaIiEC1Ev.clone18", "file2000:2000", "_Z3fooid.clone2", "file1000:1000"}
+	case "7000":
+		lines = []string{"fun7000", "file7000:7000", "fun6000", "file6000:6000", "fun5000", "file5000:5000", "fun4000", "file4000:4000", "_ZNSt6vectorIS_IS_IiSaIiEESaIS1_EESaIS3_EEixEm", "file3000:3000", "_ZNSaIiEC1Ev.clone18", "file2000:2000", "_Z3fooid.clone2", "file1000:1000"}
+	case "8000":
+		lines = []string{"fun8000", "file8000:8000", "fun7000", "file7000:7000", "fun6000", "file6000:6000", "fun5000", "file5000:5000", "fun4000", "file4000:4000", "_ZNSt6vectorIS_IS_IiSaIiEESaIS1_EESaIS3_EEixEm", "file3000:3000", "_ZNSaIiEC1Ev.clone18", "file2000:2000", "_Z3fooid.clone2", "file1000:1000"}
+	case "9000":
+		lines = []string{"fun9000", "file9000:9000", "fun8000", "file8000:8000", "fun7000", "file7000:7000", "fun6000", "file6000:6000", "fun5000", "file5000:5000", "fun4000", "file4000:4000", "_ZNSt6vectorIS_IS_IiSaIiEESaIS1_EESaIS3_EEixEm", "file3000:3000", "_ZNSaIiEC1Ev.clone18", "file2000:2000", "_Z3fooid.clone2", "file1000:1000"}
+	default:
+		lines = []string{"??", "??:0"}
+	}
+	a.output = append(a.output, "0x"+s)
+	a.output = append(a.output, lines...)
+	return nil
+}
+
+func (a *mockAddr2liner) readLine() (string, error) {
+	if len(a.output) == 0 {
+		return "", fmt.Errorf("end of file")
+	}
+	next := a.output[0]
+	a.output = a.output[1:]
+	return next, nil
+}
+
+func (a *mockAddr2liner) close() {
 }
 
 func TestAddr2LinerLookup(t *testing.T) {
