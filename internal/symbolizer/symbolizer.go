@@ -28,7 +28,7 @@ import (
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/internal/symbolz"
 	"github.com/google/pprof/profile"
-	"github.com/google/pprof/third_party/golang/demangle"
+	"github.com/ianlancetaylor/demangle"
 )
 
 // Symbolizer implements the plugin.Symbolize interface.

@@ -21,7 +21,7 @@ import (
 	"strconv"
 
 	"github.com/google/pprof/internal/plugin"
-	"github.com/google/pprof/third_party/golang/demangle"
+	"github.com/ianlancetaylor/demangle"
 )
 
 var (
