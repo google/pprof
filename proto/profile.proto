@@ -50,7 +50,7 @@ message Profile {
   repeated Function function = 5;
   // A common table for strings referenced by various messages.
   // string_table[0] must always be "".
-  repeated string string_table = 6 [enforce_utf8 = false];
+  repeated string string_table = 6;
   // frames with Function.function_name fully matching the following
   // regexp will be dropped from the samples, along with their successors.
   int64 drop_frames = 7;   // Index into string table.
