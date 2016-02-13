@@ -114,6 +114,8 @@ func (p *Profile) preEncode() {
 		p.commentX = append(p.commentX, addString(strings, c))
 	}
 
+	p.defaultSampleTypeX = addString(strings, p.DefaultSampleType)
+
 	p.stringTable = make([]string, len(strings))
 	for s, i := range strings {
 		p.stringTable[i] = s
@@ -146,6 +148,7 @@ func (p *Profile) encode(b *buffer) {
 	}
 	encodeInt64Opt(b, 12, p.Period)
 	encodeInt64s(b, 13, p.commentX)
+	encodeInt64(b, 14, p.defaultSampleTypeX)
 }
 
 var profileDecoder = []decoder{
@@ -215,6 +218,8 @@ var profileDecoder = []decoder{
 	func(b *buffer, m message) error { return decodeInt64(b, &m.(*Profile).Period) },
 	// repeated int64 comment = 13
 	func(b *buffer, m message) error { return decodeInt64s(b, &m.(*Profile).commentX) },
+	// int64 defaultSampleType = 14
+	func(b *buffer, m message) error { return decodeInt64(b, &m.(*Profile).defaultSampleTypeX) },
 }
 
 // postDecode takes the unexported fields populated by decode (with
@@ -303,6 +308,7 @@ func (p *Profile) postDecode() error {
 	}
 
 	p.commentX = nil
+	p.DefaultSampleType, err = getString(p.stringTable, &p.defaultSampleTypeX, err)
 	p.stringTable = nil
 	return err
 }

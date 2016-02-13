@@ -60,6 +60,10 @@ func (c *command) help(name string) string {
 	return message + "\n"
 }
 
+// AddCommand adds an additional command to the set of commands
+// accepted by pprof. This enables extensions to add new commands for
+// specialized visualization formats. If the command specified already
+// exists, it is overwritten.
 func AddCommand(cmd string, format int, post PostProcessor, desc, usage string) {
 	pprofCommands[cmd] = &command{format, post, false, desc, usage}
 }
@@ -196,9 +200,9 @@ var pprofVariables = variables{
 		"For memory profiles, report average memory per allocation.",
 		"For time-based profiles, report average time per event.")},
 	"sample_index": &variable{stringKind, "", "", helpText(
-		"Sample value to report",
+		"Sample value to report (0-based index or name)",
 		"Profiles contain multiple values per sample.",
-		"Use sample_value=index to select the ith value or select it by name.")},
+		"Use sample_index=i to select the ith value (starting at 0).")},
 
 	// Data sorting criteria
 	"flat": &variable{boolKind, "t", "cumulative", helpText("Sort entries based on own weight")},
@@ -325,9 +329,9 @@ func browsers() []string {
 	case "windows":
 		return append(cmds, "cmd /c start")
 	default:
-		user_browser := os.Getenv("BROWSER")
-		if user_browser != "" {
-			cmds = append([]string{user_browser, "sensible-browser"}, cmds...)
+		userBrowser := os.Getenv("BROWSER")
+		if userBrowser != "" {
+			cmds = append([]string{userBrowser, "sensible-browser"}, cmds...)
 		} else {
 			cmds = append([]string{"sensible-browser"}, cmds...)
 		}
@@ -439,6 +443,13 @@ func invokeVisualizer(format PostProcessor, suffix string, visualizers []string)
 // profile sample types.
 func locateSampleIndex(p *profile.Profile, sampleIndex string) (int, error) {
 	if sampleIndex == "" {
+		if dst := p.DefaultSampleType; dst != "" {
+			for i, t := range sampleTypes(p) {
+				if t == dst {
+					return i, nil
+				}
+			}
+		}
 		// By default select the last sample value
 		return len(p.SampleType) - 1, nil
 	}
@@ -453,15 +464,21 @@ func locateSampleIndex(p *profile.Profile, sampleIndex string) (int, error) {
 	// "inuse_space" and "inuse_objects" for profiles containing types
 	// "space" and "objects".
 	noInuse := strings.TrimPrefix(sampleIndex, "inuse_")
-	sampleTypes := make([]string, len(p.SampleType))
 	for i, t := range p.SampleType {
 		if t.Type == sampleIndex || t.Type == noInuse {
 			return i, nil
 		}
-		sampleTypes[i] = t.Type
 	}
 
-	return 0, fmt.Errorf("sample_index %q must be one of: %v", sampleIndex, sampleTypes)
+	return 0, fmt.Errorf("sample_index %q must be one of: %v", sampleIndex, sampleTypes(p))
+}
+
+func sampleTypes(p *profile.Profile) []string {
+	types := make([]string, len(p.SampleType))
+	for i, t := range p.SampleType {
+		types[i] = t.Type
+	}
+	return types
 }
 
 // variables describe the configuration parameters recognized by pprof.

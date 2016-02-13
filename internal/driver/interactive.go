@@ -31,6 +31,7 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 	// Enter command processing loop.
 	o.UI.SetAutoComplete(newCompleter(functionNames(p)))
 	pprofVariables.set("compact_labels", "true")
+	pprofVariables["sample_index"].help += fmt.Sprintf("Or use sample_index=name, with name in %v.\n", sampleTypes(p))
 
 	// Do not wait for the visualizer to complete, to allow multiple
 	// graphs to be visualized simultaneously.
@@ -99,6 +100,7 @@ func greetings(p *profile.Profile, ui plugin.UI) {
 	ropt, err := reportOptions(p, pprofVariables)
 	if err == nil {
 		ui.Print(strings.Join(report.ProfileLabels(report.New(p, ropt)), "\n"))
+		ui.Print(fmt.Sprintf("Sample types: %v\n", sampleTypes(p)))
 	}
 	ui.Print("Entering interactive mode (type \"help\" for commands)")
 }

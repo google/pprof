@@ -29,12 +29,13 @@ import (
 
 // Profile is an in-memory representation of profile.proto.
 type Profile struct {
-	SampleType []*ValueType
-	Sample     []*Sample
-	Mapping    []*Mapping
-	Location   []*Location
-	Function   []*Function
-	Comments   []string
+	SampleType        []*ValueType
+	DefaultSampleType string
+	Sample            []*Sample
+	Mapping           []*Mapping
+	Location          []*Location
+	Function          []*Function
+	Comments          []string
 
 	DropFrames string
 	KeepFrames string
@@ -44,10 +45,11 @@ type Profile struct {
 	PeriodType    *ValueType
 	Period        int64
 
-	commentX    []int64
-	dropFramesX int64
-	keepFramesX int64
-	stringTable []string
+	commentX           []int64
+	dropFramesX        int64
+	keepFramesX        int64
+	stringTable        []string
+	defaultSampleTypeX int64
 }
 
 // ValueType corresponds to Profile.ValueType
@@ -404,7 +406,11 @@ func (p *Profile) String() string {
 	ss = append(ss, "Samples:")
 	var sh1 string
 	for _, s := range p.SampleType {
-		sh1 = sh1 + fmt.Sprintf("%s/%s ", s.Type, s.Unit)
+		dflt := ""
+		if s.Type == p.DefaultSampleType {
+			dflt = "[dflt]"
+		}
+		sh1 = sh1 + fmt.Sprintf("%s/%s%s ", s.Type, s.Unit, dflt)
 	}
 	ss = append(ss, strings.TrimSpace(sh1))
 	for _, s := range p.Sample {

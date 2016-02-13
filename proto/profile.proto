@@ -50,7 +50,7 @@ message Profile {
   repeated Function function = 5;
   // A common table for strings referenced by various messages.
   // string_table[0] must always be "".
-  repeated string string_table = 6 [enforce_utf8 = false];
+  repeated string string_table = 6;
   // frames with Function.function_name fully matching the following
   // regexp will be dropped from the samples, along with their successors.
   int64 drop_frames = 7;   // Index into string table.
@@ -72,6 +72,9 @@ message Profile {
   int64 period = 12;
   // Freeform text associated to the profile.
   repeated int64 comment = 13; // Indices into string table.
+  // Index into the string table of the type of the preferred sample
+  // value. If unset, clients should default to the last sample value.
+  int64 default_sample_type = 14;
 }
 
 // ValueType describes the semantics and measurement units of a value.
