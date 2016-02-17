@@ -149,7 +149,7 @@ var pprofVariables = variables{
 		"Measurement units to display",
 		"Scale the sample values to this unit.",
 		" For time-based profiles, use seconds, milliseconds, nanoseconds, etc.",
-		" For memory profiles, use megabytes, kiloyes, bytes, etc.",
+		" For memory profiles, use megabytes, kilobytes, bytes, etc.",
 		" auto will scale each value independently to the most natural unit.")},
 	"compact_labels": &variable{boolKind, "f", "", "Show minimal headers"},
 
