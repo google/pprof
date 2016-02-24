@@ -235,7 +235,7 @@ func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) 
 		OutputUnit: vars["unit"].value,
 	}
 
-	if len(p.Mapping) > 0 {
+	if len(p.Mapping) > 0 && p.Mapping[0].File != "" {
 		ropt.Title = filepath.Base(p.Mapping[0].File)
 	}
 

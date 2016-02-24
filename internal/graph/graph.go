@@ -331,8 +331,12 @@ func NewLocInfo(prof *profile.Profile, keepBinary bool) map[uint64][]NodeInfo {
 			if line.Function != nil {
 				ni.Name = line.Function.Name
 				ni.OrigName = line.Function.SystemName
-				ni.File = line.Function.Filename
-				ni.StartLine = int(line.Function.StartLine)
+				if fname := line.Function.Filename; fname != "" {
+					ni.File = filepath.Clean(fname)
+				}
+				if keepBinary {
+					ni.StartLine = int(line.Function.StartLine)
+				}
 			}
 			if keepBinary || line.Function == nil {
 				ni.Objfile = objfile

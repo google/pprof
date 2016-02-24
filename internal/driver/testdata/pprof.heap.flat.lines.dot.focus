@@ -1,4 +1,4 @@
-digraph "." {
+digraph "unnamed" {
 node [style=filled fillcolor="#f8f8f8"]
 subgraph cluster_L { "Build ID: buildid" [shape=box fontsize=16 label="Build ID: buildid\lType: inuse_space\lShowing nodes accounting for 67.38MB, 68.32% of 98.63MB total\l"] }
 N1 [label="line3000\nfile3000.src:4\n0 of 67.38MB (68.32%)" fontsize=8 shape=box tooltip="line3000 testdata/file3000.src:4 (67.38MB)" color="#b21300" fillcolor="#edd7d5"]

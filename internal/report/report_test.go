@@ -17,7 +17,6 @@ package report
 import (
 	"bytes"
 	"io/ioutil"
-	"path/filepath"
 	"regexp"
 	"testing"
 
@@ -45,7 +44,6 @@ func TestSource(t *testing.T) {
 				&Options{
 					OutputFormat: List,
 					Symbol:       regexp.MustCompile(`.`),
-					Title:        filepath.Base(testProfile.Mapping[0].File),
 
 					SampleValue: sampleValue1,
 					SampleUnit:  testProfile.SampleType[1].Unit,
@@ -60,7 +58,6 @@ func TestSource(t *testing.T) {
 					OutputFormat: Dot,
 					CallTree:     true,
 					Symbol:       regexp.MustCompile(`.`),
-					Title:        filepath.Base(testProfile.Mapping[0].File),
 
 					SampleValue: sampleValue1,
 					SampleUnit:  testProfile.SampleType[1].Unit,

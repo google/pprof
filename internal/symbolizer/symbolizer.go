@@ -284,7 +284,7 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 
 		// Skip well-known system mappings
 		name := filepath.Base(m.File)
-		if name == "" || name == "[vdso]" || strings.HasPrefix(name, "linux-vdso") {
+		if m.File == "" || name == "[vdso]" || strings.HasPrefix(name, "linux-vdso") {
 			continue
 		}
 

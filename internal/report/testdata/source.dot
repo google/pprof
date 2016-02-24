@@ -1,4 +1,4 @@
-digraph "." {
+digraph "unnamed" {
 node [style=filled fillcolor="#f8f8f8"]
 subgraph cluster_L { "Duration: 10s, Total samples = 11111 " [shape=box fontsize=16 label="Duration: 10s, Total samples = 11111 \lShowing nodes accounting for 11111, 100% of 11111 total\l"] }
 N1 [label="tee\nsource2:8\n10000 (90.00%)" fontsize=24 shape=box tooltip="tee testdata/source2:8 (10000)" color="#b20500" fillcolor="#edd6d5"]

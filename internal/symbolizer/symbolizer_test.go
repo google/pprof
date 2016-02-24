@@ -29,6 +29,7 @@ var testM = []*profile.Mapping{
 		ID:    1,
 		Start: 0x1000,
 		Limit: 0x5000,
+		File:  "mapping",
 	},
 }
 

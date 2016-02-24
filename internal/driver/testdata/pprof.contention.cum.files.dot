@@ -1,4 +1,4 @@
-digraph "." {
+digraph "unnamed" {
 node [style=filled fillcolor="#f8f8f8"]
 subgraph cluster_L { "Build ID: buildid-contention" [shape=box fontsize=16 label="Build ID: buildid-contention\lComment #1\lComment #2\lType: delay\lShowing nodes accounting for 149.50ms, 100% of 149.50ms total\l"] }
 N1 [label="file3000.src\n32.77ms (21.92%)\nof 149.50ms (100%)" fontsize=20 shape=box tooltip="testdata/file3000.src (149.50ms)" color="#b20000" fillcolor="#edd5d5"]
