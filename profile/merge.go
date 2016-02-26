@@ -40,10 +40,10 @@ func Merge(srcs []*Profile) (*Profile, error) {
 
 	pm := &profileMerger{
 		p:         p,
-		samples:   make(map[string]*Sample, len(srcs[0].Sample)),
-		locations: make(map[string]*Location, len(srcs[0].Location)),
-		functions: make(map[string]*Function, len(srcs[0].Function)),
-		mappings:  make(map[string]*Mapping, len(srcs[0].Mapping)),
+		samples:   make(map[sampleKey]*Sample, len(srcs[0].Sample)),
+		locations: make(map[locationKey]*Location, len(srcs[0].Location)),
+		functions: make(map[functionKey]*Function, len(srcs[0].Function)),
+		mappings:  make(map[mappingKey]*Mapping, len(srcs[0].Mapping)),
 	}
 
 	for _, src := range srcs {
@@ -96,10 +96,10 @@ type profileMerger struct {
 	mappingsByID  map[uint64]mapInfo
 
 	// Memoization tables for profile entities.
-	samples   map[string]*Sample
-	locations map[string]*Location
-	functions map[string]*Function
-	mappings  map[string]*Mapping
+	samples   map[sampleKey]*Sample
+	locations map[locationKey]*Location
+	functions map[functionKey]*Function
+	mappings  map[mappingKey]*Mapping
 }
 
 type mapInfo struct {
@@ -143,30 +143,36 @@ func (pm *profileMerger) mapSample(src *Sample) *Sample {
 	return s
 }
 
-// key generates encoded string of Sample to be used as a key for maps.
-func (sample *Sample) key() (s string) {
+// key generates sampleKey to be used as a key for maps.
+func (sample *Sample) key() sampleKey {
 	ids := make([]string, len(sample.Location))
 	for i, l := range sample.Location {
 		ids[i] = strconv.FormatUint(l.ID, 16)
 	}
-	s = strings.Join(ids, "|")
-	if len(sample.Label) != 0 {
-		labels := make([]string, 0, len(sample.Label))
-		for k, v := range sample.Label {
-			labels = append(labels, fmt.Sprintf("%q%q", k, v))
-		}
-		sort.Strings(labels)
-		s += strings.Join(labels, "")
+
+	labels := make([]string, 0, len(sample.Label))
+	for k, v := range sample.Label {
+		labels = append(labels, fmt.Sprintf("%q%q", k, v))
 	}
-	if len(sample.NumLabel) > 0 {
-		labels := make([]string, 0, len(sample.NumLabel))
-		for k, v := range sample.NumLabel {
-			labels = append(labels, fmt.Sprintf("%q%v", k, v))
-		}
-		sort.Strings(labels)
-		s += strings.Join(labels, "")
+	sort.Strings(labels)
+
+	numlabels := make([]string, 0, len(sample.NumLabel))
+	for k, v := range sample.NumLabel {
+		numlabels = append(numlabels, fmt.Sprintf("%q%x", k, v))
 	}
-	return s
+	sort.Strings(numlabels)
+
+	return sampleKey{
+		strings.Join(ids, "|"),
+		strings.Join(labels, ""),
+		strings.Join(numlabels, ""),
+	}
+}
+
+type sampleKey struct {
+	locations string
+	labels    string
+	numlabels string
 }
 
 func (pm *profileMerger) mapLocation(src *Location) *Location {
@@ -202,21 +208,28 @@ func (pm *profileMerger) mapLocation(src *Location) *Location {
 	return l
 }
 
-// key generates encoded string of Location to be used as a key for maps.
-func (l *Location) key() string {
-	addr := l.Address
-	var s string
+// key generates locationKey to be used as a key for maps.
+func (l *Location) key() locationKey {
+	key := locationKey{
+		addr: l.Address,
+	}
 	if l.Mapping != nil {
 		// Normalizes address to handle address space randomization.
-		addr -= l.Mapping.Start
-		s = strconv.FormatUint(l.Mapping.ID, 16) + "|" + strconv.FormatUint(addr, 16)
-	} else {
-		s = "0|" + strconv.FormatUint(addr, 16)
+		key.addr -= l.Mapping.Start
+		key.mappingID = l.Mapping.ID
 	}
-	for _, line := range l.Line {
-		s += strconv.FormatUint(line.Function.ID, 16) + "|" + strconv.FormatInt(line.Line, 16)
+	lines := make([]string, len(l.Line)*2)
+	for i, line := range l.Line {
+		lines[i*2] = strconv.FormatUint(line.Function.ID, 16)
+		lines[i*2+1] = strconv.FormatInt(line.Line, 16)
 	}
-	return s
+	key.lines = strings.Join(lines, "|")
+	return key
+}
+
+type locationKey struct {
+	addr, mappingID uint64
+	lines           string
 }
 
 func (pm *profileMerger) mapMapping(src *Mapping) mapInfo {
@@ -273,7 +286,7 @@ func (pm *profileMerger) mapMapping(src *Mapping) mapInfo {
 // key generates encoded strings of Mapping to be used as a key for
 // maps. The first key represents only the build id, while the second
 // represents only the file path.
-func (m *Mapping) key() (buildIDKey, pathKey string) {
+func (m *Mapping) key() (buildIDKey, pathKey mappingKey) {
 	// Normalize addresses to handle address space randomization.
 	// Round up to next 4K boundary to avoid minor discrepancies.
 	const mapsizeRounding = 0x1000
@@ -281,10 +294,24 @@ func (m *Mapping) key() (buildIDKey, pathKey string) {
 	size := m.Limit - m.Start
 	size = size + mapsizeRounding - 1
 	size = size - (size % mapsizeRounding)
-	key := strconv.FormatUint(size, 16) + "|" + strconv.FormatUint(m.Offset, 16)
-	buildIDKey = key + "B" + strconv.Quote(m.BuildID)
-	pathKey = key + "F" + strconv.Quote(m.File)
+
+	buildIDKey = mappingKey{
+		size,
+		m.Offset,
+		m.BuildID,
+	}
+
+	pathKey = mappingKey{
+		size,
+		m.Offset,
+		m.File,
+	}
 	return
+}
+
+type mappingKey struct {
+	size, offset    uint64
+	buildidIDOrFile string
 }
 
 func (pm *profileMerger) mapLine(src Line) Line {
@@ -320,9 +347,19 @@ func (pm *profileMerger) mapFunction(src *Function) *Function {
 	return f
 }
 
-// key generates encoded string of Function to be used as a key for maps.
-func (f *Function) key() string {
-	return fmt.Sprintf("%x%q%q%q", f.StartLine, f.Name, f.SystemName, f.Filename)
+// key generates a struct to be used as a key for maps.
+func (f *Function) key() functionKey {
+	return functionKey{
+		f.StartLine,
+		f.Name,
+		f.SystemName,
+		f.Filename,
+	}
+}
+
+type functionKey struct {
+	startLine                  int64
+	name, systemName, fileName string
 }
 
 // combineHeaders checks that all profiles can be merged and returns
