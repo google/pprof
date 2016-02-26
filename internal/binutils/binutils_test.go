@@ -37,7 +37,7 @@ func functionName(level int) (name string) {
 func TestAddr2Liner(t *testing.T) {
 	const offset = 0x500
 
-	a := addr2Liner{&mockAddr2liner{}, offset}
+	a := addr2Liner{&mockAddr2liner{}, offset, nil}
 	for i := 1; i < 8; i++ {
 		addr := i*0x1000 + offset
 		s, err := a.addrInfo(uint64(addr))

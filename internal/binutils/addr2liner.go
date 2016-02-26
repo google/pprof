@@ -38,6 +38,11 @@ const (
 type addr2Liner struct {
 	rw   lineReaderWriter
 	base uint64
+
+	// nm holds an NM based addr2Liner which can provide
+	// better full names compared to addr2line, which often drops
+	// namespaces etc. from the names it returns.
+	nm *addr2LinerNM
 }
 
 // lineReaderWriter is an interface to abstract the I/O to an addr2line
@@ -193,5 +198,22 @@ func (d *addr2Liner) addrInfo(addr uint64) ([]plugin.Frame, error) {
 			stack = append(stack, frame)
 		}
 	}
+
+	// Get better name from nm if possible.
+	if len(stack) > 0 && d.nm != nil {
+		nm, err := d.nm.addrInfo(addr)
+		if err == nil && len(nm) > 0 {
+			// Last entry in frame list should match since
+			// it is non-inlined.  As a simple heuristic,
+			// we only switch to the nm-based name if it
+			// is longer.
+			nmName := nm[len(nm)-1].Func
+			a2lName := stack[len(stack)-1].Func
+			if len(nmName) > len(a2lName) {
+				stack[len(stack)-1].Func = nmName
+			}
+		}
+	}
+
 	return stack, nil
 }

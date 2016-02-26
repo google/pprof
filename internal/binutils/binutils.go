@@ -245,6 +245,13 @@ func (f *fileAddr2Line) SourceLine(addr uint64) ([]plugin.Frame, error) {
 			return nil, err
 		}
 		f.addr2liner = addr2liner
+
+		// When addr2line encounters some gcc compiled binaries, it
+		// drops interesting parts of names in anonymous namespaces.
+		// Fallback to NM for better function names.
+		if nm, err := newAddr2LinerNM(f.b.nm, f.name, f.base); err == nil {
+			f.addr2liner.nm = nm
+		}
 	}
 	return f.addr2liner.addrInfo(addr)
 }
