@@ -20,6 +20,7 @@ import (
 	"math"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/google/pprof/profile"
@@ -156,8 +157,10 @@ type NodeSet map[NodeInfo]bool
 // If parent is non-nil, return a match with the same parent.
 // If kept is non-nil, nodes are only added if they can be located on it.
 func (m NodeMap) FindOrInsertNode(info NodeInfo, parent *Node, kept NodeSet) *Node {
-	if kept != nil && !kept[info] {
-		return nil
+	if kept != nil {
+		if _, ok := kept[info]; !ok {
+			return nil
+		}
 	}
 
 	extendedInfo := ExtendedNodeInfo{
@@ -165,7 +168,7 @@ func (m NodeMap) FindOrInsertNode(info NodeInfo, parent *Node, kept NodeSet) *No
 		parent,
 	}
 
-	if n := m[extendedInfo]; n != nil {
+	if n, ok := m[extendedInfo]; ok {
 		return n
 	}
 
@@ -216,8 +219,9 @@ func SortTags(t []*Tag, flat bool) []*Tag {
 
 // New summarizes performance data from a profile into a graph.
 func New(prof *profile.Profile, o *Options) (g *Graph) {
+	const averageNodesPerLocation = 2
 	locations := NewLocInfo(prof, o.ObjNames)
-	nm := make(NodeMap)
+	nm := make(NodeMap, len(prof.Location)*averageNodesPerLocation)
 	for _, sample := range prof.Sample {
 		if sample.Location == nil {
 			continue
@@ -227,8 +231,8 @@ func New(prof *profile.Profile, o *Options) (g *Graph) {
 		// Keep track of the index on the Sample for each frame,
 		// to determine inlining status.
 
-		var stack []NodeInfo
-		var locIndex []int
+		stack := make([]NodeInfo, 0, len(sample.Location))
+		locIndex := make([]int, 0, len(sample.Location)*averageNodesPerLocation)
 		for i, loc := range sample.Location {
 			id := loc.ID
 			stack = append(stack, locations[id]...)
@@ -238,7 +242,8 @@ func New(prof *profile.Profile, o *Options) (g *Graph) {
 		}
 
 		weight := o.SampleValue(sample.Value)
-		seenEdge := make(map[*Node]map[*Node]bool)
+		seenNode := make(map[*Node]bool, len(stack))
+		seenEdge := make(map[nodePair]bool, len(stack))
 		var nn *Node
 		nlocIndex := -1
 		residual := false
@@ -259,13 +264,13 @@ func New(prof *profile.Profile, o *Options) (g *Graph) {
 				n.addSample(sample, weight, o.FormatTag, true)
 			}
 			// Add cum weight to all nodes in stack, avoiding double counting.
-			if seenEdge[n] == nil {
-				seenEdge[n] = make(map[*Node]bool)
+			if _, ok := seenNode[n]; !ok {
+				seenNode[n] = true
 				n.addSample(sample, weight, o.FormatTag, false)
 			}
 			// Update edge weights for all edges in stack, avoiding double counting.
-			if nn != nil && n != nn && !seenEdge[n][nn] {
-				seenEdge[n][nn] = true
+			if _, ok := seenEdge[nodePair{n, nn}]; !ok && nn != nil && n != nn {
+				seenEdge[nodePair{n, nn}] = true
 				// This is an inlined edge if the caller and the callee
 				// correspond to the same entry in the sample.
 				nn.BumpWeight(n, weight, residual, locIndex[i-1] == nlocIndex)
@@ -286,6 +291,10 @@ func New(prof *profile.Profile, o *Options) (g *Graph) {
 	}
 
 	return &Graph{ns}
+}
+
+type nodePair struct {
+	src, dest *Node
 }
 
 // isNegative returns true if the node is considered as "negative" for the
@@ -409,15 +418,12 @@ func (n *Node) addSample(s *profile.Sample, value int64, format func(int64, stri
 		n.NumericTags[joinedLabels] = numericTags
 	}
 	// Add numeric tags
+	if format == nil {
+		format = defaultLabelFormat
+	}
 	for key, nvals := range s.NumLabel {
 		for _, v := range nvals {
-			var label string
-			if format != nil {
-				label = format(v, key)
-			} else {
-				label = fmt.Sprintf("%d", v)
-			}
-			t := numericTags.findOrAddTag(label, key, v)
+			t := numericTags.findOrAddTag(format(v, key), key, v)
 			if flat {
 				t.Flat += value
 			} else {
@@ -425,6 +431,10 @@ func (n *Node) addSample(s *profile.Sample, value int64, format func(int64, stri
 			}
 		}
 	}
+}
+
+func defaultLabelFormat(v int64, key string) string {
+	return strconv.FormatInt(v, 10)
 }
 
 func (m TagMap) findOrAddTag(label, unit string, value int64) *Tag {
