@@ -174,6 +174,16 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	for _, f := range prof.Function {
 		f.Filename = trimPath(f.Filename)
 	}
+	// Remove numeric tags not recognized by pprof.
+	for _, s := range prof.Sample {
+		numLabels := make(map[string][]int64, len(s.NumLabel))
+		for k, v := range s.NumLabel {
+			if k == "bytes" {
+				numLabels[k] = append(numLabels[k], v...)
+			}
+		}
+		s.NumLabel = numLabels
+	}
 
 	gopt := &graph.Options{
 		SampleValue:  o.SampleValue,
@@ -559,10 +569,9 @@ func printTraces(w io.Writer, rpt *Report) error {
 
 	const separator = "-----------+-------------------------------------------------------"
 
-	locations := graph.NewLocInfo(prof, false)
-
+	_, locations := graph.CreateNodes(prof, false, nil)
 	for _, sample := range prof.Sample {
-		var stack []graph.NodeInfo
+		var stack graph.Nodes
 		for _, loc := range sample.Location {
 			id := loc.ID
 			stack = append(stack, locations[id]...)
@@ -583,10 +592,10 @@ func printTraces(w io.Writer, rpt *Report) error {
 		// Print call stack.
 		fmt.Fprintf(w, "%10s   %s\n",
 			rpt.formatValue(o.SampleValue(sample.Value)),
-			stack[0].PrintableName())
+			stack[0].Info.PrintableName())
 
 		for _, s := range stack[1:] {
-			fmt.Fprintf(w, "%10s   %s\n", "", s.PrintableName())
+			fmt.Fprintf(w, "%10s   %s\n", "", s.Info.PrintableName())
 		}
 	}
 	fmt.Fprintln(w, separator)

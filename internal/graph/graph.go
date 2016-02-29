@@ -20,6 +20,7 @@ import (
 	"math"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/google/pprof/profile"
@@ -69,9 +70,9 @@ type Node struct {
 	NumericTags map[string]TagMap
 }
 
-// BumpWeight increases the weight of an edge between two nodes. If
+// AddToEdge increases the weight of an edge between two nodes. If
 // there isn't such an edge one is created.
-func (n *Node) BumpWeight(to *Node, w int64, residual, inline bool) {
+func (n *Node) AddToEdge(to *Node, w int64, residual, inline bool) {
 	if n.Out[to] != to.In[n] {
 		panic(fmt.Errorf("asymmetric edges %v %v", *n, *to))
 	}
@@ -136,36 +137,24 @@ func (i *NodeInfo) NameComponents() []string {
 	return name
 }
 
-// ExtendedNodeInfo extends the NodeInfo with a pointer to a parent node, to
-// identify nodes with identical information and different callers. This is
-// used when creating call trees.
-type ExtendedNodeInfo struct {
-	NodeInfo
-	parent *Node
-}
-
 // NodeMap maps from a node info struct to a node. It is used to merge
 // report entries with the same info.
-type NodeMap map[ExtendedNodeInfo]*Node
+type NodeMap map[NodeInfo]*Node
 
 // NodeSet maps is a collection of node info structs.
 type NodeSet map[NodeInfo]bool
 
 // FindOrInsertNode takes the info for a node and either returns a matching node
 // from the node map if one exists, or adds one to the map if one does not.
-// If parent is non-nil, return a match with the same parent.
 // If kept is non-nil, nodes are only added if they can be located on it.
-func (m NodeMap) FindOrInsertNode(info NodeInfo, parent *Node, kept NodeSet) *Node {
-	if kept != nil && !kept[info] {
-		return nil
+func (nm NodeMap) FindOrInsertNode(info NodeInfo, kept NodeSet) *Node {
+	if kept != nil {
+		if _, ok := kept[info]; !ok {
+			return nil
+		}
 	}
 
-	extendedInfo := ExtendedNodeInfo{
-		info,
-		parent,
-	}
-
-	if n := m[extendedInfo]; n != nil {
+	if n, ok := nm[info]; ok {
 		return n
 	}
 
@@ -176,7 +165,7 @@ func (m NodeMap) FindOrInsertNode(info NodeInfo, parent *Node, kept NodeSet) *No
 		LabelTags:   make(TagMap),
 		NumericTags: make(map[string]TagMap),
 	}
-	m[extendedInfo] = n
+	nm[info] = n
 	return n
 }
 
@@ -216,76 +205,139 @@ func SortTags(t []*Tag, flat bool) []*Tag {
 
 // New summarizes performance data from a profile into a graph.
 func New(prof *profile.Profile, o *Options) (g *Graph) {
-	locations := NewLocInfo(prof, o.ObjNames)
-	nm := make(NodeMap)
+	if o.CallTree {
+		return newTree(prof, o)
+	}
+
+	nodes, locationMap := CreateNodes(prof, o.ObjNames, o.KeptNodes)
 	for _, sample := range prof.Sample {
-		if sample.Location == nil {
-			continue
-		}
-
-		// Construct list of node names for sample.
-		// Keep track of the index on the Sample for each frame,
-		// to determine inlining status.
-
-		var stack []NodeInfo
-		var locIndex []int
-		for i, loc := range sample.Location {
-			id := loc.ID
-			stack = append(stack, locations[id]...)
-			for _ = range locations[id] {
-				locIndex = append(locIndex, i)
-			}
-		}
-
 		weight := o.SampleValue(sample.Value)
-		seenEdge := make(map[*Node]map[*Node]bool)
-		var nn *Node
-		nlocIndex := -1
-		residual := false
-		// Walk top-down over the frames in a sample, keeping track
-		// of the current parent if we're building a tree.
-		for i := len(stack); i > 0; i-- {
-			var parent *Node
-			if o.CallTree {
-				parent = nn
-			}
-			n := nm.FindOrInsertNode(stack[i-1], parent, o.KeptNodes)
-			if n == nil {
-				residual = true
-				continue
-			}
-			// Add flat weight to leaf node.
-			if i == 1 {
-				n.addSample(sample, weight, o.FormatTag, true)
-			}
-			// Add cum weight to all nodes in stack, avoiding double counting.
-			if seenEdge[n] == nil {
-				seenEdge[n] = make(map[*Node]bool)
-				n.addSample(sample, weight, o.FormatTag, false)
-			}
-			// Update edge weights for all edges in stack, avoiding double counting.
-			if nn != nil && n != nn && !seenEdge[n][nn] {
-				seenEdge[n][nn] = true
-				// This is an inlined edge if the caller and the callee
-				// correspond to the same entry in the sample.
-				nn.BumpWeight(n, weight, residual, locIndex[i-1] == nlocIndex)
-			}
-			nn = n
-			nlocIndex = locIndex[i-1]
-			residual = false
-		}
-	}
-
-	// Collect nodes into a graph.
-	ns := make(Nodes, 0, len(nm))
-	for _, n := range nm {
-		if o.DropNegative && isNegative(n) {
+		if weight == 0 {
 			continue
 		}
-		ns = append(ns, n)
+		seenNode := make(map[*Node]bool, len(sample.Location))
+		seenEdge := make(map[nodePair]bool, len(sample.Location))
+		var parent *Node
+		// A residual edge goes over one or more nodes that were not kept.
+		residual := false
+
+		labels := joinLabels(sample)
+		// Group the sample frames, based on a global map.
+		for i := len(sample.Location) - 1; i >= 0; i-- {
+			l := sample.Location[i]
+			locNodes := locationMap[l.ID]
+			for ni := len(locNodes) - 1; ni >= 0; ni-- {
+				n := locNodes[ni]
+				if n == nil {
+					residual = true
+					continue
+				}
+				// Add cum weight to all nodes in stack, avoiding double counting.
+				if _, ok := seenNode[n]; !ok {
+					seenNode[n] = true
+					n.addSample(weight, labels, sample.NumLabel, o.FormatTag, false)
+				}
+				// Update edge weights for all edges in stack, avoiding double counting.
+				if _, ok := seenEdge[nodePair{n, parent}]; !ok && parent != nil && n != parent {
+					seenEdge[nodePair{n, parent}] = true
+					parent.AddToEdge(n, weight, residual, ni != len(locNodes)-1)
+				}
+				parent = n
+				residual = false
+			}
+		}
+		if parent != nil && !residual {
+			// Add flat weight to leaf node.
+			parent.addSample(weight, labels, sample.NumLabel, o.FormatTag, true)
+		}
 	}
 
-	return &Graph{ns}
+	return selectNodesForGraph(nodes, o.DropNegative)
+}
+
+func selectNodesForGraph(nodes Nodes, dropNegative bool) *Graph {
+	// Collect nodes into a graph.
+	gNodes := make(Nodes, 0, len(nodes))
+	for _, n := range nodes {
+		if n == nil {
+			continue
+		}
+		if n.Cum == 0 && n.Flat == 0 {
+			continue
+		}
+		if dropNegative && isNegative(n) {
+			continue
+		}
+		gNodes = append(gNodes, n)
+	}
+	return &Graph{gNodes}
+}
+
+type nodePair struct {
+	src, dest *Node
+}
+
+func newTree(prof *profile.Profile, o *Options) (g *Graph) {
+	kept := o.KeptNodes
+	keepBinary := o.ObjNames
+	parentNodeMap := make(map[*Node]NodeMap, len(prof.Sample))
+	for _, sample := range prof.Sample {
+		weight := o.SampleValue(sample.Value)
+		if weight == 0 {
+			continue
+		}
+		var parent *Node
+		// A residual edge goes over one or more nodes that were not kept.
+		residual := false
+		labels := joinLabels(sample)
+		// Group the sample frames, based on a per-node map.
+		for i := len(sample.Location) - 1; i >= 0; i-- {
+			l := sample.Location[i]
+			nodeMap := parentNodeMap[parent]
+			if nodeMap == nil {
+				nodeMap = make(NodeMap)
+				parentNodeMap[parent] = nodeMap
+			}
+			locNodes := nodeMap.findOrInsertLocation(l, keepBinary, kept)
+			for ni := len(locNodes) - 1; ni >= 0; ni-- {
+				n := locNodes[ni]
+				if n == nil {
+					residual = true
+					continue
+				}
+				n.addSample(weight, labels, sample.NumLabel, o.FormatTag, false)
+				if parent != nil {
+					parent.AddToEdge(n, weight, residual, ni != len(locNodes)-1)
+				}
+				parent = n
+				residual = false
+			}
+		}
+		if parent != nil && !residual {
+			parent.addSample(weight, labels, sample.NumLabel, o.FormatTag, true)
+		}
+	}
+
+	nodes := make(Nodes, len(prof.Location))
+	for _, nm := range parentNodeMap {
+		nodes = append(nodes, nm.nodes()...)
+	}
+	return selectNodesForGraph(nodes, o.DropNegative)
+}
+
+func joinLabels(s *profile.Sample) string {
+	if len(s.Label) == 0 {
+		return ""
+	}
+
+	var labels []string
+	for key, vals := range s.Label {
+		for _, v := range vals {
+			labels = append(labels, key+":"+v)
+		}
+	}
+	sort.Strings(labels)
+	return strings.Join(labels, `\n`)
 }
 
 // isNegative returns true if the node is considered as "negative" for the
@@ -301,51 +353,67 @@ func isNegative(n *Node) bool {
 	}
 }
 
-// NewLocInfo creates a slice of formatted names for a location.
-func NewLocInfo(prof *profile.Profile, keepBinary bool) map[uint64][]NodeInfo {
-	locations := make(map[uint64][]NodeInfo)
+// CreateNodes creates graph nodes for all locations in a profile.  It
+// returns set of all nodes, plus a mapping of each location to the
+// set of corresponding nodes (one per location.Line). If kept is
+// non-nil, only nodes in that set are included; nodes that do not
+// match are represented as a nil.
+func CreateNodes(prof *profile.Profile, keepBinary bool, kept NodeSet) (Nodes, map[uint64]Nodes) {
+	locations := make(map[uint64]Nodes, len(prof.Location))
 
+	nm := make(NodeMap, len(prof.Location))
 	for _, l := range prof.Location {
-		var objfile string
-
-		if m := l.Mapping; m != nil {
-			objfile = filepath.Base(m.File)
+		if nodes := nm.findOrInsertLocation(l, keepBinary, kept); nodes != nil {
+			locations[l.ID] = nodes
 		}
-
-		if len(l.Line) == 0 {
-			locations[l.ID] = []NodeInfo{
-				{
-					Address: l.Address,
-					Objfile: objfile,
-				},
-			}
-			continue
-		}
-		var info []NodeInfo
-		for _, line := range l.Line {
-			ni := NodeInfo{
-				Address: l.Address,
-				Lineno:  int(line.Line),
-			}
-
-			if line.Function != nil {
-				ni.Name = line.Function.Name
-				ni.OrigName = line.Function.SystemName
-				if fname := line.Function.Filename; fname != "" {
-					ni.File = filepath.Clean(fname)
-				}
-				if keepBinary {
-					ni.StartLine = int(line.Function.StartLine)
-				}
-			}
-			if keepBinary || line.Function == nil {
-				ni.Objfile = objfile
-			}
-			info = append(info, ni)
-		}
-		locations[l.ID] = info
 	}
-	return locations
+	return nm.nodes(), locations
+}
+
+func (nm NodeMap) nodes() Nodes {
+	nodes := make(Nodes, 0, len(nm))
+	for _, n := range nm {
+		nodes = append(nodes, n)
+	}
+	return nodes
+}
+
+func (nm NodeMap) findOrInsertLocation(l *profile.Location, keepBinary bool, kept NodeSet) Nodes {
+	var objfile string
+	if m := l.Mapping; m != nil {
+		objfile = filepath.Base(m.File)
+	}
+
+	if len(l.Line) == 0 {
+		ni := NodeInfo{
+			Address: l.Address,
+			Objfile: objfile,
+		}
+		return Nodes{nm.FindOrInsertNode(ni, kept)}
+	}
+	var locNodes Nodes
+	for _, line := range l.Line {
+		ni := NodeInfo{
+			Address: l.Address,
+			Lineno:  int(line.Line),
+		}
+
+		if line.Function != nil {
+			ni.Name = line.Function.Name
+			ni.OrigName = line.Function.SystemName
+			if fname := line.Function.Filename; fname != "" {
+				ni.File = filepath.Clean(fname)
+			}
+			if keepBinary {
+				ni.StartLine = int(line.Function.StartLine)
+			}
+		}
+		if keepBinary || line.Function == nil {
+			ni.Objfile = objfile
+		}
+		locNodes = append(locNodes, nm.FindOrInsertNode(ni, kept))
+	}
+	return locNodes
 }
 
 type tags struct {
@@ -376,7 +444,7 @@ func (ns Nodes) Sum() (flat int64, cum int64) {
 	return
 }
 
-func (n *Node) addSample(s *profile.Sample, value int64, format func(int64, string) string, flat bool) {
+func (n *Node) addSample(value int64, labels string, numLabel map[string][]int64, format func(int64, string) string, flat bool) {
 	// Update sample value
 	if flat {
 		n.Flat += value
@@ -385,17 +453,8 @@ func (n *Node) addSample(s *profile.Sample, value int64, format func(int64, stri
 	}
 
 	// Add string tags
-	var labels []string
-	for key, vals := range s.Label {
-		for _, v := range vals {
-			labels = append(labels, key+":"+v)
-		}
-	}
-	var joinedLabels string
-	if len(labels) > 0 {
-		sort.Strings(labels)
-		joinedLabels = strings.Join(labels, `\n`)
-		t := n.LabelTags.findOrAddTag(joinedLabels, "", 0)
+	if labels != "" {
+		t := n.LabelTags.findOrAddTag(labels, "", 0)
 		if flat {
 			t.Flat += value
 		} else {
@@ -403,21 +462,18 @@ func (n *Node) addSample(s *profile.Sample, value int64, format func(int64, stri
 		}
 	}
 
-	numericTags := n.NumericTags[joinedLabels]
+	numericTags := n.NumericTags[labels]
 	if numericTags == nil {
 		numericTags = TagMap{}
-		n.NumericTags[joinedLabels] = numericTags
+		n.NumericTags[labels] = numericTags
 	}
 	// Add numeric tags
-	for key, nvals := range s.NumLabel {
+	if format == nil {
+		format = defaultLabelFormat
+	}
+	for key, nvals := range numLabel {
 		for _, v := range nvals {
-			var label string
-			if format != nil {
-				label = format(v, key)
-			} else {
-				label = fmt.Sprintf("%d", v)
-			}
-			t := numericTags.findOrAddTag(label, key, v)
+			t := numericTags.findOrAddTag(format(v, key), key, v)
 			if flat {
 				t.Flat += value
 			} else {
@@ -425,6 +481,10 @@ func (n *Node) addSample(s *profile.Sample, value int64, format func(int64, stri
 			}
 		}
 	}
+}
+
+func defaultLabelFormat(v int64, key string) string {
+	return strconv.FormatInt(v, 10)
 }
 
 func (m TagMap) findOrAddTag(label, unit string, value int64) *Tag {
@@ -630,7 +690,7 @@ func isRedundant(e *Edge) bool {
 // predecessors collects all the predecessors to node n, excluding edge e.
 func predecessors(e *Edge, n *Node) map[*Node]bool {
 	seen := map[*Node]bool{n: true}
-	queue := []*Node{n}
+	queue := Nodes{n}
 	for len(queue) > 0 {
 		n := queue[0]
 		queue = queue[1:]
