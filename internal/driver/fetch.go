@@ -39,9 +39,30 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 		return nil, err
 	}
 
-	p, msrcs, save, err := concurrentGrab(s, o.Fetch, o.Obj, o.UI)
+	sources := make([]profileSource, 0, len(s.Sources)+len(s.Base))
+	for _, src := range s.Sources {
+		sources = append(sources, profileSource{
+			addr:   src,
+			source: s,
+			scale:  1,
+		})
+	}
+	for _, src := range s.Base {
+		sources = append(sources, profileSource{
+			addr:   src,
+			source: s,
+			scale:  -1,
+		})
+	}
+	p, msrcs, save, cnt, err := chunkedGrab(sources, o.Fetch, o.Obj, o.UI)
 	if err != nil {
 		return nil, err
+	}
+	if cnt == 0 {
+		return nil, fmt.Errorf("failed to fetch any profiles")
+	}
+	if want, got := len(sources), cnt; want != got {
+		o.UI.PrintErr(fmt.Sprintf("fetched %d profiles out of %d", got, want))
 	}
 
 	// Symbolize the merged profile.
@@ -79,68 +100,91 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 	return p, nil
 }
 
-// concurrentGrab fetches multiple profiles concurrently
-func concurrentGrab(s *source, fetch plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (*profile.Profile, plugin.MappingSources, bool, error) {
-	wg := sync.WaitGroup{}
-	numprofs := len(s.Sources) + len(s.Base)
-	profs := make([]*profile.Profile, numprofs)
-	msrcs := make([]plugin.MappingSources, numprofs)
-	remote := make([]bool, numprofs)
-	errs := make([]error, numprofs)
-	for i, source := range s.Sources {
-		wg.Add(1)
-		go func(i int, src string) {
-			defer wg.Done()
-			profs[i], msrcs[i], remote[i], errs[i] = grabProfile(s, src, 1, fetch, obj, ui)
-		}(i, source)
+// chunkedGrab fetches the profiles described in source and merges them into
+// a single profile. It fetches a chunk of profiles concurrently, with a maximum
+// chunk size to limit its memory usage.
+func chunkedGrab(sources []profileSource, fetch plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (*profile.Profile, plugin.MappingSources, bool, int, error) {
+	const chunkSize = 64
+
+	var p *profile.Profile
+	var msrc plugin.MappingSources
+	var save bool
+	var count int
+
+	for start := 0; start < len(sources); start += chunkSize {
+		end := start + chunkSize
+		if end > len(sources) {
+			end = len(sources)
+		}
+		chunkP, chunkMsrc, chunkSave, chunkCount, chunkErr := concurrentGrab(sources[start:end], fetch, obj, ui)
+		switch {
+		case chunkErr != nil:
+			return nil, nil, false, 0, chunkErr
+		case chunkP == nil:
+			continue
+		case p == nil:
+			p, msrc, save, count = chunkP, chunkMsrc, chunkSave, chunkCount
+		default:
+			p, msrc, chunkErr = combineProfiles([]*profile.Profile{p, chunkP}, []plugin.MappingSources{msrc, chunkMsrc})
+			if chunkErr != nil {
+				return nil, nil, false, 0, chunkErr
+			}
+			if chunkSave {
+				save = true
+			}
+			count += chunkCount
+		}
 	}
-	for i, source := range s.Base {
-		wg.Add(1)
-		go func(i int, src string) {
+	return p, msrc, save, count, nil
+}
+
+// concurrentGrab fetches multiple profiles concurrently
+func concurrentGrab(sources []profileSource, fetch plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (*profile.Profile, plugin.MappingSources, bool, int, error) {
+	wg := sync.WaitGroup{}
+	wg.Add(len(sources))
+	for i := range sources {
+		go func(s *profileSource) {
 			defer wg.Done()
-			profs[i], msrcs[i], remote[i], errs[i] = grabProfile(s, src, -1, fetch, obj, ui)
-		}(i+len(s.Sources), source)
+			s.p, s.msrc, s.remote, s.err = grabProfile(s.source, s.addr, s.scale, fetch, obj, ui)
+		}(&sources[i])
 	}
 	wg.Wait()
+
 	var save bool
-	var numFailed = 0
-	for i, src := range s.Sources {
-		if errs[i] != nil {
-			ui.PrintErr(src + ": " + errs[i].Error())
-			numFailed++
+	profiles := make([]*profile.Profile, 0, len(sources))
+	msrcs := make([]plugin.MappingSources, 0, len(sources))
+	for i := range sources {
+		s := &sources[i]
+		if err := s.err; err != nil {
+			ui.PrintErr(s.addr + ": " + err.Error())
+			continue
 		}
-		save = save || remote[i]
-	}
-	for i, src := range s.Base {
-		b := i + len(s.Sources)
-		if errs[b] != nil {
-			ui.PrintErr(src + ": " + errs[b].Error())
-			numFailed++
-		}
-		save = save || remote[b]
-	}
-	if numFailed == numprofs {
-		return nil, nil, false, fmt.Errorf("failed to fetch any profiles")
-	}
-	if numFailed > 0 {
-		ui.PrintErr(fmt.Sprintf("fetched %d profiles out of %d", numprofs-numFailed, numprofs))
+		save = save || s.remote
+		profiles = append(profiles, s.p)
+		msrcs = append(msrcs, s.msrc)
+		*s = profileSource{}
 	}
 
-	scaled := make([]*profile.Profile, 0, numprofs)
-	for _, p := range profs {
-		if p != nil {
-			scaled = append(scaled, p)
-		}
+	if len(profiles) == 0 {
+		return nil, nil, false, 0, nil
 	}
 
-	// Merge profiles.
-	if err := measurement.ScaleProfiles(scaled); err != nil {
-		return nil, nil, false, err
-	}
-
-	p, err := profile.Merge(scaled)
+	p, msrc, err := combineProfiles(profiles, msrcs)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, nil, false, 0, err
+	}
+	return p, msrc, save, len(profiles), nil
+}
+
+func combineProfiles(profiles []*profile.Profile, msrcs []plugin.MappingSources) (*profile.Profile, plugin.MappingSources, error) {
+	// Merge profiles.
+	if err := measurement.ScaleProfiles(profiles); err != nil {
+		return nil, nil, err
+	}
+
+	p, err := profile.Merge(profiles)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// Combine mapping sources.
@@ -150,8 +194,18 @@ func concurrentGrab(s *source, fetch plugin.Fetcher, obj plugin.ObjTool, ui plug
 			msrc[m] = append(msrc[m], s...)
 		}
 	}
+	return p, msrc, nil
+}
 
-	return p, msrc, save, nil
+type profileSource struct {
+	addr   string
+	source *source
+	scale  float64
+
+	p      *profile.Profile
+	msrc   plugin.MappingSources
+	remote bool
+	err    error
 }
 
 // setTmpDir sets the PPROF_TMPDIR environment variable with a new
