@@ -204,11 +204,18 @@ func SortTags(t []*Tag, flat bool) []*Tag {
 }
 
 // New summarizes performance data from a profile into a graph.
-func New(prof *profile.Profile, o *Options) (g *Graph) {
+func New(prof *profile.Profile, o *Options) *Graph {
 	if o.CallTree {
 		return newTree(prof, o)
 	}
+	g, _ := newGraph(prof, o)
+	return g
+}
 
+// newGraph computes a graph from a profile. It returns the graph, and
+// a map from the profile location indices to the corresponding graph
+// nodes.
+func newGraph(prof *profile.Profile, o *Options) (*Graph, map[uint64]Nodes) {
 	nodes, locationMap := CreateNodes(prof, o.ObjNames, o.KeptNodes)
 	for _, sample := range prof.Sample {
 		weight := o.SampleValue(sample.Value)
@@ -252,7 +259,7 @@ func New(prof *profile.Profile, o *Options) (g *Graph) {
 		}
 	}
 
-	return selectNodesForGraph(nodes, o.DropNegative)
+	return selectNodesForGraph(nodes, o.DropNegative), locationMap
 }
 
 func selectNodesForGraph(nodes Nodes, dropNegative bool) *Graph {
@@ -340,6 +347,31 @@ func joinLabels(s *profile.Sample) string {
 	return strings.Join(labels, `\n`)
 }
 
+// TrimProfile reduces the size of a profile by removing information
+// about locations that contribute to infrequent graph nodes,
+// determined by the value of nodefraction. The locations are
+// preserved, but their line information is removed.
+func TrimProfile(p *profile.Profile, o *Options, nodeFraction float64) *profile.Profile {
+	g, locationMap := newGraph(p, o)
+
+	totalValue, _ := g.Nodes.Sum()
+	cutoff := abs64(int64(float64(totalValue) * nodeFraction))
+
+	for _, l := range p.Location {
+		nodes := locationMap[l.ID]
+		if len(nodes) == 0 || len(l.Line) != len(nodes) {
+			continue
+		}
+		for i, n := range nodes {
+			if n.Cum < cutoff {
+				l.Line[i] = profile.Line{}
+			}
+		}
+	}
+
+	return p.Compact()
+}
+
 // isNegative returns true if the node is considered as "negative" for the
 // purposes of drop_negative.
 func isNegative(n *Node) bool {
@@ -391,29 +423,41 @@ func (nm NodeMap) findOrInsertLocation(l *profile.Location, keepBinary bool, kep
 		}
 		return Nodes{nm.FindOrInsertNode(ni, kept)}
 	}
-	var locNodes Nodes
-	for _, line := range l.Line {
-		ni := NodeInfo{
-			Address: l.Address,
-			Lineno:  int(line.Line),
+	locNodes := make(Nodes, len(l.Line))
+	for li := range l.Line {
+		if ni := nodeInfo(l, li, objfile, keepBinary); ni != nil {
+			locNodes[li] = nm.FindOrInsertNode(*ni, kept)
 		}
-
-		if line.Function != nil {
-			ni.Name = line.Function.Name
-			ni.OrigName = line.Function.SystemName
-			if fname := line.Function.Filename; fname != "" {
-				ni.File = filepath.Clean(fname)
-			}
-			if keepBinary {
-				ni.StartLine = int(line.Function.StartLine)
-			}
-		}
-		if keepBinary || line.Function == nil {
-			ni.Objfile = objfile
-		}
-		locNodes = append(locNodes, nm.FindOrInsertNode(ni, kept))
 	}
 	return locNodes
+}
+
+func nodeInfo(l *profile.Location, li int, objfile string, keepBinary bool) *NodeInfo {
+	if !keepBinary {
+		objfile = ""
+	}
+	line := l.Line[li]
+	if line.Function == nil {
+		if l.Address == 0 {
+			return nil
+		}
+		return &NodeInfo{Address: l.Address, Objfile: objfile}
+	}
+
+	ni := &NodeInfo{
+		Address:  l.Address,
+		Lineno:   int(line.Line),
+		Name:     line.Function.Name,
+		OrigName: line.Function.SystemName,
+		Objfile:  objfile,
+	}
+	if fname := line.Function.Filename; fname != "" {
+		ni.File = filepath.Clean(fname)
+	}
+	if keepBinary {
+		ni.StartLine = int(line.Function.StartLine)
+	}
+	return ni
 }
 
 type tags struct {

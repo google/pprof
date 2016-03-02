@@ -22,6 +22,14 @@ import (
 	"strings"
 )
 
+// Compact performs garbage collection on a profile to remove any
+// unreferenced fields. This is useful to reduce the size of a profile
+// after samples or locations have been removed.
+func (p *Profile) Compact() *Profile {
+	p, _ = Merge([]*Profile{p})
+	return p
+}
+
 // Merge merges all the profiles in profs into a single Profile.
 // Returns a new profile independent of the input profiles. The merged
 // profile is compacted to eliminate unused samples, locations,
@@ -220,7 +228,9 @@ func (l *Location) key() locationKey {
 	}
 	lines := make([]string, len(l.Line)*2)
 	for i, line := range l.Line {
-		lines[i*2] = strconv.FormatUint(line.Function.ID, 16)
+		if line.Function != nil {
+			lines[i*2] = strconv.FormatUint(line.Function.ID, 16)
+		}
 		lines[i*2+1] = strconv.FormatInt(line.Line, 16)
 	}
 	key.lines = strings.Join(lines, "|")
