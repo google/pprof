@@ -909,7 +909,7 @@ func New(prof *profile.Profile, o *Options) *Report {
 func NewDefault(prof *profile.Profile, options Options) *Report {
 	index := len(prof.SampleType) - 1
 	o := &options
-	if o.Title == "" && len(prof.Mapping) > 0 {
+	if o.Title == "" && len(prof.Mapping) > 0 && prof.Mapping[0].File != "" {
 		o.Title = filepath.Base(prof.Mapping[0].File)
 	}
 	o.SampleType = prof.SampleType[index].Type
