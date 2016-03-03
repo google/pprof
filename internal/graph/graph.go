@@ -412,7 +412,7 @@ func (nm NodeMap) nodes() Nodes {
 
 func (nm NodeMap) findOrInsertLocation(l *profile.Location, keepBinary bool, kept NodeSet) Nodes {
 	var objfile string
-	if m := l.Mapping; m != nil {
+	if m := l.Mapping; m != nil && m.File != "" {
 		objfile = filepath.Base(m.File)
 	}
 

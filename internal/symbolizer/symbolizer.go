@@ -272,7 +272,8 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 		mappings[l.Mapping] = true
 	}
 
-	for _, m := range prof.Mapping {
+	missingBinaries := false
+	for midx, m := range prof.Mapping {
 		if !mappings[m] {
 			continue
 		}
@@ -282,9 +283,19 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 			continue
 		}
 
+		if m.File == "" {
+			if midx == 0 {
+				ui.PrintErr("Main binary filename not available.\n" +
+					"Try passing the path to the main binary before the profile.")
+				continue
+			}
+			missingBinaries = true
+			continue
+		}
+		
 		// Skip well-known system mappings
 		name := filepath.Base(m.File)
-		if m.File == "" || name == "[vdso]" || strings.HasPrefix(name, "linux-vdso") {
+		if name == "[vdso]" || strings.HasPrefix(name, "linux-vdso") {
 			continue
 		}
 
@@ -301,7 +312,9 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 
 		mt.segments[m] = f
 	}
-
+	if missingBinaries {
+		ui.PrintErr("Some binary filenames not available. Symbolization may be incomplete.")
+	}
 	return mt, nil
 }
 
