@@ -32,9 +32,10 @@ import (
 // SetConfig must be called before any of the other methods.
 type Binutils struct {
 	// Commands to invoke.
-	addr2line string
-	nm        string
-	objdump   string
+	llvmSymbolizer string
+	addr2line      string
+	nm             string
+	objdump        string
 
 	// if fast, perform symbolization using nm (symbol names only),
 	// instead of file-line detail from the slower addr2line.
@@ -65,6 +66,7 @@ func (b *Binutils) SetTools(config string) {
 	}
 
 	defaultPath := paths[""]
+	b.llvmSymbolizer = findExe("llvm-symbolizer", append(paths["llvm-symbolizer"], defaultPath...))
 	b.addr2line = findExe("addr2line", append(paths["addr2line"], defaultPath...))
 	b.nm = findExe("nm", append(paths["nm"], defaultPath...))
 	b.objdump = findExe("objdump", append(paths["objdump"], defaultPath...))
@@ -235,15 +237,24 @@ func (f *fileNM) SourceLine(addr uint64) ([]plugin.Frame, error) {
 // information.
 type fileAddr2Line struct {
 	file
-	addr2liner *addr2Liner
+	addr2liner     *addr2Liner
+	llvmSymbolizer *llvmSymbolizer
 }
 
 func (f *fileAddr2Line) SourceLine(addr uint64) ([]plugin.Frame, error) {
-	if f.addr2liner == nil {
-		addr2liner, err := newAddr2Liner(f.b.addr2line, f.name, f.base)
-		if err != nil {
-			return nil, err
-		}
+	if f.llvmSymbolizer != nil {
+		return f.llvmSymbolizer.addrInfo(addr)
+	}
+	if f.addr2liner != nil {
+		return f.addr2liner.addrInfo(addr)
+	}
+
+	if llvmSymbolizer, err := newLLVMSymbolizer(f.b.llvmSymbolizer, f.name, f.base); err == nil {
+		f.llvmSymbolizer = llvmSymbolizer
+		return f.llvmSymbolizer.addrInfo(addr)
+	}
+
+	if addr2liner, err := newAddr2Liner(f.b.addr2line, f.name, f.base); err == nil {
 		f.addr2liner = addr2liner
 
 		// When addr2line encounters some gcc compiled binaries, it
@@ -252,8 +263,10 @@ func (f *fileAddr2Line) SourceLine(addr uint64) ([]plugin.Frame, error) {
 		if nm, err := newAddr2LinerNM(f.b.nm, f.name, f.base); err == nil {
 			f.addr2liner.nm = nm
 		}
+		return f.addr2liner.addrInfo(addr)
 	}
-	return f.addr2liner.addrInfo(addr)
+
+	return nil, fmt.Errorf("could not find local addr2liner")
 }
 
 func (f *fileAddr2Line) Close() error {
