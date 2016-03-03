@@ -273,7 +273,7 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 	}
 
 	missingBinaries := false
-	for mix, m := range prof.Mapping {
+	for midx, m := range prof.Mapping {
 		if !mappings[m] {
 			continue
 		}
@@ -284,7 +284,7 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 		}
 
 		if m.File == "" {
-			if mix == 0 {
+			if midx == 0 {
 				ui.PrintErr("Main binary filename not available.\n" +
 					"Try passing the path to the main binary before the profile.")
 				continue
