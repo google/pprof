@@ -150,7 +150,7 @@ func (d *llvmSymbolizer) readFrame() (plugin.Frame, bool) {
 // addrInfo returns the stack frame information for a specific program
 // address. It returns nil if the address could not be identified.
 func (d *llvmSymbolizer) addrInfo(addr uint64) ([]plugin.Frame, error) {
-	if err := d.rw.write(fmt.Sprintf("%s %x", d.filename, addr-d.base)); err != nil {
+	if err := d.rw.write(fmt.Sprintf("%s 0x%x", d.filename, addr-d.base)); err != nil {
 		return nil, err
 	}
 
