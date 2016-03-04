@@ -42,7 +42,7 @@ type symbolInfo struct {
 
 //  newAddr2LinerNM starts the given nm command reporting information about the
 // given executable file. If file is a shared library, base should be
-// the address at which is was mapped in the program under
+// the address at which it was mapped in the program under
 // consideration.
 func newAddr2LinerNM(cmd, file string, base uint64) (*addr2LinerNM, error) {
 	if cmd == "" {
@@ -61,7 +61,7 @@ func newAddr2LinerNM(cmd, file string, base uint64) (*addr2LinerNM, error) {
 		return nil, err
 	}
 
-	// Parse addr2line output and populate symbol map.
+	// Parse nm output and populate symbol map.
 	// Skip lines we fail to parse.
 	buf := bufio.NewReader(&b)
 	for {
@@ -72,6 +72,7 @@ func newAddr2LinerNM(cmd, file string, base uint64) (*addr2LinerNM, error) {
 			}
 			return nil, err
 		}
+		line = strings.TrimSpace(line)
 		fields := strings.SplitN(line, " ", 3)
 		if len(fields) != 3 {
 			continue
