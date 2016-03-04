@@ -60,7 +60,7 @@ func (a *llvmSymbolizerJob) close() {
 
 // newLlvmSymbolizer starts the given llvmSymbolizer command reporting
 // information about the given executable file. If file is a shared
-// library, base should be the address at which is was mapped in the
+// library, base should be the address at which it was mapped in the
 // program under consideration.
 func newLLVMSymbolizer(cmd, file string, base uint64) (*llvmSymbolizer, error) {
 	if cmd == "" {

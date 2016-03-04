@@ -77,7 +77,7 @@ func (a *addr2LinerJob) close() {
 
 // newAddr2liner starts the given addr2liner command reporting
 // information about the given executable file. If file is a shared
-// library, base should be the address at which is was mapped in the
+// library, base should be the address at which it was mapped in the
 // program under consideration.
 func newAddr2Liner(cmd, file string, base uint64) (*addr2Liner, error) {
 	if cmd == "" {

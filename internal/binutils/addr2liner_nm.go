@@ -42,7 +42,7 @@ type symbolInfo struct {
 
 //  newAddr2LinerNM starts the given nm command reporting information about the
 // given executable file. If file is a shared library, base should be
-// the address at which is was mapped in the program under
+// the address at which it was mapped in the program under
 // consideration.
 func newAddr2LinerNM(cmd, file string, base uint64) (*addr2LinerNM, error) {
 	if cmd == "" {
