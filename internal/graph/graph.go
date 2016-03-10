@@ -288,39 +288,39 @@ func newTree(prof *profile.Profile, o *Options) (g *Graph) {
 	kept := o.KeptNodes
 	keepBinary := o.ObjNames
 	parentNodeMap := make(map[*Node]NodeMap, len(prof.Sample))
+nextSample:
 	for _, sample := range prof.Sample {
 		weight := o.SampleValue(sample.Value)
 		if weight == 0 {
 			continue
 		}
 		var parent *Node
-		// A residual edge goes over one or more nodes that were not kept.
-		residual := false
 		labels := joinLabels(sample)
 		// Group the sample frames, based on a per-node map.
 		for i := len(sample.Location) - 1; i >= 0; i-- {
 			l := sample.Location[i]
-			nodeMap := parentNodeMap[parent]
-			if nodeMap == nil {
-				nodeMap = make(NodeMap)
-				parentNodeMap[parent] = nodeMap
+			lines := l.Line
+			if len(lines) == 0 {
+				lines = []profile.Line{{}} // Create empty line to include location info.
 			}
-			locNodes := nodeMap.findOrInsertLocation(l, keepBinary, kept)
-			for ni := len(locNodes) - 1; ni >= 0; ni-- {
-				n := locNodes[ni]
+			for lidx := len(lines) - 1; lidx >= 0; lidx-- {
+				nodeMap := parentNodeMap[parent]
+				if nodeMap == nil {
+					nodeMap = make(NodeMap)
+					parentNodeMap[parent] = nodeMap
+				}
+				n := nodeMap.findOrInsertLine(l, lines[lidx], keepBinary, kept)
 				if n == nil {
-					residual = true
-					continue
+					continue nextSample
 				}
 				n.addSample(weight, labels, sample.NumLabel, o.FormatTag, false)
 				if parent != nil {
-					parent.AddToEdge(n, weight, residual, ni != len(locNodes)-1)
+					parent.AddToEdge(n, weight, false, lidx != len(lines)-1)
 				}
 				parent = n
-				residual = false
 			}
 		}
-		if parent != nil && !residual {
+		if parent != nil {
 			parent.addSample(weight, labels, sample.NumLabel, o.FormatTag, true)
 		}
 	}
@@ -395,9 +395,15 @@ func CreateNodes(prof *profile.Profile, keepBinary bool, kept NodeSet) (Nodes, m
 
 	nm := make(NodeMap, len(prof.Location))
 	for _, l := range prof.Location {
-		if nodes := nm.findOrInsertLocation(l, keepBinary, kept); nodes != nil {
-			locations[l.ID] = nodes
+		lines := l.Line
+		if len(lines) == 0 {
+			lines = []profile.Line{{}} // Create empty line to include location info.
 		}
+		nodes := make(Nodes, len(lines))
+		for ln := range lines {
+			nodes[ln] = nm.findOrInsertLine(l, lines[ln], keepBinary, kept)
+		}
+		locations[l.ID] = nodes
 	}
 	return nm.nodes(), locations
 }
@@ -410,51 +416,33 @@ func (nm NodeMap) nodes() Nodes {
 	return nodes
 }
 
-func (nm NodeMap) findOrInsertLocation(l *profile.Location, keepBinary bool, kept NodeSet) Nodes {
+func (nm NodeMap) findOrInsertLine(l *profile.Location, li profile.Line, keepBinary bool, kept NodeSet) *Node {
 	var objfile string
 	if m := l.Mapping; m != nil && m.File != "" {
 		objfile = filepath.Base(m.File)
 	}
 
-	if len(l.Line) == 0 {
-		ni := NodeInfo{
-			Address: l.Address,
-			Objfile: objfile,
-		}
-		return Nodes{nm.FindOrInsertNode(ni, kept)}
+	if ni := nodeInfo(l, li, objfile, keepBinary); ni != nil {
+		return nm.FindOrInsertNode(*ni, kept)
 	}
-	locNodes := make(Nodes, len(l.Line))
-	for li := range l.Line {
-		if ni := nodeInfo(l, li, objfile, keepBinary); ni != nil {
-			locNodes[li] = nm.FindOrInsertNode(*ni, kept)
-		}
-	}
-	return locNodes
+	return nil
 }
 
-func nodeInfo(l *profile.Location, li int, objfile string, keepBinary bool) *NodeInfo {
-	if !keepBinary {
-		objfile = ""
-	}
-	line := l.Line[li]
+func nodeInfo(l *profile.Location, line profile.Line, objfile string, keepBinary bool) *NodeInfo {
 	if line.Function == nil {
-		if l.Address == 0 {
-			return nil
-		}
 		return &NodeInfo{Address: l.Address, Objfile: objfile}
 	}
-
 	ni := &NodeInfo{
 		Address:  l.Address,
 		Lineno:   int(line.Line),
 		Name:     line.Function.Name,
 		OrigName: line.Function.SystemName,
-		Objfile:  objfile,
 	}
 	if fname := line.Function.Filename; fname != "" {
 		ni.File = filepath.Clean(fname)
 	}
 	if keepBinary {
+		ni.Objfile = objfile
 		ni.StartLine = int(line.Function.StartLine)
 	}
 	return ni
@@ -479,7 +467,7 @@ func (t tags) Less(i, j int) bool {
 	return t.t[i].Name < t.t[j].Name
 }
 
-// Sum adds the Flat and sum values on a report.
+// Sum adds the flat and cum values of a set of nodes.
 func (ns Nodes) Sum() (flat int64, cum int64) {
 	for _, n := range ns {
 		flat += n.Flat

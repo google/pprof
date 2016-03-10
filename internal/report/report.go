@@ -77,12 +77,24 @@ func (rpt *Report) newTrimmedGraph() (g *graph.Graph, origCount, droppedNodes, d
 
 	// Build a graph and refine it. On each refinement step we must rebuild the graph from the samples,
 	// as the graph itself doesn't contain enough information to preserve full precision.
+	visualMode := o.OutputFormat == Dot
+	cumSort := o.CumSort
 
 	// First step: Build complete graph to identify low frequency nodes, based on their cum weight.
 	g = rpt.newGraph(nil)
 	totalValue, _ := g.Nodes.Sum()
 	nodeCutoff := abs64(int64(float64(totalValue) * o.NodeFraction))
 	edgeCutoff := abs64(int64(float64(totalValue) * o.EdgeFraction))
+
+	// Visual mode optimization only supports graph output, not tree.
+	// Do not apply edge cutoff to preserve tree structure.
+	if o.CallTree {
+		visualMode = false
+		if o.OutputFormat == Dot {
+			cumSort = true
+		}
+		edgeCutoff = 0
+	}
 
 	// Filter out nodes with cum value below nodeCutoff.
 	if nodeCutoff > 0 {
@@ -95,15 +107,14 @@ func (rpt *Report) newTrimmedGraph() (g *graph.Graph, origCount, droppedNodes, d
 
 	// Second step: Limit the total number of nodes. Apply specialized heuristics to improve
 	// visualization when generating dot output.
-	visualMode := o.OutputFormat == Dot
-	g.SortNodes(o.CumSort, visualMode)
+	g.SortNodes(cumSort, visualMode)
 	if nodeCount := o.NodeCount; nodeCount > 0 {
 		// Remove low frequency tags and edges as they affect selection.
 		g.TrimLowFrequencyTags(nodeCutoff)
 		g.TrimLowFrequencyEdges(edgeCutoff)
 		if nodesKept := g.SelectTopNodes(nodeCount, visualMode); len(nodesKept) != len(g.Nodes) {
 			g = rpt.newGraph(nodesKept)
-			g.SortNodes(o.CumSort, visualMode)
+			g.SortNodes(cumSort, visualMode)
 		}
 	}
 
