@@ -373,6 +373,15 @@ func cpuProfile(b []byte, period int64, parse func(b []byte) (uint64, []byte)) (
 		}
 	}
 
+	if err := p.ParseMemoryMap(bytes.NewBuffer(b)); err != nil {
+		return nil, err
+	}
+
+	cleanupDuplicateLocations(p)
+	return p, nil
+}
+
+func cleanupDuplicateLocations(p *Profile) {
 	// The profile handler may duplicate the leaf frame, because it gets
 	// its address both from stack unwinding and from the signal
 	// context. Detect this and delete the duplicate, which has been
@@ -383,11 +392,6 @@ func cpuProfile(b []byte, period int64, parse func(b []byte) (uint64, []byte)) (
 			s.Location = append(s.Location[:1], s.Location[2:]...)
 		}
 	}
-
-	if err := p.ParseMemoryMap(bytes.NewBuffer(b)); err != nil {
-		return nil, err
-	}
-	return p, nil
 }
 
 // parseCPUSamples parses a collection of profilez samples from a
@@ -936,6 +940,7 @@ func parseThread(b []byte) (*Profile, error) {
 		return nil, err
 	}
 
+	cleanupDuplicateLocations(p)
 	return p, nil
 }
 
