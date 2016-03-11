@@ -982,7 +982,7 @@ func parseThreadSample(b *bytes.Buffer) (nextl string, addrs []uint64, err error
 
 // parseAdditionalSections parses any additional sections in the
 // profile, ignoring any unrecognized sections.
-func parseAdditionalSections(l string, b *bytes.Buffer, p *Profile) (err error) {
+func parseAdditionalSections(l string, b *bytes.Buffer, p *Profile) error {
 	for {
 		if sectionTrigger(l) == memoryMapSection {
 			break
