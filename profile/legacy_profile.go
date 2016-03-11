@@ -983,7 +983,8 @@ func parseAdditionalSections(l string, b *bytes.Buffer, p *Profile) (err error) 
 			break
 		}
 		// Ignore any unrecognized sections.
-		if l, err := b.ReadString('\n'); err != nil {
+		var err error
+		if l, err = b.ReadString('\n'); err != nil {
 			if err != io.EOF {
 				return err
 			}
