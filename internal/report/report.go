@@ -54,8 +54,6 @@ func Generate(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 		return printTags(w, rpt)
 	case Proto:
 		return rpt.prof.Write(w)
-	case TrimProto:
-		return printTrimmedProto(w, rpt)
 	case TopProto:
 		return printTopProto(w, rpt)
 	case Dis:
@@ -197,10 +195,7 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 		}
 		s.NumLabel = numLabels
 	}
-	return graph.New(rpt.prof, graphOptions(o, nodes))
-}
 
-func graphOptions(o *Options, nodes graph.NodeSet) *graph.Options {
 	gopt := &graph.Options{
 		SampleValue:  o.SampleValue,
 		FormatTag:    formatTag,
@@ -216,7 +211,7 @@ func graphOptions(o *Options, nodes graph.NodeSet) *graph.Options {
 		gopt.ObjNames = true
 	}
 
-	return gopt
+	return graph.New(rpt.prof, gopt)
 }
 
 func formatTag(v int64, key string) string {
@@ -270,17 +265,6 @@ func printTopProto(w io.Writer, rpt *Report) error {
 	}
 
 	return out.Write(w)
-}
-
-// printTrimmedProto writes a profile in a serialize profile.proto,
-// removing symbol information from infrequent nodes to reduce the
-// size of the profile.
-func printTrimmedProto(w io.Writer, rpt *Report) error {
-	o := rpt.options
-	prof := rpt.prof
-	prof = graph.TrimProfile(prof, graphOptions(o, nil), o.NodeFraction)
-
-	return prof.Write(w)
 }
 
 // printAssembly prints an annotated assembly listing.
@@ -871,7 +855,6 @@ const (
 	WebList
 	Callgrind
 	TopProto
-	TrimProto
 )
 
 // Options are the formatting and filtering options used to generate a

@@ -93,7 +93,6 @@ var pprofCommands = commands{
 	// Save binary formats to a file
 	"callgrind": {report.Callgrind, awayFromTTY("callgraph.out"), false, "Outputs a graph in callgrind format", reportHelp("callgrind", false, true)},
 	"proto":     {report.Proto, awayFromTTY("pb.gz"), false, "Outputs the profile in compressed protobuf format", ""},
-	"trimproto": {report.TrimProto, awayFromTTY("pb.gz"), false, "Outputs the profile in compressed protobuf format, removing info about infrequent functions to reduce profile size", ""},
 
 	// Generate report in DOT format and postprocess with dot
 	"gif": {report.Dot, invokeDot("gif"), false, "Outputs a graph image in GIF format", reportHelp("gif", false, true)},

@@ -347,31 +347,6 @@ func joinLabels(s *profile.Sample) string {
 	return strings.Join(labels, `\n`)
 }
 
-// TrimProfile reduces the size of a profile by removing information
-// about locations that contribute to infrequent graph nodes,
-// determined by the value of nodefraction. The locations are
-// preserved, but their line information is removed.
-func TrimProfile(p *profile.Profile, o *Options, nodeFraction float64) *profile.Profile {
-	g, locationMap := newGraph(p, o)
-
-	totalValue, _ := g.Nodes.Sum()
-	cutoff := abs64(int64(float64(totalValue) * nodeFraction))
-
-	for _, l := range p.Location {
-		nodes := locationMap[l.ID]
-		if len(nodes) == 0 || len(l.Line) != len(nodes) {
-			continue
-		}
-		for i, n := range nodes {
-			if n.Cum < cutoff {
-				l.Line[i] = profile.Line{}
-			}
-		}
-	}
-
-	return p.Compact()
-}
-
 // isNegative returns true if the node is considered as "negative" for the
 // purposes of drop_negative.
 func isNegative(n *Node) bool {
