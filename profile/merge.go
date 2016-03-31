@@ -16,7 +16,6 @@ package profile
 
 import (
 	"fmt"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -420,7 +419,7 @@ func combineHeaders(srcs []*Profile) (*Profile, error) {
 // returns nil if the profiles are compatible; otherwise an error with
 // details on the incompatibility.
 func (p *Profile) compatible(pb *Profile) error {
-	if !reflect.DeepEqual(p.PeriodType, pb.PeriodType) {
+	if !equalValueType(p.PeriodType, pb.PeriodType) {
 		return fmt.Errorf("incompatible period types %v and %v", p.PeriodType, pb.PeriodType)
 	}
 
@@ -429,10 +428,16 @@ func (p *Profile) compatible(pb *Profile) error {
 	}
 
 	for i := range p.SampleType {
-		if !reflect.DeepEqual(p.SampleType[i], pb.SampleType[i]) {
+		if !equalValueType(p.SampleType[i], pb.SampleType[i]) {
 			return fmt.Errorf("incompatible sample types %v and %v", p.SampleType, pb.SampleType)
 		}
 	}
 
 	return nil
+}
+
+// equalValueType returns true if the two value types are semantically
+// equal. It ignores the internal fields used during encode/decode.
+func equalValueType(st1, st2 *ValueType) bool {
+	return st1.Type == st2.Type && st1.Unit == st2.Unit
 }
