@@ -124,11 +124,11 @@ func generateReport(p *profile.Profile, cmd []string, vars variables, o *plugin.
 }
 
 func applyCommandOverrides(cmd []string, v variables) variables {
-	trim, focus, hide := v["trim"].boolValue(), true, true
+	trim, focus, tagfocus, hide := v["trim"].boolValue(), true, true, true
 
 	switch cmd[0] {
 	case "proto", "raw":
-		trim, focus, hide = false, false, false
+		trim, focus, tagfocus, hide = false, false, false, false
 		v.set("addresses", "t")
 	case "disasm", "weblist":
 		trim = false
@@ -155,6 +155,8 @@ func applyCommandOverrides(cmd []string, v variables) variables {
 	if focus == false {
 		v.set("focus", "")
 		v.set("ignore", "")
+	}
+	if tagfocus == false {
 		v.set("tagfocus", "")
 		v.set("tagignore", "")
 	}
