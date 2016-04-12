@@ -173,7 +173,7 @@ objects/count space/bytes
           1    2097152: 1 2 3 58 59 60 
                 bytes:[2097152] 
 Locations
-     1: 0xb83003 M=1 
+     1: 0xb83002 M=1
      2: 0xb87d4f M=1 
      3: 0xc635ef M=1 
      4: 0x42ecc2 M=1 
@@ -186,7 +186,7 @@ Locations
     11: 0x7a296c M=1 
     12: 0xa456e3 M=1 
     13: 0x7fcdc2ff214d M=7 
-    14: 0xc635c8 M=1 
+    14: 0xc635c7 M=1
     15: 0xafc0ea M=1 
     16: 0xb087b0 M=1 
     17: 0xb0aa7c M=1 

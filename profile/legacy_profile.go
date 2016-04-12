@@ -114,11 +114,8 @@ func parseGoCount(b []byte) (*Profile, error) {
 			if err != nil {
 				return nil, errMalformed
 			}
-			// Adjust all frames by -1 (except the leaf) to land on top of
-			// the call instruction.
-			if len(locs) > 0 {
-				addr--
-			}
+			// Adjust all frames by -1 to land on top of the call instruction.
+			addr--
 			loc := locations[addr]
 			if loc == nil {
 				loc = &Location{
@@ -527,13 +524,10 @@ func parseHeap(b []byte) (p *Profile, err error) {
 		}
 
 		var sloc []*Location
-		for i, addr := range addrs {
+		for _, addr := range addrs {
 			// Addresses from stack traces point to the next instruction after
-			// each call.  Adjust by -1 to land somewhere on the actual call
-			// (except for the leaf, which is not a call).
-			if i > 0 {
-				addr--
-			}
+			// each call.  Adjust by -1 to land somewhere on the actual call.
+			addr--
 			loc := locs[addr]
 			if locs[addr] == nil {
 				loc = &Location{
@@ -769,13 +763,10 @@ func parseContention(b []byte) (p *Profile, err error) {
 			return nil, err
 		}
 		var sloc []*Location
-		for i, addr := range addrs {
+		for _, addr := range addrs {
 			// Addresses from stack traces point to the next instruction after
-			// each call.  Adjust by -1 to land somewhere on the actual call
-			// (except for the leaf, which is not a call).
-			if i > 0 {
-				addr--
-			}
+			// each call.  Adjust by -1 to land somewhere on the actual call.
+			addr--
 			loc := locs[addr]
 			if locs[addr] == nil {
 				loc = &Location{
