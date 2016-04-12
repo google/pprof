@@ -65,7 +65,7 @@ objects/count space/bytes
         379   12439381: 1 2 3 4 5 6 7 8 9 10 11 
                 bytes:[32768] 
 Locations
-     1: 0xc635c7 M=1
+     1: 0xc635c7 M=1 
      2: 0x42ecc2 M=1 
      3: 0x42e14b M=1 
      4: 0x5261ae M=1 
@@ -119,7 +119,7 @@ Locations
     52: 0x41c710 M=1 
     53: 0xc25cc5 M=1 
     54: 0x40651a M=1 
-    55: 0xc63567 M=1
+    55: 0xc63567 M=1 
     56: 0xbc462d M=1 
     57: 0xbc4bb4 M=1 
     58: 0xbc4ed9 M=1 

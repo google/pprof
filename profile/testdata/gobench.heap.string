@@ -33,7 +33,7 @@ alloc_objects/count alloc_space/bytes inuse_objects/count inuse_space/bytes
       32768     524296          0          0: 1 88 89 90 91 92 93 94 95 96 97 98 99 100 10 
                 bytes:[16] 
 Locations
-     1: 0x420cee M=1
+     1: 0x420cee M=1 
      2: 0x422150 M=1 
      3: 0x4221d9 M=1 
      4: 0x41dc0c M=1 
