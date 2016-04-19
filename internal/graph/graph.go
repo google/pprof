@@ -825,6 +825,8 @@ func (ns Nodes) Sort(o NodeOrder) error {
 	return nil
 }
 
+// compareNodes compares two nodes to provide a deterministic ordering
+// between them. Two nodes cannot have the same Node.Info value.
 func compareNodes(l, r *Node) bool {
 	return fmt.Sprint(l.Info) < fmt.Sprint(r.Info)
 }
