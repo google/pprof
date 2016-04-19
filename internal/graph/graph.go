@@ -734,57 +734,74 @@ func (ns Nodes) Sort(o NodeOrder) error {
 	case FlatNameOrder:
 		s = nodeSorter{ns,
 			func(l, r *Node) bool {
-				if iv, jv := l.Flat, r.Flat; iv != jv {
-					return abs64(iv) > abs64(jv)
+				if iv, jv := abs64(l.Flat), abs64(r.Flat); iv != jv {
+					return iv > jv
 				}
-				if l.Info.PrintableName() != r.Info.PrintableName() {
-					return l.Info.PrintableName() < r.Info.PrintableName()
+				if iv, jv := l.Info.PrintableName(), r.Info.PrintableName(); iv != jv {
+					return iv < jv
 				}
-				iv, jv := l.Cum, r.Cum
-				return abs64(iv) > abs64(jv)
+				if iv, jv := abs64(l.Cum), abs64(r.Cum); iv != jv {
+					return iv > jv
+				}
+				return compareNodes(l, r)
 			},
 		}
 	case FlatCumNameOrder:
 		s = nodeSorter{ns,
 			func(l, r *Node) bool {
-				if iv, jv := l.Flat, r.Flat; iv != jv {
-					return abs64(iv) > abs64(jv)
+				if iv, jv := abs64(l.Flat), abs64(r.Flat); iv != jv {
+					return iv > jv
 				}
-				if iv, jv := l.Cum, r.Cum; iv != jv {
-					return abs64(iv) > abs64(jv)
+				if iv, jv := abs64(l.Cum), abs64(r.Cum); iv != jv {
+					return iv > jv
 				}
-				return l.Info.PrintableName() < r.Info.PrintableName()
+				if iv, jv := l.Info.PrintableName(), r.Info.PrintableName(); iv != jv {
+					return iv < jv
+				}
+				return compareNodes(l, r)
 			},
 		}
 	case NameOrder:
 		s = nodeSorter{ns,
 			func(l, r *Node) bool {
-				return l.Info.Name < r.Info.Name
+				if iv, jv := l.Info.Name, r.Info.Name; iv != jv {
+					return iv < jv
+				}
+				return compareNodes(l, r)
 			},
 		}
 	case FileOrder:
 		s = nodeSorter{ns,
 			func(l, r *Node) bool {
-				return l.Info.File < r.Info.File
+				if iv, jv := l.Info.File, r.Info.File; iv != jv {
+					return iv < jv
+				}
+				return compareNodes(l, r)
 			},
 		}
 	case AddressOrder:
 		s = nodeSorter{ns,
 			func(l, r *Node) bool {
-				return l.Info.Address < r.Info.Address
+				if iv, jv := l.Info.Address, r.Info.Address; iv != jv {
+					return iv < jv
+				}
+				return compareNodes(l, r)
 			},
 		}
 	case CumNameOrder, EntropyOrder:
 		// Hold scoring for score-based ordering
 		var score map[*Node]int64
 		scoreOrder := func(l, r *Node) bool {
-			if is, js := score[l], score[r]; is != js {
-				return abs64(is) > abs64(js)
+			if iv, jv := abs64(score[l]), abs64(score[r]); iv != jv {
+				return iv > jv
 			}
-			if l.Info.PrintableName() != r.Info.PrintableName() {
-				return l.Info.PrintableName() < r.Info.PrintableName()
+			if iv, jv := l.Info.PrintableName(), r.Info.PrintableName(); iv != jv {
+				return iv < jv
 			}
-			return abs64(l.Flat) > abs64(r.Flat)
+			if iv, jv := abs64(l.Flat), abs64(r.Flat); iv != jv {
+				return iv > jv
+			}
+			return compareNodes(l, r)
 		}
 
 		switch o {
@@ -806,6 +823,10 @@ func (ns Nodes) Sort(o NodeOrder) error {
 	}
 	sort.Sort(s)
 	return nil
+}
+
+func compareNodes(l, r *Node) bool {
+	return fmt.Sprint(l.Info) < fmt.Sprint(r.Info)
 }
 
 // entropyScore computes a score for a node representing how important
