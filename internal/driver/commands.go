@@ -68,6 +68,14 @@ func AddCommand(cmd string, format int, post PostProcessor, desc, usage string) 
 	pprofCommands[cmd] = &command{format, post, false, desc, usage}
 }
 
+// SetDefault sets the default value for a pprof variable. This enables
+// extensions to set their own default values for variables.
+func SetVariableDefault(variable, value string) {
+	if v := pprofVariables[variable]; v != nil {
+		v.value = value
+	}
+}
+
 // PostProcessor is a function that applies post-processing to the report output
 type PostProcessor func(input []byte, output io.Writer, ui plugin.UI) error
 
