@@ -68,8 +68,8 @@ func AddCommand(cmd string, format int, post PostProcessor, desc, usage string) 
 	pprofCommands[cmd] = &command{format, post, false, desc, usage}
 }
 
-// SetDefault sets the default value for a pprof variable. This enables
-// extensions to set their own default values for variables.
+// SetVariableDefault sets the default value for a pprof
+// variable. This enables extensions to set their own defaults.
 func SetVariableDefault(variable, value string) {
 	if v := pprofVariables[variable]; v != nil {
 		v.value = value
