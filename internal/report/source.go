@@ -431,9 +431,9 @@ func getMissingFunctionSource(filename string, asm map[int]graph.Nodes, start, e
 
 // openSourceFile opens a source file from a name encoded in a
 // profile. File names in a profile after often relative paths, so
-// search them in each of the paths in sourcePath (or CWD by default),
+// search them in each of the paths in searchPath (or CWD by default),
 // and their parents.
-func openSourceFile(path string, sourcePath string) (*os.File, string, error) {
+func openSourceFile(path, searchPath string) (*os.File, string, error) {
 	path = trimPath(path)
 
 	if filepath.IsAbs(path) {
@@ -442,7 +442,7 @@ func openSourceFile(path string, sourcePath string) (*os.File, string, error) {
 	}
 
 	// Scan each component of the path
-	for _, dir := range strings.Split(sourcePath, ":") {
+	for _, dir := range strings.Split(searchPath, ":") {
 		// Search up for every parent of each possible path.
 		for {
 			filename := filepath.Join(dir, path)
@@ -457,7 +457,7 @@ func openSourceFile(path string, sourcePath string) (*os.File, string, error) {
 		}
 	}
 
-	return nil, "", fmt.Errorf("Could not find file %s on path %s", path, sourcePath)
+	return nil, "", fmt.Errorf("Could not find file %s on path %s", path, searchPath)
 }
 
 // trimPath cleans up a path by removing prefixes that are commonly
