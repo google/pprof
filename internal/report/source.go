@@ -55,6 +55,15 @@ func printSource(w io.Writer, rpt *Report) error {
 	}
 	functions.Sort(graph.NameOrder)
 
+	sourcePath := o.SourcePath
+	if sourcePath == "" {
+		wd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("Could not stat current dir: %v", err)
+		}
+		sourcePath = wd
+	}
+
 	fmt.Fprintf(w, "Total: %s\n", rpt.formatValue(rpt.total))
 	for _, fn := range functions {
 		name := fn.Info.Name
@@ -86,7 +95,7 @@ func printSource(w io.Writer, rpt *Report) error {
 			fns := fileNodes[filename]
 			flatSum, cumSum := fns.Sum()
 
-			fnodes, path, err := getFunctionSource(name, filename, fns, 0, 0)
+			fnodes, path, err := getFunctionSource(name, filename, sourcePath, fns, 0, 0)
 			fmt.Fprintf(w, "ROUTINE ======================== %s in %s\n", name, path)
 			fmt.Fprintf(w, "%10s %10s (flat, cum) %s of Total\n",
 				rpt.formatValue(flatSum), rpt.formatValue(cumSum),
@@ -116,6 +125,15 @@ func printWebSource(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 	var address *uint64
 	if hex, err := strconv.ParseUint(o.Symbol.String(), 0, 64); err == nil {
 		address = &hex
+	}
+
+	sourcePath := o.SourcePath
+	if sourcePath == "" {
+		wd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("Could not stat current dir: %v", err)
+		}
+		sourcePath = wd
 	}
 
 	// Extract interesting symbols from binary files in the profile and
@@ -166,7 +184,7 @@ func printWebSource(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 			asm := assemblyPerSourceLine(symbols, fns, filename, obj)
 			start, end := sourceCoordinates(asm)
 
-			fnodes, path, err := getFunctionSource(name, filename, fns, start, end)
+			fnodes, path, err := getFunctionSource(name, filename, sourcePath, fns, start, end)
 			if err != nil {
 				fnodes, path = getMissingFunctionSource(filename, asm, start, end)
 			}
@@ -319,8 +337,8 @@ func printPageClosing(w io.Writer) {
 // getFunctionSource collects the sources of a function from a source
 // file and annotates it with the samples in fns. Returns the sources
 // as nodes, using the info.name field to hold the source code.
-func getFunctionSource(fun, file string, fns graph.Nodes, start, end int) (graph.Nodes, string, error) {
-	f, file, err := adjustSourcePath(file)
+func getFunctionSource(fun, file, sourcePath string, fns graph.Nodes, start, end int) (graph.Nodes, string, error) {
+	f, file, err := openSourceFile(file, sourcePath)
 	if err != nil {
 		return nil, file, err
 	}
@@ -411,31 +429,35 @@ func getMissingFunctionSource(filename string, asm map[int]graph.Nodes, start, e
 	return fnodes, filename
 }
 
-// adjustSourcePath adjusts the path for a source file by trimmming
-// known prefixes and searching for the file on all parents of the
-// current working dir.
-func adjustSourcePath(path string) (*os.File, string, error) {
+// openSourceFile opens a source file from a name encoded in a
+// profile. File names in a profile after often relative paths, so
+// search them in each of the paths in searchPath (or CWD by default),
+// and their parents.
+func openSourceFile(path, searchPath string) (*os.File, string, error) {
 	path = trimPath(path)
-	f, err := os.Open(path)
-	if err == nil {
-		return f, path, nil
+
+	if filepath.IsAbs(path) {
+		f, err := os.Open(path)
+		return f, path, err
 	}
 
-	if dir, wderr := os.Getwd(); wderr == nil {
+	// Scan each component of the path
+	for _, dir := range strings.Split(searchPath, ":") {
+		// Search up for every parent of each possible path.
 		for {
+			filename := filepath.Join(dir, path)
+			if f, err := os.Open(filename); err == nil {
+				return f, filename, nil
+			}
 			parent := filepath.Dir(dir)
 			if parent == dir {
 				break
 			}
-			if f, err := os.Open(filepath.Join(parent, path)); err == nil {
-				return f, filepath.Join(parent, path), nil
-			}
-
 			dir = parent
 		}
 	}
 
-	return nil, path, err
+	return nil, "", fmt.Errorf("Could not find file %s on path %s", path, searchPath)
 }
 
 // trimPath cleans up a path by removing prefixes that are commonly

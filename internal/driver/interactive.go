@@ -167,6 +167,8 @@ func pprofPrompt(p *profile.Profile) string {
 			if o.boolValue() == false {
 				continue
 			}
+		case n == "source_path":
+			continue
 		}
 		args = append(args, fmt.Sprintf("  %-25s : %s", n, v))
 	}

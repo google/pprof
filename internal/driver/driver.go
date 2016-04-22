@@ -235,6 +235,8 @@ func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) 
 		SampleUnit:  sample.Unit,
 
 		OutputUnit: vars["unit"].value,
+
+		SourcePath: vars["source_path"].stringValue(),
 	}
 
 	if len(p.Mapping) > 0 && p.Mapping[0].File != "" {
