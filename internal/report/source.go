@@ -338,7 +338,8 @@ func printPageClosing(w io.Writer) {
 // file and annotates it with the samples in fns. Returns the sources
 // as nodes, using the info.name field to hold the source code.
 func getFunctionSource(fun, file, sourcePath string, fns graph.Nodes, start, end int) (graph.Nodes, string, error) {
-	f, file, err := openSourceFile(file, sourcePath)
+	file = trimPath(file)
+	f, err := openSourceFile(file, sourcePath)
 	if err != nil {
 		return nil, file, err
 	}
@@ -433,12 +434,10 @@ func getMissingFunctionSource(filename string, asm map[int]graph.Nodes, start, e
 // profile. File names in a profile after often relative paths, so
 // search them in each of the paths in searchPath (or CWD by default),
 // and their parents.
-func openSourceFile(path, searchPath string) (*os.File, string, error) {
-	path = trimPath(path)
-
+func openSourceFile(path, searchPath string) (*os.File, error) {
 	if filepath.IsAbs(path) {
 		f, err := os.Open(path)
-		return f, path, err
+		return f, err
 	}
 
 	// Scan each component of the path
@@ -447,7 +446,7 @@ func openSourceFile(path, searchPath string) (*os.File, string, error) {
 		for {
 			filename := filepath.Join(dir, path)
 			if f, err := os.Open(filename); err == nil {
-				return f, filename, nil
+				return f, nil
 			}
 			parent := filepath.Dir(dir)
 			if parent == dir {
@@ -457,7 +456,7 @@ func openSourceFile(path, searchPath string) (*os.File, string, error) {
 		}
 	}
 
-	return nil, "", fmt.Errorf("Could not find file %s on path %s", path, searchPath)
+	return nil, fmt.Errorf("Could not find file %s on path %s", path, searchPath)
 }
 
 // trimPath cleans up a path by removing prefixes that are commonly
