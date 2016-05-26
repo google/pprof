@@ -776,6 +776,9 @@ func (ns Nodes) Sort(o NodeOrder) error {
 				if iv, jv := l.Info.File, r.Info.File; iv != jv {
 					return iv < jv
 				}
+				if iv, jv := l.Info.StartLine, r.Info.StartLine; iv != jv {
+					return iv < jv
+				}
 				return compareNodes(l, r)
 			},
 		}
