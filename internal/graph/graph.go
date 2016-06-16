@@ -288,7 +288,6 @@ func newTree(prof *profile.Profile, o *Options) (g *Graph) {
 	kept := o.KeptNodes
 	keepBinary := o.ObjNames
 	parentNodeMap := make(map[*Node]NodeMap, len(prof.Sample))
-nextSample:
 	for _, sample := range prof.Sample {
 		weight := o.SampleValue(sample.Value)
 		if weight == 0 {
@@ -311,7 +310,7 @@ nextSample:
 				}
 				n := nodeMap.findOrInsertLine(l, lines[lidx], keepBinary, kept)
 				if n == nil {
-					continue nextSample
+					continue
 				}
 				n.addSample(weight, labels, sample.NumLabel, o.FormatTag, false)
 				if parent != nil {

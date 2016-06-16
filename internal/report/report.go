@@ -84,11 +84,11 @@ func (rpt *Report) newTrimmedGraph() (g *graph.Graph, origCount, droppedNodes, d
 	nodeCutoff := abs64(int64(float64(totalValue) * o.NodeFraction))
 	edgeCutoff := abs64(int64(float64(totalValue) * o.EdgeFraction))
 
-	// Visual mode optimization only supports graph output, not tree.
 	// Do not apply edge cutoff to preserve tree structure.
 	if o.CallTree {
-		visualMode = false
 		if o.OutputFormat == Dot {
+			fmt.Println("WARNING: Trimming trees is unsupported.")
+			fmt.Printf("Tree will contain at least %d nodes\n", o.NodeCount)
 			cumSort = true
 		}
 		edgeCutoff = 0
