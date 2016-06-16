@@ -826,7 +826,7 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 				rpt.formatValue(abs64(int64(float64(rpt.total)*edgeFraction)))))
 		}
 		if nodeCount > 0 && nodeCount < origCount {
-			label = append(label, fmt.Sprintf("Showing top %d nodes out of %d (cum >= %s)",
+			label = append(label, fmt.Sprintf("Showing top %d nodes out of %d",
 				nodeCount, origCount,
 				rpt.formatValue(g.Nodes[len(g.Nodes)-1].Cum)))
 		}
