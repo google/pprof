@@ -798,7 +798,7 @@ func ProfileLabels(rpt *Report) []string {
 func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedEdges int, fullHeaders bool) []string {
 	nodeFraction := rpt.options.NodeFraction
 	edgeFraction := rpt.options.EdgeFraction
-	nodeCount := rpt.options.NodeCount
+	nodeCount := len(g.Nodes)
 
 	var label []string
 	if len(rpt.options.ProfileLabels) > 0 {
