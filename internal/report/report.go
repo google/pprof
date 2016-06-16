@@ -798,7 +798,7 @@ func ProfileLabels(rpt *Report) []string {
 func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedEdges int, fullHeaders bool) []string {
 	nodeFraction := rpt.options.NodeFraction
 	edgeFraction := rpt.options.EdgeFraction
-	nodeCount := rpt.options.NodeCount
+	nodeCount := len(g.Nodes)
 
 	var label []string
 	if len(rpt.options.ProfileLabels) > 0 {
@@ -826,9 +826,8 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 				rpt.formatValue(abs64(int64(float64(rpt.total)*edgeFraction)))))
 		}
 		if nodeCount > 0 && nodeCount < origCount {
-			label = append(label, fmt.Sprintf("Showing top %d nodes out of %d (cum >= %s)",
-				nodeCount, origCount,
-				rpt.formatValue(g.Nodes[len(g.Nodes)-1].Cum)))
+			label = append(label, fmt.Sprintf("Showing top %d nodes out of %d",
+				nodeCount, origCount))
 		}
 	}
 	return label
