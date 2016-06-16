@@ -1,5 +1,5 @@
 Showing nodes accounting for 4s, 100% of 4s total
-Showing top 4 nodes out of 5 (cum >= 2s)
+Showing top 4 nodes out of 5
 ----------------------------------------------------------+-------------
       flat  flat%   sum%        cum   cum%   calls calls% + context 	 	 
 ----------------------------------------------------------+-------------

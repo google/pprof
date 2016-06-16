@@ -827,8 +827,7 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 		}
 		if nodeCount > 0 && nodeCount < origCount {
 			label = append(label, fmt.Sprintf("Showing top %d nodes out of %d",
-				nodeCount, origCount,
-				rpt.formatValue(g.Nodes[len(g.Nodes)-1].Cum)))
+				nodeCount, origCount))
 		}
 	}
 	return label
