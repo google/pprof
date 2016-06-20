@@ -18,6 +18,7 @@ package graph
 import (
 	"fmt"
 	"math"
+	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -142,14 +143,17 @@ func (i *NodeInfo) NameComponents() []string {
 type NodeMap map[NodeInfo]*Node
 
 // NodeSet maps is a collection of node info structs.
-type NodeSet map[NodeInfo]bool
+type NodeSet struct {
+	Info map[NodeInfo]bool
+	Ptr  map[*Node]bool
+}
 
 // FindOrInsertNode takes the info for a node and either returns a matching node
 // from the node map if one exists, or adds one to the map if one does not.
 // If kept is non-nil, nodes are only added if they can be located on it.
 func (nm NodeMap) FindOrInsertNode(info NodeInfo, kept NodeSet) *Node {
-	if kept != nil {
-		if _, ok := kept[info]; !ok {
+	if kept.Info != nil {
+		if _, ok := kept.Info[info]; !ok {
 			return nil
 		}
 	}
@@ -329,6 +333,61 @@ func newTree(prof *profile.Profile, o *Options) (g *Graph) {
 		nodes = append(nodes, nm.nodes()...)
 	}
 	return selectNodesForGraph(nodes, o.DropNegative)
+}
+
+// Trims a Graph that is in forest form to contain only the nodes in kept. This
+// will not work correctly in the case that a node has multiple parents.
+func (g *Graph) TrimTree(kept NodeSet) *Graph {
+	// Creates a new list of nodes
+	oldNodes := g.Nodes
+	g.Nodes = make(Nodes, 0, len(kept.Ptr))
+
+	for _, cur := range oldNodes {
+		// A node may not have multiple parents
+		if len(cur.In) > 1 {
+			fmt.Fprintf(os.Stderr, "ERROR: TrimTree only works on trees.\n")
+		}
+
+		// If a node should be kept, add it to the next list of nodes
+		if _, ok := kept.Ptr[cur]; ok {
+			g.Nodes = append(g.Nodes, cur)
+			continue
+		}
+
+		// Get the parent. Since cur.In may only be of size 0 or 1, parent will be
+		// equal to either nil or the only node in cur.In
+		var parent *Node
+		for _, edge := range cur.In {
+			parent = edge.Src
+		}
+
+		if parent != nil {
+			// Remove the edge from the parent to this node
+			delete(parent.Out, cur)
+
+			// Reconfigure every edge from the current node to now begin at the parent.
+			for _, outEdge := range cur.Out {
+				child := outEdge.Dest
+
+				delete(child.In, cur)
+				child.In[parent] = outEdge
+				parent.Out[child] = outEdge
+
+				outEdge.Src = parent
+				outEdge.Residual = true
+				// Any reconfigured edge can no longer be Inline.
+				outEdge.Inline = false
+			}
+		} else {
+			// If a node has no parents, delete all the in edges of the children to make them
+			// all roots of their own trees.
+			for _, outEdge := range cur.Out {
+				delete(outEdge.Dest.In, cur)
+			}
+		}
+	}
+	g.RemoveRedundantEdges()
+	return g
 }
 
 func joinLabels(s *profile.Sample) string {
@@ -538,12 +597,16 @@ func (g *Graph) DiscardLowFrequencyNodes(nodeCutoff int64) NodeSet {
 }
 
 func makeNodeSet(nodes Nodes, nodeCutoff int64) NodeSet {
-	kept := make(NodeSet, len(nodes))
+	kept := NodeSet{
+		Info: make(map[NodeInfo]bool, len(nodes)),
+		Ptr:  make(map[*Node]bool, len(nodes)),
+	}
 	for _, n := range nodes {
 		if abs64(n.Cum) < nodeCutoff {
 			continue
 		}
-		kept[n.Info] = true
+		kept.Info[n.Info] = true
+		kept.Ptr[n] = true
 	}
 	return kept
 }

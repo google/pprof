@@ -37,7 +37,7 @@ import (
 // eliminate potential nondeterminism.
 func printSource(w io.Writer, rpt *Report) error {
 	o := rpt.options
-	g := rpt.newGraph(nil)
+	g := rpt.newGraph(graph.NodeSet{nil, nil})
 
 	// Identify all the functions that match the regexp provided.
 	// Group nodes for each matching function.
@@ -117,7 +117,7 @@ func printSource(w io.Writer, rpt *Report) error {
 // functions with samples that match the regexp rpt.options.symbol.
 func printWebSource(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 	o := rpt.options
-	g := rpt.newGraph(nil)
+	g := rpt.newGraph(graph.NodeSet{nil, nil})
 
 	// If the regexp source can be parsed as an address, also match
 	// functions that land on that address.
