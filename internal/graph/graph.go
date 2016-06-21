@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"errors"
 	"strconv"
 	"strings"
 
@@ -345,13 +346,21 @@ func (g *Graph) TrimTree(kept NodeSet) {
 	for _, cur := range oldNodes {
 		// A node may not have multiple parents
 		if len(cur.In) > 1 {
-			fmt.Fprintf(os.Stderr, "ERROR: TrimTree only works on trees.\n")
+			panic(errors.New("TrimTree only works on trees.\n"))
 		}
 
 		// If a node should be kept, add it to the next list of nodes
 		if _, ok := kept.Ptr[cur]; ok {
 			g.Nodes = append(g.Nodes, cur)
 			continue
+		}
+
+		// If a node has no parents, delete all the in edges of the children to make them
+		// all roots of their own trees.
+		if len(cur.In) == 0 {
+			for _, outEdge := range cur.Out {
+				delete(outEdge.Dest.In, cur)
+			}
 		}
 
 		// Get the parent. Since cur.In may only be of size 0 or 1, parent will be
@@ -361,29 +370,21 @@ func (g *Graph) TrimTree(kept NodeSet) {
 			parent = edge.Src
 		}
 
-		if parent != nil {
-			// Remove the edge from the parent to this node
-			delete(parent.Out, cur)
+		// Remove the edge from the parent to this node
+		delete(parent.Out, cur)
 
-			// Reconfigure every edge from the current node to now begin at the parent.
-			for _, outEdge := range cur.Out {
-				child := outEdge.Dest
+		// Reconfigure every edge from the current node to now begin at the parent.
+		for _, outEdge := range cur.Out {
+			child := outEdge.Dest
 
-				delete(child.In, cur)
-				child.In[parent] = outEdge
-				parent.Out[child] = outEdge
+			delete(child.In, cur)
+			child.In[parent] = outEdge
+			parent.Out[child] = outEdge
 
-				outEdge.Src = parent
-				outEdge.Residual = true
-				// Any reconfigured edge can no longer be Inline.
-				outEdge.Inline = false
-			}
-		} else {
-			// If a node has no parents, delete all the in edges of the children to make them
-			// all roots of their own trees.
-			for _, outEdge := range cur.Out {
-				delete(outEdge.Dest.In, cur)
-			}
+			outEdge.Src = parent
+			outEdge.Residual = true
+			// Any reconfigured edge can no longer be Inline.
+			outEdge.Inline = false
 		}
 	}
 	g.RemoveRedundantEdges()
