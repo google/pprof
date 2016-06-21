@@ -360,6 +360,7 @@ func (g *Graph) TrimTree(kept NodeSet) {
 			for _, outEdge := range cur.Out {
 				delete(outEdge.Dest.In, cur)
 			}
+			continue
 		}
 
 		// Get the parent. Since cur.In may only be of size 0 or 1, parent will be
