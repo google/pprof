@@ -118,6 +118,10 @@ func makeExpectedEdgeResidual(parent, child ExpectedNode) {
 	child.In[parent.Node].Residual = true
 }
 
+func makeEdgeInline(edgeMap EdgeMap, node *Node) {
+	edgeMap[node].Inline = true
+}
+
 // Creates a directed edges from the parent to each of the children
 func createEdges(parent *Node, children ...*Node) {
 	for _, child := range children {
@@ -189,10 +193,13 @@ func createTestCase1() TrimTreeTestCase {
 	}
 	createEdges(nodes[0], nodes[1])
 	createEdges(nodes[1], nodes[2], nodes[3])
+	makeEdgeInline(nodes[0].Out, nodes[1])
+	makeEdgeInline(nodes[1].Out, nodes[2])
 
 	// Create Expected graph
 	Expected, Keep := createExpectedNodes(nodes[0], nodes[2], nodes[3])
 	createExpectedEdges(Expected[0], Expected[1], Expected[2])
+	makeEdgeInline(Expected[0].Out, Expected[1].Node)
 	makeExpectedEdgeResidual(Expected[0], Expected[1])
 	makeExpectedEdgeResidual(Expected[0], Expected[2])
 	return TrimTreeTestCase{
