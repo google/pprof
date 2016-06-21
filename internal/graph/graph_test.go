@@ -109,7 +109,7 @@ type ExpectedNode struct {
 type TrimTreeTestCase struct {
 	Initial  *Graph
 	Expected []ExpectedNode
-	Keep nodePtrSet
+	Keep     nodePtrSet
 }
 
 // Makes the edge from parent to child residual

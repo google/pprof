@@ -16,11 +16,11 @@
 package graph
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"path/filepath"
 	"sort"
-	"errors"
 	"strconv"
 	"strings"
 
