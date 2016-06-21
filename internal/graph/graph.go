@@ -18,7 +18,6 @@ package graph
 import (
 	"fmt"
 	"math"
-	"os"
 	"path/filepath"
 	"sort"
 	"errors"
@@ -370,6 +369,8 @@ func (g *Graph) TrimTree(kept NodeSet) {
 			parent = edge.Src
 		}
 
+		parentEdgeInline := parent.Out[cur].Inline
+
 		// Remove the edge from the parent to this node
 		delete(parent.Out, cur)
 
@@ -383,8 +384,10 @@ func (g *Graph) TrimTree(kept NodeSet) {
 
 			outEdge.Src = parent
 			outEdge.Residual = true
-			// Any reconfigured edge can no longer be Inline.
-			outEdge.Inline = false
+			// If the edge from the parent to the current node and the edge from the
+			// current node to the child are both inline, then this resulting residual
+			// edge should also be inline
+			outEdge.Inline = parentEdgeInline && outEdge.Inline
 		}
 	}
 	g.RemoveRedundantEdges()
