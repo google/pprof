@@ -79,18 +79,21 @@ func (rpt *Report) newTrimmedGraph() (g *graph.Graph, origCount, droppedNodes, d
 	cumSort := o.CumSort
 
 	// First step: Build complete graph to identify low frequency nodes, based on their cum weight.
-	g = rpt.newGraph(graph.NodeSet{nil, nil})
+	g = rpt.newGraph(nil)
 	totalValue, _ := g.Nodes.Sum()
 	nodeCutoff := abs64(int64(float64(totalValue) * o.NodeFraction))
 	edgeCutoff := abs64(int64(float64(totalValue) * o.EdgeFraction))
 
 	// Filter out nodes with cum value below nodeCutoff.
 	if nodeCutoff > 0 {
-		if nodesKept := g.DiscardLowFrequencyNodes(nodeCutoff); len(g.Nodes) != len(nodesKept.Ptr) {
-			droppedNodes = len(g.Nodes) - len(nodesKept.Ptr)
-			if o.CallTree {
+		if o.CallTree {
+			if nodesKept := g.DiscardLowFrequencyNodePtrs(nodeCutoff); len(g.Nodes) != len(nodesKept) {
+				droppedNodes = len(g.Nodes) - len(nodesKept)
 				g.TrimTree(nodesKept)
-			} else {
+			}
+		} else {
+			if nodesKept := g.DiscardLowFrequencyNodes(nodeCutoff); len(g.Nodes) != len(nodesKept) {
+				droppedNodes = len(g.Nodes) - len(nodesKept)
 				g = rpt.newGraph(nodesKept)
 			}
 		}
@@ -104,13 +107,16 @@ func (rpt *Report) newTrimmedGraph() (g *graph.Graph, origCount, droppedNodes, d
 		// Remove low frequency tags and edges as they affect selection.
 		g.TrimLowFrequencyTags(nodeCutoff)
 		g.TrimLowFrequencyEdges(edgeCutoff)
-		if nodesKept := g.SelectTopNodes(nodeCount, visualMode); len(nodesKept.Ptr) != len(g.Nodes) {
-			if o.CallTree {
+		if o.CallTree {
+			if nodesKept := g.SelectTopNodePtrs(nodeCount, visualMode); len(g.Nodes) != len(nodesKept) {
 				g.TrimTree(nodesKept)
-			} else {
-				g = rpt.newGraph(nodesKept)
+				g.SortNodes(cumSort, visualMode)
 			}
-			g.SortNodes(cumSort, visualMode)
+		} else {
+			if nodesKept := g.SelectTopNodes(nodeCount, visualMode); len(g.Nodes) != len(nodesKept) {
+				g = rpt.newGraph(nodesKept)
+				g.SortNodes(cumSort, visualMode)
+			}
 		}
 	}
 
@@ -270,7 +276,7 @@ func printAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 	o := rpt.options
 	prof := rpt.prof
 
-	g := rpt.newGraph(graph.NodeSet{nil, nil})
+	g := rpt.newGraph(nil)
 
 	// If the regexp source can be parsed as an address, also match
 	// functions that land on that address.
@@ -578,7 +584,7 @@ func printTraces(w io.Writer, rpt *Report) error {
 
 	const separator = "-----------+-------------------------------------------------------"
 
-	_, locations := graph.CreateNodes(prof, false, graph.NodeSet{nil, nil})
+	_, locations := graph.CreateNodes(prof, false, nil)
 	for _, sample := range prof.Sample {
 		var stack graph.Nodes
 		for _, loc := range sample.Location {
