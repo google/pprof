@@ -89,7 +89,7 @@ func (rpt *Report) newTrimmedGraph() (g *graph.Graph, origCount, droppedNodes, d
 		if nodesKept := g.DiscardLowFrequencyNodes(nodeCutoff); len(g.Nodes) != len(nodesKept.Ptr) {
 			droppedNodes = len(g.Nodes) - len(nodesKept.Ptr)
 			if o.CallTree {
-				g = g.TrimTree(nodesKept)
+				g.TrimTree(nodesKept)
 			} else {
 				g = rpt.newGraph(nodesKept)
 			}
@@ -106,7 +106,7 @@ func (rpt *Report) newTrimmedGraph() (g *graph.Graph, origCount, droppedNodes, d
 		g.TrimLowFrequencyEdges(edgeCutoff)
 		if nodesKept := g.SelectTopNodes(nodeCount, visualMode); len(nodesKept.Ptr) != len(g.Nodes) {
 			if o.CallTree {
-				g = g.TrimTree(nodesKept)
+				g.TrimTree(nodesKept)
 			} else {
 				g = rpt.newGraph(nodesKept)
 			}

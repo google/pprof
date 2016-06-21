@@ -337,7 +337,7 @@ func newTree(prof *profile.Profile, o *Options) (g *Graph) {
 
 // Trims a Graph that is in forest form to contain only the nodes in kept. This
 // will not work correctly in the case that a node has multiple parents.
-func (g *Graph) TrimTree(kept NodeSet) *Graph {
+func (g *Graph) TrimTree(kept NodeSet) {
 	// Creates a new list of nodes
 	oldNodes := g.Nodes
 	g.Nodes = make(Nodes, 0, len(kept.Ptr))
@@ -387,7 +387,6 @@ func (g *Graph) TrimTree(kept NodeSet) *Graph {
 		}
 	}
 	g.RemoveRedundantEdges()
-	return g
 }
 
 func joinLabels(s *profile.Sample) string {
