@@ -141,10 +141,18 @@ func (i *NodeInfo) NameComponents() []string {
 // report entries with the same info.
 type NodeMap map[NodeInfo]*Node
 
-// NodeSet maps is a collection of node info structs.
+// NodeSet is a collection of node info structs.
 type NodeSet map[NodeInfo]bool
 
-type nodePtrSet map[*Node]bool
+// NodePtrSet is a collection of Nodes. Trimming a graph or tree requires a set
+// of objects that uniquely identify which nodes to keep. In a graph, NodeInfo
+// works as a unique identifier; however, in a tree, multiple nodes may share
+// identical NodeInfos. *Node do uniquely identify nodes so we can use those
+// instead.Though *Node also uniquely identify nodes in a Graph, we currently
+// rebuild Graphs from scratch using only the NodeSet when trimming, so there
+// would not be the required context of the initial graph to allow for the use
+// of *Node to identify the nodes.
+type NodePtrSet map[*Node]bool
 
 // FindOrInsertNode takes the info for a node and either returns a matching node
 // from the node map if one exists, or adds one to the map if one does not.
@@ -335,7 +343,7 @@ func newTree(prof *profile.Profile, o *Options) (g *Graph) {
 
 // Trims a Graph that is in forest form to contain only the nodes in kept. This
 // will not work correctly in the case that a node has multiple parents.
-func (g *Graph) TrimTree(kept nodePtrSet) {
+func (g *Graph) TrimTree(kept NodePtrSet) {
 	// Creates a new list of nodes
 	oldNodes := g.Nodes
 	g.Nodes = make(Nodes, 0, len(kept))
@@ -600,9 +608,9 @@ func (g *Graph) DiscardLowFrequencyNodes(nodeCutoff int64) NodeSet {
 
 // discardLowFrequencyNodePtrs returns a NodePtrSet of nodes at or over a
 // specific cum value cutoff.
-func (g *Graph) DiscardLowFrequencyNodePtrs(nodeCutoff int64) nodePtrSet {
-	cutNodes := getNodesWithCumCutoff(g.Nodes, nodeCutoff)
-	kept := make(nodePtrSet, len(cutNodes))
+func (g *Graph) DiscardLowFrequencyNodePtrs(nodeCutoff int64) NodePtrSet {
+	cutNodes := getNodesAboveCumCutoff(g.Nodes, nodeCutoff)
+	kept := make(NodePtrSet, len(cutNodes))
 	for _, n := range cutNodes {
 		kept[n] = true
 	}
@@ -610,7 +618,7 @@ func (g *Graph) DiscardLowFrequencyNodePtrs(nodeCutoff int64) nodePtrSet {
 }
 
 func makeNodeSet(nodes Nodes, nodeCutoff int64) NodeSet {
-	cutNodes := getNodesWithCumCutoff(nodes, nodeCutoff)
+	cutNodes := getNodesAboveCumCutoff(nodes, nodeCutoff)
 	kept := make(NodeSet, len(cutNodes))
 	for _, n := range cutNodes {
 		kept[n.Info] = true
@@ -618,8 +626,9 @@ func makeNodeSet(nodes Nodes, nodeCutoff int64) NodeSet {
 	return kept
 }
 
-// Returns all the nodes who have a Cum value greater than or equal to cutoff
-func getNodesWithCumCutoff(nodes Nodes, nodeCutoff int64) Nodes {
+// getNodesAboveCumCutoff returns all the nodes who have a Cum value greater
+// than or equal to cutoff
+func getNodesAboveCumCutoff(nodes Nodes, nodeCutoff int64) Nodes {
 	cutoffNodes := make(Nodes, 0, len(nodes))
 	for _, n := range nodes {
 		if abs64(n.Cum) < nodeCutoff {
@@ -682,9 +691,9 @@ func (g *Graph) SortNodes(cum bool, visualMode bool) {
 	}
 }
 
-// selectTopNodePtrs returns a set of the top maxNodes *Node in a graph.
-func (g *Graph) SelectTopNodePtrs(maxNodes int, visualMode bool) nodePtrSet {
-	set := make(nodePtrSet)
+// SelectTopNodePtrs returns a set of the top maxNodes *Node in a graph.
+func (g *Graph) SelectTopNodePtrs(maxNodes int, visualMode bool) NodePtrSet {
+	set := make(NodePtrSet)
 	for _, node := range g.selectTopNodes(maxNodes, visualMode) {
 		set[node] = true
 	}

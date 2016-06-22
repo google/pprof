@@ -109,7 +109,7 @@ type ExpectedNode struct {
 type TrimTreeTestCase struct {
 	Initial  *Graph
 	Expected []ExpectedNode
-	Keep     nodePtrSet
+	Keep     NodePtrSet
 }
 
 // Makes the edge from parent to child residual
@@ -143,9 +143,9 @@ func createEmptyNode() *Node {
 }
 
 // Creates an array of ExpectedNodes from nodes.
-func createExpectedNodes(nodes ...*Node) ([]ExpectedNode, nodePtrSet) {
+func createExpectedNodes(nodes ...*Node) ([]ExpectedNode, NodePtrSet) {
 	Expected := make([]ExpectedNode, len(nodes))
-	Keep := make(nodePtrSet, len(nodes))
+	Keep := make(NodePtrSet, len(nodes))
 
 	for i, node := range nodes {
 		Expected[i] = ExpectedNode{
