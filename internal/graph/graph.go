@@ -16,7 +16,6 @@
 package graph
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"path/filepath"
@@ -344,7 +343,7 @@ func (g *Graph) TrimTree(kept nodePtrSet) {
 	for _, cur := range oldNodes {
 		// A node may not have multiple parents
 		if len(cur.In) > 1 {
-			panic(errors.New("TrimTree only works on trees.\n"))
+			panic("TrimTree only works on trees")
 		}
 
 		// If a node should be kept, add it to the next list of nodes
