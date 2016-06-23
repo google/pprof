@@ -84,21 +84,18 @@ func (rpt *Report) newTrimmedGraph() (g *graph.Graph, origCount, droppedNodes, d
 	nodeCutoff := abs64(int64(float64(totalValue) * o.NodeFraction))
 	edgeCutoff := abs64(int64(float64(totalValue) * o.EdgeFraction))
 
-	// Visual mode optimization only supports graph output, not tree.
-	// Do not apply edge cutoff to preserve tree structure.
-	if o.CallTree {
-		visualMode = false
-		if o.OutputFormat == Dot {
-			cumSort = true
-		}
-		edgeCutoff = 0
-	}
-
 	// Filter out nodes with cum value below nodeCutoff.
 	if nodeCutoff > 0 {
-		if nodesKept := g.DiscardLowFrequencyNodes(nodeCutoff); len(g.Nodes) != len(nodesKept) {
-			droppedNodes = len(g.Nodes) - len(nodesKept)
-			g = rpt.newGraph(nodesKept)
+		if o.CallTree {
+			if nodesKept := g.DiscardLowFrequencyNodePtrs(nodeCutoff); len(g.Nodes) != len(nodesKept) {
+				droppedNodes = len(g.Nodes) - len(nodesKept)
+				g.TrimTree(nodesKept)
+			}
+		} else {
+			if nodesKept := g.DiscardLowFrequencyNodes(nodeCutoff); len(g.Nodes) != len(nodesKept) {
+				droppedNodes = len(g.Nodes) - len(nodesKept)
+				g = rpt.newGraph(nodesKept)
+			}
 		}
 	}
 	origCount = len(g.Nodes)
@@ -110,9 +107,16 @@ func (rpt *Report) newTrimmedGraph() (g *graph.Graph, origCount, droppedNodes, d
 		// Remove low frequency tags and edges as they affect selection.
 		g.TrimLowFrequencyTags(nodeCutoff)
 		g.TrimLowFrequencyEdges(edgeCutoff)
-		if nodesKept := g.SelectTopNodes(nodeCount, visualMode); len(nodesKept) != len(g.Nodes) {
-			g = rpt.newGraph(nodesKept)
-			g.SortNodes(cumSort, visualMode)
+		if o.CallTree {
+			if nodesKept := g.SelectTopNodePtrs(nodeCount, visualMode); len(g.Nodes) != len(nodesKept) {
+				g.TrimTree(nodesKept)
+				g.SortNodes(cumSort, visualMode)
+			}
+		} else {
+			if nodesKept := g.SelectTopNodes(nodeCount, visualMode); len(g.Nodes) != len(nodesKept) {
+				g = rpt.newGraph(nodesKept)
+				g.SortNodes(cumSort, visualMode)
+			}
 		}
 	}
 
