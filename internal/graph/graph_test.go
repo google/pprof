@@ -9,6 +9,7 @@ func edgeDebugString(edge *Edge) string {
 	debug := ""
 	debug += fmt.Sprintf("\t\tSrc: %p\n", edge.Src)
 	debug += fmt.Sprintf("\t\tDest: %p\n", edge.Dest)
+	debug += fmt.Sprintf("\t\tWeight: %d\n", edge.Weight)
 	debug += fmt.Sprintf("\t\tResidual: %t\n", edge.Residual)
 	debug += fmt.Sprintf("\t\tInline: %t\n", edge.Inline)
 	return debug
@@ -57,19 +58,13 @@ func expectedNodesDebugString(Expected []ExpectedNode) string {
 	return debug
 }
 
-// Checks if two edges are equal
-func edgesEqual(this, that *Edge) bool {
-	return this.Src == that.Src && this.Dest == that.Dest &&
-		this.Residual == that.Residual && this.Inline == that.Inline
-}
-
 // Checks if all the edges in this equal all the edges in that.
 func edgeMapsEqual(this, that EdgeMap) bool {
 	if len(this) != len(that) {
 		return false
 	}
 	for node, thisEdge := range this {
-		if !edgesEqual(thisEdge, that[node]) {
+		if *thisEdge != *that[node] {
 			return false
 		}
 	}
@@ -120,6 +115,10 @@ func makeExpectedEdgeResidual(parent, child ExpectedNode) {
 
 func makeEdgeInline(edgeMap EdgeMap, node *Node) {
 	edgeMap[node].Inline = true
+}
+
+func setEdgeWeight(edgeMap EdgeMap, node *Node, weight int64) {
+	edgeMap[node].Weight = weight
 }
 
 // Creates a directed edges from the parent to each of the children
@@ -173,15 +172,15 @@ func createExpectedEdges(parent ExpectedNode, children ...ExpectedNode) {
 
 // The first test case looks like:
 //     0
-//     |
+//     |(5)
 //     1
-//   /   \
-//  2     3
+// (3)/ \(4)
+//   2   3
 //
 // After Keeping 0, 2, 3. We should see:
 //     0
-//   /   \
-//  2     3
+// (3)/ \(4)
+//   2   3
 func createTestCase1() TrimTreeTestCase {
 	// Create Initial graph
 	graph := &Graph{make(Nodes, 4)}
@@ -193,6 +192,9 @@ func createTestCase1() TrimTreeTestCase {
 	createEdges(nodes[1], nodes[2], nodes[3])
 	makeEdgeInline(nodes[0].Out, nodes[1])
 	makeEdgeInline(nodes[1].Out, nodes[2])
+	setEdgeWeight(nodes[0].Out, nodes[1], 5)
+	setEdgeWeight(nodes[1].Out, nodes[2], 3)
+	setEdgeWeight(nodes[1].Out, nodes[3], 4)
 
 	// Create Expected graph
 	Expected, Keep := createExpectedNodes(nodes[0], nodes[2], nodes[3])
@@ -200,6 +202,8 @@ func createTestCase1() TrimTreeTestCase {
 	makeEdgeInline(Expected[0].Out, Expected[1].Node)
 	makeExpectedEdgeResidual(Expected[0], Expected[1])
 	makeExpectedEdgeResidual(Expected[0], Expected[2])
+	setEdgeWeight(Expected[0].Out, Expected[1].Node, 3)
+	setEdgeWeight(Expected[0].Out, Expected[2].Node, 4)
 	return TrimTreeTestCase{
 		Initial:  graph,
 		Expected: Expected,
@@ -209,18 +213,18 @@ func createTestCase1() TrimTreeTestCase {
 
 // This test case looks like:
 //   3
-//   |
+//   | (12)
 //   1
-//   |
+//   | (8)
 //   2
-//   |
+//   | (15)
 //   0
-//   |
+//   | (10)
 //   4
 //
 // After Keeping 3 and 4. We should see:
 //   3
-//   |
+//   | (10)
 //   4
 func createTestCase2() TrimTreeTestCase {
 	// Create Initial graph
@@ -233,11 +237,16 @@ func createTestCase2() TrimTreeTestCase {
 	createEdges(nodes[1], nodes[2])
 	createEdges(nodes[2], nodes[0])
 	createEdges(nodes[0], nodes[4])
+	setEdgeWeight(nodes[3].Out, nodes[1], 12)
+	setEdgeWeight(nodes[1].Out, nodes[2], 8)
+	setEdgeWeight(nodes[2].Out, nodes[0], 15)
+	setEdgeWeight(nodes[0].Out, nodes[4], 10)
 
 	// Create Expected graph
 	Expected, Keep := createExpectedNodes(nodes[3], nodes[4])
 	createExpectedEdges(Expected[0], Expected[1])
 	makeExpectedEdgeResidual(Expected[0], Expected[1])
+	setEdgeWeight(Expected[0].Out, Expected[1].Node, 10)
 	return TrimTreeTestCase{
 		Initial:  graph,
 		Expected: Expected,
