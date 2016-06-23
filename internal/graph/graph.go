@@ -144,14 +144,14 @@ type NodeMap map[NodeInfo]*Node
 // NodeSet is a collection of node info structs.
 type NodeSet map[NodeInfo]bool
 
-// NodePtrSet is a collection of Nodes. Trimming a graph or tree requires a set
-// of objects that uniquely identify which nodes to keep. In a graph, NodeInfo
-// works as a unique identifier; however, in a tree, multiple nodes may share
-// identical NodeInfos. *Node do uniquely identify nodes so we can use those
-// instead.Though *Node also uniquely identify nodes in a Graph, we currently
-// rebuild Graphs from scratch using only the NodeSet when trimming, so there
-// would not be the required context of the initial graph to allow for the use
-// of *Node to identify the nodes.
+// NodePtrSet is a collection of nodes. Trimming a graph or tree requires a set
+// of objects which uniquely identify the nodes to keep. In a graph, NodeInfo
+// works as a unique identifier; however, in a tree multiple nodes may share
+// identical NodeInfos. A *Node does uniquely identify a node so we can use that
+// instead. Though a *Node also uniquely identifies a node in a graph,
+// currently, during trimming, graphs are rebult from scratch using only the
+// NodeSet, so there would not be the required context of the initial graph to
+// allow for the use of *Node.
 type NodePtrSet map[*Node]bool
 
 // FindOrInsertNode takes the info for a node and either returns a matching node
@@ -341,8 +341,8 @@ func newTree(prof *profile.Profile, o *Options) (g *Graph) {
 	return selectNodesForGraph(nodes, o.DropNegative)
 }
 
-// Trims a Graph that is in forest form to contain only the nodes in kept. This
-// will not work correctly in the case that a node has multiple parents.
+// TrimTree trims a Graph in forest form, keeping only the nodes in kept. This
+// will not work correctly if even a single node has multiple parents.
 func (g *Graph) TrimTree(kept NodePtrSet) {
 	// Creates a new list of nodes
 	oldNodes := g.Nodes
@@ -354,14 +354,14 @@ func (g *Graph) TrimTree(kept NodePtrSet) {
 			panic("TrimTree only works on trees")
 		}
 
-		// If a node should be kept, add it to the next list of nodes
+		// If a node should be kept, add it to the new list of nodes
 		if _, ok := kept[cur]; ok {
 			g.Nodes = append(g.Nodes, cur)
 			continue
 		}
 
-		// If a node has no parents, delete all the in edges of the children to make them
-		// all roots of their own trees.
+		// If a node has no parents, then delete all of the in edges of its
+		// children to make them each roots of their own trees.
 		if len(cur.In) == 0 {
 			for _, outEdge := range cur.Out {
 				delete(outEdge.Dest.In, cur)
@@ -369,8 +369,11 @@ func (g *Graph) TrimTree(kept NodePtrSet) {
 			continue
 		}
 
-		// Get the parent. Since cur.In may only be of size 0 or 1, parent will be
-		// equal to either nil or the only node in cur.In
+		// Get the parent. This works since at this point cur.In must contain only
+		// one element.
+		if len(cur.In) != 1 {
+			panic("Get parent assertion failed. cur.In expected to be of length 1.")
+		}
 		var parent *Node
 		for _, edge := range cur.In {
 			parent = edge.Src
@@ -606,7 +609,7 @@ func (g *Graph) DiscardLowFrequencyNodes(nodeCutoff int64) NodeSet {
 	return makeNodeSet(g.Nodes, nodeCutoff)
 }
 
-// discardLowFrequencyNodePtrs returns a NodePtrSet of nodes at or over a
+// DiscardLowFrequencyNodePtrs returns a NodePtrSet of nodes at or over a
 // specific cum value cutoff.
 func (g *Graph) DiscardLowFrequencyNodePtrs(nodeCutoff int64) NodePtrSet {
 	cutNodes := getNodesAboveCumCutoff(g.Nodes, nodeCutoff)
@@ -626,8 +629,8 @@ func makeNodeSet(nodes Nodes, nodeCutoff int64) NodeSet {
 	return kept
 }
 
-// getNodesAboveCumCutoff returns all the nodes who have a Cum value greater
-// than or equal to cutoff
+// getNodesAboveCumCutoff returns all the nodes which have a Cum value greater
+// than or equal to cutoff.
 func getNodesAboveCumCutoff(nodes Nodes, nodeCutoff int64) Nodes {
 	cutoffNodes := make(Nodes, 0, len(nodes))
 	for _, n := range nodes {
@@ -705,7 +708,7 @@ func (g *Graph) SelectTopNodes(maxNodes int, visualMode bool) NodeSet {
 	return makeNodeSet(g.selectTopNodes(maxNodes, visualMode), 0)
 }
 
-// selectTopNodes returns a slice of the top maxNodes nodes in a graph
+// selectTopNodes returns a slice of the top maxNodes nodes in a graph.
 func (g *Graph) selectTopNodes(maxNodes int, visualMode bool) Nodes {
 	if maxNodes > 0 {
 		if visualMode {
