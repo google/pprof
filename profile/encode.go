@@ -70,9 +70,9 @@ func (p *Profile) preEncode() {
 				)
 			}
 		}
-		s.locationIDX = nil
-		for _, l := range s.Location {
-			s.locationIDX = append(s.locationIDX, l.ID)
+		s.locationIDX = make([]uint64, len(s.Location))
+		for i, loc := range s.Location {
+			s.locationIDX[i] = loc.ID
 		}
 	}
 
@@ -177,9 +177,13 @@ var profileDecoder = []decoder{
 	// repeated Location location = 4
 	func(b *buffer, m message) error {
 		x := new(Location)
+		x.Line = make([]Line, 0, 8) // Pre-allocate Line buffer
 		pp := m.(*Profile)
 		pp.Location = append(pp.Location, x)
-		return decodeMessage(b, x)
+		err := decodeMessage(b, x)
+		var tmp []Line
+		x.Line = append(tmp, x.Line...) // Shrink to allocated size
+		return err
 	},
 	// repeated Function function = 5
 	func(b *buffer, m message) error {
@@ -282,9 +286,9 @@ func (p *Profile) postDecode() error {
 		if len(numLabels) > 0 {
 			s.NumLabel = numLabels
 		}
-		s.Location = nil
-		for _, lid := range s.locationIDX {
-			s.Location = append(s.Location, locations[lid])
+		s.Location = make([]*Location, len(s.locationIDX))
+		for i, lid := range s.locationIDX {
+			s.Location[i] = locations[lid]
 		}
 		s.locationIDX = nil
 	}
