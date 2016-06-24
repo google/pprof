@@ -17,6 +17,7 @@ package binutils
 
 import (
 	"debug/elf"
+	"debug/macho"
 	"fmt"
 	"os"
 	"os/exec"
@@ -32,10 +33,14 @@ import (
 // SetConfig must be called before any of the other methods.
 type Binutils struct {
 	// Commands to invoke.
-	llvmSymbolizer string
-	addr2line      string
-	nm             string
-	objdump        string
+	llvmSymbolizer      string
+	llvmSymbolizerFound bool
+	addr2line           string
+	addr2lineFound      bool
+	nm                  string
+	nmFound             bool
+	objdump             string
+	objdumpFound        bool
 
 	// if fast, perform symbolization using nm (symbol names only),
 	// instead of file-line detail from the slower addr2line.
@@ -66,22 +71,22 @@ func (b *Binutils) SetTools(config string) {
 	}
 
 	defaultPath := paths[""]
-	b.llvmSymbolizer = findExe("llvm-symbolizer", append(paths["llvm-symbolizer"], defaultPath...))
-	b.addr2line = findExe("addr2line", append(paths["addr2line"], defaultPath...))
-	b.nm = findExe("nm", append(paths["nm"], defaultPath...))
-	b.objdump = findExe("objdump", append(paths["objdump"], defaultPath...))
+	b.llvmSymbolizer, b.llvmSymbolizerFound = findExe("llvm-symbolizer", append(paths["llvm-symbolizer"], defaultPath...))
+	b.addr2line, b.addr2lineFound = findExe("addr2line", append(paths["addr2line"], defaultPath...))
+	b.nm, b.nmFound = findExe("nm", append(paths["nm"], defaultPath...))
+	b.objdump, b.objdumpFound = findExe("objdump", append(paths["objdump"], defaultPath...))
 }
 
 // findExe looks for an executable command on a set of paths.
 // If it cannot find it, returns cmd.
-func findExe(cmd string, paths []string) string {
+func findExe(cmd string, paths []string) (string, bool) {
 	for _, p := range paths {
 		cp := filepath.Join(p, cmd)
 		if c, err := exec.LookPath(cp); err == nil {
-			return c
+			return c, true
 		}
 	}
-	return cmd
+	return cmd, false
 }
 
 // Disasm returns the assembly instructions for the specified address range
@@ -118,21 +123,42 @@ func (b *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFil
 	// use a table of prefixes if we need to support other
 	// systems at some point.
 
-	f, err := os.Open(name)
-	if err != nil {
+	if _, err := os.Stat(name); err != nil {
 		// For testing, do not require file name to exist.
 		if strings.Contains(b.addr2line, "testdata/") {
 			return &fileAddr2Line{file: file{b: b, name: name}}, nil
 		}
-
 		return nil, err
 	}
-	defer f.Close()
 
-	ef, err := elf.NewFile(f)
+	if f, err := b.openELF(name, start, limit, offset); err == nil {
+		return f, nil
+	}
+	if f, err := b.openMachO(name, start, limit, offset); err == nil {
+		return f, nil
+	}
+	return nil, fmt.Errorf("unrecognized binary: %s", name)
+}
+
+func (b *Binutils) openMachO(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
+	of, err := macho.Open(name)
 	if err != nil {
 		return nil, fmt.Errorf("Parsing %s: %v", name, err)
 	}
+	defer of.Close()
+
+	if b.fast || (!b.addr2lineFound && !b.llvmSymbolizerFound) {
+		return &fileNM{file: file{b: b, name: name}}, nil
+	}
+	return &fileAddr2Line{file: file{b: b, name: name}}, nil
+}
+
+func (b *Binutils) openELF(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
+	ef, err := elf.Open(name)
+	if err != nil {
+		return nil, fmt.Errorf("Parsing %s: %v", name, err)
+	}
+	defer ef.Close()
 
 	var stextOffset *uint64
 	var pageAligned = func(addr uint64) bool { return addr%4096 == 0 }
@@ -162,12 +188,13 @@ func (b *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFil
 		return nil, fmt.Errorf("Could not identify base for %s: %v", name, err)
 	}
 
-	// Find build ID, while we have the file open.
 	buildID := ""
-	if id, err := elfexec.GetBuildID(f); err == nil {
-		buildID = fmt.Sprintf("%x", id)
+	if f, err := os.Open(name); err == nil {
+		if id, err := elfexec.GetBuildID(f); err == nil {
+			buildID = fmt.Sprintf("%x", id)
+		}
 	}
-	if b.fast {
+	if b.fast || (!b.addr2lineFound && !b.llvmSymbolizerFound) {
 		return &fileNM{file: file{b, name, base, buildID}}, nil
 	}
 	return &fileAddr2Line{file: file{b, name, base, buildID}}, nil

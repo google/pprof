@@ -273,12 +273,18 @@ func collectMappingSources(p *profile.Profile, source string) plugin.MappingSour
 		}{
 			source, m.Start,
 		}
-		if key := m.BuildID; key != "" {
-			ms[key] = append(ms[key], src)
+		key := m.BuildID
+		if key == "" {
+			key = m.File
 		}
-		if key := m.File; key != "" {
-			ms[key] = append(ms[key], src)
+		if key == "" {
+			// If there is no build id or source file, use the source as the
+			// mapping file. This will enable remote symbolization for this
+			// mapping, in particular for Go profiles on the legacy format.
+			m.File = source
+			key = source
 		}
+		ms[key] = append(ms[key], src)
 	}
 	return ms
 }
