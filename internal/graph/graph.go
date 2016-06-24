@@ -50,20 +50,28 @@ type Nodes []*Node
 // Node is an entry on a profiling report. It represents a unique
 // program location.
 type Node struct {
-	// Information associated to this entry.
+	// Info describes the source location associated to this node.
 	Info NodeInfo
 
-	// values associated to this node.
-	// Flat is exclusive to this node, cum includes all descendents.
+	// Function represents the function that this node belongs to.  On
+	// graphs with sub-function resolution (eg line number or
+	// addresses), two nodes in a NodeMap that are part of the same
+	// function have the same value of Node.Function. If the Node
+	// represents the whole function, it points back to itself.
+	Function *Node
+
+	// Values associated to this node. Flat is exclusive to this node,
+	// Cum includes all descendents.
 	Flat, Cum int64
 
-	// in and out contains the nodes immediately reaching or reached by this nodes.
+	// In and out Contains the nodes immediately reaching or reached by
+	// this node.
 	In, Out EdgeMap
 
-	// tags provide additional information about subsets of a sample.
+	// LabelTags provide additional information about subsets of a sample.
 	LabelTags TagMap
 
-	// Numeric tags provide additional values for subsets of a sample.
+	// NumericTags provide additional values for subsets of a sample.
 	// Numeric tags are optionally associated to a label tag. The key
 	// for NumericTags is the name of the LabelTag they are associated
 	// to, or "" for numeric tags not associated to a label tag.
@@ -176,6 +184,16 @@ func (nm NodeMap) FindOrInsertNode(info NodeInfo, kept NodeSet) *Node {
 		NumericTags: make(map[string]TagMap),
 	}
 	nm[info] = n
+	if info.Address == 0 && info.Lineno == 0 {
+		// This node represents the whole function, so point Function
+		// back to itself.
+		n.Function = n
+		return n
+	}
+	// Find a node that represents the whole function.
+	info.Address = 0
+	info.Lineno = 0
+	n.Function = nm.FindOrInsertNode(info, nil)
 	return n
 }
 

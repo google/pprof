@@ -203,7 +203,7 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	gopt := &graph.Options{
 		SampleValue:  o.SampleValue,
 		FormatTag:    formatTag,
-		CallTree:     o.CallTree && o.OutputFormat == Dot,
+		CallTree:     o.CallTree && (o.OutputFormat == Dot || o.OutputFormat == Callgrind),
 		DropNegative: o.DropNegative,
 		KeptNodes:    nodes,
 	}
@@ -627,13 +627,14 @@ func printCallgrind(w io.Writer, rpt *Report) error {
 	g, _, _, _ := rpt.newTrimmedGraph()
 	rpt.selectOutputUnit(g)
 
+	nodeNames := getDisambiguatedNames(g)
 	fmt.Fprintln(w, "events:", o.SampleType+"("+o.OutputUnit+")")
 
 	files := make(map[string]int)
 	names := make(map[string]int)
 	for _, n := range g.Nodes {
 		fmt.Fprintln(w, "fl="+callgrindName(files, n.Info.File))
-		fmt.Fprintln(w, "fn="+callgrindName(names, n.Info.Name))
+		fmt.Fprintln(w, "fn="+callgrindName(names, nodeNames[n]))
 		sv, _ := measurement.Scale(n.Flat, o.SampleUnit, o.OutputUnit)
 		fmt.Fprintf(w, "%d %d\n", n.Info.Lineno, int64(sv))
 
@@ -642,7 +643,7 @@ func printCallgrind(w io.Writer, rpt *Report) error {
 			c, _ := measurement.Scale(out.Weight, o.SampleUnit, o.OutputUnit)
 			callee := out.Dest
 			fmt.Fprintln(w, "cfl="+callgrindName(files, callee.Info.File))
-			fmt.Fprintln(w, "cfn="+callgrindName(names, callee.Info.Name))
+			fmt.Fprintln(w, "cfn="+callgrindName(names, nodeNames[callee]))
 			// pprof doesn't have a flat weight for a call, leave as 0.
 			fmt.Fprintln(w, "calls=0", callee.Info.Lineno)
 			fmt.Fprintln(w, n.Info.Lineno, int64(c))
@@ -651,6 +652,48 @@ func printCallgrind(w io.Writer, rpt *Report) error {
 	}
 
 	return nil
+}
+
+// getDisambiguatedNames returns a map from each node in the graph to
+// the name to use in the callgrind output. Callgrind merges all
+// functions with the same [file name, function name]. Add a [%d/n]
+// suffix to disambiguate nodes with different values of
+// node.Function, which we want to keep separate. In particular, this
+// affects graphs created with --call_tree, where nodes from different
+// contexts are associated to different Functions.
+func getDisambiguatedNames(g *graph.Graph) map[*graph.Node]string {
+	nodeName := make(map[*graph.Node]string, len(g.Nodes))
+
+	type names struct {
+		file, function string
+	}
+
+	// nameFunctionIndex maps the callgrind names (filename, function)
+	// to the node.Function values found for that name, and each
+	// node.Function value to a sequential index to be used on the
+	// disambiguated name.
+	nameFunctionIndex := make(map[names]map[*graph.Node]int)
+	for _, n := range g.Nodes {
+		nm := names{n.Info.File, n.Info.Name}
+		p, ok := nameFunctionIndex[nm]
+		if !ok {
+			p = make(map[*graph.Node]int)
+			nameFunctionIndex[nm] = p
+		}
+		if _, ok := p[n.Function]; !ok {
+			p[n.Function] = len(p)
+		}
+	}
+
+	for _, n := range g.Nodes {
+		nm := names{n.Info.File, n.Info.Name}
+		nodeName[n] = n.Info.Name
+		if p := nameFunctionIndex[nm]; len(p) > 1 {
+			// If there is more than one function, add suffix to disambiguate.
+			nodeName[n] += fmt.Sprintf(" [%d/%d]", p[n.Function]+1, len(p))
+		}
+	}
+	return nodeName
 }
 
 // callgrindName implements the callgrind naming compression scheme.
