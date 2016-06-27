@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/pprof/internal/binutils"
+	"github.com/google/pprof/internal/graph"
 	"github.com/google/pprof/internal/proftest"
 	"github.com/google/pprof/profile"
 )
@@ -204,4 +205,34 @@ var testProfile = &profile.Profile{
 	Location: testL,
 	Function: testF,
 	Mapping:  testM,
+}
+
+func TestDisambiguation(t *testing.T) {
+	parent1 := &graph.Node{Info: graph.NodeInfo{Name: "parent1"}}
+	parent2 := &graph.Node{Info: graph.NodeInfo{Name: "parent2"}}
+	child1 := &graph.Node{Info: graph.NodeInfo{Name: "child"}, Function: parent1}
+	child2 := &graph.Node{Info: graph.NodeInfo{Name: "child"}, Function: parent2}
+	child3 := &graph.Node{Info: graph.NodeInfo{Name: "child"}, Function: parent1}
+	sibling := &graph.Node{Info: graph.NodeInfo{Name: "sibling"}, Function: parent1}
+
+	n := []*graph.Node{parent1, parent2, child1, child2, child3, sibling}
+
+	wanted := map[*graph.Node]string{
+		parent1: "parent1",
+		parent2: "parent2",
+		child1:  "child [1/2]",
+		child2:  "child [2/2]",
+		child3:  "child [1/2]",
+		sibling: "sibling",
+	}
+
+	g := &graph.Graph{n}
+
+	names := getDisambiguatedNames(g)
+
+	for node, want := range wanted {
+		if got := names[node]; got != want {
+			t.Errorf("name %s, got %s, want %s", node.Info.Name, got, want)
+		}
+	}
 }
