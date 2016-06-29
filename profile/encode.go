@@ -237,9 +237,9 @@ func (p *Profile) postDecode() error {
 		m.BuildID, err = getString(p.stringTable, &m.buildIDX, err)
 		if m.ID < uint64(len(mappingIds)) {
 			mappingIds[m.ID] = m
-			continue
+		} else {
+			mappings[m.ID] = m
 		}
-		mappings[m.ID] = m
 	}
 
 	functions := make(map[uint64]*Function, len(p.Function))
@@ -250,9 +250,9 @@ func (p *Profile) postDecode() error {
 		f.Filename, err = getString(p.stringTable, &f.filenameX, err)
 		if f.ID < uint64(len(functionIds)) {
 			functionIds[f.ID] = f
-			continue
+		} else {
+			functions[f.ID] = f
 		}
-		functions[f.ID] = f
 	}
 
 	locations := make(map[uint64]*Location, len(p.Location))
@@ -269,16 +269,16 @@ func (p *Profile) postDecode() error {
 				l.Line[i].functionIDX = 0
 				if id < uint64(len(functionIds)) {
 					l.Line[i].Function = functionIds[id]
-					continue
+				} else {
+					l.Line[i].Function = functions[id]
 				}
-				l.Line[i].Function = functions[id]
 			}
 		}
 		if l.ID < uint64(len(locationIds)) {
 			locationIds[l.ID] = l
-			continue
+		} else {
+			locations[l.ID] = l
 		}
-		locations[l.ID] = l
 	}
 
 	for _, st := range p.SampleType {
@@ -309,9 +309,9 @@ func (p *Profile) postDecode() error {
 		for i, lid := range s.locationIDX {
 			if lid < uint64(len(locationIds)) {
 				s.Location[i] = locationIds[lid]
-				continue
+			} else {
+				s.Location[i] = locations[lid]
 			}
-			s.Location[i] = locations[lid]
 		}
 		s.locationIDX = nil
 	}
