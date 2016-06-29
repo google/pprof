@@ -16,7 +16,6 @@ package profile
 
 import (
 	"errors"
-	"fmt"
 	"sort"
 )
 
@@ -231,33 +230,53 @@ var profileDecoder = []decoder{
 // The unexported fields are cleared up to facilitate testing.
 func (p *Profile) postDecode() error {
 	var err error
-	mappings := make(map[uint64]*Mapping)
+	mappings := make(map[uint64]*Mapping, len(p.Mapping))
+	mappingIds := make([]*Mapping, len(p.Mapping)+1)
 	for _, m := range p.Mapping {
 		m.File, err = getString(p.stringTable, &m.fileX, err)
 		m.BuildID, err = getString(p.stringTable, &m.buildIDX, err)
+		if m.ID < uint64(len(mappingIds)) {
+			mappingIds[m.ID] = m
+			continue
+		}
 		mappings[m.ID] = m
 	}
 
-	functions := make(map[uint64]*Function)
+	functions := make(map[uint64]*Function, len(p.Function))
+	functionIds := make([]*Function, len(p.Function)+1)
 	for _, f := range p.Function {
 		f.Name, err = getString(p.stringTable, &f.nameX, err)
 		f.SystemName, err = getString(p.stringTable, &f.systemNameX, err)
 		f.Filename, err = getString(p.stringTable, &f.filenameX, err)
+		if f.ID < uint64(len(functionIds)) {
+			functionIds[f.ID] = f
+			continue
+		}
 		functions[f.ID] = f
 	}
 
-	locations := make(map[uint64]*Location)
+	locations := make(map[uint64]*Location, len(p.Location))
+	locationIds := make([]*Location, len(p.Location)+1)
 	for _, l := range p.Location {
-		l.Mapping = mappings[l.mappingIDX]
+		if id := l.mappingIDX; id < uint64(len(mappingIds)) {
+			l.Mapping = mappingIds[id]
+		} else {
+			l.Mapping = mappings[id]
+		}
 		l.mappingIDX = 0
 		for i, ln := range l.Line {
 			if id := ln.functionIDX; id != 0 {
-				l.Line[i].Function = functions[id]
-				if l.Line[i].Function == nil {
-					return fmt.Errorf("Function ID %d not found", id)
-				}
 				l.Line[i].functionIDX = 0
+				if id < uint64(len(functionIds)) {
+					l.Line[i].Function = functionIds[id]
+					continue
+				}
+				l.Line[i].Function = functions[id]
 			}
+		}
+		if l.ID < uint64(len(locationIds)) {
+			locationIds[l.ID] = l
+			continue
 		}
 		locations[l.ID] = l
 	}
@@ -268,8 +287,8 @@ func (p *Profile) postDecode() error {
 	}
 
 	for _, s := range p.Sample {
-		labels := make(map[string][]string)
-		numLabels := make(map[string][]int64)
+		labels := make(map[string][]string, len(s.labelX))
+		numLabels := make(map[string][]int64, len(s.labelX))
 		for _, l := range s.labelX {
 			var key, value string
 			key, err = getString(p.stringTable, &l.keyX, err)
@@ -288,6 +307,10 @@ func (p *Profile) postDecode() error {
 		}
 		s.Location = make([]*Location, len(s.locationIDX))
 		for i, lid := range s.locationIDX {
+			if lid < uint64(len(locationIds)) {
+				s.Location[i] = locationIds[lid]
+				continue
+			}
 			s.Location[i] = locations[lid]
 		}
 		s.locationIDX = nil
