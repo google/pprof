@@ -584,7 +584,7 @@ func printTraces(w io.Writer, rpt *Report) error {
 
 	const separator = "-----------+-------------------------------------------------------"
 
-	_, locations := graph.CreateNodes(prof, false, nil)
+	_, locations := graph.CreateNodes(prof, &graph.Options{})
 	for _, sample := range prof.Sample {
 		var stack graph.Nodes
 		for _, loc := range sample.Location {
