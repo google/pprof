@@ -37,6 +37,7 @@ type Options struct {
 	SampleValue func(s []int64) int64      // Function to compute the value of a sample
 	FormatTag   func(int64, string) string // Function to format a sample tag value into a string
 	ObjNames    bool                       // Always preserve obj filename
+	OrigFnNames bool                       // Preserve original (eg mangled) function names
 
 	CallTree     bool // Build a tree instead of a graph
 	DropNegative bool // Drop nodes with overall negative values
@@ -244,7 +245,7 @@ func New(prof *profile.Profile, o *Options) *Graph {
 // a map from the profile location indices to the corresponding graph
 // nodes.
 func newGraph(prof *profile.Profile, o *Options) (*Graph, map[uint64]Nodes) {
-	nodes, locationMap := CreateNodes(prof, o.ObjNames, o.KeptNodes)
+	nodes, locationMap := CreateNodes(prof, o)
 	for _, sample := range prof.Sample {
 		weight := o.SampleValue(sample.Value)
 		if weight == 0 {
@@ -313,8 +314,6 @@ type nodePair struct {
 }
 
 func newTree(prof *profile.Profile, o *Options) (g *Graph) {
-	kept := o.KeptNodes
-	keepBinary := o.ObjNames
 	parentNodeMap := make(map[*Node]NodeMap, len(prof.Sample))
 	for _, sample := range prof.Sample {
 		weight := o.SampleValue(sample.Value)
@@ -336,7 +335,7 @@ func newTree(prof *profile.Profile, o *Options) (g *Graph) {
 					nodeMap = make(NodeMap)
 					parentNodeMap[parent] = nodeMap
 				}
-				n := nodeMap.findOrInsertLine(l, lines[lidx], keepBinary, kept)
+				n := nodeMap.findOrInsertLine(l, lines[lidx], o)
 				if n == nil {
 					continue
 				}
@@ -454,9 +453,8 @@ func isNegative(n *Node) bool {
 // set of corresponding nodes (one per location.Line). If kept is
 // non-nil, only nodes in that set are included; nodes that do not
 // match are represented as a nil.
-func CreateNodes(prof *profile.Profile, keepBinary bool, kept NodeSet) (Nodes, map[uint64]Nodes) {
+func CreateNodes(prof *profile.Profile, o *Options) (Nodes, map[uint64]Nodes) {
 	locations := make(map[uint64]Nodes, len(prof.Location))
-
 	nm := make(NodeMap, len(prof.Location))
 	for _, l := range prof.Location {
 		lines := l.Line
@@ -465,7 +463,7 @@ func CreateNodes(prof *profile.Profile, keepBinary bool, kept NodeSet) (Nodes, m
 		}
 		nodes := make(Nodes, len(lines))
 		for ln := range lines {
-			nodes[ln] = nm.findOrInsertLine(l, lines[ln], keepBinary, kept)
+			nodes[ln] = nm.findOrInsertLine(l, lines[ln], o)
 		}
 		locations[l.ID] = nodes
 	}
@@ -480,34 +478,36 @@ func (nm NodeMap) nodes() Nodes {
 	return nodes
 }
 
-func (nm NodeMap) findOrInsertLine(l *profile.Location, li profile.Line, keepBinary bool, kept NodeSet) *Node {
+func (nm NodeMap) findOrInsertLine(l *profile.Location, li profile.Line, o *Options) *Node {
 	var objfile string
 	if m := l.Mapping; m != nil && m.File != "" {
 		objfile = filepath.Base(m.File)
 	}
 
-	if ni := nodeInfo(l, li, objfile, keepBinary); ni != nil {
-		return nm.FindOrInsertNode(*ni, kept)
+	if ni := nodeInfo(l, li, objfile, o); ni != nil {
+		return nm.FindOrInsertNode(*ni, o.KeptNodes)
 	}
 	return nil
 }
 
-func nodeInfo(l *profile.Location, line profile.Line, objfile string, keepBinary bool) *NodeInfo {
+func nodeInfo(l *profile.Location, line profile.Line, objfile string, o *Options) *NodeInfo {
 	if line.Function == nil {
 		return &NodeInfo{Address: l.Address, Objfile: objfile}
 	}
 	ni := &NodeInfo{
-		Address:  l.Address,
-		Lineno:   int(line.Line),
-		Name:     line.Function.Name,
-		OrigName: line.Function.SystemName,
+		Address: l.Address,
+		Lineno:  int(line.Line),
+		Name:    line.Function.Name,
 	}
 	if fname := line.Function.Filename; fname != "" {
 		ni.File = filepath.Clean(fname)
 	}
-	if keepBinary {
+	if o.ObjNames {
 		ni.Objfile = objfile
 		ni.StartLine = int(line.Function.StartLine)
+	}
+	if o.OrigFnNames {
+		ni.OrigName = line.Function.SystemName
 	}
 	return ni
 }
