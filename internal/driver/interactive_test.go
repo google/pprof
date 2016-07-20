@@ -266,7 +266,8 @@ func TestInteractiveCommands(t *testing.T) {
 				"tagignore": "ignore1|ignore2",
 			},
 		},
-		{"weblist  find -test",
+		{
+			"weblist  find -test",
 			map[string]string{
 				"functions":        "false",
 				"addressnoinlines": "true",
@@ -280,7 +281,7 @@ func TestInteractiveCommands(t *testing.T) {
 			"callgrind   fun -ignore  >out",
 			map[string]string{
 				"functions": "false",
-				"lines":     "true",
+				"addresses": "true",
 				"nodecount": "0",
 				"cum":       "false",
 				"flat":      "true",

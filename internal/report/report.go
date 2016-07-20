@@ -211,7 +211,7 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	// Only keep binary names for disassembly-based reports, otherwise
 	// remove it to allow merging of functions across binaries.
 	switch o.OutputFormat {
-	case Raw, List, WebList, Dis:
+	case Raw, List, WebList, Dis, Callgrind:
 		gopt.ObjNames = true
 	}
 
@@ -340,7 +340,7 @@ func symbolsFromBinaries(prof *profile.Profile, g *graph.Graph, rx *regexp.Regex
 	// Walk all mappings looking for matching functions with samples.
 	var objSyms []*objSymbol
 	for _, m := range prof.Mapping {
-		if !hasSamples[filepath.Base(m.File)] {
+		if !hasSamples[m.File] {
 			if address == nil || !(m.Start <= *address && *address <= m.Limit) {
 				continue
 			}
@@ -628,15 +628,28 @@ func printCallgrind(w io.Writer, rpt *Report) error {
 	rpt.selectOutputUnit(g)
 
 	nodeNames := getDisambiguatedNames(g)
+
+	fmt.Fprintln(w, "positions: instr line")
 	fmt.Fprintln(w, "events:", o.SampleType+"("+o.OutputUnit+")")
 
+	objfiles := make(map[string]int)
 	files := make(map[string]int)
 	names := make(map[string]int)
+
+	// prevInfo points to the previous NodeInfo.
+	// It is used to group cost lines together as much as possible.
+	var prevInfo *graph.NodeInfo
 	for _, n := range g.Nodes {
-		fmt.Fprintln(w, "fl="+callgrindName(files, n.Info.File))
-		fmt.Fprintln(w, "fn="+callgrindName(names, nodeNames[n]))
+		if prevInfo == nil || n.Info.Objfile != prevInfo.Objfile || n.Info.File != prevInfo.File || n.Info.Name != prevInfo.Name {
+			fmt.Fprintln(w)
+			fmt.Fprintln(w, "ob="+callgrindName(objfiles, n.Info.Objfile))
+			fmt.Fprintln(w, "fl="+callgrindName(files, n.Info.File))
+			fmt.Fprintln(w, "fn="+callgrindName(names, n.Info.Name))
+		}
+
+		addr := callgrindAddress(prevInfo, n.Info.Address)
 		sv, _ := measurement.Scale(n.Flat, o.SampleUnit, o.OutputUnit)
-		fmt.Fprintf(w, "%d %d\n", n.Info.Lineno, int64(sv))
+		fmt.Fprintf(w, "%s %d %d\n", addr, n.Info.Lineno, int64(sv))
 
 		// Print outgoing edges.
 		for _, out := range n.Out.Sort() {
@@ -645,10 +658,15 @@ func printCallgrind(w io.Writer, rpt *Report) error {
 			fmt.Fprintln(w, "cfl="+callgrindName(files, callee.Info.File))
 			fmt.Fprintln(w, "cfn="+callgrindName(names, nodeNames[callee]))
 			// pprof doesn't have a flat weight for a call, leave as 0.
-			fmt.Fprintln(w, "calls=0", callee.Info.Lineno)
-			fmt.Fprintln(w, n.Info.Lineno, int64(c))
+			fmt.Fprintf(w, "calls=0 %s %d\n", callgrindAddress(prevInfo, callee.Info.Address), callee.Info.Lineno)
+			// TODO: This address may be in the middle of a call
+			// instruction. It would be best to find the beginning
+			// of the instruction, but the tools seem to handle
+			// this OK.
+			fmt.Fprintf(w, "* * %d\n", int64(c))
 		}
-		fmt.Fprintln(w)
+
+		prevInfo = &n.Info
 	}
 
 	return nil
@@ -710,6 +728,32 @@ func callgrindName(names map[string]int, name string) string {
 	id := len(names) + 1
 	names[name] = id
 	return fmt.Sprintf("(%d) %s", id, name)
+}
+
+// callgrindAddress implements the callgrind subposition compression scheme if
+// possible. If prevInfo != nil, it contains the previous address. The current
+// address can be given relative to the previous address, with an explicit +/-
+// to indicate it is relative, or * for the same address.
+func callgrindAddress(prevInfo *graph.NodeInfo, curr uint64) string {
+	abs := fmt.Sprintf("%#x", curr)
+	if prevInfo == nil {
+		return abs
+	}
+
+	prev := prevInfo.Address
+	if prev == curr {
+		return "*"
+	}
+
+	diff := int64(curr - prev)
+	relative := fmt.Sprintf("%+d", diff)
+
+	// Only bother to use the relative address if it is actually shorter.
+	if len(relative) < len(abs) {
+		return relative
+	}
+
+	return abs
 }
 
 // printTree prints a tree-based report in text form.
