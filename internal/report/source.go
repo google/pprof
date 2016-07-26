@@ -253,7 +253,7 @@ func assemblyPerSourceLine(objSyms []*objSymbol, rs graph.Nodes, src string, obj
 func findMatchingSymbol(objSyms []*objSymbol, ns graph.Nodes) *objSymbol {
 	for _, n := range ns {
 		for _, o := range objSyms {
-			if filepath.Base(o.sym.File) == n.Info.Objfile &&
+			if filepath.Base(o.sym.File) == filepath.Base(n.Info.Objfile) &&
 				o.sym.Start <= n.Info.Address-o.base &&
 				n.Info.Address-o.base <= o.sym.End {
 				return o

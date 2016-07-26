@@ -138,7 +138,7 @@ func (i *NodeInfo) NameComponents() []string {
 		// User requested function name. It was already included.
 	case i.Objfile != "":
 		// Only binary name is available
-		name = append(name, "["+i.Objfile+"]")
+		name = append(name, "["+filepath.Base(i.Objfile)+"]")
 	default:
 		// Do not leave it empty if there is no information at all.
 		name = append(name, "<unknown>")
@@ -481,7 +481,7 @@ func (nm NodeMap) nodes() Nodes {
 func (nm NodeMap) findOrInsertLine(l *profile.Location, li profile.Line, o *Options) *Node {
 	var objfile string
 	if m := l.Mapping; m != nil && m.File != "" {
-		objfile = filepath.Base(m.File)
+		objfile = m.File
 	}
 
 	if ni := nodeInfo(l, li, objfile, o); ni != nil {

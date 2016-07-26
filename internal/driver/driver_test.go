@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -33,6 +34,14 @@ import (
 func TestParse(t *testing.T) {
 	// Override weblist command to collect output in buffer
 	pprofCommands["weblist"].postProcess = nil
+
+	// Our mockObjTool.Open will always return success, causing
+	// driver.locateBinaries to "find" the binaries below in a non-existant
+	// directory. As a workaround, point the search path to the fake
+	// directory containing out fake binaries.
+	savePath := os.Getenv("PPROF_BINARY_PATH")
+	os.Setenv("PPROF_BINARY_PATH", "/path/to")
+	defer os.Setenv("PPROF_BINARY_PATH", savePath)
 
 	testcase := []struct {
 		flags, source string
@@ -445,7 +454,7 @@ func cpuProfile() *profile.Profile {
 			ID:              1,
 			Start:           0x1000,
 			Limit:           0x4000,
-			File:            "testbinary",
+			File:            "/path/to/testbinary",
 			HasFunctions:    true,
 			HasFilenames:    true,
 			HasLineNumbers:  true,
@@ -564,7 +573,7 @@ func cpuProfileSmall() *profile.Profile {
 			ID:              1,
 			Start:           0x1000,
 			Limit:           0x4000,
-			File:            "testbinary",
+			File:            "/path/to/testbinary",
 			HasFunctions:    true,
 			HasFilenames:    true,
 			HasLineNumbers:  true,
@@ -865,7 +874,7 @@ func symzProfile() *profile.Profile {
 			ID:    1,
 			Start: testStart,
 			Limit: 0x4000,
-			File:  "testbinary",
+			File:  "/path/to/testbinary",
 		},
 	}
 

@@ -130,12 +130,15 @@ func applyCommandOverrides(cmd []string, v variables) variables {
 	case "proto", "raw":
 		trim, focus, tagfocus, hide = false, false, false, false
 		v.set("addresses", "t")
+	case "callgrind", "kcachegrind":
+		trim = false
+		v.set("addresses", "t")
 	case "disasm", "weblist":
 		trim = false
 		v.set("addressnoinlines", "t")
 	case "peek":
 		trim, focus, hide = false, false, false
-	case "kcachegrind", "callgrind", "list":
+	case "list":
 		v.set("nodecount", "0")
 		v.set("lines", "t")
 	case "text", "top", "topproto":
