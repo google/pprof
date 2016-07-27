@@ -240,7 +240,8 @@ func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint6
 			if loadSegment == nil || loadSegment.Vaddr == 0 {
 				return start - offset, nil
 			}
-			return 0, fmt.Errorf("Don't know how to handle mapping.Offset %x, vaddr=%x", offset, loadSegment.Vaddr)
+			return 0, fmt.Errorf("Don't know how to handle mapping. Offset=%x, vaddr=%x",
+				offset, loadSegment.Vaddr)
 		}
 		if loadSegment == nil {
 			return start, nil
