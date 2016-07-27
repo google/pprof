@@ -237,7 +237,10 @@ func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint6
 		return start, nil
 	case elf.ET_DYN:
 		if offset != 0 {
-			return 0, fmt.Errorf("Don't know how to handle mapping.Offset")
+			if loadSegment == nil || loadSegment.Vaddr == 0 {
+				return start - offset, nil
+			}
+			return 0, fmt.Errorf("Don't know how to handle mapping.Offset %x, vaddr=%x", offset, loadSegment.Vaddr)
 		}
 		if loadSegment == nil {
 			return start, nil
