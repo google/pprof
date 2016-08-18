@@ -15,11 +15,14 @@
 package driver
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"sync"
@@ -357,7 +360,7 @@ func fetch(source string, duration, timeout time.Duration, ui plugin.UI) (p *pro
 		f, err = fetchURL(sourceURL, timeout)
 		src = sourceURL
 	} else {
-		f, err = os.Open(source)
+		f, err = profileProtoReader(source)
 	}
 	if err == nil {
 		defer f.Close()
@@ -377,6 +380,74 @@ func fetchURL(source string, timeout time.Duration) (io.ReadCloser, error) {
 	}
 
 	return resp.Body, nil
+}
+
+// profileProtoReader takes a path, and using heuristics, will try to convert
+// the file to profile.proto format. It returns a ReadCloser to the
+// profile.proto data; however, if the file contents were unknown or conversion
+// failed, it may still not be a valid profile.proto.
+func profileProtoReader(path string) (io.ReadCloser, error) {
+	sourceFile, openErr := os.Open(path)
+	if openErr != nil {
+		return nil, openErr
+	}
+
+	// If the file is the output of a perf record command, it should begin
+	// with the string PERFILE2.
+	perfHeader := []byte("PERFILE2")
+	actualHeader := make([]byte, len(perfHeader))
+	_, readErr := sourceFile.Read(actualHeader)
+	_, seekErr := sourceFile.Seek(0, 0)
+	if seekErr != nil {
+		return nil, seekErr
+	} else if readErr != nil && readErr != io.EOF{
+		return nil, readErr
+	} else if string(actualHeader) == string(perfHeader) {
+		sourceFile.Close()
+		profileFile, convertErr := convertPerfData(path)
+		if convertErr != nil {
+			return nil, convertErr
+		}
+		return os.Open(profileFile)
+	}
+	return sourceFile, nil
+}
+
+// convertPerfData converts the file at path which should be in perf.data format
+// using the perf_to_profile tool. It prints the stderr and stdout of
+// perf_to_profile to the stderr and stdout of this process, then returns the
+// path to a file containing the profile.proto formatted data.
+func convertPerfData(perfPath string) (string, error) {
+	randomBytes := make([]byte, 32)
+	_, randErr := rand.Read(randomBytes)
+	if randErr != nil {
+		return "", randErr
+	}
+	randomFileName := "/tmp/pprof_" +
+		base64.StdEncoding.EncodeToString(randomBytes)
+	cmd := exec.Command("perf_to_profile", perfPath, randomFileName)
+
+	stdout, stdoutErr := cmd.StdoutPipe()
+	if stdoutErr != nil {
+		return "", stdoutErr
+	}
+	go func() {
+		io.Copy(os.Stdout, stdout)
+	}()
+
+	stderr, stderrErr := cmd.StderrPipe()
+	if stderrErr != nil {
+		return "", stderrErr
+	}
+	go func() {
+		io.Copy(os.Stderr, stderr)
+	}()
+
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+
+	return randomFileName, nil
 }
 
 // adjustURL validates if a profile source is a URL and returns an
