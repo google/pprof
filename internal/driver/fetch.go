@@ -417,9 +417,8 @@ func profileProtoReader(path string, ui plugin.UI) (io.ReadCloser, error) {
 }
 
 // convertPerfData converts the file at path which should be in perf.data format
-// using the perf_to_profile tool. It prints the stderr and stdout of
-// perf_to_profile to the stderr and stdout of this process, then returns the
-// path to a file containing the profile.proto formatted data.
+// using the perf_to_profile tool and returns the path to a file containing the
+// profile.proto formatted data.
 func convertPerfData(perfPath string, ui plugin.UI) (string, error) {
 	ui.Print(fmt.Sprintf(
 		"Converting %s to a profile.proto... (May take a few minutes)",
@@ -432,23 +431,6 @@ func convertPerfData(perfPath string, ui plugin.UI) (string, error) {
 	randomFileName := "/tmp/pprof_" +
 		base64.StdEncoding.EncodeToString(randomBytes)
 	cmd := exec.Command("perf_to_profile", perfPath, randomFileName)
-
-	stdout, stdoutErr := cmd.StdoutPipe()
-	if stdoutErr != nil {
-		return "", stdoutErr
-	}
-	go func() {
-		io.Copy(os.Stdout, stdout)
-	}()
-
-	stderr, stderrErr := cmd.StderrPipe()
-	if stderrErr != nil {
-		return "", stderrErr
-	}
-	go func() {
-		io.Copy(os.Stderr, stderr)
-	}()
-
 	if err := cmd.Run(); err != nil {
 		return "", err
 	}
