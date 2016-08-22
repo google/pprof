@@ -21,16 +21,46 @@ import (
 	"sync"
 )
 
-// newTempFile returns an unused filename for output files.
-func newTempFile(dir, prefix, suffix string) (*os.File, error) {
+// newTempFilePath returns an unused path for output files.
+func newTempFilePath(dir, prefix, suffix string) (string, error) {
 	for index := 1; index < 10000; index++ {
 		path := filepath.Join(dir, fmt.Sprintf("%s%03d%s", prefix, index, suffix))
 		if _, err := os.Stat(path); err != nil {
-			return os.Create(path)
+			return path, nil
 		}
 	}
 	// Give up
-	return nil, fmt.Errorf("could not create file of the form %s%03d%s", prefix, 1, suffix)
+	return "", fmt.Errorf("could not create file of the form %s%03d%s", prefix, 1, suffix)
+}
+
+// newTempFile returns a new file with a random name for output files.
+func newTempFile(dir, prefix, suffix string) (*os.File, error) {
+	path, err := newTempFilePath(dir, prefix, suffix)
+	if err != nil {
+		return nil, err
+	}
+	return os.Create(path)
+}
+
+type VolatileFile struct {
+	*os.File
+}
+
+func (file VolatileFile) Close() error {
+	if err := file.File.Close(); err != nil {
+		return err
+	}
+	if err := os.Remove(file.Name()); err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteOnClose deletes file on Close().
+func DeleteOnClose(file *os.File) VolatileFile {
+	return VolatileFile {
+		File: file,
+	}
 }
 
 var tempFiles []string

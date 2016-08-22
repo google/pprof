@@ -16,10 +16,8 @@ package driver
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -407,11 +405,16 @@ func profileProtoReader(path string, ui plugin.UI) (io.ReadCloser, error) {
 	}
 	if bytes.Equal(actualHeader, perfHeader) {
 		sourceFile.Close()
-		profileFile, convertErr := convertPerfData(path, ui)
+		profileFilePath, convertErr := convertPerfData(path, ui)
 		if convertErr != nil {
 			return nil, convertErr
 		}
-		return os.Open(profileFile)
+		profileFile, openErr := os.Open(profileFilePath)
+		if openErr != nil {
+			os.Remove(profileFilePath)
+			return nil, openErr
+		}
+		return DeleteOnClose(profileFile), nil
 	}
 	return sourceFile, nil
 }
@@ -423,19 +426,16 @@ func convertPerfData(perfPath string, ui plugin.UI) (string, error) {
 	ui.Print(fmt.Sprintf(
 		"Converting %s to a profile.proto... (May take a few minutes)",
 		perfPath))
-	randomBytes := make([]byte, 32)
-	_, randErr := rand.Read(randomBytes)
-	if randErr != nil {
-		return "", randErr
-	}
-	randomFileName := "/tmp/pprof_" +
-		base64.StdEncoding.EncodeToString(randomBytes)
-	cmd := exec.Command("perf_to_profile", perfPath, randomFileName)
-	if err := cmd.Run(); err != nil {
+	profilePath, err := newTempFilePath("/tmp", "pprof_", ".pb.gz")
+	if err != nil {
 		return "", err
 	}
-
-	return randomFileName, nil
+	cmd := exec.Command("perf_to_profile", perfPath, profilePath)
+	if err := cmd.Run(); err != nil {
+		os.Remove(profilePath)
+		return "", err
+	}
+	return profilePath, nil
 }
 
 // adjustURL validates if a profile source is a URL and returns an
