@@ -292,7 +292,7 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 			missingBinaries = true
 			continue
 		}
-		
+
 		// Skip well-known system mappings
 		name := filepath.Base(m.File)
 		if name == "[vdso]" || strings.HasPrefix(name, "linux-vdso") {
