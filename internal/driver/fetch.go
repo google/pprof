@@ -361,7 +361,7 @@ func fetch(source string, duration, timeout time.Duration, ui plugin.UI) (p *pro
 		f, err = fetchURL(sourceURL, timeout)
 		src = sourceURL
 	} else {
-		f, err = profileProtoReader(source)
+		f, err = profileProtoReader(source, ui)
 	}
 	if err == nil {
 		defer f.Close()
@@ -387,7 +387,7 @@ func fetchURL(source string, timeout time.Duration) (io.ReadCloser, error) {
 // the file to profile.proto format. It returns a ReadCloser to the
 // profile.proto data; however, if the file contents were unknown or conversion
 // failed, it may still not be a valid profile.proto.
-func profileProtoReader(path string) (io.ReadCloser, error) {
+func profileProtoReader(path string, ui plugin.UI) (io.ReadCloser, error) {
 	sourceFile, openErr := os.Open(path)
 	if openErr != nil {
 		return nil, openErr
@@ -407,7 +407,7 @@ func profileProtoReader(path string) (io.ReadCloser, error) {
 	}
 	if bytes.Equal(actualHeader, perfHeader) {
 		sourceFile.Close()
-		profileFile, convertErr := convertPerfData(path)
+		profileFile, convertErr := convertPerfData(path, ui)
 		if convertErr != nil {
 			return nil, convertErr
 		}
@@ -420,7 +420,10 @@ func profileProtoReader(path string) (io.ReadCloser, error) {
 // using the perf_to_profile tool. It prints the stderr and stdout of
 // perf_to_profile to the stderr and stdout of this process, then returns the
 // path to a file containing the profile.proto formatted data.
-func convertPerfData(perfPath string) (string, error) {
+func convertPerfData(perfPath string, ui plugin.UI) (string, error) {
+	ui.Print(fmt.Sprintf(
+		"Converting %s to a profile.proto... (May take a few minutes)",
+		perfPath))
 	randomBytes := make([]byte, 32)
 	_, randErr := rand.Read(randomBytes)
 	if randErr != nil {
