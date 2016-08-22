@@ -15,6 +15,7 @@
 package driver
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -402,7 +403,7 @@ func profileProtoReader(path string) (io.ReadCloser, error) {
 		return nil, seekErr
 	} else if readErr != nil && readErr != io.EOF{
 		return nil, readErr
-	} else if string(actualHeader) == string(perfHeader) {
+	} else if bytes.Equal(actualHeader, perfHeader) {
 		sourceFile.Close()
 		profileFile, convertErr := convertPerfData(path)
 		if convertErr != nil {
