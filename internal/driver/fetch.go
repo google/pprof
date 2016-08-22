@@ -401,9 +401,11 @@ func profileProtoReader(path string) (io.ReadCloser, error) {
 	_, seekErr := sourceFile.Seek(0, 0)
 	if seekErr != nil {
 		return nil, seekErr
-	} else if readErr != nil && readErr != io.EOF{
+	}
+	if readErr != nil && readErr != io.EOF{
 		return nil, readErr
-	} else if bytes.Equal(actualHeader, perfHeader) {
+	}
+	if bytes.Equal(actualHeader, perfHeader) {
 		sourceFile.Close()
 		profileFile, convertErr := convertPerfData(path)
 		if convertErr != nil {
