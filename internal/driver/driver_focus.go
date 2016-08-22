@@ -50,6 +50,12 @@ func applyFocus(prof *profile.Profile, v variables, ui plugin.UI) error {
 	warnNoMatches(tagfocus == nil || tfm, "TagFocus", ui)
 	warnNoMatches(tagignore == nil || tim, "TagIgnore", ui)
 
+	tagshow, err := compileRegexOption("tagshow", v["tagshow"].value, err)
+	taghide, err := compileRegexOption("taghide", v["taghide"].value, err)
+	tns, tnh := prof.FilterTagsByName(tagshow, taghide)
+	warnNoMatches(tagshow == nil || tns, "TagShow", ui)
+	warnNoMatches(tagignore == nil || tnh, "TagHide", ui)
+
 	if prunefrom != nil {
 		prof.PruneFrom(prunefrom)
 	}
