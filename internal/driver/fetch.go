@@ -411,10 +411,9 @@ func profileProtoReader(path string, ui plugin.UI) (io.ReadCloser, error) {
 		}
 		profileFile, openErr := os.Open(profileFilePath)
 		if openErr != nil {
-			os.Remove(profileFilePath)
 			return nil, openErr
 		}
-		return DeleteOnClose(profileFile), nil
+		return profileFile, nil
 	}
 	return sourceFile, nil
 }
@@ -431,8 +430,10 @@ func convertPerfData(perfPath string, ui plugin.UI) (string, error) {
 		return "", err
 	}
 	cmd := exec.Command("perf_to_profile", perfPath, profilePath)
+	// If perf_to_profile failed before generating the file, this defer
+	// is just a no-op.
+	deferDeleteTempFile(profilePath)
 	if err := cmd.Run(); err != nil {
-		os.Remove(profilePath)
 		return "", err
 	}
 	return profilePath, nil

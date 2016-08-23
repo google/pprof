@@ -42,27 +42,6 @@ func newTempFile(dir, prefix, suffix string) (*os.File, error) {
 	return os.Create(path)
 }
 
-type VolatileFile struct {
-	*os.File
-}
-
-func (file VolatileFile) Close() error {
-	if err := file.File.Close(); err != nil {
-		return err
-	}
-	if err := os.Remove(file.Name()); err != nil {
-		return err
-	}
-	return nil
-}
-
-// DeleteOnClose deletes file on Close().
-func DeleteOnClose(file *os.File) VolatileFile {
-	return VolatileFile {
-		File: file,
-	}
-}
-
 var tempFiles []string
 var tempFilesMu = sync.Mutex{}
 
