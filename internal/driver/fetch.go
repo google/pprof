@@ -358,8 +358,15 @@ func fetch(source string, duration, timeout time.Duration, ui plugin.UI) (p *pro
 		}
 		f, err = fetchURL(sourceURL, timeout)
 		src = sourceURL
+	} else if isPerf, isPerfErr := isPerfFile(source); isPerf {
+		// Since the if statement is a new scope, if isPerfErr is named
+		// err, it shadows the err in the return, and does not compile.
+		if isPerfErr != nil {
+			return nil, "", isPerfErr
+		}
+		f, err = convertPerfData(source, ui)
 	} else {
-		f, err = profileProtoReader(source, ui)
+		f, err = os.Open(source)
 	}
 	if err == nil {
 		defer f.Close()
@@ -381,62 +388,43 @@ func fetchURL(source string, timeout time.Duration) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-// profileProtoReader takes a path, and using heuristics, will try to convert
-// the file to profile.proto format. It returns a ReadCloser to the
-// profile.proto data; however, if the file contents were unknown or conversion
-// failed, it may still not be a valid profile.proto.
-func profileProtoReader(path string, ui plugin.UI) (io.ReadCloser, error) {
+// isPerfFile checks if a file is in perf.data format.
+func isPerfFile(path string) (bool, error) {
 	sourceFile, openErr := os.Open(path)
 	if openErr != nil {
-		return nil, openErr
+		return false, openErr
 	}
+	defer sourceFile.Close()
 
 	// If the file is the output of a perf record command, it should begin
 	// with the string PERFILE2.
 	perfHeader := []byte("PERFILE2")
 	actualHeader := make([]byte, len(perfHeader))
-	if _, readErr := sourceFile.Read(actualHeader); readErr == io.EOF {
-		_, seekErr := sourceFile.Seek(0, 0)
-		if seekErr != nil {
-			return nil, seekErr
-		}
-	} else if readErr != nil {
-		return nil, readErr
+	if _, readErr := sourceFile.Read(actualHeader); readErr != nil {
+		return false, readErr
 	}
-	if bytes.Equal(actualHeader, perfHeader) {
-		sourceFile.Close()
-		profileFilePath, convertErr := convertPerfData(path, ui)
-		if convertErr != nil {
-			return nil, convertErr
-		}
-		profileFile, openErr := os.Open(profileFilePath)
-		if openErr != nil {
-			return nil, openErr
-		}
-		return profileFile, nil
-	}
-	return sourceFile, nil
+	return bytes.Equal(actualHeader, perfHeader), nil
 }
 
 // convertPerfData converts the file at path which should be in perf.data format
-// using the perf_to_profile tool and returns the path to a file containing the
+// using the perf_to_profile tool and returns the file containing the
 // profile.proto formatted data.
-func convertPerfData(perfPath string, ui plugin.UI) (string, error) {
+func convertPerfData(perfPath string, ui plugin.UI) (*os.File, error) {
 	ui.Print(fmt.Sprintf(
 		"Converting %s to a profile.proto... (May take a few minutes)",
 		perfPath))
 	profilePath, err := newTempFilePath("/tmp", "pprof_", ".pb.gz")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	cmd := exec.Command("perf_to_profile", perfPath, profilePath)
 	// If perf_to_profile failed before generating the file, this defer
 	// is just a no-op.
 	deferDeleteTempFile(profilePath)
 	if err := cmd.Run(); err != nil {
-		return "", err
+		return nil, err
 	}
-	return profilePath, nil
+	return os.Open(profilePath)
 }
 
 // adjustURL validates if a profile source is a URL and returns an
