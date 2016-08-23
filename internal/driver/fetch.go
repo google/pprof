@@ -395,12 +395,12 @@ func profileProtoReader(path string, ui plugin.UI) (io.ReadCloser, error) {
 	// with the string PERFILE2.
 	perfHeader := []byte("PERFILE2")
 	actualHeader := make([]byte, len(perfHeader))
-	_, readErr := sourceFile.Read(actualHeader)
-	_, seekErr := sourceFile.Seek(0, 0)
-	if seekErr != nil {
-		return nil, seekErr
-	}
-	if readErr != nil && readErr != io.EOF{
+	if _, readErr := sourceFile.Read(actualHeader); readErr == io.EOF {
+		_, seekErr := sourceFile.Seek(0, 0)
+		if seekErr != nil {
+			return nil, seekErr
+		}
+	} else if readErr != nil {
 		return nil, readErr
 	}
 	if bytes.Equal(actualHeader, perfHeader) {
