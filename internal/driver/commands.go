@@ -199,7 +199,12 @@ var pprofVariables = variables{
 	"tagignore": &variable{stringKind, "", "", helpText(
 		"Discard samples with tags in range or matched by regexp",
 		"Discard samples that do include a node with a tag matching this regexp.")},
-
+	"tagshow": &variable{stringKind, "", "", helpText(
+		"Only consider tags matching this regexp",
+		"Discard tags that do not match this regexp")},
+	"taghide": &variable{stringKind, "", "", helpText(
+		"Skip tags matching this regexp",
+		"Discard tags that match this regexp")},
 	// Heap profile options
 	"divide_by": &variable{floatKind, "1", "", helpText(
 		"Ratio to divide all samples before visualization",

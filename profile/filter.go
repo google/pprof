@@ -73,6 +73,36 @@ func (p *Profile) FilterSamplesByName(focus, ignore, hide, show *regexp.Regexp) 
 	return
 }
 
+// FilterTagsByName filters the tags in a profile and only keeps
+// tags that match show and not hide.
+func (p *Profile) FilterTagsByName(show, hide *regexp.Regexp) (sm, hm bool) {
+	matchRemove := func(name string) bool {
+		matchShow := show == nil || show.MatchString(name)
+		matchHide := hide != nil && hide.MatchString(name)
+
+		if matchShow {
+			sm = true
+		}
+		if matchHide {
+			hm = true
+		}
+		return !matchShow || matchHide
+	}
+	for _, s := range p.Sample {
+		for lab := range s.Label {
+			if matchRemove(lab) {
+				delete(s.Label, lab)
+			}
+		}
+		for lab := range s.NumLabel {
+			if matchRemove(lab) {
+				delete(s.NumLabel, lab)
+			}
+		}
+	}
+	return
+}
+
 // matchesName returns whether the location matches the regular
 // expression. It checks any available function names, file names, and
 // mapping object filename.

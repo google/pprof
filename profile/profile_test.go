@@ -507,6 +507,49 @@ func TestFilter(t *testing.T) {
 	}
 }
 
+func TestTagFilter(t *testing.T) {
+     // Perform several forms of tag filtering on the test profile.
+
+	type filterTestcase struct {
+		include, exclude *regexp.Regexp
+		im, em bool
+		count int
+	}
+
+	countTags := func (p *Profile) map[string]bool {
+		  tags := make(map[string]bool)
+
+		  for _, s := range p.Sample {
+		      for l := range s.Label {
+		      	  tags[l] = true
+		      }		      
+		      for l := range s.NumLabel {
+		      	  tags[l] = true
+		      }		      
+		  }
+		  return tags
+	}	
+	
+	for tx, tc := range []filterTestcase{
+		{nil, nil, true, false, 3},
+		{regexp.MustCompile("notfound"), nil, false, false, 0},
+		{regexp.MustCompile("key1"), nil, true, false, 1},
+		{nil, regexp.MustCompile("key[12]"), true, true, 1},
+	} {
+		prof := testProfile.Copy()
+		gim, gem := prof.FilterTagsByName(tc.include, tc.exclude)
+		if  gim != tc.im {
+			t.Errorf("Filter #%d, got include match=%v, want %v", tx, gim, tc.im)
+		}		
+		if  gem != tc.em {
+			t.Errorf("Filter #%d, got exclude match=%v, want %v", tx, gem, tc.em)
+		}		
+		if  tags := countTags(prof) ; len(tags) != tc.count {
+			t.Errorf("Filter #%d, got %d tags[%v], want %d", tx, len(tags), tags, tc.count)
+		}		
+	}
+}
+
 // locationHash constructs a string to use as a hashkey for a sample, based on its locations
 func locationHash(s *Sample) string {
 	var tb string
