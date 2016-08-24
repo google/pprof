@@ -358,12 +358,7 @@ func fetch(source string, duration, timeout time.Duration, ui plugin.UI) (p *pro
 		}
 		f, err = fetchURL(sourceURL, timeout)
 		src = sourceURL
-	} else if isPerf, isPerfErr := isPerfFile(source); isPerf {
-		// Since the if statement is a new scope, if isPerfErr is named
-		// err, it shadows the err in the return, and does not compile.
-		if isPerfErr != nil {
-			return nil, "", isPerfErr
-		}
+	} else if isPerfFile(source) {
 		f, err = convertPerfData(source, ui)
 	} else {
 		f, err = os.Open(source)
@@ -388,11 +383,12 @@ func fetchURL(source string, timeout time.Duration) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-// isPerfFile checks if a file is in perf.data format.
-func isPerfFile(path string) (bool, error) {
+// isPerfFile checks if a file is in perf.data format. It also returns false
+// if it encounters an error during the check.
+func isPerfFile(path string) bool {
 	sourceFile, openErr := os.Open(path)
 	if openErr != nil {
-		return false, openErr
+		return false
 	}
 	defer sourceFile.Close()
 
@@ -401,9 +397,9 @@ func isPerfFile(path string) (bool, error) {
 	perfHeader := []byte("PERFILE2")
 	actualHeader := make([]byte, len(perfHeader))
 	if _, readErr := sourceFile.Read(actualHeader); readErr != nil {
-		return false, readErr
+		return false
 	}
-	return bytes.Equal(actualHeader, perfHeader), nil
+	return bytes.Equal(actualHeader, perfHeader)
 }
 
 // convertPerfData converts the file at path which should be in perf.data format
