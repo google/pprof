@@ -409,18 +409,17 @@ func convertPerfData(perfPath string, ui plugin.UI) (*os.File, error) {
 	ui.Print(fmt.Sprintf(
 		"Converting %s to a profile.proto... (May take a few minutes)",
 		perfPath))
-	profilePath, err := newTempFilePath("/tmp", "pprof_", ".pb.gz")
+	profile, err := newTempFile("/tmp", "pprof_", ".pb.gz")
 	if err != nil {
 		return nil, err
 	}
-	cmd := exec.Command("perf_to_profile", perfPath, profilePath)
-	// If perf_to_profile failed before generating the file, this defer
-	// is just a no-op.
-	deferDeleteTempFile(profilePath)
+	deferDeleteTempFile(profile.Name())
+	cmd := exec.Command("perf_to_profile", perfPath, profile.Name())
 	if err := cmd.Run(); err != nil {
+		profile.Close()
 		return nil, err
 	}
-	return os.Open(profilePath)
+	return profile, nil
 }
 
 // adjustURL validates if a profile source is a URL and returns an

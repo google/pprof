@@ -21,25 +21,16 @@ import (
 	"sync"
 )
 
-// newTempFilePath returns an unused path for output files.
-func newTempFilePath(dir, prefix, suffix string) (string, error) {
+// newTempFile returns a new output file in dir with the provided prefix and suffix.
+func newTempFile(dir, prefix, suffix string) (*os.File, error) {
 	for index := 1; index < 10000; index++ {
 		path := filepath.Join(dir, fmt.Sprintf("%s%03d%s", prefix, index, suffix))
 		if _, err := os.Stat(path); err != nil {
-			return path, nil
+			return os.Create(path)
 		}
 	}
 	// Give up
-	return "", fmt.Errorf("could not create file of the form %s%03d%s", prefix, 1, suffix)
-}
-
-// newTempFile returns a new file with a random name for output files.
-func newTempFile(dir, prefix, suffix string) (*os.File, error) {
-	path, err := newTempFilePath(dir, prefix, suffix)
-	if err != nil {
-		return nil, err
-	}
-	return os.Create(path)
+	return nil, fmt.Errorf("could not create file of the form %s%03d%s", prefix, 1, suffix)
 }
 
 var tempFiles []string
