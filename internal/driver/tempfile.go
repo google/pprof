@@ -21,7 +21,7 @@ import (
 	"sync"
 )
 
-// newTempFile returns an unused filename for output files.
+// newTempFile returns a new output file in dir with the provided prefix and suffix.
 func newTempFile(dir, prefix, suffix string) (*os.File, error) {
 	for index := 1; index < 10000; index++ {
 		path := filepath.Join(dir, fmt.Sprintf("%s%03d%s", prefix, index, suffix))

@@ -15,11 +15,13 @@
 package driver
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"sync"
@@ -356,6 +358,8 @@ func fetch(source string, duration, timeout time.Duration, ui plugin.UI) (p *pro
 		}
 		f, err = fetchURL(sourceURL, timeout)
 		src = sourceURL
+	} else if isPerfFile(source) {
+		f, err = convertPerfData(source, ui)
 	} else {
 		f, err = os.Open(source)
 	}
@@ -377,6 +381,45 @@ func fetchURL(source string, timeout time.Duration) (io.ReadCloser, error) {
 	}
 
 	return resp.Body, nil
+}
+
+// isPerfFile checks if a file is in perf.data format. It also returns false
+// if it encounters an error during the check.
+func isPerfFile(path string) bool {
+	sourceFile, openErr := os.Open(path)
+	if openErr != nil {
+		return false
+	}
+	defer sourceFile.Close()
+
+	// If the file is the output of a perf record command, it should begin
+	// with the string PERFILE2.
+	perfHeader := []byte("PERFILE2")
+	actualHeader := make([]byte, len(perfHeader))
+	if _, readErr := sourceFile.Read(actualHeader); readErr != nil {
+		return false
+	}
+	return bytes.Equal(actualHeader, perfHeader)
+}
+
+// convertPerfData converts the file at path which should be in perf.data format
+// using the perf_to_profile tool and returns the file containing the
+// profile.proto formatted data.
+func convertPerfData(perfPath string, ui plugin.UI) (*os.File, error) {
+	ui.Print(fmt.Sprintf(
+		"Converting %s to a profile.proto... (May take a few minutes)",
+		perfPath))
+	profile, err := newTempFile("/tmp", "pprof_", ".pb.gz")
+	if err != nil {
+		return nil, err
+	}
+	deferDeleteTempFile(profile.Name())
+	cmd := exec.Command("perf_to_profile", perfPath, profile.Name())
+	if err := cmd.Run(); err != nil {
+		profile.Close()
+		return nil, err
+	}
+	return profile, nil
 }
 
 // adjustURL validates if a profile source is a URL and returns an
