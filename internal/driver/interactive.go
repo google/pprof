@@ -26,6 +26,8 @@ import (
 	"github.com/google/pprof/profile"
 )
 
+var commentStart = "//:" // Sentinel for comments on options
+
 // interactive starts a shell to read pprof commands.
 func interactive(p *profile.Profile, o *plugin.Options) error {
 	// Enter command processing loop.
@@ -40,7 +42,7 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 
 	greetings(p, o.UI)
 	for {
-		input, err := o.UI.ReadLine(pprofPrompt(p))
+		input, err := o.UI.ReadLine("(pprof) ")
 		if err != nil {
 			if err != io.EOF {
 				return err
@@ -54,13 +56,32 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 			// Process assignments of the form variable=value
 			if s := strings.SplitN(input, "=", 2); len(s) > 0 {
 				name := strings.TrimSpace(s[0])
-
+				var value string
+				if len(s) == 2 {
+					value = s[1]
+					if comment := strings.LastIndex(value, commentStart); comment != -1 {
+						value = value[:comment]
+					}
+					value = strings.TrimSpace(value)
+				}
 				if v := pprofVariables[name]; v != nil {
-					var value string
-					if len(s) == 2 {
-						value = strings.TrimSpace(s[1])
+					if name == "sample_index" {
+						// Error check sample_index=xxx to ensure xxx is a valid sample type.
+						index, err := locateSampleIndex(p, value)
+						if err != nil {
+							o.UI.PrintErr(err)
+							continue
+						}
+						value = p.SampleType[index].Type
 					}
 					if err := pprofVariables.set(name, value); err != nil {
+						o.UI.PrintErr(err)
+					}
+					continue
+				}
+				// Allow group=variable syntax by converting into variable="".
+				if v := pprofVariables[value]; v != nil && v.group == name {
+					if err := pprofVariables.set(value, ""); err != nil {
 						o.UI.PrintErr(err)
 					}
 					continue
@@ -73,6 +94,9 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 			}
 
 			switch tokens[0] {
+			case "o", "options":
+				printCurrentOptions(p, o.UI)
+				continue
 			case "exit", "quit":
 				return nil
 			case "help":
@@ -100,9 +124,8 @@ func greetings(p *profile.Profile, ui plugin.UI) {
 	ropt, err := reportOptions(p, pprofVariables)
 	if err == nil {
 		ui.Print(strings.Join(report.ProfileLabels(report.New(p, ropt)), "\n"))
-		ui.Print(fmt.Sprintf("Sample types: %v\n", sampleTypes(p)))
 	}
-	ui.Print("Entering interactive mode (type \"help\" for commands)")
+	ui.Print("Entering interactive mode (type \"help\" for commands, \"o\" for options)")
 }
 
 // shortcuts represents composite commands that expand into a sequence
@@ -110,6 +133,7 @@ func greetings(p *profile.Profile, ui plugin.UI) {
 type shortcuts map[string][]string
 
 func (a shortcuts) expand(input string) []string {
+	input = strings.TrimSpace(input)
 	if a != nil {
 		if r, ok := a[input]; ok {
 			return r
@@ -135,45 +159,57 @@ func profileShortcuts(p *profile.Profile) shortcuts {
 	return s
 }
 
-// pprofPrompt returns the prompt displayed to accept commands.
-// hides some default values to reduce clutter.
-func pprofPrompt(p *profile.Profile) string {
+func printCurrentOptions(p *profile.Profile, ui plugin.UI) {
 	var args []string
+	type groupInfo struct {
+		set    string
+		values []string
+	}
+	groups := make(map[string]*groupInfo)
 	for n, o := range pprofVariables {
 		v := o.stringValue()
-		if v == "" {
+		comment := ""
+		if g := o.group; g != "" {
+			gi, ok := groups[g]
+			if !ok {
+				gi = &groupInfo{}
+				groups[g] = gi
+			}
+			if o.boolValue() {
+				gi.set = n
+			}
+			gi.values = append(gi.values, n)
 			continue
 		}
-		// Do not show some default values.
 		switch {
-		case n == "unit" && v == "minimum":
-			continue
-		case n == "divide_by" && v == "1":
-			continue
-		case n == "nodecount" && v == "-1":
-			continue
 		case n == "sample_index":
-			index, err := locateSampleIndex(p, v)
-			if err != nil {
-				v = "ERROR: " + err.Error()
-			} else {
-				v = fmt.Sprintf("%s (%d)", p.SampleType[index].Type, index)
+			st := sampleTypes(p)
+			if v == "" {
+				// Apply default (last sample index).
+				v = st[len(st)-1]
 			}
-		case n == "trim" || n == "compact_labels":
-			if o.boolValue() == true {
-				continue
-			}
-		case o.kind == boolKind:
-			if o.boolValue() == false {
-				continue
-			}
+			// Add comments for all sample types in profile.
+			comment = "[" + strings.Join(st, " | ") + "]"
 		case n == "source_path":
 			continue
+		case n == "nodecount" && v == "-1":
+			comment = "default"
+		case v == "":
+			// Add quotes for empty values.
+			v = `""`
 		}
-		args = append(args, fmt.Sprintf("  %-25s : %s", n, v))
+		if comment != "" {
+			comment = commentStart + " " + comment
+		}
+		args = append(args, fmt.Sprintf("  %-25s = %-20s %s", n, v, comment))
+	}
+	for g, vars := range groups {
+		sort.Strings(vars.values)
+		comment := commentStart + " [" + strings.Join(vars.values, " | ") + "]"
+		args = append(args, fmt.Sprintf("  %-25s = %-20s %s", g, vars.set, comment))
 	}
 	sort.Strings(args)
-	return "Options:\n" + strings.Join(args, "\n") + "\nPPROF>"
+	ui.Print(strings.Join(args, "\n"))
 }
 
 // parseCommandLine parses a command and returns the pprof command to

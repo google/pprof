@@ -268,6 +268,7 @@ func usage(commandLine bool) string {
 		help = "  Output formats (select only one):\n"
 	} else {
 		help = "  Commands:\n"
+		commands = append(commands, fmtHelp("o/options", "List options and their current values"))
 		commands = append(commands, fmtHelp("quit/exit/^D", "Exit pprof"))
 	}
 
@@ -534,6 +535,11 @@ func (vars variables) set(name, value string) error {
 		_, err = strconv.Atoi(value)
 	case floatKind:
 		_, err = strconv.ParseFloat(value, 64)
+	case stringKind:
+		// Remove quotes, particularly useful for empty values.
+		if len(value) > 1 && strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`) {
+			value = value[1 : len(value)-1]
+		}
 	}
 	if err != nil {
 		return err
