@@ -536,6 +536,7 @@ func (vars variables) set(name, value string) error {
 	case floatKind:
 		_, err = strconv.ParseFloat(value, 64)
 	case stringKind:
+		// Remove quotes, particularly useful for empty values.
 		if len(value) > 1 && strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`) {
 			value = value[1 : len(value)-1]
 		}

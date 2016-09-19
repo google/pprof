@@ -66,6 +66,7 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 				}
 				if v := pprofVariables[name]; v != nil {
 					if name == "sample_index" {
+						// Error check sample_index=xxx to ensure xxx is a valid sample type.
 						index, err := locateSampleIndex(p, value)
 						if err != nil {
 							o.UI.PrintErr(err)
@@ -78,6 +79,7 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 					}
 					continue
 				}
+				// Allow group=variable syntax by converting into variable="".
 				if v := pprofVariables[value]; v != nil && v.group == name {
 					if err := pprofVariables.set(value, ""); err != nil {
 						o.UI.PrintErr(err)
@@ -183,14 +185,17 @@ func printCurrentOptions(p *profile.Profile, ui plugin.UI) {
 		case n == "sample_index":
 			st := sampleTypes(p)
 			if v == "" {
+				// Apply default (last sample index).
 				v = st[len(st)-1]
 			}
+			// Add comments for all sample types in profile.
 			comment = "[" + strings.Join(st, " | ") + "]"
 		case n == "source_path":
 			continue
 		case n == "nodecount" && v == "-1":
 			comment = "default"
 		case v == "":
+			// Add quotes for empty values.
 			v = `""`
 		}
 		if comment != "" {
@@ -204,7 +209,7 @@ func printCurrentOptions(p *profile.Profile, ui plugin.UI) {
 		args = append(args, fmt.Sprintf("  %-25s = %-20s %s", g, vars.set, comment))
 	}
 	sort.Strings(args)
-	ui.PrintErr(strings.Join(args, "\n"))
+	ui.Print(strings.Join(args, "\n"))
 }
 
 // parseCommandLine parses a command and returns the pprof command to
