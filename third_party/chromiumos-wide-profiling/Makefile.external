@@ -1,0 +1,112 @@
+# Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+CXX ?= g++
+
+BASE_VER ?= 369476
+PKG_CONFIG ?= pkg-config
+PC_DEPS = openssl protobuf
+PC_CFLAGS := $(shell $(PKG_CONFIG) --cflags $(PC_DEPS))
+PC_LIBS := $(shell $(PKG_CONFIG) --libs $(PC_DEPS))
+
+CXXFLAGS += -std=c++11 -g -Wall -Werror -Wall -Wno-error
+CPPFLAGS += -Imybase -Icompat/ext -I. -I.. $(PC_CFLAGS)
+LDLIBS += -lpthread -lgcov -lelf $(PC_LIBS)
+
+MAIN_SOURCES = quipper.cc perf_converter.cc
+PROGRAMS = $(MAIN_SOURCES:.cc=)
+
+LIBRARY_SOURCES = \
+	address_mapper.cc buffer_reader.cc buffer_writer.cc conversion_utils.cc \
+	compat/ext/detail/log_level.cc data_reader.cc data_writer.cc dso.cc \
+	file_reader.cc huge_pages_mapping_deducer.cc mybase/base/logging.cc \
+	perf_option_parser.cc perf_data_utils.cc perf_parser.cc perf_protobuf_io.cc \
+	perf_reader.cc perf_recorder.cc perf_serializer.cc perf_stat_parser.cc \
+	run_command.cc sample_info_reader.cc scoped_temp_path.cc utils.cc
+GENERATED_SOURCES = perf_data.pb.cc perf_stat.pb.cc
+GENERATED_HEADERS = $(GENERATED_SOURCES:.pb.cc=.pb.h)
+
+COMMON_SOURCES = $(LIBRARY_SOURCES) $(GENERATED_SOURCES)
+COMMON_OBJECTS = $(COMMON_SOURCES:.cc=.o)
+TEST_COMMON_SOURCES = \
+	dso_test_utils.cc perf_test_files.cc test_perf_data.cc test_utils.cc
+TEST_COMMON_OBJECTS = $(TEST_COMMON_SOURCES:.cc=.o)
+
+INTEGRATION_TEST_SOURCES = conversion_utils_test.cc
+PERF_RECORDER_TEST_SOURCES = perf_recorder_test.cc
+UNIT_TEST_SOURCES = \
+	address_mapper_test.cc buffer_reader_test.cc buffer_writer_test.cc \
+	file_reader_test.cc perf_data_utils_test.cc perf_option_parser_test.cc \
+	perf_parser_test.cc perf_reader_test.cc perf_serializer_test.cc \
+	perf_stat_parser_test.cc run_command_test.cc sample_info_reader_test.cc \
+	scoped_temp_path_test.cc utils_test.cc huge_pages_mapping_deducer_test.cc
+TEST_SOURCES = $(INTEGRATION_TEST_SOURCES) $(PERF_RECORDER_TEST_SOURCES) \
+							 $(UNIT_TEST_SOURCES) $(TEST_COMMON_SOURCES) test_runner.cc
+TEST_OBJECTS = $(TEST_SOURCES:.cc=.o)
+
+ALL_SOURCES = $(MAIN_SOURCES) $(COMMON_SOURCES) $(TEST_SOURCES)
+
+all: $(PROGRAMS) $(TESTS)
+	@echo Sources compiled!
+
+ifneq ($(MAKECMDGOALS),clean)
+  -include $(ALL_SOURCES:.cc=.d)
+endif
+
+# Taken from:
+# http://www.gnu.org/software/make/manual/make.html#Automatic-Prerequisites
+%.d: %.cc $(GENERATED_HEADERS)
+	@set -e; rm -f $@; \
+	$(CXX) -MM $(CPPFLAGS) $(CXXFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
+# Rule for compiling protobufs.
+%.pb.h %.pb.cc: %.proto
+	protoc --cpp_out=. $^
+
+# Do not remove protobuf headers that were generated as dependencies of other
+# modules.
+.SECONDARY: $(GENERATED_HEADERS)
+
+$(PROGRAMS): %: %.o $(COMMON_OBJECTS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+INTEGRATION_TEST_OBJECTS = $(INTEGRATION_TEST_SOURCES:.cc=.o) test_runner.o
+integration_tests: LDLIBS += -lgtest
+integration_tests: %: $(COMMON_OBJECTS) $(TEST_COMMON_OBJECTS) \
+		      $(INTEGRATION_TEST_OBJECTS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+PERF_RECORDER_TEST_OBJECTS = $(PERF_RECORDER_TEST_SOURCES:.cc=.o)
+perf_recorder_test: LDLIBS += -lgtest
+perf_recorder_test: %: $(COMMON_OBJECTS) $(TEST_COMMON_OBJECTS) \
+		       $(PERF_RECORDER_TEST_OBJECTS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+UNIT_TEST_OBJECTS = $(UNIT_TEST_SOURCES:.cc=.o) test_runner.o
+unit_tests: LDLIBS += -lgtest -lcap
+unit_tests: %: $(COMMON_OBJECTS) $(TEST_COMMON_OBJECTS) $(UNIT_TEST_OBJECTS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+# With large perf.data files, the tests will spew a lot of logging.  The
+# following calls will pipe the logging to a log file.  To see test logging,
+# build with 'FEATURES="test noclean"' and go to the build directory.
+check: $(TESTS)
+	for test in $(TESTS); do \
+		case $$test in \
+		perf_*_test) \
+			./$$test 2> ./$$test.stderr.log && continue; \
+			echo "See $$test.stderr.log for errors" \
+			;; \
+		*) \
+			./$$test && continue \
+			;; \
+		esac; \
+		exit 1; \
+	done
+
+clean:
+	rm -f *.o *.d *.d.* *.a $(PROGRAMS) $(TESTS) $(GENERATED_SOURCES) \
+		$(GENERATED_HEADERS)
