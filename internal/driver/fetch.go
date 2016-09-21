@@ -417,7 +417,7 @@ func convertPerfData(perfPath string, ui plugin.UI) (*os.File, error) {
 	cmd := exec.Command("perf_to_profile", perfPath, profile.Name())
 	if err := cmd.Run(); err != nil {
 		profile.Close()
-		return nil, err
+		return nil, fmt.Errorf("failed to convert perf.data file. Try github.com/google/perf_data_converter: %v", err)
 	}
 	return profile, nil
 }
