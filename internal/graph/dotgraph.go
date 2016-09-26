@@ -67,11 +67,11 @@ func ComposeDot(w io.Writer, g *Graph, a *DotAttributes, c *DotConfig) {
 	nodeIDMap := make(map[*Node]int)
 	hasNodelets := make(map[*Node]bool)
 
-	maxFlat := float64(abs64(g.Nodes[0].Flat))
+	maxFlat := float64(abs64(g.Nodes[0].FlatValue()))
 	for i, n := range g.Nodes {
 		nodeIDMap[n] = i + 1
-		if float64(abs64(n.Flat)) > maxFlat {
-			maxFlat = float64(abs64(n.Flat))
+		if float64(abs64(n.FlatValue())) > maxFlat {
+			maxFlat = float64(abs64(n.FlatValue()))
 		}
 	}
 
@@ -128,7 +128,7 @@ func (b *builder) addLegend() {
 
 // addNode generates a graph node in DOT format.
 func (b *builder) addNode(node *Node, nodeID int, maxFlat float64) {
-	flat, cum := node.Flat, node.Cum
+	flat, cum := node.FlatValue(), node.CumValue()
 	attrs := b.attributes.Nodes[node]
 
 	// Populate label for node.
@@ -177,8 +177,8 @@ func (b *builder) addNode(node *Node, nodeID int, maxFlat float64) {
 	// Create DOT attribute for node.
 	attr := fmt.Sprintf(`label="%s" fontsize=%d shape=%s tooltip="%s (%s)" color="%s" fillcolor="%s"`,
 		label, fontSize, shape, node.Info.PrintableName(), cumValue,
-		dotColor(float64(node.Cum)/float64(abs64(b.config.Total)), false),
-		dotColor(float64(node.Cum)/float64(abs64(b.config.Total)), true))
+		dotColor(float64(node.CumValue())/float64(abs64(b.config.Total)), false),
+		dotColor(float64(node.CumValue())/float64(abs64(b.config.Total)), true))
 
 	// Add on extra attributes if provided.
 	if attrs != nil {
@@ -230,9 +230,9 @@ func (b *builder) addNodelets(node *Node, nodeID int) bool {
 		ts = ts[:maxNodelets]
 	}
 	for i, t := range ts {
-		w := t.Cum
+		w := t.CumValue()
 		if flatTags {
-			w = t.Flat
+			w = t.FlatValue()
 		}
 		if w == 0 {
 			continue
@@ -259,9 +259,9 @@ func (b *builder) numericNodelets(nts []*Tag, maxNumNodelets int, flatTags bool,
 	// Collapse numeric labels into maxNumNodelets buckets, of the form:
 	// 1MB..2MB, 3MB..5MB, ...
 	for j, t := range collapsedTags(nts, maxNumNodelets, flatTags) {
-		w, attr := t.Cum, ` style="dotted"`
-		if flatTags || t.Flat == t.Cum {
-			w, attr = t.Flat, ""
+		w, attr := t.CumValue(), ` style="dotted"`
+		if flatTags || t.FlatValue() == t.CumValue() {
+			w, attr = t.FlatValue(), ""
 		}
 		if w != 0 {
 			weight := b.config.FormatValue(w)
@@ -278,18 +278,18 @@ func (b *builder) addEdge(edge *Edge, from, to int, hasNodelets bool) {
 	if edge.Inline {
 		inline = `\n (inline)`
 	}
-	w := b.config.FormatValue(edge.Weight)
+	w := b.config.FormatValue(edge.WeightValue())
 	attr := fmt.Sprintf(`label=" %s%s"`, w, inline)
 	if b.config.Total != 0 {
 		// Note: edge.weight > b.config.Total is possible for profile diffs.
-		if weight := 1 + int(min64(abs64(edge.Weight*100/b.config.Total), 100)); weight > 1 {
+		if weight := 1 + int(min64(abs64(edge.WeightValue()*100/b.config.Total), 100)); weight > 1 {
 			attr = fmt.Sprintf(`%s weight=%d`, attr, weight)
 		}
-		if width := 1 + int(min64(abs64(edge.Weight*5/b.config.Total), 5)); width > 1 {
+		if width := 1 + int(min64(abs64(edge.WeightValue()*5/b.config.Total), 5)); width > 1 {
 			attr = fmt.Sprintf(`%s penwidth=%d`, attr, width)
 		}
 		attr = fmt.Sprintf(`%s color="%s"`, attr,
-			dotColor(float64(edge.Weight)/float64(abs64(b.config.Total)), false))
+			dotColor(float64(edge.WeightValue())/float64(abs64(b.config.Total)), false))
 	}
 	arrow := "->"
 	if edge.Residual {
@@ -442,12 +442,12 @@ func tagDistance(t, u *Tag) float64 {
 func tagGroupLabel(g []*Tag) (label string, flat, cum int64) {
 	if len(g) == 1 {
 		t := g[0]
-		return measurement.Label(t.Value, t.Unit), t.Flat, t.Cum
+		return measurement.Label(t.Value, t.Unit), t.FlatValue(), t.CumValue()
 	}
 	min := g[0]
 	max := g[0]
-	f := min.Flat
-	c := min.Cum
+	df, f := min.FlatDiv, min.Flat
+	dc, c := min.CumDiv, min.Cum
 	for _, t := range g[1:] {
 		if v, _ := measurement.Scale(t.Value, t.Unit, min.Unit); int64(v) < min.Value {
 			min = t
@@ -456,7 +456,15 @@ func tagGroupLabel(g []*Tag) (label string, flat, cum int64) {
 			max = t
 		}
 		f += t.Flat
+		df += t.FlatDiv
 		c += t.Cum
+		dc += t.CumDiv
+	}
+	if df != 0 {
+		f = f / df
+	}
+	if dc != 0 {
+		c = c / dc
 	}
 	return measurement.Label(min.Value, min.Unit) + ".." + measurement.Label(max.Value, max.Unit), f, c
 }

@@ -224,35 +224,40 @@ func TestMultilinePrintableName(t *testing.T) {
 }
 
 func TestTagCollapse(t *testing.T) {
+
+	makeTag := func(name, unit string, value, flat, cum int64) *Tag {
+		return &Tag{name, unit, value, flat, 0, cum, 0}
+	}
+
 	tagSource := []*Tag{
-		{"12mb", "mb", 12, 100, 100},
-		{"1kb", "kb", 1, 1, 1},
-		{"1mb", "mb", 1, 1000, 1000},
-		{"2048mb", "mb", 2048, 1000, 1000},
-		{"1b", "b", 1, 100, 100},
-		{"2b", "b", 2, 100, 100},
-		{"7b", "b", 7, 100, 100},
+		makeTag("12mb", "mb", 12, 100, 100),
+		makeTag("1kb", "kb", 1, 1, 1),
+		makeTag("1mb", "mb", 1, 1000, 1000),
+		makeTag("2048mb", "mb", 2048, 1000, 1000),
+		makeTag("1b", "b", 1, 100, 100),
+		makeTag("2b", "b", 2, 100, 100),
+		makeTag("7b", "b", 7, 100, 100),
 	}
 
 	tagWant := [][]*Tag{
 		[]*Tag{
-			{"1B..2GB", "", 0, 2401, 2401},
+			makeTag("1B..2GB", "", 0, 2401, 2401),
 		},
 		[]*Tag{
-			{"2GB", "", 0, 1000, 1000},
-			{"1B..12MB", "", 0, 1401, 1401},
+			makeTag("2GB", "", 0, 1000, 1000),
+			makeTag("1B..12MB", "", 0, 1401, 1401),
 		},
 		[]*Tag{
-			{"2GB", "", 0, 1000, 1000},
-			{"12MB", "", 0, 100, 100},
-			{"1B..1MB", "", 0, 1301, 1301},
+			makeTag("2GB", "", 0, 1000, 1000),
+			makeTag("12MB", "", 0, 100, 100),
+			makeTag("1B..1MB", "", 0, 1301, 1301),
 		},
 		[]*Tag{
-			{"2GB", "", 0, 1000, 1000},
-			{"1MB", "", 0, 1000, 1000},
-			{"2B..1kB", "", 0, 201, 201},
-			{"1B", "", 0, 100, 100},
-			{"12MB", "", 0, 100, 100},
+			makeTag("2GB", "", 0, 1000, 1000),
+			makeTag("1MB", "", 0, 1000, 1000),
+			makeTag("2B..1kB", "", 0, 201, 201),
+			makeTag("1B", "", 0, 100, 100),
+			makeTag("12MB", "", 0, 100, 100),
 		},
 	}
 
