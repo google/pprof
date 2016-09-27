@@ -141,9 +141,9 @@ func (rpt *Report) selectOutputUnit(g *graph.Graph) {
 	var minValue int64
 
 	for _, n := range g.Nodes {
-		nodeMin := abs64(n.Flat)
+		nodeMin := abs64(n.FlatValue())
 		if nodeMin == 0 {
-			nodeMin = abs64(n.Cum)
+			nodeMin = abs64(n.CumValue())
 		}
 		if nodeMin > 0 && (minValue == 0 || nodeMin < minValue) {
 			minValue = nodeMin
@@ -201,11 +201,12 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	}
 
 	gopt := &graph.Options{
-		SampleValue:  o.SampleValue,
-		FormatTag:    formatTag,
-		CallTree:     o.CallTree && (o.OutputFormat == Dot || o.OutputFormat == Callgrind),
-		DropNegative: o.DropNegative,
-		KeptNodes:    nodes,
+		SampleValue:       o.SampleValue,
+		SampleMeanDivisor: o.SampleMeanDivisor,
+		FormatTag:         formatTag,
+		CallTree:          o.CallTree && (o.OutputFormat == Dot || o.OutputFormat == Callgrind),
+		DropNegative:      o.DropNegative,
+		KeptNodes:         nodes,
 	}
 
 	// Only keep binary names for disassembly-based reports, otherwise
@@ -240,7 +241,7 @@ func printTopProto(w io.Writer, rpt *Report) error {
 	}
 	var flatSum int64
 	for i, n := range g.Nodes {
-		name, flat, cum := n.Info.PrintableName(), n.Flat, n.Cum
+		name, flat, cum := n.Info.PrintableName(), n.FlatValue(), n.CumValue()
 
 		flatSum += flat
 		f := &profile.Function{
@@ -319,7 +320,7 @@ func printAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 			percentage(cumSum, rpt.total))
 
 		for _, n := range ns {
-			fmt.Fprintf(w, "%10s %10s %10x: %s\n", valueOrDot(n.Flat, rpt), valueOrDot(n.Cum, rpt), n.Info.Address, n.Info.Name)
+			fmt.Fprintf(w, "%10s %10s %10x: %s\n", valueOrDot(n.FlatValue(), rpt), valueOrDot(n.CumValue(), rpt), n.Info.Address, n.Info.Name)
 		}
 	}
 	return nil
@@ -442,7 +443,9 @@ func annotateAssembly(insns []plugin.Inst, samples graph.Nodes, base uint64) gra
 		// Sum all the samples until the next instruction (to account
 		// for samples attributed to the middle of an instruction).
 		for next := insns[ix+1].Addr; s < len(samples) && samples[s].Info.Address-base < next; s++ {
+			n.FlatDiv += samples[s].FlatDiv
 			n.Flat += samples[s].Flat
+			n.CumDiv += samples[s].CumDiv
 			n.Cum += samples[s].Cum
 			if samples[s].Info.File != "" {
 				n.Info.File = trimPath(samples[s].Info.File)
@@ -521,10 +524,10 @@ func printTags(w io.Writer, rpt *Report) error {
 		fmt.Fprintf(w, "%s: Total %d\n", key, total)
 		for _, t := range graph.SortTags(tags, true) {
 			if total > 0 {
-				fmt.Fprintf(w, "  %8d (%s): %s\n", t.Flat,
-					percentage(t.Flat, total), t.Name)
+				fmt.Fprintf(w, "  %8d (%s): %s\n", t.FlatValue(),
+					percentage(t.FlatValue(), total), t.Name)
 			} else {
-				fmt.Fprintf(w, "  %8d: %s\n", t.Flat, t.Name)
+				fmt.Fprintf(w, "  %8d: %s\n", t.FlatValue(), t.Name)
 			}
 		}
 		fmt.Fprintln(w)
@@ -544,7 +547,7 @@ func printText(w io.Writer, rpt *Report) error {
 
 	var flatSum int64
 	for _, n := range g.Nodes {
-		name, flat, cum := n.Info.PrintableName(), n.Flat, n.Cum
+		name, flat, cum := n.Info.PrintableName(), n.FlatValue(), n.CumValue()
 
 		var inline, noinline bool
 		for _, e := range n.In {
@@ -604,11 +607,17 @@ func printTraces(w io.Writer, rpt *Report) error {
 		}
 		sort.Strings(labels)
 		fmt.Fprint(w, strings.Join(labels, ""))
+		var d, v int64
+		v = o.SampleValue(sample.Value)
+		if o.SampleMeanDivisor != nil {
+			d = o.SampleMeanDivisor(sample.Value)
+		}
 		// Print call stack.
+		if d != 0 {
+			v = v / d
+		}
 		fmt.Fprintf(w, "%10s   %s\n",
-			rpt.formatValue(o.SampleValue(sample.Value)),
-			stack[0].Info.PrintableName())
-
+			rpt.formatValue(v), stack[0].Info.PrintableName())
 		for _, s := range stack[1:] {
 			fmt.Fprintf(w, "%10s   %s\n", "", s.Info.PrintableName())
 		}
@@ -648,7 +657,7 @@ func printCallgrind(w io.Writer, rpt *Report) error {
 		}
 
 		addr := callgrindAddress(prevInfo, n.Info.Address)
-		sv, _ := measurement.Scale(n.Flat, o.SampleUnit, o.OutputUnit)
+		sv, _ := measurement.Scale(n.FlatValue(), o.SampleUnit, o.OutputUnit)
 		fmt.Fprintf(w, "%s %d %d\n", addr, n.Info.Lineno, int64(sv))
 
 		// Print outgoing edges.
@@ -772,7 +781,7 @@ func printTree(w io.Writer, rpt *Report) error {
 
 	rx := rpt.options.Symbol
 	for _, n := range g.Nodes {
-		name, flat, cum := n.Info.PrintableName(), n.Flat, n.Cum
+		name, flat, cum := n.Info.PrintableName(), n.FlatValue(), n.CumValue()
 
 		// Skip any entries that do not match the regexp (for the "peek" command).
 		if rx != nil && !rx.MatchString(name) {
@@ -902,7 +911,7 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 
 	var flatSum int64
 	for _, n := range g.Nodes {
-		flatSum = flatSum + n.Flat
+		flatSum = flatSum + n.FlatValue()
 	}
 
 	label = append(label, fmt.Sprintf("Showing nodes accounting for %s, %s of %s total", rpt.formatValue(flatSum), strings.TrimSpace(percentage(flatSum, rpt.total)), rpt.formatValue(rpt.total)))
@@ -965,9 +974,10 @@ type Options struct {
 	NodeFraction float64
 	EdgeFraction float64
 
-	SampleValue func(s []int64) int64
-	SampleType  string
-	SampleUnit  string // Unit for the sample data from the profile.
+	SampleValue       func(s []int64) int64
+	SampleMeanDivisor func(s []int64) int64
+	SampleType        string
+	SampleUnit        string // Unit for the sample data from the profile.
 
 	OutputUnit string // Units for data formatting in report.
 
@@ -985,7 +995,7 @@ func New(prof *profile.Profile, o *Options) *Report {
 		}
 		return measurement.ScaledLabel(v, o.SampleUnit, o.OutputUnit)
 	}
-	return &Report{prof, computeTotal(prof, o.SampleValue, !o.PositivePercentages),
+	return &Report{prof, computeTotal(prof, o.SampleValue, o.SampleMeanDivisor, !o.PositivePercentages),
 		o, format}
 }
 
@@ -1010,14 +1020,24 @@ func NewDefault(prof *profile.Profile, options Options) *Report {
 // absolute values to provide a meaningful percentage for both
 // negative and positive values. Otherwise only use positive values,
 // which is useful when comparing profiles from different jobs.
-func computeTotal(prof *profile.Profile, value func(v []int64) int64, includeNegative bool) int64 {
-	var ret int64
+func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64, includeNegative bool) int64 {
+	var div, ret int64
 	for _, sample := range prof.Sample {
-		if v := value(sample.Value); v > 0 {
+		var d, v int64
+		v = value(sample.Value)
+		if meanDiv != nil {
+			d = meanDiv(sample.Value)
+		}
+		if v >= 0 {
 			ret += v
+			div += d
 		} else if includeNegative {
 			ret -= v
+			div += d
 		}
+	}
+	if div != 0 {
+		return ret / div
 	}
 	return ret
 }

@@ -34,10 +34,11 @@ type Graph struct {
 
 // Options encodes the options for constructing a graph
 type Options struct {
-	SampleValue func(s []int64) int64      // Function to compute the value of a sample
-	FormatTag   func(int64, string) string // Function to format a sample tag value into a string
-	ObjNames    bool                       // Always preserve obj filename
-	OrigFnNames bool                       // Preserve original (eg mangled) function names
+	SampleValue       func(s []int64) int64      // Function to compute the value of a sample
+	SampleMeanDivisor func(s []int64) int64      // Function to compute the divisor for mean graphs, or nil
+	FormatTag         func(int64, string) string // Function to format a sample tag value into a string
+	ObjNames          bool                       // Always preserve obj filename
+	OrigFnNames       bool                       // Preserve original (eg mangled) function names
 
 	CallTree     bool // Build a tree instead of a graph
 	DropNegative bool // Drop nodes with overall negative values
@@ -63,7 +64,7 @@ type Node struct {
 
 	// Values associated to this node. Flat is exclusive to this node,
 	// Cum includes all descendents.
-	Flat, Cum int64
+	Flat, FlatDiv, Cum, CumDiv int64
 
 	// In and out Contains the nodes immediately reaching or reached by
 	// this node.
@@ -79,15 +80,40 @@ type Node struct {
 	NumericTags map[string]TagMap
 }
 
+// FlatValue returns the exclusive value for this node, computing the
+// mean if a divisor is available.
+func (n *Node) FlatValue() int64 {
+	if n.FlatDiv == 0 {
+		return n.Flat
+	}
+	return n.Flat / n.FlatDiv
+}
+
+// CumValue returns the inclusive value for this node, computing the
+// mean if a divisor is available.
+func (n *Node) CumValue() int64 {
+	if n.CumDiv == 0 {
+		return n.Cum
+	}
+	return n.Cum / n.CumDiv
+}
+
 // AddToEdge increases the weight of an edge between two nodes. If
 // there isn't such an edge one is created.
-func (n *Node) AddToEdge(to *Node, w int64, residual, inline bool) {
+func (n *Node) AddToEdge(to *Node, v int64, residual, inline bool) {
+	n.AddToEdgeDiv(to, 0, v, residual, inline)
+}
+
+// AddToEdgeDiv increases the weight of an edge between two nodes. If
+// there isn't such an edge one is created.
+func (n *Node) AddToEdgeDiv(to *Node, dv, v int64, residual, inline bool) {
 	if n.Out[to] != to.In[n] {
 		panic(fmt.Errorf("asymmetric edges %v %v", *n, *to))
 	}
 
 	if e := n.Out[to]; e != nil {
-		e.Weight += w
+		e.WeightDiv += dv
+		e.Weight += v
 		if residual {
 			e.Residual = true
 		}
@@ -97,7 +123,7 @@ func (n *Node) AddToEdge(to *Node, w int64, residual, inline bool) {
 		return
 	}
 
-	info := &Edge{Src: n, Dest: to, Weight: w, Residual: residual, Inline: inline}
+	info := &Edge{Src: n, Dest: to, WeightDiv: dv, Weight: v, Residual: residual, Inline: inline}
 	n.Out[to] = info
 	to.In[n] = info
 }
@@ -205,7 +231,8 @@ type EdgeMap map[*Node]*Edge
 type Edge struct {
 	Src, Dest *Node
 	// The summary weight of the edge
-	Weight int64
+	Weight, WeightDiv int64
+
 	// residual edges connect nodes that were connected through a
 	// separate node, which has been removed from the report.
 	Residual bool
@@ -213,13 +240,38 @@ type Edge struct {
 	Inline bool
 }
 
+func (e *Edge) WeightValue() int64 {
+	if e.WeightDiv == 0 {
+		return e.Weight
+	}
+	return e.Weight / e.WeightDiv
+}
+
 // Tag represent sample annotations
 type Tag struct {
-	Name  string
-	Unit  string // Describe the value, "" for non-numeric tags
-	Value int64
-	Flat  int64
-	Cum   int64
+	Name          string
+	Unit          string // Describe the value, "" for non-numeric tags
+	Value         int64
+	Flat, FlatDiv int64
+	Cum, CumDiv   int64
+}
+
+// FlatValue returns the exclusive value for this tag, computing the
+// mean if a divisor is available.
+func (t *Tag) FlatValue() int64 {
+	if t.FlatDiv == 0 {
+		return t.Flat
+	}
+	return t.Flat / t.FlatDiv
+}
+
+// CumValue returns the inclusive value for this tag, computing the
+// mean if a divisor is available.
+func (t *Tag) CumValue() int64 {
+	if t.CumDiv == 0 {
+		return t.Cum
+	}
+	return t.Cum / t.CumDiv
 }
 
 // TagMap is a collection of tags, classified by their name.
@@ -247,8 +299,12 @@ func New(prof *profile.Profile, o *Options) *Graph {
 func newGraph(prof *profile.Profile, o *Options) (*Graph, map[uint64]Nodes) {
 	nodes, locationMap := CreateNodes(prof, o)
 	for _, sample := range prof.Sample {
-		weight := o.SampleValue(sample.Value)
-		if weight == 0 {
+		var w, dw int64
+		w = o.SampleValue(sample.Value)
+		if o.SampleMeanDivisor != nil {
+			dw = o.SampleMeanDivisor(sample.Value)
+		}
+		if dw == 0 && w == 0 {
 			continue
 		}
 		seenNode := make(map[*Node]bool, len(sample.Location))
@@ -271,12 +327,12 @@ func newGraph(prof *profile.Profile, o *Options) (*Graph, map[uint64]Nodes) {
 				// Add cum weight to all nodes in stack, avoiding double counting.
 				if _, ok := seenNode[n]; !ok {
 					seenNode[n] = true
-					n.addSample(weight, labels, sample.NumLabel, o.FormatTag, false)
+					n.addSample(dw, w, labels, sample.NumLabel, o.FormatTag, false)
 				}
 				// Update edge weights for all edges in stack, avoiding double counting.
 				if _, ok := seenEdge[nodePair{n, parent}]; !ok && parent != nil && n != parent {
 					seenEdge[nodePair{n, parent}] = true
-					parent.AddToEdge(n, weight, residual, ni != len(locNodes)-1)
+					parent.AddToEdgeDiv(n, dw, w, residual, ni != len(locNodes)-1)
 				}
 				parent = n
 				residual = false
@@ -284,7 +340,7 @@ func newGraph(prof *profile.Profile, o *Options) (*Graph, map[uint64]Nodes) {
 		}
 		if parent != nil && !residual {
 			// Add flat weight to leaf node.
-			parent.addSample(weight, labels, sample.NumLabel, o.FormatTag, true)
+			parent.addSample(dw, w, labels, sample.NumLabel, o.FormatTag, true)
 		}
 	}
 
@@ -316,8 +372,12 @@ type nodePair struct {
 func newTree(prof *profile.Profile, o *Options) (g *Graph) {
 	parentNodeMap := make(map[*Node]NodeMap, len(prof.Sample))
 	for _, sample := range prof.Sample {
-		weight := o.SampleValue(sample.Value)
-		if weight == 0 {
+		var w, dw int64
+		w = o.SampleValue(sample.Value)
+		if o.SampleMeanDivisor != nil {
+			dw = o.SampleMeanDivisor(sample.Value)
+		}
+		if dw == 0 && w == 0 {
 			continue
 		}
 		var parent *Node
@@ -339,15 +399,15 @@ func newTree(prof *profile.Profile, o *Options) (g *Graph) {
 				if n == nil {
 					continue
 				}
-				n.addSample(weight, labels, sample.NumLabel, o.FormatTag, false)
+				n.addSample(dw, w, labels, sample.NumLabel, o.FormatTag, false)
 				if parent != nil {
-					parent.AddToEdge(n, weight, false, lidx != len(lines)-1)
+					parent.AddToEdgeDiv(n, dw, w, false, lidx != len(lines)-1)
 				}
 				parent = n
 			}
 		}
 		if parent != nil {
-			parent.addSample(weight, labels, sample.NumLabel, o.FormatTag, true)
+			parent.addSample(dw, w, labels, sample.NumLabel, o.FormatTag, true)
 		}
 	}
 
@@ -540,21 +600,25 @@ func (ns Nodes) Sum() (flat int64, cum int64) {
 	return
 }
 
-func (n *Node) addSample(value int64, labels string, numLabel map[string][]int64, format func(int64, string) string, flat bool) {
+func (n *Node) addSample(dw, w int64, labels string, numLabel map[string][]int64, format func(int64, string) string, flat bool) {
 	// Update sample value
 	if flat {
-		n.Flat += value
+		n.FlatDiv += dw
+		n.Flat += w
 	} else {
-		n.Cum += value
+		n.CumDiv += dw
+		n.Cum += w
 	}
 
 	// Add string tags
 	if labels != "" {
 		t := n.LabelTags.findOrAddTag(labels, "", 0)
 		if flat {
-			t.Flat += value
+			t.FlatDiv += dw
+			t.Flat += w
 		} else {
-			t.Cum += value
+			t.CumDiv += dw
+			t.Cum += w
 		}
 	}
 
@@ -571,9 +635,11 @@ func (n *Node) addSample(value int64, labels string, numLabel map[string][]int64
 		for _, v := range nvals {
 			t := numericTags.findOrAddTag(format(v, key), key, v)
 			if flat {
-				t.Flat += value
+				t.FlatDiv += dw
+				t.Flat += w
 			} else {
-				t.Cum += value
+				t.CumDiv += dw
+				t.Cum += w
 			}
 		}
 	}

@@ -206,7 +206,7 @@ func aggregate(prof *profile.Profile, v variables) error {
 
 func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) {
 	si, mean := vars["sample_index"].value, vars["mean"].boolValue()
-	value, sample, err := sampleFormat(p, si, mean)
+	value, meanDiv, sample, err := sampleFormat(p, si, mean)
 	if err != nil {
 		return nil, err
 	}
@@ -233,9 +233,10 @@ func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) 
 		NodeFraction: vars["nodefraction"].floatValue(),
 		EdgeFraction: vars["edgefraction"].floatValue(),
 
-		SampleValue: value,
-		SampleType:  stype,
-		SampleUnit:  sample.Unit,
+		SampleValue:       value,
+		SampleMeanDivisor: meanDiv,
+		SampleType:        stype,
+		SampleUnit:        sample.Unit,
 
 		OutputUnit: vars["unit"].value,
 
@@ -253,31 +254,24 @@ type sampleValueFunc func([]int64) int64
 
 // sampleFormat returns a function to extract values out of a profile.Sample,
 // and the type/units of those values.
-func sampleFormat(p *profile.Profile, sampleIndex string, mean bool) (sampleValueFunc, *profile.ValueType, error) {
+func sampleFormat(p *profile.Profile, sampleIndex string, mean bool) (value, meanDiv sampleValueFunc, v *profile.ValueType, err error) {
 	if len(p.SampleType) == 0 {
-		return nil, nil, fmt.Errorf("profile has no samples")
+		return nil, nil, nil, fmt.Errorf("profile has no samples")
 	}
 	index, err := locateSampleIndex(p, sampleIndex)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
+	value = valueExtractor(index)
 	if mean {
-		return meanExtractor(index), p.SampleType[index], nil
+		meanDiv = valueExtractor(0)
 	}
-	return valueExtractor(index), p.SampleType[index], nil
+	v = p.SampleType[index]
+	return
 }
 
 func valueExtractor(ix int) sampleValueFunc {
 	return func(v []int64) int64 {
 		return v[ix]
-	}
-}
-
-func meanExtractor(ix int) sampleValueFunc {
-	return func(v []int64) int64 {
-		if v[0] == 0 {
-			return 0
-		}
-		return v[ix] / v[0]
 	}
 }
