@@ -172,7 +172,11 @@ func GetBuildID(binary io.ReaderAt) ([]byte, error) {
 // use the address of the _stext symbol as the mmap start.  _stext
 // offset can be obtained with `nm vmlinux | grep _stext`
 func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint64, start, limit, offset uint64) (uint64, error) {
-	const pageSize = 4096
+	const (
+		pageSize = 4096
+		// PAGE_OFFSET for PowerPC64, see arch/powerpc/Kconfig in the kernel sources.
+		pageOffsetPpc64 = 0xc000000000000000
+	)
 
 	if start == 0 && offset == 0 &&
 		(limit == ^uint64(0) || limit == 0) {
@@ -204,13 +208,13 @@ func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint6
 		if loadSegment.Vaddr == start-offset {
 			return offset, nil
 		}
-		if start > loadSegment.Vaddr && limit > start && offset == 0 {
+		if start >= loadSegment.Vaddr && limit > start && (offset == 0 || offset == pageOffsetPpc64) {
 			// Some kernels look like:
 			//       VADDR=0xffffffff80200000
 			// stextOffset=0xffffffff80200198
 			//       Start=0xffffffff83200000
 			//       Limit=0xffffffff84200000
-			//      Offset=0
+			//      Offset=0 (0xc000000000000000 for PowerPC64)
 			// So the base should be:
 			if stextOffset != nil && (start%pageSize) == (*stextOffset%pageSize) {
 				// perf uses the address of _stext as start.  Some tools may
