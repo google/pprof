@@ -37,6 +37,9 @@ func TestGetBase(t *testing.T) {
 	kernelHeader := &elf.ProgHeader{
 		Vaddr: 0xffffffff81000000,
 	}
+	ppc64KernelHeader := &elf.ProgHeader{
+		Vaddr: 0xc000000000000000,
+	}
 
 	testcases := []struct {
 		label                string
@@ -52,6 +55,7 @@ func TestGetBase(t *testing.T) {
 		{"exec offset 2", fhExec, lsOffset, nil, 0x200000, 0x600000, 0, 0, false},
 		{"exec nomap", fhExec, nil, nil, 0, 0, 0, 0, false},
 		{"exec kernel", fhExec, kernelHeader, uint64p(0xffffffff81000198), 0xffffffff82000198, 0xffffffff83000198, 0, 0x1000000, false},
+		{"exec PPC64 kernel", fhExec, ppc64KernelHeader, uint64p(0xc000000000000000), 0xc000000000000000, 0xd00000001a730000, 0xc000000000000000, 0x0, false},
 		{"exec chromeos kernel", fhExec, kernelHeader, uint64p(0xffffffff81000198), 0, 0x10197, 0, 0x7efffe68, false},
 		{"exec chromeos kernel 2", fhExec, kernelHeader, uint64p(0xffffffff81000198), 0, 0x10198, 0, 0x7efffe68, false},
 		{"exec chromeos kernel 3", fhExec, kernelHeader, uint64p(0xffffffff81000198), 0x198, 0x100000, 0, 0x7f000000, false},
