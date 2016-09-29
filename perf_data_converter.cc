@@ -13,7 +13,8 @@
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  * DISCLAIMED. IN NO EVENT SHALL Google Inc. BE LIABLE FOR ANY
@@ -37,7 +38,6 @@
 #include "chromiumos-wide-profiling/perf_reader.h"
 #include "int_compat.h"
 #include "intervalmap.h"
-#include "map_util.h"
 #include "perf_data_handler.h"
 #include "profile_wrappers.pb.h"
 #include "string_compat.h"
@@ -186,15 +186,15 @@ void PerfDataConverter::AddMapping(const Pid& pid, uint64 for_ip,
     std::cerr << "Cannot add mapping to null builder." << std::endl;
     abort();
   }
-  MappingMap* mapmap = FindOrNull(&mapping_cache_, pid);
-  if (mapmap == nullptr) {
-    mapping_cache_[pid] = MappingMap();
-    mapmap = &mapping_cache_[pid];
-  }
   if (smap == nullptr) {
     return;
   }
-
+  auto mapit = mapping_cache_.find(pid);
+  if (mapit == mapping_cache_.end()) {
+    mapping_cache_[pid] = MappingMap();
+    mapit = mapping_cache_.find(pid);
+  }
+  auto mapmap = &mapit->second;
   perftools::profiles::Mapping* mapping = nullptr;
   if (!mapmap->Lookup(for_ip, &mapping)) {
     Profile* profile = builder->mutable_profile();
@@ -229,28 +229,35 @@ void PerfDataConverter::AddSample(const PerfDataHandler::SampleContext& context,
                                   const std::vector<uint64>& stack,
                                   ProfileBuilder* builder) {
   perftools::profiles::Sample* sample = nullptr;
-  if (const auto* samplep = FindOrNull(&sample_cache_[sample_key], stack)) {
-    sample = *samplep;
+  auto &sample_key_cache = sample_cache_[sample_key];
+
+  auto sampit = sample_key_cache.find(stack);
+  if (sampit != sample_key_cache.end()) {
+    sample = sampit->second;
   }
 
   if (sample == nullptr) {
     Profile* profile = builder->mutable_profile();
     sample = profile->add_sample();
-    sample_cache_[sample_key][stack] = sample;
+    sample_key_cache[stack] = sample;
+
     for (const auto& addr : stack) {
-      const auto* location = FindPtrOrNull(location_cache_[pid], addr);
+      auto &lcpid = location_cache_[pid];
+      auto lcit = lcpid.find(addr);
+      if (lcit != lcpid.end()) {
+        sample->add_location_id(lcit->second->id());
+        continue;
+      }
+      perftools::profiles::Location *location = AddLocation(pid, addr, builder);
       if (location == nullptr) {
-        location = AddLocation(pid, addr, builder);
-        if (location == nullptr) {
-          std::cerr << "AddLocation failed." << std::endl;
-          abort();
-        }
-        if (location->address() != addr) {
-          std::cerr << "Added location has inconsistent address." << std::endl
-                    << "Expected: " << addr << std::endl
-                    << "Found: " << location->address() << std::endl;
-          abort();
-        }
+        std::cerr << "AddLocation failed." << std::endl;
+        abort();
+      }
+      if (location->address() != addr) {
+        std::cerr << "Added location has inconsistent address." << std::endl
+                  << "Expected: " << addr << std::endl
+                  << "Found: " << location->address() << std::endl;
+        abort();
       }
       sample->add_location_id(location->id());
     }
@@ -390,7 +397,12 @@ void PerfDataConverter::Sample(const PerfDataHandler::SampleContext& sample) {
         break;
     }
   }
-  ProfileBuilder* builder = FindPtrOrNull(builder_cache_, builder_pid);
+
+  ProfileBuilder* builder = nullptr;
+  auto bcit = builder_cache_.find(builder_pid);
+  if (bcit != builder_cache_.end()) {
+    builder = bcit->second;
+  }
   if (builder == nullptr) {
     builder = new ProfileBuilder();
     builder_cache_[builder_pid] = builder;

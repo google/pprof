@@ -37,7 +37,6 @@
 #include "chromiumos-wide-profiling/perf_reader.h"
 #include "int_compat.h"
 #include "intervalmap.h"
-#include "map_util.h"
 #include "path_matching.h"
 #include "perf_data_handler.h"
 #include "string_compat.h"
@@ -186,13 +185,13 @@ void Normalizer::UpdateMapsWithForkEvent(
     pid_to_mmaps_[fork.pid()] = std::unique_ptr<MMapIntervalMap>(
         new MMapIntervalMap(*it->second.get()));
   }
-  auto comm_event = FindPtrOrNull(pid_to_comm_event_, fork.ppid());
-  if (comm_event != nullptr) {
-    pid_to_comm_event_[fork.pid()] = comm_event;
+  auto pcit = pid_to_comm_event_.find(fork.ppid());
+  if (pcit != pid_to_comm_event_.end() && pcit->second != nullptr) {
+    pid_to_comm_event_[fork.pid()] = pcit->second;
   }
-  auto exec_mmap = FindPtrOrNull(pid_to_executable_mmap_, fork.ppid());
-  if (exec_mmap != nullptr) {
-    pid_to_executable_mmap_[fork.pid()] = exec_mmap;
+  auto peit = pid_to_executable_mmap_.find(fork.ppid());
+  if (peit != pid_to_executable_mmap_.end() && peit->second != nullptr) {
+    pid_to_executable_mmap_[fork.pid()] = peit->second;
   }
 }
 
@@ -276,8 +275,16 @@ void Normalizer::InvokeHandleSample(
   std::unique_ptr<PerfDataHandler::Mapping> fake;
   // Kernel samples might take some extra work.
   if (context.main_mapping == nullptr && event_proto.header().misc() & 0x1) {
-    auto comm = FindPtrOrNull(pid_to_comm_event_, pid);
-    auto kernel = FindPtrOrNull(pid_to_executable_mmap_, -1);
+    const PerfDataProto_CommEvent* comm = nullptr;
+    auto pcit = pid_to_comm_event_.find(pid);
+    if (pcit != pid_to_comm_event_.end()) {
+      comm = pcit->second;
+    }
+    PerfDataHandler::Mapping* kernel = nullptr;
+    auto peit = pid_to_executable_mmap_.find(-1);
+    if (peit != pid_to_executable_mmap_.end()) {
+      kernel = peit->second;
+    }
     if (comm != nullptr) {
       const string* build_id = nullptr;
       if (kernel != nullptr) {
@@ -365,7 +372,8 @@ void Normalizer::UpdateMapsWithMMapEvent(
     interval_map = it->second.get();
   }
 
-  std::unique_ptr<ChromeHugePagesMappingDeducer>& deducer = pid_to_chrome_mapping_deducer_[pid];
+  std::unique_ptr<ChromeHugePagesMappingDeducer>& deducer =
+      pid_to_chrome_mapping_deducer_[pid];
   if (deducer.get() == nullptr) {
     deducer.reset(new ChromeHugePagesMappingDeducer);
   }
@@ -378,11 +386,17 @@ void Normalizer::UpdateMapsWithMMapEvent(
 
   string* build_id = nullptr;
   if (mmap->filename() != "") {
-    build_id = FindOrNull(&filename_to_build_id_, mmap->filename());
+    auto fbit = filename_to_build_id_.find(mmap->filename());
+    if (fbit != filename_to_build_id_.end()) {
+      build_id = &fbit->second;
+    }
   } else {
     std::stringstream filename;
     filename << std::hex << mmap->filename_md5_prefix();
-    build_id = FindOrNull(&filename_to_build_id_, filename.str());
+    auto fbit = filename_to_build_id_.find(filename.str());
+    if (fbit != filename_to_build_id_.end()) {
+      build_id = &fbit->second;
+    }
   }
 
   PerfDataHandler::Mapping* mapping = new PerfDataHandler::Mapping(
@@ -413,8 +427,11 @@ void Normalizer::UpdateMapsWithMMapEvent(
   // Figure out whether this MMAP is the main executable.
   // If there have been no previous MMAPs for this pid, then this MMAP is our
   // best guess.
-  PerfDataHandler::Mapping* old_mapping =
-      FindPtrOrNull(pid_to_executable_mmap_, pid);
+  PerfDataHandler::Mapping* old_mapping = nullptr;
+  auto peit = pid_to_executable_mmap_.find(pid);
+  if (peit != pid_to_executable_mmap_.end()) {
+    old_mapping = peit->second;
+  }
 
   if (old_mapping != nullptr && old_mapping->start == 0x400000 &&
       (old_mapping->filename == nullptr || *old_mapping->filename == "") &&
@@ -500,10 +517,9 @@ const PerfDataHandler::Mapping* Normalizer::GetMappingFromPidAndIP(
 
 const PerfDataHandler::Mapping* Normalizer::GetMainMMapFromPid(
     uint32 pid) const {
-  const PerfDataHandler::Mapping* mapping =
-      FindPtrOrNull(pid_to_executable_mmap_, pid);
-  if (mapping != nullptr) {
-    return mapping;
+  auto peit = pid_to_executable_mmap_.find(pid);
+  if (peit != pid_to_executable_mmap_.end()) {
+    return peit->second;
   }
 
   VLOG(2) << "No argv0 name found for sample with pid: " << pid;
@@ -521,12 +537,13 @@ int64 Normalizer::GetEventIndexForSample(
     return -1;
   }
 
-  uint64 event_index = -1;
   uint64 id = sample.id();
-  if (!FindCopy(id_to_event_index_, id, &event_index)) {
+  auto ieit = id_to_event_index_.find(id);
+  if (ieit == id_to_event_index_.end()) {
     LOG(ERROR) << "Incorrect event id: " << id;
+    return -1;
   }
-  return event_index;
+  return ieit->second;
 }
 }  // namespace
 
