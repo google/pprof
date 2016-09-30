@@ -39,7 +39,6 @@
 #include "int_compat.h"
 #include "intervalmap.h"
 #include "perf_data_handler.h"
-#include "profile_wrappers.pb.h"
 #include "string_compat.h"
 
 namespace perftools {
@@ -513,21 +512,6 @@ ProfileVector PerfDataConverter::Profiles() {
   return profiles;
 }
 
-// Returns the provided ProfileVector as a serialized proto.
-string SerializedProfileList(const ProfileVector& vec) {
-  ProfileList list;
-  for (const auto& profile : vec) {
-    *list.add_profile() = *profile;
-  }
-
-  string serialized_out;
-  if (!list.SerializeToString(&serialized_out)) {
-    std::cerr << "Failed to serialize ProfileList" << std::endl;
-    abort();
-  }
-  return serialized_out;
-}
-
 ProfileVector PerfDataProtoToProfileList(quipper::PerfDataProto* perf_data,
                                          uint32 sample_labels,
                                          bool group_by_pids) {
@@ -539,8 +523,7 @@ ProfileVector PerfDataProtoToProfileList(quipper::PerfDataProto* perf_data,
 }  // namespace
 
 ProfileVector RawPerfDataToProfileProto(const void* raw, int raw_size,
-                                        const void* build_ids,
-                                        int build_ids_size,
+                                        const std::map<string, string> &build_id_map,
                                         uint32 sample_labels,
                                         bool group_by_pids) {
   std::unique_ptr<quipper::PerfReader> reader(new quipper::PerfReader);
@@ -556,15 +539,6 @@ ProfileVector RawPerfDataToProfileProto(const void* raw, int raw_size,
     return ProfileVector();
   }
 
-  StringMap build_id_map_pb;
-  if (!build_id_map_pb.ParseFromArray(build_ids, build_ids_size)) {
-    std::cerr << "Unable to parse build ids." << std::endl;
-    abort();
-  }
-  std::map<string, string> build_id_map;
-  for (const auto& item : build_id_map_pb.key_value()) {
-    build_id_map[item.key()] = item.value();
-  }
   reader->InjectBuildIDs(build_id_map);
   // Perf populates info about the kernel using multiple pathways,
   // which don't actually all match up how they name kernel data; in
@@ -589,45 +563,6 @@ ProfileVector SerializedPerfDataProtoToProfileProto(
   quipper::PerfDataProto perf_data;
   perf_data.ParseFromString(serialized_perf_data);
   return PerfDataProtoToProfileList(&perf_data, sample_labels, group_by_pids);
-}
-
-// Returns a serialized ProfileList following the semantics of
-// RawPerfDataToProfileProto
-string RawPerfDataToSerializedProfileList(const void* raw, int raw_size,
-                                          const void* build_ids,
-                                          int build_ids_size,
-                                          uint32 sample_labels,
-                                          bool group_by_pids) {
-  const auto& profiles = RawPerfDataToProfileProto(
-      raw, raw_size, build_ids, build_ids_size, sample_labels, group_by_pids);
-  return SerializedProfileList(profiles);
-}
-
-string RawPerfDataUniqueMappedFiles(const void* raw, int raw_size) {
-  std::unique_ptr<quipper::PerfReader> reader(new quipper::PerfReader);
-  if (!reader->ReadFromPointer(reinterpret_cast<const char*>(raw), raw_size)) {
-    LOG(ERROR) << "Could not read input perf.data";
-    return "";
-  }
-  std::vector<string> filenames;
-  reader->GetFilenames(&filenames);
-  StringList list;
-  for (const auto& filename : filenames) {
-    list.add_item(filename);
-  }
-  string serialized;
-  if (!list.SerializeToString(&serialized)) {
-    std::cerr << "Failed to serialize StringList" << std::endl;
-    abort();
-  }
-  return serialized;
-}
-
-string SerializedPerfDataProtoToSerializedProfileList(
-    const string& perf_data_str, uint32 sample_labels) {
-  const auto& profiles =
-      SerializedPerfDataProtoToProfileProto(perf_data_str, sample_labels);
-  return SerializedProfileList(profiles);
 }
 
 }  // namespace perftools

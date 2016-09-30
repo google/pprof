@@ -81,8 +81,9 @@ const char ExecutionModeHypervisor[] = "Hypervisor";
 //
 // Returns an empty vector if any error occurs.
 extern std::vector<std::unique_ptr<perftools::profiles::Profile> >
-RawPerfDataToProfileProto(const void* raw, int raw_size, const void* build_ids,
-                          int build_ids_size, uint32 sample_labels = kNoLabels,
+RawPerfDataToProfileProto(const void* raw, int raw_size,
+                          const std::map<string, string> &build_id_map,
+                          uint32 sample_labels = kNoLabels,
                           bool group_by_pids = true);
 
 extern std::vector<std::unique_ptr<perftools::profiles::Profile> >
@@ -94,16 +95,6 @@ SerializedPerfDataProtoToProfileProto(const string& serialized_perf_data,
 // raw perf.data.
 string RawPerfDataUniqueMappedFiles(const void* raw, int raw_size);
 
-// Returns a serialized ProfileList following the semantics of
-// RawPerfDataToProfileProto
-string RawPerfDataToSerializedProfileList(const void* raw_perf_data,
-                                          int raw_size, const void* build_ids,
-                                          int build_ids_size,
-                                          uint32 sample_labels = kNoLabels,
-                                          bool group_by_pids = true);
-
-string SerializedPerfDataProtoToSerializedProfileList(
-    const string& perf_data_str, uint32 sample_labels = kNoLabels);
 }  // namespace perftools
 
 #endif  // PERFTOOLS_PERF_DATA_CONVERTER_H_
