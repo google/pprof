@@ -55,8 +55,10 @@ int main(int argc, char **argv) {
   }
   const auto perf_data = ReadFileToString(argv[1]);
   const auto raw_perf_data = static_cast<const void *>(perf_data.data());
+
+  std::map<string, string> build_ids;
   const ProfileVector profiles = perftools::RawPerfDataToProfileProto(
-      raw_perf_data, perf_data.length(), nullptr, 0, perftools::kNoLabels,
+      raw_perf_data, perf_data.length(), build_ids, perftools::kNoLabels,
       false);
   // group_by_pid is false, all of the PID profiles should be merged into a
   // single one.

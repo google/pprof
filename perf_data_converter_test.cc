@@ -217,9 +217,10 @@ TEST_F(PerfDataConverterTest, Converts) {
     GetContents(c.filename, &raw_perf_data);
 
     // Test RawPerfData input.
+    std::map<string, string> build_ids;
     ProfileVector profiles = RawPerfDataToProfileProto(
         reinterpret_cast<const void*>(raw_perf_data.c_str()),
-        raw_perf_data.size(), nullptr, 0, kNoLabels, false);
+        raw_perf_data.size(), build_ids,  kNoLabels, false);
     // Does not group by PID, Vector should only contain one element
     EXPECT_EQ(profiles.size(), 1);
     auto counts = GetMapCounts(profiles);
@@ -287,22 +288,14 @@ TEST_F(PerfDataConverterTest, Injects) {
   string raw_perf_data;
   GetContents(path, &raw_perf_data);
   const string want_buildid = "abcdabcd";
-  perftools::StringMap string_map;
-  string_map.add_key_value();
-  string_map.mutable_key_value(0)->set_key("[kernel.kallsyms]");
-  string_map.mutable_key_value(0)->set_value(want_buildid);
-  string serialized_string_map;
-  if (!string_map.SerializeToString(&serialized_string_map)) {
-    std::cerr << "Failed to serizlied string_map to string." << std::endl;
-    abort();
-  }
+  std::map<string, string> build_ids;
+  build_ids["[kernel.kallsyms]"] = want_buildid;
 
   // Test RawPerfData input.
   ProfileVector profiles = RawPerfDataToProfileProto(
       reinterpret_cast<const void*>(raw_perf_data.c_str()),
-      raw_perf_data.size(),
-      reinterpret_cast<const void*>(serialized_string_map.c_str()),
-      serialized_string_map.size(), kNoLabels, false);
+      raw_perf_data.size(), build_ids,
+      kNoLabels, false);
   bool found = false;
   for (const auto& profile : profiles) {
     for (const auto& it : profile->mapping()) {
