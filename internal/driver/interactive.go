@@ -218,7 +218,20 @@ func parseCommandLine(input []string) ([]string, variables, error) {
 	cmd, args := input[:1], input[1:]
 	name := cmd[0]
 
-	c := pprofCommands[cmd[0]]
+	c := pprofCommands[name]
+	if c == nil {
+		// Attempt splitting digits on abbreviated commands (eg top10)
+		for i := len(name); i > 0; i-- {
+			if !strings.ContainsAny(name[i-1:i], "0123456789") {
+				if n, d := name[:i], name[i:]; n != "" && d != "" {
+					cmd[0], args = n, append([]string{d}, args...)
+					name = n
+					c = pprofCommands[n]
+				}
+				break
+			}
+		}
+	}
 	if c == nil {
 		return nil, nil, fmt.Errorf("Unrecognized command: %q", name)
 	}

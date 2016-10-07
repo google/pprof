@@ -248,6 +248,16 @@ func TestInteractiveCommands(t *testing.T) {
 			},
 		},
 		{
+			"top10 --cum focus1 -ignore focus2",
+			map[string]string{
+				"functions": "true",
+				"nodecount": "10",
+				"cum":       "true",
+				"focus":     "focus1|focus2",
+				"ignore":    "ignore",
+			},
+		},
+		{
 			"dot",
 			map[string]string{
 				"functions": "true",
@@ -288,14 +298,23 @@ func TestInteractiveCommands(t *testing.T) {
 				"output":    "out",
 			},
 		},
+		{
+			"999",
+			nil, // Error
+		},
 	}
 
 	for _, tc := range testcases {
 		cmd, vars, err := parseCommandLine(strings.Fields(tc.input))
-		vars = applyCommandOverrides(cmd, vars)
+		if tc.want == nil && err != nil {
+			// Error expected
+			continue
+		}
 		if err != nil {
 			t.Errorf("failed on %q: %v", tc.input, err)
+			continue
 		}
+		vars = applyCommandOverrides(cmd, vars)
 
 		for n, want := range tc.want {
 			if got := vars[n].stringValue(); got != want {
