@@ -21,6 +21,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"testing"
 	"time"
@@ -76,6 +77,55 @@ func TestSymbolizationPath(t *testing.T) {
 	os.Setenv("PPROF_BINARY_PATH", savePath)
 }
 
+func TestCollectMappingSources(t *testing.T) {
+	const startAddress uint64 = 0x40000
+	const url = "http://example.com"
+	for _, tc := range []struct {
+		file, buildID string
+		want          plugin.MappingSources
+	}{
+		{"/usr/bin/binary", "buildId", mappingSources("buildId", url, startAddress)},
+		{"/usr/bin/binary", "", mappingSources("/usr/bin/binary", url, startAddress)},
+		{"", "", mappingSources(url, url, startAddress)},
+	} {
+		p := &profile.Profile{
+			Mapping: []*profile.Mapping{
+				{
+					File:    tc.file,
+					BuildID: tc.buildID,
+					Start:   startAddress,
+				},
+			},
+		}
+		got := collectMappingSources(p, url)
+		if !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("%s:%s, want %s, got %s", tc.file, tc.buildID, tc.want, got)
+		}
+	}
+}
+
+func TestUnsourceMappings(t *testing.T) {
+	for _, tc := range []struct {
+		file, buildID, want string
+	}{
+		{"/usr/bin/binary", "buildId", "/usr/bin/binary"},
+		{"http://example.com", "", ""},
+	} {
+		p := &profile.Profile{
+			Mapping: []*profile.Mapping{
+				{
+					File:    tc.file,
+					BuildID: tc.buildID,
+				},
+			},
+		}
+		unsourceMappings(p)
+		if got := p.Mapping[0].File; got != tc.want {
+			t.Errorf("%s:%s, want %s, got %s", tc.file, tc.buildID, tc.want, got)
+		}
+	}
+}
+
 type testObj struct {
 	home string
 }
@@ -122,6 +172,18 @@ func TestFetch(t *testing.T) {
 		if len(p.Sample) == 0 {
 			t.Errorf("want non-zero samples")
 		}
+	}
+}
+
+// mappingSources creates MappingSources map with a single item.
+func mappingSources(key, source string, start uint64) plugin.MappingSources {
+	return plugin.MappingSources{
+		key: []struct {
+			Source string
+			Start  uint64
+		}{
+			{Source: source, Start: start},
+		},
 	}
 }
 
