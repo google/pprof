@@ -17,6 +17,7 @@ package driver
 import (
 	"fmt"
 	"io"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -27,6 +28,7 @@ import (
 )
 
 var commentStart = "//:" // Sentinel for comments on options
+var tailDigitsRE = regexp.MustCompile("[0-9]+$")
 
 // interactive starts a shell to read pprof commands.
 func interactive(p *profile.Profile, o *plugin.Options) error {
@@ -221,15 +223,10 @@ func parseCommandLine(input []string) ([]string, variables, error) {
 	c := pprofCommands[name]
 	if c == nil {
 		// Attempt splitting digits on abbreviated commands (eg top10)
-		for i := len(name); i > 0; i-- {
-			if !strings.ContainsAny(name[i-1:i], "0123456789") {
-				if n, d := name[:i], name[i:]; n != "" && d != "" {
-					cmd[0], args = n, append([]string{d}, args...)
-					name = n
-					c = pprofCommands[n]
-				}
-				break
-			}
+		if d := tailDigitsRE.FindString(name); d != "" && d != name {
+			name = name[:len(name)-len(d)]
+			cmd[0], args = name, append([]string{d}, args...)
+			c = pprofCommands[name]
 		}
 	}
 	if c == nil {
