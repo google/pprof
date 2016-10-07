@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -297,6 +298,13 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 		name := filepath.Base(m.File)
 		if name == "[vdso]" || strings.HasPrefix(name, "linux-vdso") {
 			continue
+		}
+
+		// Skip mappings pointing to a source URL
+		if m.BuildID == "" {
+			if u, err := url.Parse(m.File); err == nil && u.IsAbs() {
+				continue
+			}
 		}
 
 		f, err := obj.Open(m.File, m.Start, m.Limit, m.Offset)

@@ -72,6 +72,7 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 		return nil, err
 	}
 	p.RemoveUninteresting()
+	unsourceMappings(p)
 
 	// Save a copy of the merged profile if there is at least one remote source.
 	if save {
@@ -283,12 +284,26 @@ func collectMappingSources(p *profile.Profile, source string) plugin.MappingSour
 			// If there is no build id or source file, use the source as the
 			// mapping file. This will enable remote symbolization for this
 			// mapping, in particular for Go profiles on the legacy format.
+			// The source is reset back to empty string by unsourceMapping
+			// which is called after symbolization is finished.
 			m.File = source
 			key = source
 		}
 		ms[key] = append(ms[key], src)
 	}
 	return ms
+}
+
+// unsourceMappings iterates over the mappings in a profile and replaces file
+// set to the remote source URL by collectMappingSources back to empty string.
+func unsourceMappings(p *profile.Profile) {
+	for _, m := range p.Mapping {
+		if m.BuildID == "" {
+			if u, err := url.Parse(m.File); err == nil && u.IsAbs() {
+				m.File = ""
+			}
+		}
+	}
 }
 
 // locateBinaries searches for binary files listed in the profile and, if found,
