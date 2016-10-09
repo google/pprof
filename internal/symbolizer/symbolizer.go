@@ -38,6 +38,10 @@ type Symbolizer struct {
 	UI  plugin.UI
 }
 
+// test taps for dependency injection
+var symbolzSymbolize = symbolz.Symbolize
+var localSymbolize = doLocalSymbolize
+
 // Symbolize attempts to symbolize profile p. First uses binutils on
 // local binaries; if the source is a URL it attempts to get any
 // missed entries using symbolz.
@@ -70,12 +74,12 @@ func (s *Symbolizer) Symbolize(mode string, sources plugin.MappingSources, p *pr
 	var err error
 	if local {
 		// Symbolize locally using binutils.
-		if err = localSymbolize(mode, p, s.Obj, s.UI); err == nil {
-			remote = false // Already symbolized, no need to apply remote symbolization.
+		if err = localSymbolize(mode, p, s.Obj, s.UI); err != nil {
+			s.UI.PrintErr("local symbolization: " + err.Error())
 		}
 	}
 	if remote {
-		if err = symbolz.Symbolize(sources, postURL, p, s.UI); err != nil {
+		if err = symbolzSymbolize(sources, postURL, p, s.UI); err != nil {
 			return err // Ran out of options.
 		}
 	}
@@ -97,10 +101,10 @@ func postURL(source, post string) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-// localSymbolize adds symbol and line number information to all locations
+// doLocalSymbolize adds symbol and line number information to all locations
 // in a profile. mode enables some options to control
 // symbolization.
-func localSymbolize(mode string, prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI) error {
+func doLocalSymbolize(mode string, prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI) error {
 	force := false
 	// Disable some mechanisms based on mode string.
 	for _, o := range strings.Split(strings.ToLower(mode), ":") {

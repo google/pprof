@@ -17,6 +17,7 @@ package symbolizer
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/google/pprof/internal/plugin"
@@ -95,7 +96,66 @@ var testProfile = profile.Profile{
 }
 
 func TestSymbolization(t *testing.T) {
-	prof := testProfile
+	sSym := symbolzSymbolize
+	lSym := localSymbolize
+	defer func() {
+		symbolzSymbolize = sSym
+		localSymbolize = lSym
+	}()
+	symbolzSymbolize = symbolzMock
+	localSymbolize = localMock
+
+	type testcase struct {
+		mode        string
+		wantComment string
+	}
+
+	s := Symbolizer{
+		mockObjTool{},
+		&proftest.TestUI{T: t},
+	}
+	for i, tc := range []testcase{
+		{
+			"local",
+			"local=local",
+		},
+		{
+			"fastlocal",
+			"local=fastlocal",
+		},
+		{
+			"remote",
+			"symbolz",
+		},
+		{
+			"",
+			"local=:symbolz",
+		},
+	} {
+		prof := testProfile.Copy()
+		if err := s.Symbolize(tc.mode, nil, prof); err != nil {
+			t.Errorf("symbolize #%d: %v", i, err)
+			continue
+		}
+		if got, want := strings.Join(prof.Comments, ":"), tc.wantComment; got != want {
+			t.Errorf("got %s, want %s", got, want)
+			continue
+		}
+	}
+}
+
+func symbolzMock(sources plugin.MappingSources, syms func(string, string) ([]byte, error), p *profile.Profile, ui plugin.UI) error {
+	p.Comments = append(p.Comments, "symbolz")
+	return nil
+}
+
+func localMock(mode string, p *profile.Profile, obj plugin.ObjTool, ui plugin.UI) error {
+	p.Comments = append(p.Comments, "local="+mode)
+	return nil
+}
+
+func TestLocalSymbolization(t *testing.T) {
+	prof := testProfile.Copy()
 
 	if prof.HasFunctions() {
 		t.Error("unexpected function names")
@@ -105,8 +165,8 @@ func TestSymbolization(t *testing.T) {
 	}
 
 	b := mockObjTool{}
-	if err := localSymbolize("", &prof, b, &proftest.TestUI{T: t}); err != nil {
-		t.Fatalf("Symbolize(): %v", err)
+	if err := localSymbolize("", prof, b, &proftest.TestUI{T: t}); err != nil {
+		t.Fatalf("localSymbolize(): %v", err)
 	}
 
 	for _, loc := range prof.Location {
