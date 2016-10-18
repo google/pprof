@@ -164,10 +164,10 @@ func (b *Binutils) openELF(name string, start, limit, offset uint64) (plugin.Obj
 	var pageAligned = func(addr uint64) bool { return addr%4096 == 0 }
 	if strings.Contains(name, "vmlinux") || !pageAligned(start) || !pageAligned(limit) || !pageAligned(offset) {
 		// Reading all Symbols is expensive, and we only rarely need it so
-		// we don't want to do it every time.  But if _stext happens to be
+		// we don't want to do it every time. But if _stext happens to be
 		// page-aligned but isn't the same as Vaddr, we would symbolize
-		// wrong.  So if the name the addresses aren't page aligned, or if
-		// the name is "vmlinux" we read _stext.  We can be wrong if: (1)
+		// wrong. So if the name the addresses aren't page aligned, or if
+		// the name is "vmlinux" we read _stext. We can be wrong if: (1)
 		// someone passes a kernel path that doesn't contain "vmlinux" AND
 		// (2) _stext is page-aligned AND (3) _stext is not at Vaddr
 		symbols, err := ef.Symbols()

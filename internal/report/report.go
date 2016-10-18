@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -419,11 +418,13 @@ func nodesPerSymbol(ns graph.Nodes, symbols []*objSymbol) map[*objSymbol]graph.N
 }
 
 // annotateAssembly annotates a set of assembly instructions with a
-// set of samples. It returns a set of nodes to display.  base is an
+// set of samples. It returns a set of nodes to display. base is an
 // offset to adjust the sample addresses.
 func annotateAssembly(insns []plugin.Inst, samples graph.Nodes, base uint64) graph.Nodes {
 	// Add end marker to simplify printing loop.
-	insns = append(insns, plugin.Inst{^uint64(0), "", "", 0})
+	insns = append(insns, plugin.Inst{
+		Addr: ^uint64(0),
+	})
 
 	// Ensure samples are sorted by address.
 	samples.Sort(graph.AddressOrder)
@@ -465,14 +466,6 @@ func valueOrDot(value int64, rpt *Report) string {
 		return "."
 	}
 	return rpt.formatValue(value)
-}
-
-// canAccessFile determines if the filename can be opened for reading.
-func canAccessFile(path string) bool {
-	if fi, err := os.Stat(path); err == nil {
-		return fi.Mode().Perm()&0400 != 0
-	}
-	return false
 }
 
 // printTags collects all tags referenced in the profile and prints
@@ -725,7 +718,7 @@ func getDisambiguatedNames(g *graph.Graph) map[*graph.Node]string {
 
 // callgrindName implements the callgrind naming compression scheme.
 // For names not previously seen returns "(N) name", where N is a
-// unique index.  For names previously seen returns "(N)" where N is
+// unique index. For names previously seen returns "(N)" where N is
 // the index returned the first time.
 func callgrindName(names map[string]int, name string) string {
 	if name == "" {
@@ -1049,25 +1042,6 @@ type Report struct {
 	total       int64
 	options     *Options
 	formatValue func(int64) string
-}
-
-func (rpt *Report) formatTags(s *profile.Sample) (string, bool) {
-	var labels []string
-	for key, vals := range s.Label {
-		for _, v := range vals {
-			labels = append(labels, key+":"+v)
-		}
-	}
-	for key, nvals := range s.NumLabel {
-		for _, v := range nvals {
-			labels = append(labels, measurement.Label(v, key))
-		}
-	}
-	if len(labels) == 0 {
-		return "", false
-	}
-	sort.Strings(labels)
-	return strings.Join(labels, `\n`), true
 }
 
 func abs64(i int64) int64 {

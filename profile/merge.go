@@ -61,7 +61,7 @@ func Merge(srcs []*Profile) (*Profile, error) {
 
 		if len(pm.mappings) == 0 && len(src.Mapping) > 0 {
 			// The Mapping list has the property that the first mapping
-			// represents the main binary.  Take the first Mapping we see,
+			// represents the main binary. Take the first Mapping we see,
 			// otherwise the operations below will add mappings in an
 			// arbitrary order.
 			pm.mapMapping(srcs[0].Mapping[0])

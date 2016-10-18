@@ -115,7 +115,7 @@ func compatibleValueTypes(v1, v2 *profile.ValueType) bool {
 }
 
 // Scale a measurement from an unit to a different unit and returns
-// the scaled value and the target unit.  The returned target unit
+// the scaled value and the target unit. The returned target unit
 // will be empty if uninteresting (could be skipped).
 func Scale(value int64, fromUnit, toUnit string) (float64, string) {
 	// Avoid infinite recursion on overflow.

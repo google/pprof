@@ -166,10 +166,10 @@ func GetBuildID(binary io.ReaderAt) ([]byte, error) {
 }
 
 // GetBase determines the base address to subtract from virtual
-// address to get symbol table address.  For an executable, the base
-// is 0.  Otherwise, it's a shared library, and the base is the
-// address where the mapping starts.  The kernel is special, and may
-// use the address of the _stext symbol as the mmap start.  _stext
+// address to get symbol table address. For an executable, the base
+// is 0. Otherwise, it's a shared library, and the base is the
+// address where the mapping starts. The kernel is special, and may
+// use the address of the _stext symbol as the mmap start. _stext
 // offset can be obtained with `nm vmlinux | grep _stext`
 func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint64, start, limit, offset uint64) (uint64, error) {
 	const (
@@ -193,8 +193,8 @@ func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint6
 			return 0, nil
 		}
 		if start == 0 && limit != 0 {
-			// ChromeOS remaps its kernel to 0.  Nothing else should come
-			// down this path.  Empirical values:
+			// ChromeOS remaps its kernel to 0. Nothing else should come
+			// down this path. Empirical values:
 			//       VADDR=0xffffffff80200000
 			// stextOffset=0xffffffff80200198
 			if stextOffset != nil {
@@ -217,7 +217,7 @@ func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint6
 			//      Offset=0 (0xc000000000000000 for PowerPC64)
 			// So the base should be:
 			if stextOffset != nil && (start%pageSize) == (*stextOffset%pageSize) {
-				// perf uses the address of _stext as start.  Some tools may
+				// perf uses the address of _stext as start. Some tools may
 				// adjust for this before calling GetBase, in which case the the page
 				// alignment should be different from that of stextOffset.
 				return start - *stextOffset, nil
@@ -225,8 +225,8 @@ func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint6
 
 			return start - loadSegment.Vaddr, nil
 		} else if start < loadSegment.Vaddr && start%pageSize != 0 && stextOffset != nil && *stextOffset%pageSize == start%pageSize {
-			// ChromeOS remaps its kernel to 0 + start%pageSize.  Nothing
-			// else should come down this path.  Empirical values:
+			// ChromeOS remaps its kernel to 0 + start%pageSize. Nothing
+			// else should come down this path. Empirical values:
 			//       start=0x198 limit=0x2f9fffff offset=0
 			//       VADDR=0xffffffff81000000
 			// stextOffset=0xffffffff81000198
