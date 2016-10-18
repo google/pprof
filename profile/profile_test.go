@@ -91,7 +91,7 @@ func TestParse(t *testing.T) {
 }
 
 // leaveTempfile leaves |b| in a temporary file on disk and returns the
-// temp filename.  This is useful to recover a profile when the test
+// temp filename. This is useful to recover a profile when the test
 // fails.
 func leaveTempfile(b []byte) string {
 	f1, err := ioutil.TempFile("", "profile_test")
@@ -508,28 +508,28 @@ func TestFilter(t *testing.T) {
 }
 
 func TestTagFilter(t *testing.T) {
-     // Perform several forms of tag filtering on the test profile.
+	// Perform several forms of tag filtering on the test profile.
 
 	type filterTestcase struct {
 		include, exclude *regexp.Regexp
-		im, em bool
-		count int
+		im, em           bool
+		count            int
 	}
 
-	countTags := func (p *Profile) map[string]bool {
-		  tags := make(map[string]bool)
+	countTags := func(p *Profile) map[string]bool {
+		tags := make(map[string]bool)
 
-		  for _, s := range p.Sample {
-		      for l := range s.Label {
-		      	  tags[l] = true
-		      }		      
-		      for l := range s.NumLabel {
-		      	  tags[l] = true
-		      }		      
-		  }
-		  return tags
-	}	
-	
+		for _, s := range p.Sample {
+			for l := range s.Label {
+				tags[l] = true
+			}
+			for l := range s.NumLabel {
+				tags[l] = true
+			}
+		}
+		return tags
+	}
+
 	for tx, tc := range []filterTestcase{
 		{nil, nil, true, false, 3},
 		{regexp.MustCompile("notfound"), nil, false, false, 0},
@@ -538,15 +538,15 @@ func TestTagFilter(t *testing.T) {
 	} {
 		prof := testProfile.Copy()
 		gim, gem := prof.FilterTagsByName(tc.include, tc.exclude)
-		if  gim != tc.im {
+		if gim != tc.im {
 			t.Errorf("Filter #%d, got include match=%v, want %v", tx, gim, tc.im)
-		}		
-		if  gem != tc.em {
+		}
+		if gem != tc.em {
 			t.Errorf("Filter #%d, got exclude match=%v, want %v", tx, gem, tc.em)
-		}		
-		if  tags := countTags(prof) ; len(tags) != tc.count {
+		}
+		if tags := countTags(prof); len(tags) != tc.count {
 			t.Errorf("Filter #%d, got %d tags[%v], want %d", tx, len(tags), tags, tc.count)
-		}		
+		}
 	}
 }
 

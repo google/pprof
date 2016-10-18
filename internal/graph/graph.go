@@ -55,7 +55,7 @@ type Node struct {
 	// Info describes the source location associated to this node.
 	Info NodeInfo
 
-	// Function represents the function that this node belongs to.  On
+	// Function represents the function that this node belongs to. On
 	// graphs with sub-function resolution (eg line number or
 	// addresses), two nodes in a NodeMap that are part of the same
 	// function have the same value of Node.Function. If the Node
@@ -508,7 +508,7 @@ func isNegative(n *Node) bool {
 	}
 }
 
-// CreateNodes creates graph nodes for all locations in a profile.  It
+// CreateNodes creates graph nodes for all locations in a profile. It
 // returns set of all nodes, plus a mapping of each location to the
 // set of corresponding nodes (one per location.Line). If kept is
 // non-nil, only nodes in that set are included; nodes that do not

@@ -78,7 +78,7 @@ func parseGoCount(b []byte) (*Profile, error) {
 	if m == nil {
 		return nil, errUnrecognized
 	}
-	profileType := string(m[1])
+	profileType := m[1]
 	p := &Profile{
 		PeriodType: &ValueType{Type: profileType, Unit: "count"},
 		Period:     1,
@@ -103,11 +103,11 @@ func parseGoCount(b []byte) (*Profile, error) {
 		if m == nil {
 			return nil, errMalformed
 		}
-		n, err := strconv.ParseInt(string(m[1]), 0, 64)
+		n, err := strconv.ParseInt(m[1], 0, 64)
 		if err != nil {
 			return nil, errMalformed
 		}
-		fields := strings.Fields(string(m[2]))
+		fields := strings.Fields(m[2])
 		locs := make([]*Location, 0, len(fields))
 		for _, stk := range fields {
 			addr, err := strconv.ParseUint(stk, 0, 64)
@@ -407,7 +407,7 @@ func cleanupDuplicateLocations(p *Profile) {
 //   3rd word -- 0
 //
 // Addresses from stack traces may point to the next instruction after
-// each call.  Optionally adjust by -1 to land somewhere on the actual
+// each call. Optionally adjust by -1 to land somewhere on the actual
 // call (except for the leaf, which is not a call).
 func parseCPUSamples(b []byte, parse func(b []byte) (uint64, []byte), adjust bool, p *Profile) ([]byte, map[uint64]*Location, error) {
 	locs := make(map[uint64]*Location)
@@ -444,7 +444,7 @@ func parseCPUSamples(b []byte, parse func(b []byte) (uint64, []byte), adjust boo
 		}
 		p.Sample = append(p.Sample,
 			&Sample{
-				Value:    []int64{int64(count), int64(count) * int64(p.Period)},
+				Value:    []int64{int64(count), int64(count) * p.Period},
 				Location: sloc,
 			})
 	}
@@ -526,7 +526,7 @@ func parseHeap(b []byte) (p *Profile, err error) {
 		var sloc []*Location
 		for _, addr := range addrs {
 			// Addresses from stack traces point to the next instruction after
-			// each call.  Adjust by -1 to land somewhere on the actual call.
+			// each call. Adjust by -1 to land somewhere on the actual call.
 			addr--
 			loc := locs[addr]
 			if locs[addr] == nil {
@@ -542,7 +542,7 @@ func parseHeap(b []byte) (p *Profile, err error) {
 		p.Sample = append(p.Sample, &Sample{
 			Value:    value,
 			Location: sloc,
-			NumLabel: map[string][]int64{"bytes": []int64{blocksize}},
+			NumLabel: map[string][]int64{"bytes": {blocksize}},
 		})
 	}
 
@@ -559,7 +559,7 @@ func parseHeapHeader(line string) (sampling string, period int64, hasAlloc bool,
 	}
 
 	if len(header[6]) > 0 {
-		if period, err = strconv.ParseInt(string(header[6]), 10, 64); err != nil {
+		if period, err = strconv.ParseInt(header[6], 10, 64); err != nil {
 			return "", 0, false, errUnrecognized
 		}
 	}
@@ -765,7 +765,7 @@ func parseContention(b []byte) (p *Profile, err error) {
 		var sloc []*Location
 		for _, addr := range addrs {
 			// Addresses from stack traces point to the next instruction after
-			// each call.  Adjust by -1 to land somewhere on the actual call.
+			// each call. Adjust by -1 to land somewhere on the actual call.
 			addr--
 			loc := locs[addr]
 			if locs[addr] == nil {
@@ -905,7 +905,7 @@ func parseThread(b []byte) (*Profile, error) {
 		var sloc []*Location
 		for i, addr := range addrs {
 			// Addresses from stack traces point to the next instruction after
-			// each call.  Adjust by -1 to land somewhere on the actual call
+			// each call. Adjust by -1 to land somewhere on the actual call
 			// (except for the leaf, which is not a call).
 			if i > 0 {
 				addr--

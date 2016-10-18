@@ -129,7 +129,7 @@ func (d *addr2Liner) readFrame() (plugin.Frame, bool) {
 	}
 	if strings.HasPrefix(funcname, "0x") {
 		// If addr2line returns a hex address we can assume it is the
-		// sentinel.  Read and ignore next two lines of output from
+		// sentinel. Read and ignore next two lines of output from
 		// addr2line
 		d.readString()
 		d.readString()
@@ -204,7 +204,7 @@ func (d *addr2Liner) addrInfo(addr uint64) ([]plugin.Frame, error) {
 		nm, err := d.nm.addrInfo(addr)
 		if err == nil && len(nm) > 0 {
 			// Last entry in frame list should match since
-			// it is non-inlined.  As a simple heuristic,
+			// it is non-inlined. As a simple heuristic,
 			// we only switch to the nm-based name if it
 			// is longer.
 			nmName := nm[len(nm)-1].Func

@@ -73,7 +73,7 @@ type FlagSet interface {
 	Parse(usage func()) []string
 }
 
-// A Fetcher reads and returns the profile named by src.  src can be a
+// A Fetcher reads and returns the profile named by src. src can be a
 // local file path or a URL. duration and timeout are units specified
 // by the end user, or 0 by default. duration refers to the length of
 // the profile collection, if applicable, and timeout is the amount of
@@ -98,7 +98,7 @@ type MappingSources map[string][]struct {
 
 // An ObjTool inspects shared libraries and executable files.
 type ObjTool interface {
-	// Open opens the named object file.  If the object is a shared
+	// Open opens the named object file. If the object is a shared
 	// library, start/limit/offset are the addresses where it is mapped
 	// into memory in the address space being inspected.
 	Open(file string, start, limit, offset uint64) (ObjFile, error)

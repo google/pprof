@@ -26,5 +26,6 @@ import (
 func main() {
 	if err := driver.PProf(&driver.Options{}); err != nil {
 		fmt.Fprintf(os.Stderr, "pprof: %v\n", err)
+		os.Exit(2)
 	}
 }
