@@ -443,7 +443,7 @@ func invokeVisualizer(format PostProcessor, suffix string, visualizers []string)
 				defer func(t <-chan time.Time) {
 					<-t
 				}(time.After(time.Second))
-				// On interactive mode, let the visualizer run on the background
+				// On interactive mode, let the visualizer run in the background
 				// so other commands can be issued.
 				if !interactiveMode {
 					return viewer.Wait()
