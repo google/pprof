@@ -411,7 +411,7 @@ func invokeVisualizer(format PostProcessor, suffix string, visualizers []string)
 			return err
 		}
 
-		tempFile, err := newTempFile(os.Getenv("PPROF_TMPDIR"), "pprof", "."+suffix)
+		tempFile, err := newTempFile(os.TempDir(), "pprof", "."+suffix)
 		if err != nil {
 			return err
 		}
