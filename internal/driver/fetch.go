@@ -37,10 +37,6 @@ import (
 // there are some failures. It will return an error if it is unable to
 // fetch any profiles.
 func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
-	if err := setTmpDir(o.UI); err != nil {
-		return nil, err
-	}
-
 	sources := make([]profileSource, 0, len(s.Sources)+len(s.Base))
 	for _, src := range s.Sources {
 		sources = append(sources, profileSource{
@@ -76,6 +72,11 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 
 	// Save a copy of the merged profile if there is at least one remote source.
 	if save {
+		dir, err := setTmpDir(o.UI)
+		if err != nil {
+			return nil, err
+		}
+
 		prefix := "pprof."
 		if len(p.Mapping) > 0 && p.Mapping[0].File != "" {
 			prefix += filepath.Base(p.Mapping[0].File) + "."
@@ -84,7 +85,6 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 			prefix += s.Type + "."
 		}
 
-		dir := os.Getenv("PPROF_TMPDIR")
 		tempFile, err := newTempFile(dir, prefix, ".pb.gz")
 		if err == nil {
 			if err = p.Write(tempFile); err == nil {
@@ -211,21 +211,20 @@ type profileSource struct {
 	err    error
 }
 
-// setTmpDir sets the PPROF_TMPDIR environment variable with a new
-// temp directory, if not already set.
-func setTmpDir(ui plugin.UI) error {
+// setTmpDir prepares the directory to use to save profiles retrieved
+// remotely. It is selected from PPROF_TMPDIR, defaults to $HOME/pprof.
+func setTmpDir(ui plugin.UI) (string, error) {
 	if profileDir := os.Getenv("PPROF_TMPDIR"); profileDir != "" {
-		return nil
+		return profileDir, nil
 	}
-	for _, tmpDir := range []string{os.Getenv("HOME") + "/pprof", "/tmp"} {
+	for _, tmpDir := range []string{os.Getenv("HOME") + "/pprof", os.TempDir()} {
 		if err := os.MkdirAll(tmpDir, 0755); err != nil {
 			ui.PrintErr("Could not use temp dir ", tmpDir, ": ", err.Error())
 			continue
 		}
-		os.Setenv("PPROF_TMPDIR", tmpDir)
-		return nil
+		return tmpDir, nil
 	}
-	return fmt.Errorf("failed to identify temp dir")
+	return "", fmt.Errorf("failed to identify temp dir")
 }
 
 // grabProfile fetches a profile. Returns the profile, sources for the
@@ -424,7 +423,7 @@ func convertPerfData(perfPath string, ui plugin.UI) (*os.File, error) {
 	ui.Print(fmt.Sprintf(
 		"Converting %s to a profile.proto... (May take a few minutes)",
 		perfPath))
-	profile, err := newTempFile("/tmp", "pprof_", ".pb.gz")
+	profile, err := newTempFile(os.TempDir(), "pprof_", ".pb.gz")
 	if err != nil {
 		return nil, err
 	}
