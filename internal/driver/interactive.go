@@ -39,7 +39,7 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 
 	// Do not wait for the visualizer to complete, to allow multiple
 	// graphs to be visualized simultaneously.
-	waitForVisualizer = false
+	interactiveMode = true
 	shortcuts := profileShortcuts(p)
 
 	greetings(p, o.UI)

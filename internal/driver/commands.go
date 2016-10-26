@@ -79,9 +79,9 @@ func SetVariableDefault(variable, value string) {
 // PostProcessor is a function that applies post-processing to the report output
 type PostProcessor func(input []byte, output io.Writer, ui plugin.UI) error
 
-// WaitForVisualizer makes pprof wait for visualizers to complete
-// before continuing, returning any errors.
-var waitForVisualizer = true
+// interactiveMode is true if pprof is running on interactive mode, reading
+// commands from its shell.
+var interactiveMode = false
 
 // pprofCommands are the report generation commands recognized by pprof.
 var pprofCommands = commands{
@@ -361,7 +361,7 @@ var kcachegrind = []string{"kcachegrind"}
 // the screen.
 func awayFromTTY(format string) PostProcessor {
 	return func(input []byte, output io.Writer, ui plugin.UI) error {
-		if output == os.Stdout && ui.IsTerminal() {
+		if output == os.Stdout && (ui.IsTerminal() || interactiveMode) {
 			tempFile, err := newTempFile("", "profile", "."+format)
 			if err != nil {
 				return err
@@ -443,7 +443,9 @@ func invokeVisualizer(format PostProcessor, suffix string, visualizers []string)
 				defer func(t <-chan time.Time) {
 					<-t
 				}(time.After(time.Second))
-				if waitForVisualizer {
+				// On interactive mode, let the visualizer run on the background
+				// so other commands can be issued.
+				if !interactiveMode {
 					return viewer.Wait()
 				}
 				return nil
