@@ -44,7 +44,6 @@
 #include "chromiumos-wide-profiling/perf_reader.h"
 #include "int_compat.h"
 #include "intervalmap.h"
-#include "profile_wrappers.pb.h"
 #include "string_compat.h"
 #include "test_compat.h"
 
