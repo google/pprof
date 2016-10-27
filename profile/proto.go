@@ -13,6 +13,8 @@
 // limitations under the License.
 
 // This file is a simple protocol buffer encoder and decoder.
+// The format is described at
+// https://developers.google.com/protocol-buffers/docs/encoding
 //
 // A protocol message must implement the message interface:
 //   decoder() []decoder
@@ -34,8 +36,8 @@ package profile
 import "errors"
 
 type buffer struct {
-	field int
-	typ   int
+	field int // field tag
+	typ   int // proto wire type code for field
 	u64   uint64
 	data  []byte
 	tmp   [16]byte
@@ -190,9 +192,8 @@ func le32(p []byte) uint32 {
 }
 
 func decodeVarint(data []byte) (uint64, []byte, error) {
-	var i int
 	var u uint64
-	for i = 0; ; i++ {
+	for i := 0; ; i++ {
 		if i >= 10 || i >= len(data) {
 			return 0, nil, errors.New("bad varint")
 		}
@@ -242,7 +243,7 @@ func decodeField(b *buffer, data []byte) ([]byte, error) {
 		b.u64 = uint64(le32(data[:4]))
 		data = data[4:]
 	default:
-		return nil, errors.New("unknown type: " + string(b.typ))
+		return nil, errors.New("unknown wire type: " + string(b.typ))
 	}
 
 	return data, nil

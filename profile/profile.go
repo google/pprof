@@ -240,7 +240,7 @@ func (p *Profile) massageMappings() {
 		if len(libRx.FindStringSubmatch(file)) > 0 {
 			continue
 		}
-		if strings.HasPrefix(file, "[") {
+		if file[0] == '[' {
 			continue
 		}
 		// Swap what we guess is main to position 0.

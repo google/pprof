@@ -29,8 +29,8 @@ import (
 )
 
 var (
-	countStartRE = regexp.MustCompile(`\A(\w+) profile: total \d+\n\z`)
-	countRE      = regexp.MustCompile(`\A(\d+) @(( 0x[0-9a-f]+)+)\n\z`)
+	countStartRE = regexp.MustCompile(`\A(\w+) profile: total \d+\z`)
+	countRE      = regexp.MustCompile(`\A(\d+) @(( 0x[0-9a-f]+)+)\z`)
 
 	heapHeaderRE = regexp.MustCompile(`heap profile: *(\d+): *(\d+) *\[ *(\d+): *(\d+) *\] *@ *(heap[_a-z0-9]*)/?(\d*)`)
 	heapSampleRE = regexp.MustCompile(`(-?\d+): *(-?\d+) *\[ *(\d+): *(\d+) *] @([ x0-9a-f]*)`)
@@ -59,22 +59,14 @@ func isSpaceOrComment(line string) bool {
 // parseGoCount parses a Go count profile (e.g., threadcreate or
 // goroutine) and returns a new Profile.
 func parseGoCount(b []byte) (*Profile, error) {
-	r := bytes.NewBuffer(b)
-
-	var line string
-	var err error
-	for {
-		// Skip past comments and empty lines seeking a real header.
-		line, err = r.ReadString('\n')
-		if err != nil {
-			return nil, err
-		}
-		if !isSpaceOrComment(line) {
-			break
-		}
+	s := bufio.NewScanner(bytes.NewBuffer(b))
+	// Skip comments at the beginning of the file.
+	for s.Scan() && isSpaceOrComment(s.Text()) {
 	}
-
-	m := countStartRE.FindStringSubmatch(line)
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
+	m := countStartRE.FindStringSubmatch(s.Text())
 	if m == nil {
 		return nil, errUnrecognized
 	}
@@ -85,14 +77,8 @@ func parseGoCount(b []byte) (*Profile, error) {
 		SampleType: []*ValueType{{Type: profileType, Unit: "count"}},
 	}
 	locations := make(map[uint64]*Location)
-	for {
-		line, err = r.ReadString('\n')
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
-		}
+	for s.Scan() {
+		line := s.Text()
 		if isSpaceOrComment(line) {
 			continue
 		}
@@ -131,8 +117,11 @@ func parseGoCount(b []byte) (*Profile, error) {
 			Value:    []int64{n},
 		})
 	}
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
 
-	if err = parseAdditionalSections(strings.TrimSpace(line), r, p); err != nil {
+	if err := parseAdditionalSections(s, p); err != nil {
 		return nil, err
 	}
 	return p, nil
@@ -455,26 +444,25 @@ func parseCPUSamples(b []byte, parse func(b []byte) (uint64, []byte), adjust boo
 // parseHeap parses a heapz legacy or a growthz profile and
 // returns a newly populated Profile.
 func parseHeap(b []byte) (p *Profile, err error) {
-	r := bytes.NewBuffer(b)
-	l, err := r.ReadString('\n')
-	if err != nil {
-		return nil, errUnrecognized
+	s := bufio.NewScanner(bytes.NewBuffer(b))
+	if !s.Scan() {
+		return nil, s.Err()
 	}
-
 	p = &Profile{}
 
 	sampling := ""
 	hasAlloc := false
 
+	line := s.Text()
 	p.PeriodType = &ValueType{Type: "space", Unit: "bytes"}
-	if header := heapHeaderRE.FindStringSubmatch(l); header != nil {
-		sampling, p.Period, hasAlloc, err = parseHeapHeader(l)
+	if header := heapHeaderRE.FindStringSubmatch(line); header != nil {
+		sampling, p.Period, hasAlloc, err = parseHeapHeader(line)
 		if err != nil {
 			return nil, err
 		}
-	} else if header = growthHeaderRE.FindStringSubmatch(l); header != nil {
+	} else if header = growthHeaderRE.FindStringSubmatch(line); header != nil {
 		p.Period = 1
-	} else if header = fragmentationHeaderRE.FindStringSubmatch(l); header != nil {
+	} else if header = fragmentationHeaderRE.FindStringSubmatch(line); header != nil {
 		p.Period = 1
 	} else {
 		return nil, errUnrecognized
@@ -497,28 +485,18 @@ func parseHeap(b []byte) (p *Profile, err error) {
 	}
 
 	locs := make(map[uint64]*Location)
-	for {
-		l, err = r.ReadString('\n')
-		if err != nil {
-			if err != io.EOF {
-				return nil, err
-			}
+	for s.Scan() {
+		line := strings.TrimSpace(s.Text())
 
-			if l == "" {
-				break
-			}
-		}
-
-		if isSpaceOrComment(l) {
+		if isSpaceOrComment(line) {
 			continue
 		}
-		l = strings.TrimSpace(l)
 
-		if sectionTrigger(l) != unrecognizedSection {
+		if sectionTrigger(line) != unrecognizedSection {
 			break
 		}
 
-		value, blocksize, addrs, err := parseHeapSample(l, p.Period, sampling, hasAlloc)
+		value, blocksize, addrs, err := parseHeapSample(line, p.Period, sampling, hasAlloc)
 		if err != nil {
 			return nil, err
 		}
@@ -545,8 +523,10 @@ func parseHeap(b []byte) (p *Profile, err error) {
 			NumLabel: map[string][]int64{"bytes": {blocksize}},
 		})
 	}
-
-	if err = parseAdditionalSections(l, r, p); err != nil {
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
+	if err := parseAdditionalSections(s, p); err != nil {
 		return nil, err
 	}
 	return p, nil
@@ -678,13 +658,13 @@ func scaleHeapSample(count, size, rate int64) (int64, int64) {
 // parseContention parses a contentionz profile and returns a newly
 // populated Profile.
 func parseContention(b []byte) (p *Profile, err error) {
-	r := bytes.NewBuffer(b)
-	l, err := r.ReadString('\n')
-	if err != nil {
-		return nil, errUnrecognized
+	s := bufio.NewScanner(bytes.NewBuffer(b))
+	if !s.Scan() {
+		return nil, s.Err()
 	}
+	line := s.Text()
 
-	if !strings.HasPrefix(l, "--- contention") {
+	if !strings.HasPrefix(line, "--- contention") {
 		return nil, errUnrecognized
 	}
 
@@ -700,27 +680,18 @@ func parseContention(b []byte) (p *Profile, err error) {
 	var cpuHz int64
 	// Parse text of the form "attribute = value" before the samples.
 	const delimiter = "="
-	for {
-		l, err = r.ReadString('\n')
-		if err != nil {
-			if err != io.EOF {
-				return nil, err
-			}
+	for s.Scan() {
+		line := s.Text()
 
-			if l == "" {
-				break
-			}
-		}
-
-		if l = strings.TrimSpace(l); l == "" {
+		if line = strings.TrimSpace(line); line == "" {
 			continue
 		}
 
-		if strings.HasPrefix(l, "---") {
+		if strings.HasPrefix(line, "---") {
 			break
 		}
 
-		attr := strings.SplitN(l, delimiter, 2)
+		attr := strings.SplitN(line, delimiter, 2)
 		if len(attr) != 2 {
 			break
 		}
@@ -752,13 +723,17 @@ func parseContention(b []byte) (p *Profile, err error) {
 			return nil, errUnrecognized
 		}
 	}
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
 
 	locs := make(map[uint64]*Location)
 	for {
-		if l = strings.TrimSpace(l); strings.HasPrefix(l, "---") {
+		line := strings.TrimSpace(s.Text())
+		if strings.HasPrefix(line, "---") {
 			break
 		}
-		value, addrs, err := parseContentionSample(l, p.Period, cpuHz)
+		value, addrs, err := parseContentionSample(line, p.Period, cpuHz)
 		if err != nil {
 			return nil, err
 		}
@@ -782,17 +757,15 @@ func parseContention(b []byte) (p *Profile, err error) {
 			Location: sloc,
 		})
 
-		if l, err = r.ReadString('\n'); err != nil {
-			if err != io.EOF {
-				return nil, err
-			}
-			if l == "" {
-				break
-			}
+		if !s.Scan() {
+			break
 		}
 	}
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
 
-	if err = parseAdditionalSections(l, r, p); err != nil {
+	if err = parseAdditionalSections(s, p); err != nil {
 		return nil, err
 	}
 
@@ -835,35 +808,16 @@ func parseContentionSample(line string, period, cpuHz int64) (value []int64, add
 
 // parseThread parses a Threadz profile and returns a new Profile.
 func parseThread(b []byte) (*Profile, error) {
-	r := bytes.NewBuffer(b)
-
-	var line string
-	var err error
-	for {
-		// Skip past comments and empty lines seeking a real header.
-		line, err = r.ReadString('\n')
-		if err != nil {
-			return nil, err
-		}
-		if !isSpaceOrComment(line) {
-			break
-		}
+	s := bufio.NewScanner(bytes.NewBuffer(b))
+	// Skip past comments and empty lines seeking a real header.
+	for s.Scan() && isSpaceOrComment(s.Text()) {
 	}
 
+	line := s.Text()
 	if m := threadzStartRE.FindStringSubmatch(line); m != nil {
 		// Advance over initial comments until first stack trace.
-		for {
-			line, err = r.ReadString('\n')
-			if err != nil {
-				if err != io.EOF {
-					return nil, err
-				}
-
-				if line == "" {
-					break
-				}
-			}
-			if sectionTrigger(line) != unrecognizedSection || line[0] == '-' {
+		for s.Scan() {
+			if line = s.Text(); sectionTrigger(line) != unrecognizedSection || strings.HasPrefix(line, "-") {
 				break
 			}
 		}
@@ -889,7 +843,8 @@ func parseThread(b []byte) (*Profile, error) {
 		}
 
 		var addrs []uint64
-		line, addrs, err = parseThreadSample(r)
+		var err error
+		line, addrs, err = parseThreadSample(s)
 		if err != nil {
 			return nil, errUnrecognized
 		}
@@ -927,7 +882,7 @@ func parseThread(b []byte) (*Profile, error) {
 		})
 	}
 
-	if err = parseAdditionalSections(line, r, p); err != nil {
+	if err := parseAdditionalSections(s, p); err != nil {
 		return nil, err
 	}
 
@@ -938,58 +893,43 @@ func parseThread(b []byte) (*Profile, error) {
 // parseThreadSample parses a symbolized or unsymbolized stack trace.
 // Returns the first line after the traceback, the sample (or nil if
 // it hits a 'same-as-previous' marker) and an error.
-func parseThreadSample(b *bytes.Buffer) (nextl string, addrs []uint64, err error) {
-	var l string
+func parseThreadSample(s *bufio.Scanner) (nextl string, addrs []uint64, err error) {
+	var line string
 	sameAsPrevious := false
-	for {
-		if l, err = b.ReadString('\n'); err != nil {
-			if err != io.EOF {
-				return "", nil, err
-			}
-			if l == "" {
-				break
-			}
-		}
-		if l = strings.TrimSpace(l); l == "" {
+	for s.Scan() {
+		line = strings.TrimSpace(s.Text())
+		if line == "" {
 			continue
 		}
 
-		if strings.HasPrefix(l, "---") {
+		if strings.HasPrefix(line, "---") {
 			break
 		}
-		if strings.Contains(l, "same as previous thread") {
+		if strings.Contains(line, "same as previous thread") {
 			sameAsPrevious = true
 			continue
 		}
 
-		addrs = append(addrs, parseHexAddresses(l)...)
+		addrs = append(addrs, parseHexAddresses(line)...)
 	}
-
+	if s.Err() != nil {
+		return "", nil, s.Err()
+	}
 	if sameAsPrevious {
-		return l, nil, nil
+		return line, nil, nil
 	}
-	return l, addrs, nil
+	return line, addrs, nil
 }
 
 // parseAdditionalSections parses any additional sections in the
 // profile, ignoring any unrecognized sections.
-func parseAdditionalSections(l string, b *bytes.Buffer, p *Profile) error {
-	for {
-		if sectionTrigger(l) == memoryMapSection {
-			break
-		}
-		// Ignore any unrecognized sections.
-		var err error
-		if l, err = b.ReadString('\n'); err != nil {
-			if err != io.EOF {
-				return err
-			}
-			if l == "" {
-				break
-			}
-		}
+func parseAdditionalSections(s *bufio.Scanner, p *Profile) error {
+	for sectionTrigger(s.Text()) != memoryMapSection && s.Scan() {
 	}
-	return p.ParseMemoryMap(b)
+	if err := s.Err(); err != nil {
+		return err
+	}
+	return p.parseMemoryMapFromScanner(s)
 }
 
 // ParseProcMaps parses a memory map in the format of /proc/self/maps.
@@ -997,36 +937,31 @@ func parseAdditionalSections(l string, b *bytes.Buffer, p *Profile) error {
 // associate locations to the corresponding mapping based on their
 // address.
 func ParseProcMaps(rd io.Reader) ([]*Mapping, error) {
-	var mapping []*Mapping
+	s := bufio.NewScanner(rd)
+	return parseProcMapsFromScanner(s)
+}
 
-	b := bufio.NewReader(rd)
+func parseProcMapsFromScanner(s *bufio.Scanner) ([]*Mapping, error) {
+	var mapping []*Mapping
 
 	var attrs []string
 	var r *strings.Replacer
 	const delimiter = "="
-	for {
-		l, err := b.ReadString('\n')
-		if err != nil {
-			if err != io.EOF {
-				return nil, err
-			}
-			if l == "" {
-				break
-			}
-		}
-		if l = strings.TrimSpace(l); l == "" {
+	for s.Scan() {
+		line := strings.TrimSpace(s.Text())
+		if line == "" {
 			continue
 		}
 
 		if r != nil {
-			l = r.Replace(l)
+			line = r.Replace(line)
 		}
-		m, err := parseMappingEntry(l)
+		m, err := parseMappingEntry(line)
 		if err != nil {
 			if err == errUnrecognized {
 				// Recognize assignments of the form: attr=value, and replace
 				// $attr with value on subsequent mappings.
-				if attr := strings.SplitN(l, delimiter, 2); len(attr) == 2 {
+				if attr := strings.SplitN(line, delimiter, 2); len(attr) == 2 {
 					attrs = append(attrs, "$"+strings.TrimSpace(attr[0]), strings.TrimSpace(attr[1]))
 					r = strings.NewReplacer(attrs...)
 				}
@@ -1040,6 +975,9 @@ func ParseProcMaps(rd io.Reader) ([]*Mapping, error) {
 		}
 		mapping = append(mapping, m)
 	}
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
 	return mapping, nil
 }
 
@@ -1047,7 +985,11 @@ func ParseProcMaps(rd io.Reader) ([]*Mapping, error) {
 // /proc/self/maps, and overrides the mappings in the current profile.
 // It renumbers the samples and locations in the profile correspondingly.
 func (p *Profile) ParseMemoryMap(rd io.Reader) error {
-	mapping, err := ParseProcMaps(rd)
+	return p.parseMemoryMapFromScanner(bufio.NewScanner(rd))
+}
+
+func (p *Profile) parseMemoryMapFromScanner(s *bufio.Scanner) error {
+	mapping, err := parseProcMapsFromScanner(s)
 	if err != nil {
 		return err
 	}
