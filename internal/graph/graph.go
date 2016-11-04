@@ -859,7 +859,7 @@ func (g *Graph) RemoveRedundantEdges() {
 				// avoid potential confusion.
 				break
 			}
-			if isRedundant(e) {
+			if isRedundantEdge(e) {
 				delete(e.Src.Out, e.Dest)
 				delete(e.Dest.In, e.Src)
 			}
@@ -867,26 +867,10 @@ func (g *Graph) RemoveRedundantEdges() {
 	}
 }
 
-// isRedundant determines if an edge can be removed without impacting
-// connectivity of the whole graph. This is implemented by checking if the
-// nodes have a common ancestor after removing the edge.
-func isRedundant(e *Edge) bool {
-	destPred := predecessors(e, e.Dest)
-	if len(destPred) == 1 {
-		return false
-	}
-	srcPred := predecessors(e, e.Src)
-
-	for n := range srcPred {
-		if destPred[n] && n != e.Dest {
-			return true
-		}
-	}
-	return false
-}
-
-// predecessors collects all the predecessors to node n, excluding edge e.
-func predecessors(e *Edge, n *Node) map[*Node]bool {
+// isRedundantEdge determines if there is a path that allows e.Src
+// to reach e.Dest after removing e.
+func isRedundantEdge(e *Edge) bool {
+	src, n := e.Src, e.Dest
 	seen := map[*Node]bool{n: true}
 	queue := Nodes{n}
 	for len(queue) > 0 {
@@ -896,11 +880,14 @@ func predecessors(e *Edge, n *Node) map[*Node]bool {
 			if e == ie || seen[ie.Src] {
 				continue
 			}
+			if ie.Src == src {
+				return true
+			}
 			seen[ie.Src] = true
 			queue = append(queue, ie.Src)
 		}
 	}
-	return seen
+	return false
 }
 
 // nodeSorter is a mechanism used to allow a report to be sorted

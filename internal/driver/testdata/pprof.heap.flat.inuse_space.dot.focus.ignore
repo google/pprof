@@ -12,4 +12,5 @@ N4 -> NN4_0 [label=" 3.91MB" weight=100 tooltip="3.91MB" labeltooltip="3.91MB"]
 N2 -> N3 [label=" 36.13MB\n (inline)" weight=37 penwidth=2 color="#b22e00" tooltip="line3000 testdata/file3000.src -> line3001 testdata/file3000.src (36.13MB)" labeltooltip="line3000 testdata/file3000.src -> line3001 testdata/file3000.src (36.13MB)"]
 N3 -> N1 [label=" 32.23MB\n (inline)" weight=33 penwidth=2 color="#b23200" tooltip="line3001 testdata/file3000.src -> line3002 testdata/file3000.src (32.23MB)" labeltooltip="line3001 testdata/file3000.src -> line3002 testdata/file3000.src (32.23MB)"]
 N3 -> N4 [label=" 3.91MB" weight=4 color="#b2a58f" tooltip="line3001 testdata/file3000.src -> line1000 testdata/file1000.src (3.91MB)" labeltooltip="line3001 testdata/file3000.src -> line1000 testdata/file1000.src (3.91MB)"]
+N1 -> N4 [label=" 0.98MB" color="#b2b0a9" tooltip="line3002 testdata/file3000.src ... line1000 testdata/file1000.src (0.98MB)" labeltooltip="line3002 testdata/file3000.src ... line1000 testdata/file1000.src (0.98MB)" style="dotted" minlen=2]
 }
