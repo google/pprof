@@ -18,9 +18,8 @@ To install all dependences and build the binary, run the following commands.
 These were tested on Debian GNU/Linux 8 (jessie):
 ```
 sudo apt-get -y install autoconf automake g++ git libelf-dev libssl-dev libtool make pkg-config
-git clone https://github.com/rauls5382/perf_data_converter.git
+git clone --recursive https://github.com/google/perf_data_converter.git
 cd perf_data_converter
-git submodule update --init
 make perf_to_profile
 ```
 
@@ -28,7 +27,7 @@ If you already have protocol buffers and googletest installed on your system,
 you can compile using your local packages with the following commands:
 ```
 sudo apt-get -y install autoconf automake g++ git libelf-dev libssl-dev libtool make pkg-config
-git clone https://github.com/rauls5382/perf_data_converter.git
+git clone https://github.com/google/perf_data_converter.git
 cd perf_data_converter
 make perf_to_profile
 ```

@@ -14,11 +14,10 @@
  *       derived from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL Google Inc. BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL Google Inc. BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
  * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
@@ -45,14 +44,30 @@ namespace perftools {
 namespace {
 
 typedef perftools::profiles::Profile Profile;
-
 typedef perftools::profiles::Builder ProfileBuilder;
+typedef std::vector<std::unique_ptr<Profile>> ProfileVector;
 
 typedef uint32 Pid;
-typedef std::vector<std::unique_ptr<Profile>> ProfileVector;
-typedef std::map<std::vector<uint64>, perftools::profiles::Sample*> SampleMap;
-typedef std::unordered_map<uint64, perftools::profiles::Location*> LocationMap;
-typedef IntervalMap<perftools::profiles::Mapping*> MappingMap;
+
+// List of profile location IDs, currently used to represent a call stack.
+typedef std::vector<uint64> LocationIdVector;
+
+// Map from different stacks to corresponding profile samples.
+typedef std::map<LocationIdVector, perftools::profiles::Sample*> SampleMap;
+
+// Map from a virtual address to a profile location ID. It only keys off the
+// address, not also the mapping ID since the map / its portions are invalidated
+// by Comm() and MMap() methods to force re-creation of those locations.
+//
+// TODO(aalexand): It might be simpler to just have the mapping pointer / ID a
+// part of the key and skip the invalidation part altogether though it would
+// increase the memory usage some.
+typedef std::map<uint64, uint64> LocationMap;
+
+// Map from the handler mapping object to profile mapping ID. The mappings
+// the handler creates are immutable and reasonably shared (as in no new mapping
+// object is created per, say, each sample), so using the pointers is OK.
+typedef std::unordered_map<const PerfDataHandler::Mapping*, uint64> MappingMap;
 
 enum ExecutionMode {
   Unknown,
@@ -81,8 +96,16 @@ const char* ExecModeString(ExecutionMode mode) {
   }
 }
 
-// It is sufficient to key the caches for Locations and Mappings by PID.
-// However, when Samples include labels, it is necessary to key their caches
+// Adds the string to the profile builder, ensuring the string contains
+// structurally valid UTF-8.  All strings inserted into the profile string table
+// must be valid UTF-8, otherwise unmarshalling the proto fails in Go.
+int64 UTF8StringId(const string& s, ProfileBuilder* builder) {
+  // TODO(aalexand): Implement this.
+  return builder->StringId(s.c_str());
+}
+
+// It is sufficient to key the location and mapping maps by PID.
+// However, when Samples include labels, it is necessary to key their maps
 // not only by PID, but also by anything their labels may contain, since labels
 // are also distinguishing features.  This struct should contain everything
 // required to uniquely identify a Sample: if two Samples you consider different
@@ -134,18 +157,29 @@ class PerfDataConverter : public PerfDataHandler {
   // Callbacks for PerfDataHandler
   virtual void Sample(const PerfDataHandler::SampleContext& sample);
   virtual void Comm(const CommContext& comm);
+  virtual void MMap(const MMapContext& mmap);
 
  private:
-  void AddSample(const PerfDataHandler::SampleContext& context, const Pid& pid,
-                 const SampleKey& sample_key, const std::vector<uint64>& stack,
-                 ProfileBuilder* builder);
-  perftools::profiles::Location* AddLocation(const Pid& pid, uint64 address,
-                                             ProfileBuilder* builder);
-  void AddMapping(const Pid& pid, uint64 for_ip,
-                  const PerfDataHandler::Mapping* smap_in,
-                  ProfileBuilder* builder);
-  perftools::profiles::Mapping* LookupMapping(const Pid& pid, uint64 address,
-                                              ProfileBuilder* builder);
+  // Adds a new sample updating the event counters if such sample is not present
+  // in the profile initializing its metrics. Updates the metrics associated
+  // with the sample if the sample was added before.
+  void AddOrUpdateSample(const PerfDataHandler::SampleContext& context,
+                         const Pid& pid, const SampleKey& sample_key,
+                         const LocationIdVector& stack,
+                         ProfileBuilder* builder);
+
+  // Adds a new location to the profile if such location is not present in the
+  // profile, returning the ID of the location. It also adds the profile mapping
+  // corresponding to the specified handler mapping.
+  uint64 AddOrGetLocation(const Pid& pid, uint64 addr,
+                          const PerfDataHandler::Mapping* mapping,
+                          ProfileBuilder* builder);
+
+  // Adds a new mapping to the profile if such mapping is not present in the
+  // profile, returning the ID of the mapping. It returns 0 to indicate that the
+  // mapping was not added (only happens if smap == 0 currently).
+  uint64 AddOrGetMapping(const Pid& pid, const PerfDataHandler::Mapping* smap,
+                         ProfileBuilder* builder);
 
   bool IncludePidLabels() { return (sample_labels_ & kPidLabel); }
   bool IncludeTidLabels() { return (sample_labels_ & kTidLabel); }
@@ -159,106 +193,98 @@ class PerfDataConverter : public PerfDataHandler {
   const quipper::PerfDataProto& perf_data_;
   std::vector<std::unique_ptr<ProfileBuilder>> builders_;
 
-  std::unordered_map<Pid, ProfileBuilder*> builder_cache_;
-  std::unordered_map<Pid, LocationMap> location_cache_;
-  std::unordered_map<Pid, MappingMap> mapping_cache_;
+  std::unordered_map<Pid, ProfileBuilder*> pid_to_builder_;
+  std::unordered_map<Pid, LocationMap> pid_to_location_map_;
+  std::unordered_map<Pid, MappingMap> pid_to_mapping_map_;
 
   // While Locations and Mappings are per-address-space (=per-process), samples
   // can be thread-specific.  If the requested sample labels include PID and
-  // TID, we'll need to cache separate profile_proto::Samples for samples that
-  // are identical except for TID.  Likewise, if the requested sample labels
-  // include timestamp_ns, then we'll need to have separate
+  // TID, we'll need to maintain separate profile sample objects for samples
+  // that are identical except for TID.  Likewise, if the requested sample
+  // labels include timestamp_ns, then we'll need to have separate
   // profile_proto::Samples for samples that are identical except for timestamp.
   std::unordered_map<SampleKey, SampleMap, SampleKeyHasher,
                      SampleKeyEqualityTester>
-      sample_cache_;
+      sample_key_to_map_;
 
   const uint32 sample_labels_;
 
   const bool group_by_pids_ = true;
 };
 
-void PerfDataConverter::AddMapping(const Pid& pid, uint64 for_ip,
-                                   const PerfDataHandler::Mapping* smap,
-                                   ProfileBuilder* builder) {
+uint64 PerfDataConverter::AddOrGetMapping(const Pid& pid,
+                                          const PerfDataHandler::Mapping* smap,
+                                          ProfileBuilder* builder) {
   if (builder == nullptr) {
     std::cerr << "Cannot add mapping to null builder." << std::endl;
     abort();
   }
+
   if (smap == nullptr) {
-    return;
+    return 0;
   }
-  auto mapit = mapping_cache_.find(pid);
-  if (mapit == mapping_cache_.end()) {
-    mapping_cache_[pid] = MappingMap();
-    mapit = mapping_cache_.find(pid);
+
+  MappingMap* mapmap = nullptr;
+  auto mapmap_it = pid_to_mapping_map_.find(pid);
+  if (mapmap_it != pid_to_mapping_map_.end()) {
+    mapmap = &mapmap_it->second;
   }
-  auto mapmap = &mapit->second;
-  perftools::profiles::Mapping* mapping = nullptr;
-  if (!mapmap->Lookup(for_ip, &mapping)) {
-    Profile* profile = builder->mutable_profile();
-    auto mapping = profile->add_mapping();
-    mapping->set_id(profile->mapping_size());
-    mapping->set_memory_start(smap->start);
-    mapping->set_memory_limit(smap->limit);
-    mapping->set_file_offset(smap->file_offset);
-    if (smap->build_id != nullptr && !smap->build_id->empty()) {
-      mapping->set_build_id(builder->StringId(smap->build_id->c_str()));
-    }
-    if (smap->filename != nullptr && !smap->filename->empty()) {
-      mapping->set_filename(builder->StringId(smap->filename->c_str()));
-    } else if (smap->filename_md5_prefix != 0) {
-      std::stringstream filename;
-      filename << std::hex << smap->filename_md5_prefix;
-      mapping->set_filename(builder->StringId(filename.str().c_str()));
-    }
-    if (mapping->memory_start() >= mapping->memory_limit()) {
-      std::cerr << "The start of the mapping must be strictly less than its"
-                << "limit in file: " << mapping->filename() << std::endl
-                << "Start: " << mapping->memory_start() << std::endl
-                << "Limit: " << mapping->memory_limit() << std::endl;
-      abort();
-    }
-    mapmap->Set(mapping->memory_start(), mapping->memory_limit(), mapping);
+  if (mapmap == nullptr) {
+    pid_to_mapping_map_[pid] = MappingMap();
+    mapmap = &pid_to_mapping_map_[pid];
   }
+
+  auto it = mapmap->find(smap);
+  if (it != mapmap->end()) {
+    return it->second;
+  }
+
+  Profile* profile = builder->mutable_profile();
+  auto mapping = profile->add_mapping();
+  uint64 mapping_id = profile->mapping_size();
+  mapping->set_id(mapping_id);
+  mapping->set_memory_start(smap->start);
+  mapping->set_memory_limit(smap->limit);
+  mapping->set_file_offset(smap->file_offset);
+  if (smap->build_id != nullptr && !smap->build_id->empty()) {
+    mapping->set_build_id(UTF8StringId(*smap->build_id, builder));
+  }
+  if (smap->filename != nullptr && !smap->filename->empty()) {
+    mapping->set_filename(UTF8StringId(*smap->filename, builder));
+  } else if (smap->filename_md5_prefix != 0) {
+    std::stringstream filename;
+    filename << std::hex << smap->filename_md5_prefix;
+    mapping->set_filename(UTF8StringId(filename.str(), builder));
+  }
+  if (mapping->memory_start() >= mapping->memory_limit()) {
+    std::cerr << "The start of the mapping must be strictly less than its"
+              << "limit in file: " << mapping->filename() << std::endl
+              << "Start: " << mapping->memory_start() << std::endl
+              << "Limit: " << mapping->memory_limit() << std::endl;
+    abort();
+  }
+  mapmap->insert(std::make_pair(smap, mapping_id));
+  return mapping_id;
 }
 
-void PerfDataConverter::AddSample(const PerfDataHandler::SampleContext& context,
-                                  const Pid& pid, const SampleKey& sample_key,
-                                  const std::vector<uint64>& stack,
-                                  ProfileBuilder* builder) {
-  perftools::profiles::Sample* sample = nullptr;
-  auto &sample_key_cache = sample_cache_[sample_key];
+void PerfDataConverter::AddOrUpdateSample(
+    const PerfDataHandler::SampleContext& context, const Pid& pid,
+    const SampleKey& sample_key, const LocationIdVector& stack,
+    ProfileBuilder* builder) {
+  auto& sample_map = sample_key_to_map_[sample_key];
 
-  auto sampit = sample_key_cache.find(stack);
-  if (sampit != sample_key_cache.end()) {
-    sample = sampit->second;
+  perftools::profiles::Sample* sample = nullptr;
+  auto sample_map_it = sample_map.find(stack);
+  if (sample_map_it != sample_map.end()) {
+    sample = sample_map_it->second;
   }
 
   if (sample == nullptr) {
     Profile* profile = builder->mutable_profile();
     sample = profile->add_sample();
-    sample_key_cache[stack] = sample;
-
-    for (const auto& addr : stack) {
-      auto &lcpid = location_cache_[pid];
-      auto lcit = lcpid.find(addr);
-      if (lcit != lcpid.end()) {
-        sample->add_location_id(lcit->second->id());
-        continue;
-      }
-      perftools::profiles::Location *location = AddLocation(pid, addr, builder);
-      if (location == nullptr) {
-        std::cerr << "AddLocation failed." << std::endl;
-        abort();
-      }
-      if (location->address() != addr) {
-        std::cerr << "Added location has inconsistent address." << std::endl
-                  << "Expected: " << addr << std::endl
-                  << "Found: " << location->address() << std::endl;
-        abort();
-      }
-      sample->add_location_id(location->id());
+    sample_map[stack] = sample;
+    for (const auto& location_id : stack) {
+      sample->add_location_id(location_id);
     }
     // Emit any requested labels.
     if (IncludePidLabels() && context.sample.has_pid()) {
@@ -310,33 +336,32 @@ void PerfDataConverter::AddSample(const PerfDataHandler::SampleContext& context,
                     sample->value(2 * event_index + 1) + weight);
 }
 
-perftools::profiles::Mapping* PerfDataConverter::LookupMapping(
-    const Pid& pid, uint64 address, ProfileBuilder* builder) {
-  MappingMap mapmap = mapping_cache_[pid];
-  perftools::profiles::Mapping* mapping = nullptr;
-  mapmap.Lookup(address, &mapping);
-  return mapping;
-}
+uint64 PerfDataConverter::AddOrGetLocation(
+    const Pid& pid, uint64 addr, const PerfDataHandler::Mapping* mapping,
+    ProfileBuilder* builder) {
+  LocationMap& loc_map = pid_to_location_map_[pid];
+  auto loc_it = loc_map.find(addr);
+  if (loc_it != loc_map.end()) {
+    return loc_it->second;
+  }
 
-perftools::profiles::Location* PerfDataConverter::AddLocation(
-    const Pid& pid, uint64 address, ProfileBuilder* builder) {
   Profile* profile = builder->mutable_profile();
-  perftools::profiles::Location* location = profile->add_location();
-  location->set_id(profile->location_size());
-  location->set_address(address);
-
-  auto mapping = LookupMapping(pid, address, builder);
-  if (mapping != nullptr) {
-    location->set_mapping_id(mapping->id());
+  perftools::profiles::Location* loc = profile->add_location();
+  uint64 loc_id = profile->location_size();
+  loc->set_id(loc_id);
+  loc->set_address(addr);
+  uint64 mapping_id = AddOrGetMapping(pid, mapping, builder);
+  if (mapping_id != 0) {
+    loc->set_mapping_id(mapping_id);
   } else {
-    if (address != 0) {
-      std::cerr << "Found unmapped address: " << address << " in PID " << pid
+    if (addr != 0) {
+      std::cerr << "Found unmapped address: " << addr << " in PID " << pid
                 << std::endl;
       abort();
     }
   }
-  location_cache_[pid][address] = location;
-  return location;
+  loc_map[addr] = loc_id;
+  return loc_id;
 }
 
 void PerfDataConverter::Comm(const CommContext& comm) {
@@ -345,17 +370,26 @@ void PerfDataConverter::Comm(const CommContext& comm) {
     // existing pid.
 
     Pid pid = comm.comm->pid();
-    builder_cache_[pid] = nullptr;
-    location_cache_[pid].clear();
-    mapping_cache_[pid].Clear();
+    pid_to_builder_[pid] = nullptr;
+    pid_to_location_map_[pid].clear();
+    pid_to_mapping_map_[pid].clear();
 
-    // Every Sample in the cache with this PID gets wiped.
-    for (auto samples_it = sample_cache_.begin();
-         samples_it != sample_cache_.end(); ++samples_it) {
-      if (samples_it->first.pid == comm.comm->pid()) {
+    // Every sample with this PID gets wiped.
+    for (auto samples_it = sample_key_to_map_.begin();
+         samples_it != sample_key_to_map_.end(); ++samples_it) {
+      if (samples_it->first.pid == pid) {
         samples_it->second.clear();
       }
     }
+  }
+}
+
+// Invalidates the locations in pid_to_location_map_ in the mmap event's range.
+void PerfDataConverter::MMap(const MMapContext& mmap) {
+  auto it = pid_to_location_map_.find(mmap.pid);
+  if (it != pid_to_location_map_.end()) {
+    it->second.erase(it->second.lower_bound(mmap.mapping->start),
+                     it->second.lower_bound(mmap.mapping->limit));
   }
 }
 
@@ -396,15 +430,14 @@ void PerfDataConverter::Sample(const PerfDataHandler::SampleContext& sample) {
         break;
     }
   }
-
   ProfileBuilder* builder = nullptr;
-  auto bcit = builder_cache_.find(builder_pid);
-  if (bcit != builder_cache_.end()) {
-    builder = bcit->second;
+  auto pb_it = pid_to_builder_.find(builder_pid);
+  if (pb_it != pid_to_builder_.end()) {
+    builder = pb_it->second;
   }
   if (builder == nullptr) {
     builder = new ProfileBuilder();
-    builder_cache_[builder_pid] = builder;
+    pid_to_builder_[builder_pid] = builder;
     builders_.emplace_back(builder);
     Profile* profile = builder->mutable_profile();
 
@@ -426,10 +459,10 @@ void PerfDataConverter::Sample(const PerfDataHandler::SampleContext& sample) {
         event_name = "event_" + std::to_string(unknown_event_idx++) + "_";
       }
       auto sample_type = profile->add_sample_type();
-      sample_type->set_type(builder->StringId((event_name + "sample").c_str()));
+      sample_type->set_type(UTF8StringId(event_name + "sample", builder));
       sample_type->set_unit(builder->StringId("count"));
       sample_type = profile->add_sample_type();
-      sample_type->set_type(builder->StringId((event_name + "event").c_str()));
+      sample_type->set_type(UTF8StringId(event_name + "event", builder));
       sample_type->set_unit(builder->StringId("count"));
     }
     if (sample.main_mapping == nullptr) {
@@ -438,8 +471,18 @@ void PerfDataConverter::Sample(const PerfDataHandler::SampleContext& sample) {
       fake_main->set_memory_start(0);
       fake_main->set_memory_limit(1);
     } else {
-      AddMapping(event_pid, sample.main_mapping->limit - 1, sample.main_mapping,
-                 builder);
+      AddOrGetMapping(event_pid, sample.main_mapping, builder);
+    }
+  } else {
+    Profile* profile = builder->mutable_profile();
+    if (group_by_pids_ && sample.main_mapping != nullptr &&
+        sample.main_mapping->filename != nullptr) {
+      string filename = profile->string_table(profile->mapping(0).filename());
+
+      if (filename != *sample.main_mapping->filename) {
+        LOG(WARNING) << "main mismatch: " << sample.sample.pid() << " "
+                     << filename << " " << *sample.main_mapping->filename;
+      }
     }
   }
 
@@ -450,7 +493,9 @@ void PerfDataConverter::Sample(const PerfDataHandler::SampleContext& sample) {
 
   if (sample.branch_stack.empty()) {
     // Normal sample or has callchain.
-    std::vector<uint64> stack;
+    //
+    LocationIdVector sample_stack;
+
     uint64 ip = sample.sample_mapping != nullptr ? sample.sample.ip() : 0;
     if (ip != 0) {
       const auto start = sample.sample_mapping->start;
@@ -462,12 +507,14 @@ void PerfDataConverter::Sample(const PerfDataHandler::SampleContext& sample) {
                   << "Limit: " << limit << std::endl;
       }
     }
-    AddMapping(event_pid, ip, sample.sample_mapping, builder);
 
-    stack.push_back(ip);  // Leaf at stack[0]
+    // Leaf at stack[0]
+    sample_stack.push_back(
+        AddOrGetLocation(event_pid, ip, sample.sample_mapping, builder));
+
     bool skipped_dup = false;
     for (const auto& frame : sample.callchain) {
-      if (!skipped_dup && stack.size() == 1 && frame.ip == stack[0]) {
+      if (!skipped_dup && sample_stack.size() == 1 && frame.ip == ip) {
         skipped_dup = true;
         // Newer versions of perf_events include the IP at the leaf of
         // the callchain.
@@ -491,12 +538,10 @@ void PerfDataConverter::Sample(const PerfDataHandler::SampleContext& sample) {
 
       // subtract one so we point to the call instead of the return addr.
       frame_ip--;
-      if (frame.mapping != nullptr) {
-        AddMapping(event_pid, frame_ip, frame.mapping, builder);
-      }
-      stack.push_back(frame_ip);
+      sample_stack.push_back(
+          AddOrGetLocation(event_pid, frame_ip, frame.mapping, builder));
     }
-    AddSample(sample, event_pid, sample_key, stack, builder);
+    AddOrUpdateSample(sample, event_pid, sample_key, sample_stack, builder);
   }
 }
 

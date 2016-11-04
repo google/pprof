@@ -45,20 +45,26 @@ class IntervalMap {
 
   // Set [start, limit) to value. If this interval overlaps one currently in the
   // map, the overlapping section will be overwritten by the new interval.
-  void Set(uint64 start, uint64 limit, const V &value);
+  void Set(uint64 start, uint64 limit, const V& value);
 
   // Finds the value associated with the interval containing key. Returns false
   // if no interval contains key.
-  bool Lookup(uint64 key, V *value) const;
+  bool Lookup(uint64 key, V* value) const;
 
   // Find the interval containing key, or the next interval containing
   // something greater than key. Returns false if one is not found, otherwise
   // it sets start, limit, and value to the corresponding values from the
   // interval.
-  bool FindNext(uint64 key, uint64 *start, uint64 *limit, V *value) const;
+  bool FindNext(uint64 key, uint64* start, uint64* limit, V* value) const;
 
   // Remove all entries from the map.
   void Clear();
+
+  // Clears everything in the interval map from [clear_start,
+  // clear_limit). This may cut off sections or entire intervals in
+  // the map. This will invalidate iterators to intervals which have a
+  // start value residing in [clear_start, clear_limit).
+  void ClearInterval(uint64 clear_start, uint64 clear_limit);
 
   uint64 Size() const;
 
@@ -100,16 +106,16 @@ class IntervalMap {
 
   // Decrements the provided iterator to interval_start_, or returns false if
   // iter == begin().
-  bool Decrement(ConstMapIter *iter) const;
-  bool Decrement(MapIter *iter);
+  bool Decrement(ConstMapIter* iter) const;
+  bool Decrement(MapIter* iter);
 
-  // Clears everything in the interval map from [clear_start, clear_limit). This
-  // may cut off sections or entire intervals in the map. This will invalidate
-  // iterators to intervals which have a start value resididing in [clear_start,
-  // clear_limit)
-  void ClearInterval(uint64 clear_start, uint64 clear_limit);
+  // Removes everything in the interval map from [remove_start,
+  // remove_limit). This may cut off sections or entire intervals in
+  // the map. This will invalidate iterators to intervals which have a
+  // start value residing in [remove_start, remove_limit).
+  void RemoveInterval(uint64 remove_start, uint64 remove_limit);
 
-  void Insert(uint64 start, uint64 limit, const V &value);
+  void Insert(uint64 start, uint64 limit, const V& value);
 
   // Split an interval into two intervals, [iter.start, point) and
   // [point, iter.limit). If point is not within (iter.start, point) or iter is
@@ -125,14 +131,14 @@ template <class V>
 IntervalMap<V>::IntervalMap() {}
 
 template <class V>
-void IntervalMap<V>::Set(uint64 start, uint64 limit, const V &value) {
+void IntervalMap<V>::Set(uint64 start, uint64 limit, const V& value) {
   AssertValidInterval(start, limit);
-  ClearInterval(start, limit);
+  RemoveInterval(start, limit);
   Insert(start, limit, value);
 }
 
 template <class V>
-bool IntervalMap<V>::Lookup(uint64 key, V *value) const {
+bool IntervalMap<V>::Lookup(uint64 key, V* value) const {
   const auto contain = GetContainingInterval(key);
   if (contain == interval_start_.end()) {
     return false;
@@ -142,8 +148,8 @@ bool IntervalMap<V>::Lookup(uint64 key, V *value) const {
 }
 
 template <class V>
-bool IntervalMap<V>::FindNext(uint64 key, uint64 *start, uint64 *limit,
-                              V *value) const {
+bool IntervalMap<V>::FindNext(uint64 key, uint64* start, uint64* limit,
+                              V* value) const {
   auto iter = interval_start_.upper_bound(key);
   if (iter == interval_start_.end()) {
     return false;
@@ -160,25 +166,31 @@ void IntervalMap<V>::Clear() {
 }
 
 template <class V>
+void IntervalMap<V>::ClearInterval(uint64 clear_start, uint64 clear_limit) {
+  AssertValidInterval(clear_start, clear_limit);
+  RemoveInterval(clear_start, clear_limit);
+}
+
+template <class V>
 uint64 IntervalMap<V>::Size() const {
   return interval_start_.size();
 }
 
 template <class V>
-void IntervalMap<V>::ClearInterval(uint64 clear_start, uint64 clear_limit) {
-  if (clear_start >= clear_limit) {
+void IntervalMap<V>::RemoveInterval(uint64 remove_start, uint64 remove_limit) {
+  if (remove_start >= remove_limit) {
     return;
   }
   // It starts by splitting intervals that will only be partly cleared into two,
   // where one of those will be fully cleared and the other will not be cleared.
-  SplitInterval(GetContainingInterval(clear_limit), clear_limit);
-  SplitInterval(GetContainingInterval(clear_start), clear_start);
+  SplitInterval(GetContainingInterval(remove_limit), remove_limit);
+  SplitInterval(GetContainingInterval(remove_start), remove_start);
 
-  auto clear_interval_start = interval_start_.lower_bound(clear_start);
-  auto clear_interval_end = interval_start_.lower_bound(clear_limit);
+  auto remove_interval_start = interval_start_.lower_bound(remove_start);
+  auto remove_interval_end = interval_start_.lower_bound(remove_limit);
   // Note that if there are no intervals to be cleared, then
   // clear_interval_start == clear_interval_end and the erase will be a noop.
-  interval_start_.erase(clear_interval_start, clear_interval_end);
+  interval_start_.erase(remove_interval_start, remove_interval_end);
 }
 
 template <class V>
@@ -193,7 +205,7 @@ void IntervalMap<V>::SplitInterval(MapIter iter, uint64 point) {
 }
 
 template <class V>
-bool IntervalMap<V>::Decrement(ConstMapIter *iter) const {
+bool IntervalMap<V>::Decrement(ConstMapIter* iter) const {
   if ((*iter) == interval_start_.begin()) {
     return false;
   }
@@ -202,7 +214,7 @@ bool IntervalMap<V>::Decrement(ConstMapIter *iter) const {
 }
 
 template <class V>
-bool IntervalMap<V>::Decrement(MapIter *iter) {
+bool IntervalMap<V>::Decrement(MapIter* iter) {
   if ((*iter) == interval_start_.begin()) {
     return false;
   }
@@ -211,8 +223,8 @@ bool IntervalMap<V>::Decrement(MapIter *iter) {
 }
 
 template <class V>
-void IntervalMap<V>::Insert(uint64 start, uint64 limit, const V &value) {
-  interval_start_[start] = Value{limit, value};
+void IntervalMap<V>::Insert(uint64 start, uint64 limit, const V& value) {
+  interval_start_.emplace(std::pair<uint64, Value>{start, {limit, value}});
 }
 
 template <class V>

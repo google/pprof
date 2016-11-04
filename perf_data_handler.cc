@@ -153,7 +153,7 @@ class Normalizer {
 
   // Use a separate huge pages mapping deducer for each process, to resolve
   // split huge pages mappings into a single mapping.
-  std::map<uint32, std::unique_ptr<ChromeHugePagesMappingDeducer>>
+  std::map<uint32, ChromeHugePagesMappingDeducer>
       pid_to_chrome_mapping_deducer_;
 
   // map filenames to build-ids.
@@ -185,13 +185,13 @@ void Normalizer::UpdateMapsWithForkEvent(
     pid_to_mmaps_[fork.pid()] = std::unique_ptr<MMapIntervalMap>(
         new MMapIntervalMap(*it->second.get()));
   }
-  auto pcit = pid_to_comm_event_.find(fork.ppid());
-  if (pcit != pid_to_comm_event_.end() && pcit->second != nullptr) {
-    pid_to_comm_event_[fork.pid()] = pcit->second;
+  auto comm_it = pid_to_comm_event_.find(fork.ppid());
+  if (comm_it != pid_to_comm_event_.end()) {
+    pid_to_comm_event_[fork.pid()] = comm_it->second;
   }
-  auto peit = pid_to_executable_mmap_.find(fork.ppid());
-  if (peit != pid_to_executable_mmap_.end() && peit->second != nullptr) {
-    pid_to_executable_mmap_[fork.pid()] = peit->second;
+  auto exec_mmap_it = pid_to_executable_mmap_.find(fork.ppid());
+  if (exec_mmap_it != pid_to_executable_mmap_.end()) {
+    pid_to_executable_mmap_[fork.pid()] = exec_mmap_it->second;
   }
 }
 
@@ -275,26 +275,18 @@ void Normalizer::InvokeHandleSample(
   std::unique_ptr<PerfDataHandler::Mapping> fake;
   // Kernel samples might take some extra work.
   if (context.main_mapping == nullptr && event_proto.header().misc() & 0x1) {
-    const PerfDataProto_CommEvent* comm = nullptr;
-    auto pcit = pid_to_comm_event_.find(pid);
-    if (pcit != pid_to_comm_event_.end()) {
-      comm = pcit->second;
-    }
-    PerfDataHandler::Mapping* kernel = nullptr;
-    auto peit = pid_to_executable_mmap_.find(-1);
-    if (peit != pid_to_executable_mmap_.end()) {
-      kernel = peit->second;
-    }
-    if (comm != nullptr) {
+    auto comm_it = pid_to_comm_event_.find(pid);
+    auto kernel_it = pid_to_executable_mmap_.find(-1);
+    if (comm_it != pid_to_comm_event_.end()) {
       const string* build_id = nullptr;
-      if (kernel != nullptr) {
-        build_id = kernel->build_id;
+      if (kernel_it != pid_to_executable_mmap_.end()) {
+        build_id = kernel_it->second->build_id;
       }
-      fake.reset(
-          new PerfDataHandler::Mapping(&comm->comm(), build_id, 0, 1, 0, 0));
+      fake.reset(new PerfDataHandler::Mapping(&comm_it->second->comm(),
+                                              build_id, 0, 1, 0, 0));
       context.main_mapping = fake.get();
-    } else if (pid == 0 && kernel != nullptr) {
-      context.main_mapping = kernel;
+    } else if (pid == 0 && kernel_it != pid_to_executable_mmap_.end()) {
+      context.main_mapping = kernel_it->second;
     }
   }
 
@@ -372,33 +364,26 @@ void Normalizer::UpdateMapsWithMMapEvent(
     interval_map = it->second.get();
   }
 
-  std::unique_ptr<ChromeHugePagesMappingDeducer>& deducer =
-      pid_to_chrome_mapping_deducer_[pid];
-  if (deducer.get() == nullptr) {
-    deducer.reset(new ChromeHugePagesMappingDeducer);
-  }
-  deducer->ProcessMmap(*mmap);
-  if (deducer->CombinedMappingAvailable()) {
+  auto& deducer = pid_to_chrome_mapping_deducer_[pid];
+  deducer.ProcessMmap(*mmap);
+  if (deducer.CombinedMappingAvailable()) {
     owned_quipper_mappings_.emplace_back(
-        new quipper::PerfDataProto_MMapEvent(deducer->combined_mapping()));
+        new quipper::PerfDataProto_MMapEvent(deducer.combined_mapping()));
     mmap = owned_quipper_mappings_.back().get();
   }
 
-  string* build_id = nullptr;
+  std::unordered_map<string, string>::const_iterator build_id_it;
   if (mmap->filename() != "") {
-    auto fbit = filename_to_build_id_.find(mmap->filename());
-    if (fbit != filename_to_build_id_.end()) {
-      build_id = &fbit->second;
-    }
+    build_id_it = filename_to_build_id_.find(mmap->filename());
   } else {
     std::stringstream filename;
     filename << std::hex << mmap->filename_md5_prefix();
-    auto fbit = filename_to_build_id_.find(filename.str());
-    if (fbit != filename_to_build_id_.end()) {
-      build_id = &fbit->second;
-    }
+    build_id_it = filename_to_build_id_.find(filename.str());
   }
 
+  const string* build_id = build_id_it == filename_to_build_id_.end()
+                               ? nullptr
+                               : &build_id_it->second;
   PerfDataHandler::Mapping* mapping = new PerfDataHandler::Mapping(
       &mmap->filename(), build_id, mmap->start(), mmap->start() + mmap->len(),
       mmap->pgoff(), mmap->filename_md5_prefix());
@@ -415,6 +400,12 @@ void Normalizer::UpdateMapsWithMMapEvent(
   }
 
   interval_map->Set(mapping->start, mapping->limit, mapping);
+  // Pass the final mapping through to the subclass also.
+  PerfDataHandler::MMapContext mmap_context;
+  mmap_context.pid = pid;
+  mmap_context.mapping = mapping;
+  handler_->MMap(mmap_context);
+
   // Main executables are usually loaded at 0x8048000 or 0x400000.
   // If we ever see an MMAP starting at one of those locations, that should be
   // our guess.
@@ -427,11 +418,10 @@ void Normalizer::UpdateMapsWithMMapEvent(
   // Figure out whether this MMAP is the main executable.
   // If there have been no previous MMAPs for this pid, then this MMAP is our
   // best guess.
-  PerfDataHandler::Mapping* old_mapping = nullptr;
-  auto peit = pid_to_executable_mmap_.find(pid);
-  if (peit != pid_to_executable_mmap_.end()) {
-    old_mapping = peit->second;
-  }
+  auto old_mapping_it = pid_to_executable_mmap_.find(pid);
+  PerfDataHandler::Mapping* old_mapping =
+      old_mapping_it == pid_to_executable_mmap_.end() ? nullptr
+                                                      : old_mapping_it->second;
 
   if (old_mapping != nullptr && old_mapping->start == 0x400000 &&
       (old_mapping->filename == nullptr || *old_mapping->filename == "") &&
@@ -489,13 +479,15 @@ const PerfDataHandler::Mapping* Normalizer::GetMappingFromPidAndIP(
     return nullptr;
   }
   // One could try to decide if this is a kernel or user sample
-  // directly. We think there's a heuristic that should work on x86 (basically
-  // without any error): all kernel samples should have 16 high bits set, all
-  // user samples should have high 16 bits cleared.  But that's not portable,
-  // and on any arch (...hopefully) the user/kernel mappings should be disjoint
-  // anyway, so just check both, starting with user.  We could also use
-  // PERF_CONTEXT_KERNEL and friends (see for instance how perf handles this) to
-  // know whether to check user or kernel, but this seems more robust.
+  // directly.  ahh@ thinks there's a heuristic that should work on
+  // x86 (basically without any error): all kernel samples should have
+  // 16 high bits set, all user samples should have high 16 bits
+  // cleared.  But that's not portable, and on any arch (...hopefully)
+  // the user/kernel mappings should be disjoint anyway, so just check
+  // both, starting with user.  We could also use PERF_CONTEXT_KERNEL
+  // and friends (see for instance how perf handles this:
+  // https://goto.google.com/udgor) to know whether to check user or
+  // kernel, but this seems more robust.
   const PerfDataHandler::Mapping* mapping = TryLookupInPid(pid, ip);
   if (mapping == nullptr) {
     // Might be a kernel sample.
@@ -517,9 +509,9 @@ const PerfDataHandler::Mapping* Normalizer::GetMappingFromPidAndIP(
 
 const PerfDataHandler::Mapping* Normalizer::GetMainMMapFromPid(
     uint32 pid) const {
-  auto peit = pid_to_executable_mmap_.find(pid);
-  if (peit != pid_to_executable_mmap_.end()) {
-    return peit->second;
+  auto mapping_it = pid_to_executable_mmap_.find(pid);
+  if (mapping_it != pid_to_executable_mmap_.end()) {
+    return mapping_it->second;
   }
 
   VLOG(2) << "No argv0 name found for sample with pid: " << pid;
@@ -537,13 +529,12 @@ int64 Normalizer::GetEventIndexForSample(
     return -1;
   }
 
-  uint64 id = sample.id();
-  auto ieit = id_to_event_index_.find(id);
-  if (ieit == id_to_event_index_.end()) {
-    LOG(ERROR) << "Incorrect event id: " << id;
+  auto it = id_to_event_index_.find(sample.id());
+  if (it == id_to_event_index_.end()) {
+    LOG(ERROR) << "Incorrect event id: " << sample.id();
     return -1;
   }
-  return ieit->second;
+  return it->second;
 }
 }  // namespace
 

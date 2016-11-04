@@ -43,7 +43,7 @@ TEST(PathMatching, DeletedSharedObjectMatching) {
       "lib.so   .so junk_(deleted)",
   };
   for (const auto& path : paths) {
-    ASSERT_TRUE(perftools::IsDeletedSharedObject(path));
+    ASSERT_TRUE(IsDeletedSharedObject(path));
   }
 }
 
@@ -58,7 +58,7 @@ TEST(PathMatching, DeletedSharedObjectNotMatching) {
   };
 
   for (const auto& path : paths) {
-    ASSERT_FALSE(perftools::IsDeletedSharedObject(path));
+    ASSERT_FALSE(IsDeletedSharedObject(path));
   }
 }
 
@@ -67,7 +67,7 @@ TEST(PathMatching, VersionedSharedObjectMatching) {
       "lib.so.", "lib.so.abc", "lib.so.1", "lib.so.v1",
   };
   for (const auto& path : paths) {
-    ASSERT_TRUE(perftools::IsVersionedSharedObject(path));
+    ASSERT_TRUE(IsVersionedSharedObject(path));
   }
 }
 
@@ -76,7 +76,7 @@ TEST(PathMatching, VersionedSharedObjectNotMatching) {
       "abc", "lib.so(deleted)", ".so.v1", ".so.", "",
   };
   for (const auto& path : paths) {
-    ASSERT_FALSE(perftools::IsDeletedSharedObject(path));
+    ASSERT_FALSE(IsDeletedSharedObject(path));
   }
 }
 

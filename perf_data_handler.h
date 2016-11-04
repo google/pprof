@@ -43,6 +43,10 @@ namespace perftools {
 // To use, subclass PerfDataHandler and implement the required
 // methods, then call Process() and handler will be called for every
 // SAMPLE event.
+//
+// Context events' pointers to Mappings will be constant for the lifetime of a
+// process, so subclasses may use the pointer values as a key to various caches
+// they may want to maintain as part of the output data creation.
 class PerfDataHandler {
  public:
   struct Mapping {
@@ -112,6 +116,14 @@ class PerfDataHandler {
     const quipper::PerfDataProto::CommEvent* comm;
   };
 
+  struct MMapContext {
+    // A memory mapping to be passed to the subclass. Should be the same mapping
+    // that gets added to pid_to_mmaps_.
+    const PerfDataHandler::Mapping* mapping;
+    // The process id used as a key to pid_to_mmaps_.
+    uint32 pid;
+  };
+
   PerfDataHandler(const PerfDataHandler&) = delete;
   PerfDataHandler& operator=(const PerfDataHandler&) = delete;
 
@@ -127,10 +139,13 @@ class PerfDataHandler {
   virtual void Sample(const SampleContext& sample) = 0;
   // When comm.pid()==comm.tid() it indicates an exec() happened.
   virtual void Comm(const CommContext& comm) = 0;
+  // Called for every mmap event.
+  virtual void MMap(const MMapContext& mmap) = 0;
 
  protected:
   PerfDataHandler();
 };
+
 
 }  // namespace perftools
 
