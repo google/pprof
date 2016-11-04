@@ -44,16 +44,16 @@ func graphDebugString(graph *Graph) string {
 	return debug
 }
 
-func expectedNodesDebugString(expected []ExpectedNode) string {
+func expectedNodesDebugString(expected []expectedNode) string {
 	debug := ""
 	for i, node := range expected {
-		debug += fmt.Sprintf("Node %d: %p\n", i, node.Node)
+		debug += fmt.Sprintf("Node %d: %p\n", i, node.node)
 	}
 
 	for i, node := range expected {
 		debug += "\n"
-		debug += fmt.Sprintf("===  Node %d: %p  ===\n", i, node.Node)
-		debug += edgeMapsDebugString(node.In, node.Out)
+		debug += fmt.Sprintf("===  Node %d: %p  ===\n", i, node.node)
+		debug += edgeMapsDebugString(node.in, node.out)
 	}
 	return debug
 }
@@ -72,19 +72,19 @@ func edgeMapsEqual(this, that EdgeMap) bool {
 }
 
 // nodesEqual checks if node is equal to expected.
-func nodesEqual(node *Node, expected ExpectedNode) bool {
-	return node == expected.Node && edgeMapsEqual(node.In, expected.In) &&
-		edgeMapsEqual(node.Out, expected.Out)
+func nodesEqual(node *Node, expected expectedNode) bool {
+	return node == expected.node && edgeMapsEqual(node.In, expected.in) &&
+		edgeMapsEqual(node.Out, expected.out)
 }
 
 // graphsEqual checks if graph is equivalent to the graph templated by expected.
-func graphsEqual(graph *Graph, expected []ExpectedNode) bool {
+func graphsEqual(graph *Graph, expected []expectedNode) bool {
 	if len(graph.Nodes) != len(expected) {
 		return false
 	}
-	expectedSet := make(map[*Node]ExpectedNode)
+	expectedSet := make(map[*Node]expectedNode)
 	for i := range expected {
-		expectedSet[expected[i].Node] = expected[i]
+		expectedSet[expected[i].node] = expected[i]
 	}
 
 	for _, node := range graph.Nodes {
@@ -96,21 +96,21 @@ func graphsEqual(graph *Graph, expected []ExpectedNode) bool {
 	return true
 }
 
-type ExpectedNode struct {
-	Node    *Node
-	In, Out EdgeMap
+type expectedNode struct {
+	node    *Node
+	in, out EdgeMap
 }
 
-type TrimTreeTestCase struct {
-	Initial  *Graph
-	Expected []ExpectedNode
-	Keep     NodePtrSet
+type trimTreeTestcase struct {
+	initial  *Graph
+	expected []expectedNode
+	keep     NodePtrSet
 }
 
 // makeExpectedEdgeResidual makes the edge from parent to child residual.
-func makeExpectedEdgeResidual(parent, child ExpectedNode) {
-	parent.Out[child.Node].Residual = true
-	child.In[parent.Node].Residual = true
+func makeExpectedEdgeResidual(parent, child expectedNode) {
+	parent.out[child.node].Residual = true
+	child.in[parent.node].Residual = true
 }
 
 func makeEdgeInline(edgeMap EdgeMap, node *Node) {
@@ -141,16 +141,16 @@ func createEmptyNode() *Node {
 	}
 }
 
-// createExpectedNodes creates a slice of ExpectedNodes from nodes.
-func createExpectedNodes(nodes ...*Node) ([]ExpectedNode, NodePtrSet) {
-	expected := make([]ExpectedNode, len(nodes))
+// createExpectedNodes creates a slice of expectedNodes from nodes.
+func createExpectedNodes(nodes ...*Node) ([]expectedNode, NodePtrSet) {
+	expected := make([]expectedNode, len(nodes))
 	keep := make(NodePtrSet, len(nodes))
 
 	for i, node := range nodes {
-		expected[i] = ExpectedNode{
-			Node: node,
-			In:   make(EdgeMap),
-			Out:  make(EdgeMap),
+		expected[i] = expectedNode{
+			node: node,
+			in:   make(EdgeMap),
+			out:  make(EdgeMap),
 		}
 		keep[node] = true
 	}
@@ -160,14 +160,14 @@ func createExpectedNodes(nodes ...*Node) ([]ExpectedNode, NodePtrSet) {
 
 // createExpectedEdges creates directed edges from the parent to each of the
 // children.
-func createExpectedEdges(parent ExpectedNode, children ...ExpectedNode) {
+func createExpectedEdges(parent expectedNode, children ...expectedNode) {
 	for _, child := range children {
 		edge := &Edge{
-			Src:  parent.Node,
-			Dest: child.Node,
+			Src:  parent.node,
+			Dest: child.node,
 		}
-		parent.Out[child.Node] = edge
-		child.In[parent.Node] = edge
+		parent.out[child.node] = edge
+		child.in[parent.node] = edge
 	}
 }
 
@@ -182,8 +182,8 @@ func createExpectedEdges(parent ExpectedNode, children ...ExpectedNode) {
 //     0
 // (3)/ \(4)
 //   2   3.
-func createTestCase1() TrimTreeTestCase {
-	// Create Initial graph
+func createTestCase1() trimTreeTestcase {
+	// Create initial graph
 	graph := &Graph{make(Nodes, 4)}
 	nodes := graph.Nodes
 	for i := range nodes {
@@ -197,18 +197,18 @@ func createTestCase1() TrimTreeTestCase {
 	setEdgeWeight(nodes[1].Out, nodes[2], 3)
 	setEdgeWeight(nodes[1].Out, nodes[3], 4)
 
-	// Create Expected graph
+	// Create expected graph
 	expected, keep := createExpectedNodes(nodes[0], nodes[2], nodes[3])
 	createExpectedEdges(expected[0], expected[1], expected[2])
-	makeEdgeInline(expected[0].Out, expected[1].Node)
+	makeEdgeInline(expected[0].out, expected[1].node)
 	makeExpectedEdgeResidual(expected[0], expected[1])
 	makeExpectedEdgeResidual(expected[0], expected[2])
-	setEdgeWeight(expected[0].Out, expected[1].Node, 3)
-	setEdgeWeight(expected[0].Out, expected[2].Node, 4)
-	return TrimTreeTestCase{
-		Initial:  graph,
-		Expected: expected,
-		Keep:     keep,
+	setEdgeWeight(expected[0].out, expected[1].node, 3)
+	setEdgeWeight(expected[0].out, expected[2].node, 4)
+	return trimTreeTestcase{
+		initial:  graph,
+		expected: expected,
+		keep:     keep,
 	}
 }
 
@@ -227,8 +227,8 @@ func createTestCase1() TrimTreeTestCase {
 //   3
 //   | (10)
 //   4.
-func createTestCase2() TrimTreeTestCase {
-	// Create Initial graph
+func createTestCase2() trimTreeTestcase {
+	// Create initial graph
 	graph := &Graph{make(Nodes, 5)}
 	nodes := graph.Nodes
 	for i := range nodes {
@@ -243,27 +243,27 @@ func createTestCase2() TrimTreeTestCase {
 	setEdgeWeight(nodes[2].Out, nodes[0], 15)
 	setEdgeWeight(nodes[0].Out, nodes[4], 10)
 
-	// Create Expected graph
+	// Create expected graph
 	expected, keep := createExpectedNodes(nodes[3], nodes[4])
 	createExpectedEdges(expected[0], expected[1])
 	makeExpectedEdgeResidual(expected[0], expected[1])
-	setEdgeWeight(expected[0].Out, expected[1].Node, 10)
-	return TrimTreeTestCase{
-		Initial:  graph,
-		Expected: expected,
-		Keep:     keep,
+	setEdgeWeight(expected[0].out, expected[1].node, 10)
+	return trimTreeTestcase{
+		initial:  graph,
+		expected: expected,
+		keep:     keep,
 	}
 }
 
 // createTestCase3 creates an initally empty graph and expects an empty graph
 // after trimming.
-func createTestCase3() TrimTreeTestCase {
+func createTestCase3() trimTreeTestcase {
 	graph := &Graph{make(Nodes, 0)}
 	expected, keep := createExpectedNodes()
-	return TrimTreeTestCase{
-		Initial:  graph,
-		Expected: expected,
-		Keep:     keep,
+	return trimTreeTestcase{
+		initial:  graph,
+		expected: expected,
+		keep:     keep,
 	}
 }
 
@@ -272,28 +272,28 @@ func createTestCase3() TrimTreeTestCase {
 //
 // After keeping 0, it expects the graph:
 //   0.
-func createTestCase4() TrimTreeTestCase {
+func createTestCase4() trimTreeTestcase {
 	graph := &Graph{make(Nodes, 1)}
 	nodes := graph.Nodes
 	for i := range nodes {
 		nodes[i] = createEmptyNode()
 	}
 	expected, keep := createExpectedNodes(nodes[0])
-	return TrimTreeTestCase{
-		Initial:  graph,
-		Expected: expected,
-		Keep:     keep,
+	return trimTreeTestcase{
+		initial:  graph,
+		expected: expected,
+		keep:     keep,
 	}
 }
 
-func createTrimTreeTestCases() []TrimTreeTestCase {
-	caseGenerators := []func() TrimTreeTestCase{
+func createTrimTreeTestCases() []trimTreeTestcase {
+	caseGenerators := []func() trimTreeTestcase{
 		createTestCase1,
 		createTestCase2,
 		createTestCase3,
 		createTestCase4,
 	}
-	cases := make([]TrimTreeTestCase, len(caseGenerators))
+	cases := make([]trimTreeTestcase, len(caseGenerators))
 	for i, gen := range caseGenerators {
 		cases[i] = gen()
 	}
@@ -303,11 +303,11 @@ func createTrimTreeTestCases() []TrimTreeTestCase {
 func TestTrimTree(t *testing.T) {
 	tests := createTrimTreeTestCases()
 	for _, test := range tests {
-		graph := test.Initial
-		graph.TrimTree(test.Keep)
-		if !graphsEqual(graph, test.Expected) {
+		graph := test.initial
+		graph.TrimTree(test.keep)
+		if !graphsEqual(graph, test.expected) {
 			t.Fatalf("Graphs do not match.\nExpected: %s\nFound: %s\n",
-				expectedNodesDebugString(test.Expected),
+				expectedNodesDebugString(test.expected),
 				graphDebugString(graph))
 		}
 	}
