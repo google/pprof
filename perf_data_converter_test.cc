@@ -139,6 +139,16 @@ void GetContents(const string& path, string* content) {
   *content = contents.str();
 }
 
+// Reads the content of the file at path as ASCII proto as a binary proto.
+string AsciiQuipperProtoToBinary(const string& asciiProto) {
+  quipper::PerfDataProto perf_data;
+  if (!google::protobuf::TextFormat::ParseFromString(asciiProto, &perf_data)) {
+    std::cerr << "Not an ASCII PerfDataProto: " << asciiProto << std::endl;
+    abort();
+  }
+  return perf_data.SerializeAsString();
+}
+
 // Set dir to the current directory, or return false if an error occurs.
 bool GetCurrentDirectory(string* dir) {
   std::unique_ptr<char, decltype(std::free)*> cwd(getcwd(nullptr, 0),
@@ -306,6 +316,30 @@ TEST_F(PerfDataConverterTest, Injects) {
   }
 done:
   EXPECT_TRUE(found) << want_buildid << " not found in profiles";
+}
+
+TEST_F(PerfDataConverterTest, HandlesKernelMmapOverlappingUserCode) {
+  string path =
+      GetResource("testdata/perf-overlapping-kernel-mapping.pb_proto");
+  string asciiPb;
+  GetContents(path, &asciiPb);
+  string pb = AsciiQuipperProtoToBinary(asciiPb);
+  ProfileVector profiles = SerializedPerfDataProtoToProfileProto(pb);
+  EXPECT_EQ(1, profiles.size());
+  const auto& profile = profiles[0];
+  fprintf(stderr, "%s\n", profile->DebugString().c_str());
+  EXPECT_EQ(3, profile->sample_size());
+
+  EXPECT_EQ(2, profile->mapping_size());
+  EXPECT_EQ(1000, profile->mapping(0).memory_start());  // user
+  int64 user_mapping_id = profile->mapping(0).id();
+  EXPECT_EQ(0, profile->mapping(1).memory_start());  // kernel
+  int64 kernel_mapping_id = profile->mapping(1).id();
+
+  EXPECT_EQ(3, profile->location_size());
+  EXPECT_EQ(kernel_mapping_id, profile->location(0).mapping_id());
+  EXPECT_EQ(user_mapping_id, profile->location(1).mapping_id());
+  EXPECT_EQ(kernel_mapping_id, profile->location(2).mapping_id());
 }
 
 }  // namespace perftools

@@ -1,0 +1,152 @@
+file_attrs {
+  attr {
+    type: 0
+    size: 96
+    config: 0
+    sample_period: 1000
+    sample_type: 1415
+    read_format: 7
+    disabled: false
+    inherit: true
+    pinned: false
+    exclusive: false
+    exclude_user: false
+    exclude_kernel: false
+    exclude_hv: false
+    exclude_idle: false
+    mmap: true
+    comm: true
+    freq: true
+    inherit_stat: false
+    enable_on_exec: false
+    task: false
+    watermark: false
+    precise_ip: 0
+    mmap_data: false
+    sample_id_all: true
+    exclude_host: false
+    exclude_guest: true
+    wakeup_events: 0
+    bp_type: 0
+    bp_addr: 0
+    bp_len: 0
+    branch_sample_type: 0
+    exclude_callchain_kernel: false
+    exclude_callchain_user: false
+    mmap2: false
+    comm_exec: false
+    sample_regs_user: 0
+    sample_stack_user: 0
+  }
+  ids: 9
+  ids: 10
+  ids: 11
+  ids: 12
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 80
+  }
+  mmap_event {
+    pid: 100
+    tid: 100
+    start: 0
+    len: 18446744073709551615
+    pgoff: 4000
+    filename: "[kernel.kallsyms]_text"
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 80
+  }
+  mmap_event {
+    pid: 100
+    tid: 100
+    start: 1000
+    len: 1000
+    pgoff: 0
+    filename: "/bin/ls"
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 56
+  }
+  sample_event {
+    ip: 5000
+    pid: 100
+    tid: 100
+    sample_time_ns: 100000000000
+    period: 3170393
+    cpu: 0
+    raw_size: 4
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 56
+  }
+  sample_event {
+    ip: 1500
+    pid: 100
+    tid: 100
+    sample_time_ns: 100000000010
+    period: 3170393
+    cpu: 0
+    raw_size: 4
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 56
+  }
+  sample_event {
+    ip: 500
+    pid: 100
+    tid: 100
+    sample_time_ns: 100000000020
+    period: 3170393
+    cpu: 0
+    raw_size: 4
+  }
+}
+timestamp_sec: 0
+stats {
+  num_sample_events: 2
+  num_mmap_events: 2
+  num_fork_events: 0
+  num_exit_events: 0
+  num_sample_events_mapped: 2
+  did_remap: false
+}
+metadata_mask: 15868
+build_ids {
+  misc: 1
+  pid: 100
+  build_id_hash: "some-build-id"
+  filename: "/bin/ls"
+}
+uint32_metadata {
+  type: 7
+  data: 4
+  data: 4
+}
+uint64_metadata {
+  type: 10
+  data: 3990112
+}
+event_types {
+  id: 0
+  name: "cycles"
+}

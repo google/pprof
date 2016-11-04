@@ -47,12 +47,12 @@ enum SampleLabels {
   kPidLabel = 1,
   // Adds label with key TidLabelName and num set to the thread id.
   kTidLabel = 2,
-  // Equivalent to kPidLabel | kPidLabel
+  // Equivalent to kPidLabel | kTidLabel
   kPidAndTidLabels = 3,
   // Adds label with key TimestampNsLabelName and num set to the number of
-  // nanoseconds since bootup that htis sample was taken.
+  // nanoseconds since bootup that this sample was taken.
   kTimestampNsLabel = 4,
-  // If set adds a label named execution_mode where the str value equals one
+  // If set, adds a label named execution_mode where the str value equals one
   // of the ExecutionMode string constants.
   kExecutionModeLabel = 8
 };
@@ -64,7 +64,7 @@ const char ExecutionModeLabelKey[] = "execution_mode";
 
 const char ExecutionModeHostKernel[] = "Host Kernel";
 const char ExecutionModeHostUser[] = "Host User";
-const char ExecutionModeGuestKernel[] = "Host Kernel";
+const char ExecutionModeGuestKernel[] = "Guest Kernel";
 const char ExecutionModeGuestUser[] = "Guest User";
 const char ExecutionModeHypervisor[] = "Hypervisor";
 
