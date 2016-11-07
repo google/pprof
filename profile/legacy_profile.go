@@ -446,7 +446,10 @@ func parseCPUSamples(b []byte, parse func(b []byte) (uint64, []byte), adjust boo
 func parseHeap(b []byte) (p *Profile, err error) {
 	s := bufio.NewScanner(bytes.NewBuffer(b))
 	if !s.Scan() {
-		return nil, s.Err()
+		if err := s.Err(); err != nil {
+			return nil, err
+		}
+		return nil, errUnrecognized
 	}
 	p = &Profile{}
 
@@ -660,7 +663,10 @@ func scaleHeapSample(count, size, rate int64) (int64, int64) {
 func parseContention(b []byte) (p *Profile, err error) {
 	s := bufio.NewScanner(bytes.NewBuffer(b))
 	if !s.Scan() {
-		return nil, s.Err()
+		if err := s.Err(); err != nil {
+			return nil, err
+		}
+		return nil, errUnrecognized
 	}
 	line := s.Text()
 
@@ -912,8 +918,8 @@ func parseThreadSample(s *bufio.Scanner) (nextl string, addrs []uint64, err erro
 
 		addrs = append(addrs, parseHexAddresses(line)...)
 	}
-	if s.Err() != nil {
-		return "", nil, s.Err()
+	if err := s.Err(); err != nil {
+		return "", nil, err
 	}
 	if sameAsPrevious {
 		return line, nil, nil

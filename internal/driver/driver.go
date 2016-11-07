@@ -107,10 +107,6 @@ func generateReport(p *profile.Profile, cmd []string, vars variables, o *plugin.
 		}
 	}
 
-	if len(p.Sample) == 0 {
-		return fmt.Errorf("profile is empty")
-	}
-
 	if err := aggregate(p, vars); err != nil {
 		return err
 	}
