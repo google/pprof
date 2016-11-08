@@ -263,7 +263,8 @@ func TestTagCollapse(t *testing.T) {
 
 	for _, tc := range tagWant {
 		var got, want []*Tag
-		got = collapsedTags(tagSource, len(tc), true)
+		b := builder{nil, &DotAttributes{}, &DotConfig{}}
+		got = b.collapsedTags(tagSource, len(tc), true)
 		want = SortTags(tc, true)
 
 		if !reflect.DeepEqual(got, want) {

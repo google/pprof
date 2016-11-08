@@ -45,8 +45,9 @@ type DotConfig struct {
 	Title  string   // The title of the DOT graph
 	Labels []string // The labels for the DOT's legend
 
-	FormatValue func(int64) string // A formatting function for values
-	Total       int64              // The total weight of the graph, used to compute percentages
+	FormatValue func(int64) string         // A formatting function for values
+	FormatTag   func(int64, string) string // A formatting function for numeric tags
+	Total       int64                      // The total weight of the graph, used to compute percentages
 }
 
 // Compose creates and writes a in the DOT format to the writer, using
@@ -258,7 +259,7 @@ func (b *builder) numericNodelets(nts []*Tag, maxNumNodelets int, flatTags bool,
 
 	// Collapse numeric labels into maxNumNodelets buckets, of the form:
 	// 1MB..2MB, 3MB..5MB, ...
-	for j, t := range collapsedTags(nts, maxNumNodelets, flatTags) {
+	for j, t := range b.collapsedTags(nts, maxNumNodelets, flatTags) {
 		w, attr := t.CumValue(), ` style="dotted"`
 		if flatTags || t.FlatValue() == t.CumValue() {
 			w, attr = t.FlatValue(), ""
@@ -399,7 +400,7 @@ func multilinePrintableName(info *NodeInfo) string {
 }
 
 // collapsedTags trims and sorts a slice of tags.
-func collapsedTags(ts []*Tag, count int, flatTags bool) []*Tag {
+func (b *builder) collapsedTags(ts []*Tag, count int, flatTags bool) []*Tag {
 	ts = SortTags(ts, flatTags)
 	if len(ts) <= count {
 		return ts
@@ -421,7 +422,7 @@ func collapsedTags(ts []*Tag, count int, flatTags bool) []*Tag {
 
 	var nts []*Tag
 	for _, g := range tagGroups {
-		l, w, c := tagGroupLabel(g)
+		l, w, c := b.tagGroupLabel(g)
 		nts = append(nts, &Tag{
 			Name: l,
 			Flat: w,
@@ -439,10 +440,15 @@ func tagDistance(t, u *Tag) float64 {
 	return v - float64(t.Value)
 }
 
-func tagGroupLabel(g []*Tag) (label string, flat, cum int64) {
+func (b *builder) tagGroupLabel(g []*Tag) (label string, flat, cum int64) {
+	formatTag := b.config.FormatTag
+	if formatTag == nil {
+		formatTag = measurement.Label
+	}
+
 	if len(g) == 1 {
 		t := g[0]
-		return measurement.Label(t.Value, t.Unit), t.FlatValue(), t.CumValue()
+		return formatTag(t.Value, t.Unit), t.FlatValue(), t.CumValue()
 	}
 	min := g[0]
 	max := g[0]
@@ -466,7 +472,7 @@ func tagGroupLabel(g []*Tag) (label string, flat, cum int64) {
 	if dc != 0 {
 		c = c / dc
 	}
-	return measurement.Label(min.Value, min.Unit) + ".." + measurement.Label(max.Value, max.Unit), f, c
+	return formatTag(min.Value, min.Unit) + ".." + formatTag(max.Value, max.Unit), f, c
 }
 
 func min64(a, b int64) int64 {
