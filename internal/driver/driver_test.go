@@ -65,6 +65,8 @@ func TestParse(t *testing.T) {
 		{"dot,files,cum", "contention"},
 		{"tags", "cpu"},
 		{"tags,tagignore=tag[13],tagfocus=key[12]", "cpu"},
+		{"tags", "heap"},
+		{"tags,unit=bytes", "heap"},
 		{"traces", "cpu"},
 		{"dot,alloc_space,flat,focus=[234]00", "heap_alloc"},
 		{"dot,alloc_space,flat,hide=line.*1?23?", "heap_alloc"},
@@ -221,7 +223,9 @@ func solutionFilename(source string, f *testFlags) string {
 		name = append(name, "ignore")
 	}
 	name = addString(name, f, []string{"hide", "show"})
-
+	if f.strings["unit"] != "minimum" {
+		name = addString(name, f, []string{"unit"})
+	}
 	return strings.Join(name, ".")
 }
 

@@ -199,6 +199,10 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 		s.NumLabel = numLabels
 	}
 
+	formatTag := func(v int64, key string) string {
+		return measurement.ScaledLabel(v, key, o.OutputUnit)
+	}
+
 	gopt := &graph.Options{
 		SampleValue:       o.SampleValue,
 		SampleMeanDivisor: o.SampleMeanDivisor,
@@ -216,10 +220,6 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	}
 
 	return graph.New(rpt.prof, gopt)
-}
-
-func formatTag(v int64, key string) string {
-	return measurement.Label(v, key)
 }
 
 func printTopProto(w io.Writer, rpt *Report) error {
@@ -473,6 +473,11 @@ func valueOrDot(value int64, rpt *Report) string {
 func printTags(w io.Writer, rpt *Report) error {
 	p := rpt.prof
 
+	o := rpt.options
+	formatTag := func(v int64, key string) string {
+		return measurement.ScaledLabel(v, key, o.OutputUnit)
+	}
+
 	// Hashtable to keep accumulate tags as key,value,count.
 	tagMap := make(map[string]map[string]int64)
 	for _, s := range p.Sample {
@@ -489,7 +494,7 @@ func printTags(w io.Writer, rpt *Report) error {
 		}
 		for key, vals := range s.NumLabel {
 			for _, nval := range vals {
-				val := measurement.Label(nval, key)
+				val := formatTag(nval, key)
 				if valueMap, ok := tagMap[key]; ok {
 					valueMap[val] = valueMap[val] + s.Value[0]
 					continue
@@ -826,10 +831,16 @@ func printDOT(w io.Writer, rpt *Report) error {
 	rpt.selectOutputUnit(g)
 	labels := reportLabels(rpt, g, origCount, droppedNodes, droppedEdges, true)
 
+	o := rpt.options
+	formatTag := func(v int64, key string) string {
+		return measurement.ScaledLabel(v, key, o.OutputUnit)
+	}
+
 	c := &graph.DotConfig{
 		Title:       rpt.options.Title,
 		Labels:      labels,
 		FormatValue: rpt.formatValue,
+		FormatTag:   formatTag,
 		Total:       rpt.total,
 	}
 	graph.ComposeDot(w, g, &graph.DotAttributes{}, c)
