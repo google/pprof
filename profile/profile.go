@@ -23,6 +23,7 @@ import (
 	"io"
 	"io/ioutil"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -387,10 +388,9 @@ func (p *Profile) Aggregate(inlineFrame, function, filename, linenumber, address
 	return p.CheckValid()
 }
 
-// Print dumps a text representation of a profile. Intended mainly
+// String dumps a text representation of a profile. Intended mainly
 // for debugging purposes.
 func (p *Profile) String() string {
-
 	ss := make([]string, 0, len(p.Sample)+len(p.Mapping)+len(p.Location))
 	if pt := p.PeriodType; pt != nil {
 		ss = append(ss, fmt.Sprintf("PeriodType: %s %s", pt.Type, pt.Unit))
@@ -425,18 +425,20 @@ func (p *Profile) String() string {
 		ss = append(ss, sv)
 		const labelHeader = "                "
 		if len(s.Label) > 0 {
-			ls := labelHeader
+			ls := []string{}
 			for k, v := range s.Label {
-				ls = ls + fmt.Sprintf("%s:%v ", k, v)
+				ls = append(ls, fmt.Sprintf("%s:%v", k, v))
 			}
-			ss = append(ss, ls)
+			sort.Strings(ls)
+			ss = append(ss, labelHeader + strings.Join(ls, " "))
 		}
 		if len(s.NumLabel) > 0 {
-			ls := labelHeader
+			ls := []string{}
 			for k, v := range s.NumLabel {
-				ls = ls + fmt.Sprintf("%s:%v ", k, v)
+				ls = append(ls,fmt.Sprintf("%s:%v", k, v))
 			}
-			ss = append(ss, ls)
+			sort.Strings(ls)
+			ss = append(ss, labelHeader + strings.Join(ls, " "))
 		}
 	}
 
