@@ -204,7 +204,7 @@ func printWebSource(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 
 // sourceCoordinates returns the lowest and highest line numbers from
 // a set of assembly statements.
-func sourceCoordinates(asm map[int]graph.Nodes) (start, end int) {
+func sourceCoordinates(asm map[int][]assemblyInstruction) (start, end int) {
 	for l := range asm {
 		if start == 0 || l < start {
 			start = l
@@ -219,8 +219,8 @@ func sourceCoordinates(asm map[int]graph.Nodes) (start, end int) {
 // assemblyPerSourceLine disassembles the binary containing a symbol
 // and classifies the assembly instructions according to its
 // corresponding source line, annotating them with a set of samples.
-func assemblyPerSourceLine(objSyms []*objSymbol, rs graph.Nodes, src string, obj plugin.ObjTool) map[int]graph.Nodes {
-	assembly := make(map[int]graph.Nodes)
+func assemblyPerSourceLine(objSyms []*objSymbol, rs graph.Nodes, src string, obj plugin.ObjTool) map[int][]assemblyInstruction {
+	assembly := make(map[int][]assemblyInstruction)
 	// Identify symbol to use for this collection of samples.
 	o := findMatchingSymbol(objSyms, rs)
 	if o == nil {
@@ -228,17 +228,17 @@ func assemblyPerSourceLine(objSyms []*objSymbol, rs graph.Nodes, src string, obj
 	}
 
 	// Extract assembly for matched symbol
-	insns, err := obj.Disasm(o.sym.File, o.sym.Start, o.sym.End)
+	insts, err := obj.Disasm(o.sym.File, o.sym.Start, o.sym.End)
 	if err != nil {
 		return assembly
 	}
 
 	srcBase := filepath.Base(src)
-	anodes := annotateAssembly(insns, rs, o.base)
+	anodes := annotateAssembly(insts, rs, o.base)
 	var lineno = 0
 	for _, an := range anodes {
-		if filepath.Base(an.Info.File) == srcBase {
-			lineno = an.Info.Lineno
+		if filepath.Base(an.file) == srcBase {
+			lineno = an.line
 		}
 		if lineno != 0 {
 			assembly[lineno] = append(assembly[lineno], an)
@@ -290,7 +290,7 @@ func printFunctionHeader(w io.Writer, name, path string, flatSum, cumSum int64, 
 }
 
 // printFunctionSourceLine prints a source line and the corresponding assembly.
-func printFunctionSourceLine(w io.Writer, fn *graph.Node, assembly graph.Nodes, rpt *Report) {
+func printFunctionSourceLine(w io.Writer, fn *graph.Node, assembly []assemblyInstruction, rpt *Report) {
 	if len(assembly) == 0 {
 		fmt.Fprintf(w,
 			"<span class=line> %6d</span> <span class=nop>  %10s %10s %s </span>\n",
@@ -309,16 +309,23 @@ func printFunctionSourceLine(w io.Writer, fn *graph.Node, assembly graph.Nodes, 
 	for _, an := range assembly {
 		var fileline string
 		class := "disasmloc"
-		if an.Info.File != "" {
-			fileline = fmt.Sprintf("%s:%d", template.HTMLEscapeString(an.Info.File), an.Info.Lineno)
-			if an.Info.Lineno != fn.Info.Lineno {
+		if an.file != "" {
+			fileline = fmt.Sprintf("%s:%d", template.HTMLEscapeString(an.file), an.line)
+			if an.line != fn.Info.Lineno {
 				class = "unimportant"
 			}
 		}
+		flat, cum := an.flat, an.cum
+		if an.flatDiv != 0 {
+			flat = flat / an.flatDiv
+		}
+		if an.cumDiv != 0 {
+			cum = cum / an.cumDiv
+		}
 		fmt.Fprintf(w, " %8s %10s %10s %8x: %-48s <span class=%s>%s</span>\n", "",
-			valueOrDot(an.Flat, rpt), valueOrDot(an.Cum, rpt),
-			an.Info.Address,
-			template.HTMLEscapeString(an.Info.Name),
+			valueOrDot(flat, rpt), valueOrDot(cum, rpt),
+			an.address,
+			template.HTMLEscapeString(an.instruction),
 			class,
 			template.HTMLEscapeString(fileline))
 	}
@@ -411,14 +418,22 @@ func getSourceFromFile(file, sourcePath string, fns graph.Nodes, start, end int)
 
 // getMissingFunctionSource creates a dummy function body to point to
 // the source file and annotates it with the samples in asm.
-func getMissingFunctionSource(filename string, asm map[int]graph.Nodes, start, end int) (graph.Nodes, string) {
+func getMissingFunctionSource(filename string, asm map[int][]assemblyInstruction, start, end int) (graph.Nodes, string) {
 	var fnodes graph.Nodes
 	for i := start; i <= end; i++ {
-		lrs := asm[i]
-		if len(lrs) == 0 {
+		insts := asm[i]
+		if len(insts) == 0 {
 			continue
 		}
-		flat, cum := lrs.Sum()
+		var group assemblyInstruction
+		for _, insn := range insts {
+			group.flat += insn.flat
+			group.cum += insn.cum
+			group.flatDiv += insn.flatDiv
+			group.cumDiv += insn.cumDiv
+		}
+		flat := group.flatValue()
+		cum := group.cumValue()
 		fnodes = append(fnodes, &graph.Node{
 			Info: graph.NodeInfo{
 				Name:   "???",

@@ -28,6 +28,7 @@ var (
 	nmOutputRE            = regexp.MustCompile(`^\s*([[:xdigit:]]+)\s+(.)\s+(.*)`)
 	objdumpAsmOutputRE    = regexp.MustCompile(`^\s*([[:xdigit:]]+):\s+(.*)`)
 	objdumpOutputFileLine = regexp.MustCompile(`^(.*):([0-9]+)`)
+	objdumpOutputFunction = regexp.MustCompile(`^(\S.*)\(\):`)
 )
 
 func findSymbols(syms []byte, file string, r *regexp.Regexp, address uint64) ([]*plugin.Sym, error) {
@@ -83,7 +84,7 @@ func matchSymbol(names []string, start, end uint64, r *regexp.Regexp, address ui
 // the assembly instructions in a slice.
 func disassemble(asm []byte) ([]plugin.Inst, error) {
 	buf := bytes.NewBuffer(asm)
-	file, line := "", 0
+	function, file, line := "", "", 0
 	var assembly []plugin.Inst
 	for {
 		input, err := buf.ReadString('\n')
@@ -100,10 +101,11 @@ func disassemble(asm []byte) ([]plugin.Inst, error) {
 			if address, err := strconv.ParseUint(fields[1], 16, 64); err == nil {
 				assembly = append(assembly,
 					plugin.Inst{
-						Addr: address,
-						Text: fields[2],
-						File: file,
-						Line: line,
+						Addr:     address,
+						Text:     fields[2],
+						Function: function,
+						File:     file,
+						Line:     line,
 					})
 				continue
 			}
@@ -112,7 +114,14 @@ func disassemble(asm []byte) ([]plugin.Inst, error) {
 			if l, err := strconv.ParseUint(fields[2], 10, 32); err == nil {
 				file, line = fields[1], int(l)
 			}
+			continue
 		}
+		if fields := objdumpOutputFunction.FindStringSubmatch(input); len(fields) == 2 {
+			function = fields[1]
+			continue
+		}
+		// Reset on unrecognized lines.
+		function, file, line = "", "", 0
 	}
 
 	return assembly, nil

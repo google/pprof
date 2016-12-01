@@ -1020,18 +1020,18 @@ func (m *mockObjTool) Disasm(file string, start, end uint64) ([]plugin.Inst, err
 	switch start {
 	case 0x1000:
 		return []plugin.Inst{
-			{0x1000, "instruction one", "", 0},
-			{0x1001, "instruction two", "", 0},
-			{0x1002, "instruction three", "", 0},
-			{0x1003, "instruction four", "", 0},
+			{Addr: 0x1000, Text: "instruction one"},
+			{Addr: 0x1001, Text: "instruction two"},
+			{Addr: 0x1002, Text: "instruction three"},
+			{Addr: 0x1003, Text: "instruction four"},
 		}, nil
 	case 0x3000:
 		return []plugin.Inst{
-			{0x3000, "instruction one", "", 0},
-			{0x3001, "instruction two", "", 0},
-			{0x3002, "instruction three", "", 0},
-			{0x3003, "instruction four", "", 0},
-			{0x3004, "instruction five", "", 0},
+			{Addr: 0x3000, Text: "instruction one"},
+			{Addr: 0x3001, Text: "instruction two"},
+			{Addr: 0x3002, Text: "instruction three"},
+			{Addr: 0x3003, Text: "instruction four"},
+			{Addr: 0x3004, Text: "instruction five"},
 		}, nil
 	}
 	return nil, fmt.Errorf("unimplemented")

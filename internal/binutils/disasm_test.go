@@ -116,10 +116,10 @@ func TestFunctionAssembly(t *testing.T) {
   1003: instruction four
 `,
 			[]plugin.Inst{
-				{0x1000, "instruction one", "", 0},
-				{0x1001, "instruction two", "", 0},
-				{0x1002, "instruction three", "", 0},
-				{0x1003, "instruction four", "", 0},
+				{Addr: 0x1000, Text: "instruction one"},
+				{Addr: 0x1001, Text: "instruction two"},
+				{Addr: 0x1002, Text: "instruction three"},
+				{Addr: 0x1003, Text: "instruction four"},
 			},
 		},
 		{
@@ -128,8 +128,8 @@ func TestFunctionAssembly(t *testing.T) {
   2001: instruction two
 `,
 			[]plugin.Inst{
-				{0x2000, "instruction one", "", 0},
-				{0x2001, "instruction two", "", 0},
+				{Addr: 0x2000, Text: "instruction one"},
+				{Addr: 0x2001, Text: "instruction two"},
 			},
 		},
 	}
@@ -137,17 +137,17 @@ func TestFunctionAssembly(t *testing.T) {
 	const objdump = "testdata/wrapper/objdump"
 
 	for _, tc := range testcases {
-		insns, err := disassemble([]byte(tc.asm))
+		insts, err := disassemble([]byte(tc.asm))
 		if err != nil {
 			t.Fatalf("FunctionAssembly: %v", err)
 		}
 
-		if len(insns) != len(tc.want) {
-			t.Errorf("Unexpected number of assembly instructions %d (want %d)\n", len(insns), len(tc.want))
+		if len(insts) != len(tc.want) {
+			t.Errorf("Unexpected number of assembly instructions %d (want %d)\n", len(insts), len(tc.want))
 		}
-		for i := range insns {
-			if insns[i] != tc.want[i] {
-				t.Errorf("Expected symbol %v, got %v\n", tc.want[i], insns[i])
+		for i := range insts {
+			if insts[i] != tc.want[i] {
+				t.Errorf("Expected symbol %v, got %v\n", tc.want[i], insts[i])
 			}
 		}
 	}
