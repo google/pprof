@@ -228,13 +228,13 @@ func assemblyPerSourceLine(objSyms []*objSymbol, rs graph.Nodes, src string, obj
 	}
 
 	// Extract assembly for matched symbol
-	insns, err := obj.Disasm(o.sym.File, o.sym.Start, o.sym.End)
+	insts, err := obj.Disasm(o.sym.File, o.sym.Start, o.sym.End)
 	if err != nil {
 		return assembly
 	}
 
 	srcBase := filepath.Base(src)
-	anodes := annotateAssembly(insns, rs, o.base)
+	anodes := annotateAssembly(insts, rs, o.base)
 	var lineno = 0
 	for _, an := range anodes {
 		if filepath.Base(an.file) == srcBase {
@@ -421,12 +421,12 @@ func getSourceFromFile(file, sourcePath string, fns graph.Nodes, start, end int)
 func getMissingFunctionSource(filename string, asm map[int][]assemblyInstruction, start, end int) (graph.Nodes, string) {
 	var fnodes graph.Nodes
 	for i := start; i <= end; i++ {
-		insns := asm[i]
-		if len(insns) == 0 {
+		insts := asm[i]
+		if len(insts) == 0 {
 			continue
 		}
 		var group assemblyInstruction
-		for _, insn := range insns {
+		for _, insn := range insts {
 			group.flat += insn.flat
 			group.cum += insn.cum
 			group.flatDiv += insn.flatDiv

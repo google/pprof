@@ -303,12 +303,12 @@ func printAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 		flatSum, cumSum := sns.Sum()
 
 		// Get the function assembly.
-		insns, err := obj.Disasm(s.sym.File, s.sym.Start, s.sym.End)
+		insts, err := obj.Disasm(s.sym.File, s.sym.Start, s.sym.End)
 		if err != nil {
 			return err
 		}
 
-		ns := annotateAssembly(insns, sns, s.base)
+		ns := annotateAssembly(insts, sns, s.base)
 
 		fmt.Fprintf(w, "ROUTINE ======================== %s\n", s.sym.Name[0])
 		for _, name := range s.sym.Name[1:] {
@@ -473,9 +473,9 @@ func (a *assemblyInstruction) cumValue() int64 {
 // annotateAssembly annotates a set of assembly instructions with a
 // set of samples. It returns a set of nodes to display. base is an
 // offset to adjust the sample addresses.
-func annotateAssembly(insns []plugin.Inst, samples graph.Nodes, base uint64) []assemblyInstruction {
+func annotateAssembly(insts []plugin.Inst, samples graph.Nodes, base uint64) []assemblyInstruction {
 	// Add end marker to simplify printing loop.
-	insns = append(insns, plugin.Inst{
+	insts = append(insts, plugin.Inst{
 		Addr: ^uint64(0),
 	})
 
@@ -483,8 +483,8 @@ func annotateAssembly(insns []plugin.Inst, samples graph.Nodes, base uint64) []a
 	samples.Sort(graph.AddressOrder)
 
 	s := 0
-	asm := make([]assemblyInstruction, 0, len(insns))
-	for ix, in := range insns[:len(insns)-1] {
+	asm := make([]assemblyInstruction, 0, len(insts))
+	for ix, in := range insts[:len(insts)-1] {
 		n := assemblyInstruction{
 			address:     in.Addr,
 			instruction: in.Text,
@@ -497,7 +497,7 @@ func annotateAssembly(insns []plugin.Inst, samples graph.Nodes, base uint64) []a
 
 		// Sum all the samples until the next instruction (to account
 		// for samples attributed to the middle of an instruction).
-		for next := insns[ix+1].Addr; s < len(samples) && samples[s].Info.Address-base < next; s++ {
+		for next := insts[ix+1].Addr; s < len(samples) && samples[s].Info.Address-base < next; s++ {
 			sample := samples[s]
 			n.flatDiv += sample.FlatDiv
 			n.flat += sample.Flat

@@ -137,17 +137,17 @@ func TestFunctionAssembly(t *testing.T) {
 	const objdump = "testdata/wrapper/objdump"
 
 	for _, tc := range testcases {
-		insns, err := disassemble([]byte(tc.asm))
+		insts, err := disassemble([]byte(tc.asm))
 		if err != nil {
 			t.Fatalf("FunctionAssembly: %v", err)
 		}
 
-		if len(insns) != len(tc.want) {
-			t.Errorf("Unexpected number of assembly instructions %d (want %d)\n", len(insns), len(tc.want))
+		if len(insts) != len(tc.want) {
+			t.Errorf("Unexpected number of assembly instructions %d (want %d)\n", len(insts), len(tc.want))
 		}
-		for i := range insns {
-			if insns[i] != tc.want[i] {
-				t.Errorf("Expected symbol %v, got %v\n", tc.want[i], insns[i])
+		for i := range insts {
+			if insts[i] != tc.want[i] {
+				t.Errorf("Expected symbol %v, got %v\n", tc.want[i], insts[i])
 			}
 		}
 	}
