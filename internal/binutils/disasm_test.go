@@ -116,10 +116,10 @@ func TestFunctionAssembly(t *testing.T) {
   1003: instruction four
 `,
 			[]plugin.Inst{
-				{0x1000, "instruction one", "", 0},
-				{0x1001, "instruction two", "", 0},
-				{0x1002, "instruction three", "", 0},
-				{0x1003, "instruction four", "", 0},
+				{Addr: 0x1000, Text: "instruction one"},
+				{Addr: 0x1001, Text: "instruction two"},
+				{Addr: 0x1002, Text: "instruction three"},
+				{Addr: 0x1003, Text: "instruction four"},
 			},
 		},
 		{
@@ -128,8 +128,8 @@ func TestFunctionAssembly(t *testing.T) {
   2001: instruction two
 `,
 			[]plugin.Inst{
-				{0x2000, "instruction one", "", 0},
-				{0x2001, "instruction two", "", 0},
+				{Addr: 0x2000, Text: "instruction one"},
+				{Addr: 0x2001, Text: "instruction two"},
 			},
 		},
 	}

@@ -110,10 +110,11 @@ type ObjTool interface {
 
 // An Inst is a single instruction in an assembly listing.
 type Inst struct {
-	Addr uint64 // virtual address of instruction
-	Text string // instruction text
-	File string // source file
-	Line int    // source line
+	Addr     uint64 // virtual address of instruction
+	Text     string // instruction text
+	Function string // function name
+	File     string // source file
+	Line     int    // source line
 }
 
 // An ObjFile is a single object file: a shared library or executable.

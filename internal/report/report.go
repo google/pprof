@@ -318,8 +318,37 @@ func printAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 			rpt.formatValue(flatSum), rpt.formatValue(cumSum),
 			percentage(cumSum, rpt.total))
 
+		function, file, line := "", "", 0
 		for _, n := range ns {
-			fmt.Fprintf(w, "%10s %10s %10x: %s\n", valueOrDot(n.FlatValue(), rpt), valueOrDot(n.CumValue(), rpt), n.Info.Address, n.Info.Name)
+			flat := valueOrDot(n.flatValue(), rpt)
+			cum := valueOrDot(n.cumValue(), rpt)
+			if n.function == function && n.file == file && n.line == line {
+				fmt.Fprintf(w, "%10s %10s %10x: %s\n",
+					flat, cum,
+					n.address, n.instruction,
+				)
+				continue
+			}
+			line := ""
+			if n.line > 0 {
+				line = fmt.Sprintf(":%d", n.line)
+			}
+			if len(n.instruction) <= 40 {
+				fmt.Fprintf(w, "%10s %10s %10x: %-40s; %s %s%s\n",
+					flat, cum,
+					n.address, n.instruction,
+					n.function, n.file, line,
+				)
+				continue
+			}
+			fmt.Fprintf(w, "%75s; %s %s%s\n",
+				"",
+				n.function, n.file, line,
+			)
+			fmt.Fprintf(w, "%10s %10s %10x: %s\n",
+				flat, cum,
+				n.address, n.instruction,
+			)
 		}
 	}
 	return nil
@@ -417,10 +446,34 @@ func nodesPerSymbol(ns graph.Nodes, symbols []*objSymbol) map[*objSymbol]graph.N
 	return symNodes
 }
 
+type assemblyInstruction struct {
+	address         uint64
+	instruction     string
+	function        string
+	file            string
+	line            int
+	flat, cum       int64
+	flatDiv, cumDiv int64
+}
+
+func (a *assemblyInstruction) flatValue() int64 {
+	if a.flatDiv != 0 {
+		return a.flat / a.flatDiv
+	}
+	return a.flat
+}
+
+func (a *assemblyInstruction) cumValue() int64 {
+	if a.cumDiv != 0 {
+		return a.cum / a.cumDiv
+	}
+	return a.cum
+}
+
 // annotateAssembly annotates a set of assembly instructions with a
 // set of samples. It returns a set of nodes to display. base is an
 // offset to adjust the sample addresses.
-func annotateAssembly(insns []plugin.Inst, samples graph.Nodes, base uint64) graph.Nodes {
+func annotateAssembly(insns []plugin.Inst, samples graph.Nodes, base uint64) []assemblyInstruction {
 	// Add end marker to simplify printing loop.
 	insns = append(insns, plugin.Inst{
 		Addr: ^uint64(0),
@@ -429,31 +482,38 @@ func annotateAssembly(insns []plugin.Inst, samples graph.Nodes, base uint64) gra
 	// Ensure samples are sorted by address.
 	samples.Sort(graph.AddressOrder)
 
-	var s int
-	var asm graph.Nodes
+	s := 0
+	asm := make([]assemblyInstruction, 0, len(insns))
 	for ix, in := range insns[:len(insns)-1] {
-		n := graph.Node{
-			Info: graph.NodeInfo{
-				Address: in.Addr,
-				Name:    in.Text,
-				File:    trimPath(in.File),
-				Lineno:  in.Line,
-			},
+		n := assemblyInstruction{
+			address:     in.Addr,
+			instruction: in.Text,
+			function:    in.Function,
+			line:        in.Line,
+		}
+		if in.File != "" {
+			n.file = filepath.Base(in.File)
 		}
 
 		// Sum all the samples until the next instruction (to account
 		// for samples attributed to the middle of an instruction).
 		for next := insns[ix+1].Addr; s < len(samples) && samples[s].Info.Address-base < next; s++ {
-			n.FlatDiv += samples[s].FlatDiv
-			n.Flat += samples[s].Flat
-			n.CumDiv += samples[s].CumDiv
-			n.Cum += samples[s].Cum
-			if samples[s].Info.File != "" {
-				n.Info.File = trimPath(samples[s].Info.File)
-				n.Info.Lineno = samples[s].Info.Lineno
+			sample := samples[s]
+			n.flatDiv += sample.FlatDiv
+			n.flat += sample.Flat
+			n.cumDiv += sample.CumDiv
+			n.cum += sample.Cum
+			if f := sample.Info.File; f != "" && n.file == "" {
+				n.file = filepath.Base(f)
+			}
+			if ln := sample.Info.Lineno; ln != 0 && n.line == 0 {
+				n.line = ln
+			}
+			if f := sample.Info.Name; f != "" && n.function == "" {
+				n.function = f
 			}
 		}
-		asm = append(asm, &n)
+		asm = append(asm, n)
 	}
 
 	return asm
