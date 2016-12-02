@@ -520,7 +520,7 @@ func cpuProfile() *profile.Profile {
 			Address: 0x3002,
 			Line: []profile.Line{
 				{Function: cpuF[5], Line: 5},
-				{Function: cpuF[3], Line: 7},
+				{Function: cpuF[3], Line: 9},
 			},
 		},
 	}
