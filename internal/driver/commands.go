@@ -86,17 +86,18 @@ var interactiveMode = false
 // pprofCommands are the report generation commands recognized by pprof.
 var pprofCommands = commands{
 	// Commands that require no post-processing.
-	"tags":     {report.Tags, nil, false, "Outputs all tags in the profile", "tags [tag_regex]* [-ignore_regex]* [>file]\nList tags with key:value matching tag_regex and exclude ignore_regex."},
-	"raw":      {report.Raw, nil, false, "Outputs a text representation of the raw profile", ""},
-	"dot":      {report.Dot, nil, false, "Outputs a graph in DOT format", reportHelp("dot", false, true)},
-	"top":      {report.Text, nil, false, "Outputs top entries in text form", reportHelp("top", true, true)},
-	"tree":     {report.Tree, nil, false, "Outputs a text rendering of call graph", reportHelp("tree", true, true)},
-	"text":     {report.Text, nil, false, "Outputs top entries in text form", reportHelp("text", true, true)},
-	"traces":   {report.Traces, nil, false, "Outputs all profile samples in text form", ""},
-	"topproto": {report.TopProto, awayFromTTY("pb.gz"), false, "Outputs top entries in compressed protobuf format", ""},
+	"comments": {report.Comments, nil, false, "Output all profile comments", ""},
 	"disasm":   {report.Dis, nil, true, "Output assembly listings annotated with samples", listHelp("disasm", true)},
+	"dot":      {report.Dot, nil, false, "Outputs a graph in DOT format", reportHelp("dot", false, true)},
 	"list":     {report.List, nil, true, "Output annotated source for functions matching regexp", listHelp("list", false)},
 	"peek":     {report.Tree, nil, true, "Output callers/callees of functions matching regexp", "peek func_regex\nDisplay callers and callees of functions matching func_regex."},
+	"raw":      {report.Raw, nil, false, "Outputs a text representation of the raw profile", ""},
+	"tags":     {report.Tags, nil, false, "Outputs all tags in the profile", "tags [tag_regex]* [-ignore_regex]* [>file]\nList tags with key:value matching tag_regex and exclude ignore_regex."},
+	"text":     {report.Text, nil, false, "Outputs top entries in text form", reportHelp("text", true, true)},
+	"top":      {report.Text, nil, false, "Outputs top entries in text form", reportHelp("top", true, true)},
+	"topproto": {report.TopProto, awayFromTTY("pb.gz"), false, "Outputs top entries in compressed protobuf format", ""},
+	"traces":   {report.Traces, nil, false, "Outputs all profile samples in text form", ""},
+	"tree":     {report.Tree, nil, false, "Outputs a text rendering of call graph", reportHelp("tree", true, true)},
 
 	// Save binary formats to a file
 	"callgrind": {report.Callgrind, awayFromTTY("callgraph.out"), false, "Outputs a graph in callgrind format", reportHelp("callgrind", false, true)},

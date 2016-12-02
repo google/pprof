@@ -63,6 +63,8 @@ func TestParse(t *testing.T) {
 		{"dot,lines,flat,focus=[12]00", "heap"},
 		{"dot,addresses,flat,ignore=[X3]002,focus=[X1]000", "contention"},
 		{"dot,files,cum", "contention"},
+		{"comments", "cpu"},
+		{"comments", "heap"},
 		{"tags", "cpu"},
 		{"tags,tagignore=tag[13],tagfocus=key[12]", "cpu"},
 		{"tags", "heap"},
@@ -215,7 +217,7 @@ func solutionFilename(source string, f *testFlags) string {
 	name = addString(name, f, []string{"inuse_space", "inuse_objects", "alloc_space", "alloc_objects"})
 	name = addString(name, f, []string{"relative_percentages"})
 	name = addString(name, f, []string{"seconds"})
-	name = addString(name, f, []string{"text", "tree", "callgrind", "dot", "svg", "tags", "dot", "traces", "disasm", "peek", "weblist", "topproto"})
+	name = addString(name, f, []string{"text", "tree", "callgrind", "dot", "svg", "tags", "dot", "traces", "disasm", "peek", "weblist", "topproto", "comments"})
 	if f.strings["focus"] != "" || f.strings["tagfocus"] != "" {
 		name = append(name, "focus")
 	}
@@ -726,6 +728,7 @@ func heapProfile() *profile.Profile {
 	}
 
 	return &profile.Profile{
+		Comments:   []string{"comment", "#hidden comment"},
 		PeriodType: &profile.ValueType{Type: "allocations", Unit: "bytes"},
 		Period:     524288,
 		SampleType: []*profile.ValueType{

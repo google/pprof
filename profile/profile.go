@@ -391,7 +391,10 @@ func (p *Profile) Aggregate(inlineFrame, function, filename, linenumber, address
 // String dumps a text representation of a profile. Intended mainly
 // for debugging purposes.
 func (p *Profile) String() string {
-	ss := make([]string, 0, len(p.Sample)+len(p.Mapping)+len(p.Location))
+	ss := make([]string, 0, len(p.Comments)+len(p.Sample)+len(p.Mapping)+len(p.Location))
+	for _, c := range p.Comments {
+		ss = append(ss, "Comment: "+c)
+	}
 	if pt := p.PeriodType; pt != nil {
 		ss = append(ss, fmt.Sprintf("PeriodType: %s %s", pt.Type, pt.Unit))
 	}
@@ -430,15 +433,15 @@ func (p *Profile) String() string {
 				ls = append(ls, fmt.Sprintf("%s:%v", k, v))
 			}
 			sort.Strings(ls)
-			ss = append(ss, labelHeader + strings.Join(ls, " "))
+			ss = append(ss, labelHeader+strings.Join(ls, " "))
 		}
 		if len(s.NumLabel) > 0 {
 			ls := []string{}
 			for k, v := range s.NumLabel {
-				ls = append(ls,fmt.Sprintf("%s:%v", k, v))
+				ls = append(ls, fmt.Sprintf("%s:%v", k, v))
 			}
 			sort.Strings(ls)
-			ss = append(ss, labelHeader + strings.Join(ls, " "))
+			ss = append(ss, labelHeader+strings.Join(ls, " "))
 		}
 	}
 

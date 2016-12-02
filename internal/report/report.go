@@ -33,11 +33,59 @@ import (
 	"github.com/google/pprof/profile"
 )
 
+// Output formats.
+const (
+	Callgrind = iota
+	Comments
+	Dis
+	Dot
+	List
+	Proto
+	Raw
+	Tags
+	Text
+	TopProto
+	Traces
+	Tree
+	WebList
+)
+
+// Options are the formatting and filtering options used to generate a
+// profile.
+type Options struct {
+	OutputFormat int
+
+	CumSort             bool
+	CallTree            bool
+	DropNegative        bool
+	PositivePercentages bool
+	CompactLabels       bool
+	Ratio               float64
+	Title               string
+	ProfileLabels       []string
+
+	NodeCount    int
+	NodeFraction float64
+	EdgeFraction float64
+
+	SampleValue       func(s []int64) int64
+	SampleMeanDivisor func(s []int64) int64
+	SampleType        string
+	SampleUnit        string // Unit for the sample data from the profile.
+
+	OutputUnit string // Units for data formatting in report.
+
+	Symbol     *regexp.Regexp // Symbols to include on disassembly report.
+	SourcePath string         // Search path for source files.
+}
+
 // Generate generates a report as directed by the Report.
 func Generate(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 	o := rpt.options
 
 	switch o.OutputFormat {
+	case Comments:
+		return printComments(w, rpt)
 	case Dot:
 		return printDOT(w, rpt)
 	case Tree:
@@ -593,6 +641,16 @@ func printTags(w io.Writer, rpt *Report) error {
 	return nil
 }
 
+// printComments prints all freeform comments in the profile.
+func printComments(w io.Writer, rpt *Report) error {
+	p := rpt.prof
+
+	for _, c := range p.Comments {
+		fmt.Fprintln(w, c)
+	}
+	return nil
+}
+
 // printText prints a flat text report for a profile.
 func printText(w io.Writer, rpt *Report) error {
 	g, origCount, droppedNodes, _ := rpt.newTrimmedGraph()
@@ -937,7 +995,12 @@ func ProfileLabels(rpt *Report) []string {
 			label = append(label, "Build ID: "+prof.Mapping[0].BuildID)
 		}
 	}
-	label = append(label, prof.Comments...)
+	// Only include comments that do not start with '#'.
+	for _, c := range prof.Comments {
+		if !strings.HasPrefix(c, "#") {
+			label = append(label, c)
+		}
+	}
 	if o.SampleType != "" {
 		label = append(label, "Type: "+o.SampleType)
 	}
@@ -1002,51 +1065,6 @@ func genLabel(d int, n, l, f string) string {
 		n = n + "s"
 	}
 	return fmt.Sprintf("Dropped %d %s (%s <= %s)", d, n, l, f)
-}
-
-// Output formats.
-const (
-	Proto = iota
-	Dot
-	Tags
-	Tree
-	Text
-	Traces
-	Raw
-	Dis
-	List
-	WebList
-	Callgrind
-	TopProto
-)
-
-// Options are the formatting and filtering options used to generate a
-// profile.
-type Options struct {
-	OutputFormat int
-
-	CumSort             bool
-	CallTree            bool
-	DropNegative        bool
-	PositivePercentages bool
-	CompactLabels       bool
-	Ratio               float64
-	Title               string
-	ProfileLabels       []string
-
-	NodeCount    int
-	NodeFraction float64
-	EdgeFraction float64
-
-	SampleValue       func(s []int64) int64
-	SampleMeanDivisor func(s []int64) int64
-	SampleType        string
-	SampleUnit        string // Unit for the sample data from the profile.
-
-	OutputUnit string // Units for data formatting in report.
-
-	Symbol     *regexp.Regexp // Symbols to include on disassembly report.
-	SourcePath string         // Search path for source files.
 }
 
 // New builds a new report indexing the sample values interpreting the
