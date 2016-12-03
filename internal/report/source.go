@@ -301,7 +301,7 @@ func printFunctionSourceLine(w io.Writer, fn *graph.Node, assembly []assemblyIns
 	}
 
 	fmt.Fprintf(w,
-		"<span class=line> %6d</span> <span class=deadsrc>  %10s %10s %s </span>",
+		"<span class=line> %6d</span> <span class=deadsrc>  %10s %10s %s </span>\n",
 		fn.Info.Lineno,
 		valueOrDot(fn.Flat, rpt), valueOrDot(fn.Cum, rpt),
 		template.HTMLEscapeString(fn.Info.Name))

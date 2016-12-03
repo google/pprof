@@ -14,8 +14,8 @@
 
 package report
 
-const weblistPageHeader = `
-<!DOCTYPE html>
+const weblistPageHeader =
+`<!DOCTYPE html>
 <html>
 <head>
 <title>Pprof listing</title>
@@ -83,5 +83,4 @@ function pprof_toggle_asm(e) {
 
 const weblistPageClosing = `
 </body>
-</html>
-`
+</html>`
