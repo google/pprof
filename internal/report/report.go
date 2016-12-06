@@ -286,20 +286,16 @@ func printTopProto(w io.Writer, rpt *Report) error {
 		PeriodType:    p.PeriodType,
 		Period:        p.Period,
 	}
-	var flatSum int64
+	functionMap := make(functionMap)
 	for i, n := range g.Nodes {
-		name, flat, cum := n.Info.PrintableName(), n.FlatValue(), n.CumValue()
-
-		flatSum += flat
-		f := &profile.Function{
-			ID:         uint64(i + 1),
-			Name:       name,
-			SystemName: name,
-		}
+		f := functionMap.FindOrAdd(n.Info)
+		flat, cum := n.FlatValue(), n.CumValue()
 		l := &profile.Location{
-			ID: uint64(i + 1),
+			ID:      uint64(i + 1),
+			Address: n.Info.Address,
 			Line: []profile.Line{
 				{
+					Line:     int64(n.Info.Lineno),
 					Function: f,
 				},
 			},
@@ -317,6 +313,26 @@ func printTopProto(w io.Writer, rpt *Report) error {
 	}
 
 	return out.Write(w)
+}
+
+type functionMap map[string]*profile.Function
+
+func (fm functionMap) FindOrAdd(ni graph.NodeInfo) *profile.Function {
+	fName := fmt.Sprintf("%q%q%q%d", ni.Name, ni.OrigName, ni.File, ni.StartLine)
+
+	if f := fm[fName]; f != nil {
+		return f
+	}
+
+	f := &profile.Function{
+		ID:         uint64(len(fm) + 1),
+		Name:       ni.Name,
+		SystemName: ni.OrigName,
+		Filename:   ni.File,
+		StartLine:  int64(ni.StartLine),
+	}
+	fm[fName] = f
+	return f
 }
 
 // printAssembly prints an annotated assembly listing.

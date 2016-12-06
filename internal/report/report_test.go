@@ -236,3 +236,27 @@ func TestDisambiguation(t *testing.T) {
 		}
 	}
 }
+
+func TestFunctionMap(t *testing.T) {
+
+	fm := make(functionMap)
+	nodes := []graph.NodeInfo{
+		{Name: "fun1"},
+		{Name: "fun2", File: "filename"},
+		{Name: "fun1"},
+		{Name: "fun2", File: "filename2"},
+	}
+
+	want := []profile.Function{
+		{ID: 1, Name: "fun1"},
+		{ID: 2, Name: "fun2", Filename: "filename"},
+		{ID: 1, Name: "fun1"},
+		{ID: 3, Name: "fun2", Filename: "filename2"},
+	}
+
+	for i, tc := range nodes {
+		if got, want := fm.FindOrAdd(tc), want[i]; *got != want {
+			t.Errorf("%d: want %v, got %v", i, want, got)
+		}
+	}
+}
