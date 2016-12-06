@@ -368,35 +368,45 @@ func printAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 
 		function, file, line := "", "", 0
 		for _, n := range ns {
-			flat := valueOrDot(n.flatValue(), rpt)
-			cum := valueOrDot(n.cumValue(), rpt)
-			if n.function == function && n.file == file && n.line == line {
+			locStr := ""
+			// Skip loc information if it hasn't changed from previous instruction.
+			if n.function != function || n.file != file || n.line != line {
+				function, file, line = n.function, n.file, n.line
+				if n.function != "" {
+					locStr = n.function + " "
+				}
+				if n.file != "" {
+					locStr += n.file
+					if n.line != 0 {
+						locStr += fmt.Sprintf(":%d", n.line)
+					}
+				}
+			}
+			switch {
+			case locStr == "":
+				// No location info, just print the instruction.
 				fmt.Fprintf(w, "%10s %10s %10x: %s\n",
-					flat, cum,
+					valueOrDot(n.flatValue(), rpt),
+					valueOrDot(n.cumValue(), rpt),
 					n.address, n.instruction,
 				)
-				continue
-			}
-			line := ""
-			if n.line > 0 {
-				line = fmt.Sprintf(":%d", n.line)
-			}
-			if len(n.instruction) <= 40 {
-				fmt.Fprintf(w, "%10s %10s %10x: %-40s; %s %s%s\n",
-					flat, cum,
+			case len(n.instruction) < 40:
+				// Short instruction, print loc on the same line.
+				fmt.Fprintf(w, "%10s %10s %10x: %-40s;%s\n",
+					valueOrDot(n.flatValue(), rpt),
+					valueOrDot(n.cumValue(), rpt),
 					n.address, n.instruction,
-					n.function, n.file, line,
+					locStr,
 				)
-				continue
+			default:
+				// Long instruction, print loc on a separate line.
+				fmt.Fprintf(w, "%74s;%s\n", "", locStr)
+				fmt.Fprintf(w, "%10s %10s %10x: %s\n",
+					valueOrDot(n.flatValue(), rpt),
+					valueOrDot(n.cumValue(), rpt),
+					n.address, n.instruction,
+				)
 			}
-			fmt.Fprintf(w, "%75s; %s %s%s\n",
-				"",
-				n.function, n.file, line,
-			)
-			fmt.Fprintf(w, "%10s %10s %10x: %s\n",
-				flat, cum,
-				n.address, n.instruction,
-			)
 		}
 	}
 	return nil
