@@ -118,3 +118,110 @@ func profileOfType(sampleTypes []string) *Profile {
 	}
 	return p
 }
+
+func TestParseMappingEntry(t *testing.T) {
+	for _, test := range []*struct {
+		entry string
+		want  *Mapping
+	}{
+		{
+			entry: "00400000-02e00000 r-xp 00000000 00:00 0",
+			want: &Mapping{
+				Start: 0x400000,
+				Limit: 0x2e00000,
+			},
+		},
+		{
+			entry: "02e00000-02e8a000 r-xp 02a00000 00:00 15953927    /foo/bin",
+			want: &Mapping{
+				Start:  0x2e00000,
+				Limit:  0x2e8a000,
+				Offset: 0x2a00000,
+				File:   "/foo/bin",
+			},
+		},
+		{
+			entry: "02e00000-02e8a000 r-xp 000000 00:00 15953927    [vdso]",
+			want: &Mapping{
+				Start: 0x2e00000,
+				Limit: 0x2e8a000,
+				File:  "[vdso]",
+			},
+		},
+		{
+			entry: "  02e00000-02e8a000: /foo/bin (@2a00000)",
+			want: &Mapping{
+				Start:  0x2e00000,
+				Limit:  0x2e8a000,
+				Offset: 0x2a00000,
+				File:   "/foo/bin",
+			},
+		},
+		{
+			entry: "  02e00000-02e8a000: /foo/bin",
+			want: &Mapping{
+				Start: 0x2e00000,
+				Limit: 0x2e8a000,
+				File:  "/foo/bin",
+			},
+		},
+		{
+			entry: "  02e00000-02e8a000: [vdso]",
+			want: &Mapping{
+				Start: 0x2e00000,
+				Limit: 0x2e8a000,
+				File:  "[vdso]",
+			},
+		},
+		{entry: "0xff6810563000 0xff6810565000 r-xp abc_exe 87c4d547f895cfd6a370e08dc5c5ee7bd4199d5b",
+			want: &Mapping{
+				Start:   0xff6810563000,
+				Limit:   0xff6810565000,
+				File:    "abc_exe",
+				BuildID: "87c4d547f895cfd6a370e08dc5c5ee7bd4199d5b",
+			},
+		},
+		{entry: "7f5e5435e000-7f5e5455e000 --xp 00002000 00:00 1531        myprogram",
+			want: &Mapping{
+				Start:  0x7f5e5435e000,
+				Limit:  0x7f5e5455e000,
+				Offset: 0x2000,
+				File:   "myprogram",
+			},
+		},
+		{entry: "7f7472710000-7f7472722000 r-xp 00000000 fc:00 790190      /usr/lib/libfantastic-1.2.so",
+			want: &Mapping{
+				Start: 0x7f7472710000,
+				Limit: 0x7f7472722000,
+				File:  "/usr/lib/libfantastic-1.2.so",
+			},
+		},
+		{entry: "7f47a542f000-7f47a5447000: /lib/libpthread-2.15.so",
+			want: &Mapping{
+				Start: 0x7f47a542f000,
+				Limit: 0x7f47a5447000,
+				File:  "/lib/libpthread-2.15.so",
+			},
+		},
+		{entry: "0x40000-0x80000 /path/to/binary      (@FF00)            abc123456",
+			want: &Mapping{
+				Start:   0x40000,
+				Limit:   0x80000,
+				File:    "/path/to/binary",
+				Offset:  0xFF00,
+				BuildID: "abc123456",
+			},
+		},
+		{entry: "7f5e5435e000-7f5e5455e000 ---p 00002000 00:00 1531        myprogram",
+			want: nil,
+		},
+	} {
+		got, err := parseMappingEntry(test.entry)
+		if err != nil {
+			t.Error(err)
+		}
+		if !reflect.DeepEqual(test.want, got) {
+			t.Errorf("%s want=%v got=%v", test.entry, test.want, got)
+		}
+	}
+}

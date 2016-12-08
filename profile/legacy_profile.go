@@ -46,9 +46,23 @@ var (
 	threadzStartRE = regexp.MustCompile(`--- threadz \d+ ---`)
 	threadStartRE  = regexp.MustCompile(`--- Thread ([[:xdigit:]]+) \(name: (.*)/(\d+)\) stack: ---`)
 
-	procMapsRE = regexp.MustCompile(`([[:xdigit:]]+)-([[:xdigit:]]+)\s+([-rwxp]+)\s+([[:xdigit:]]+)\s+([[:xdigit:]]+):([[:xdigit:]]+)\s+([[:digit:]]+)\s*(\S+)?`)
+	// Regular expressions to parse process mappings. Support the format used by Linux /proc/.../maps and other tools.
+	// Recommended format:
+	// Start   End     object file name     offset(optional)   linker build id
+	// 0x40000-0x80000 /path/to/binary      (@FF00)            abc123456
+	spaceDigits = `\s+[[:digit:]]+`
+	hexPair     = `\s+[[:xdigit:]]+:[[:xdigit:]]+`
+	oSpace      = `\s*`
+	// Capturing expressions.
+	cHex           = `(?:0x)?([[:xdigit:]]+)`
+	cHexRange      = `\s*` + cHex + `[\s-]?` + oSpace + cHex + `:?`
+	cSpaceString   = `(?:\s+(\S+))?`
+	cSpaceHex      = `\s+([[:xdigit:]]+)`
+	cSpaceAtOffset = `(?:\s+\(@([[:xdigit:]]+)\))?`
+	cPerm          = `(?:\s+([-rwxp]+))?`
 
-	briefMapsRE = regexp.MustCompile(`\s*([[:xdigit:]]+)-([[:xdigit:]]+):\s*(\S+)(\s.*@)?([[:xdigit:]]+)?`)
+	procMapsRE  = regexp.MustCompile(`^` + cHexRange + cPerm + cSpaceHex + hexPair + spaceDigits + cSpaceString + `\s*$`)
+	briefMapsRE = regexp.MustCompile(`^` + cHexRange + cPerm + cSpaceString + cSpaceAtOffset + cSpaceString + `\s*$`)
 )
 
 func isSpaceOrComment(line string) bool {
@@ -1008,45 +1022,36 @@ func (p *Profile) parseMemoryMapFromScanner(s *bufio.Scanner) error {
 }
 
 func parseMappingEntry(l string) (*Mapping, error) {
-	mapping := &Mapping{}
+	var start, end, perm, file, offset, buildID string
+	if me := procMapsRE.FindStringSubmatch(l); len(me) == 6 {
+		start, end, perm, offset, file = me[1], me[2], me[3], me[4], me[5]
+	} else if me := briefMapsRE.FindStringSubmatch(l); len(me) == 7 {
+		start, end, perm, file, offset, buildID = me[1], me[2], me[3], me[4], me[5], me[6]
+	} else {
+		return nil, errUnrecognized
+	}
+
 	var err error
-	if me := procMapsRE.FindStringSubmatch(l); len(me) == 9 {
-		if !strings.Contains(me[3], "x") {
-			// Skip non-executable entries.
-			return nil, nil
-		}
-		if mapping.Start, err = strconv.ParseUint(me[1], 16, 64); err != nil {
-			return nil, errUnrecognized
-		}
-		if mapping.Limit, err = strconv.ParseUint(me[2], 16, 64); err != nil {
-			return nil, errUnrecognized
-		}
-		if me[4] != "" {
-			if mapping.Offset, err = strconv.ParseUint(me[4], 16, 64); err != nil {
-				return nil, errUnrecognized
-			}
-		}
-		mapping.File = me[8]
-		return mapping, nil
+	mapping := &Mapping{
+		File:    file,
+		BuildID: buildID,
 	}
-
-	if me := briefMapsRE.FindStringSubmatch(l); len(me) == 6 {
-		if mapping.Start, err = strconv.ParseUint(me[1], 16, 64); err != nil {
-			return nil, errUnrecognized
-		}
-		if mapping.Limit, err = strconv.ParseUint(me[2], 16, 64); err != nil {
-			return nil, errUnrecognized
-		}
-		mapping.File = me[3]
-		if me[5] != "" {
-			if mapping.Offset, err = strconv.ParseUint(me[5], 16, 64); err != nil {
-				return nil, errUnrecognized
-			}
-		}
-		return mapping, nil
+	if perm != "" && !strings.Contains(perm, "x") {
+		// Skip non-executable entries.
+		return nil, nil
 	}
-
-	return nil, errUnrecognized
+	if mapping.Start, err = strconv.ParseUint(start, 16, 64); err != nil {
+		return nil, errUnrecognized
+	}
+	if mapping.Limit, err = strconv.ParseUint(end, 16, 64); err != nil {
+		return nil, errUnrecognized
+	}
+	if offset != "" {
+		if mapping.Offset, err = strconv.ParseUint(offset, 16, 64); err != nil {
+			return nil, errUnrecognized
+		}
+	}
+	return mapping, nil
 }
 
 type sectionType int
