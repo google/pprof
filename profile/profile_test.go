@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -359,71 +358,6 @@ func checkAggregation(prof *Profile, a *aggTest) error {
 	}
 
 	return nil
-}
-
-func TestParseMappingEntry(t *testing.T) {
-	for _, test := range []*struct {
-		entry string
-		want  *Mapping
-	}{
-		{
-			entry: "00400000-02e00000 r-xp 00000000 00:00 0",
-			want: &Mapping{
-				Start: 0x400000,
-				Limit: 0x2e00000,
-			},
-		},
-		{
-			entry: "02e00000-02e8a000 r-xp 02a00000 00:00 15953927    /foo/bin",
-			want: &Mapping{
-				Start:  0x2e00000,
-				Limit:  0x2e8a000,
-				Offset: 0x2a00000,
-				File:   "/foo/bin",
-			},
-		},
-		{
-			entry: "02e00000-02e8a000 r-xp 000000 00:00 15953927    [vdso]",
-			want: &Mapping{
-				Start: 0x2e00000,
-				Limit: 0x2e8a000,
-				File:  "[vdso]",
-			},
-		},
-		{
-			entry: "  02e00000-02e8a000: /foo/bin (@2a00000)",
-			want: &Mapping{
-				Start:  0x2e00000,
-				Limit:  0x2e8a000,
-				Offset: 0x2a00000,
-				File:   "/foo/bin",
-			},
-		},
-		{
-			entry: "  02e00000-02e8a000: /foo/bin",
-			want: &Mapping{
-				Start: 0x2e00000,
-				Limit: 0x2e8a000,
-				File:  "/foo/bin",
-			},
-		},
-		{
-			entry: "  02e00000-02e8a000: [vdso]",
-			want: &Mapping{
-				Start: 0x2e00000,
-				Limit: 0x2e8a000,
-				File:  "[vdso]",
-			},
-		},
-	} {
-		got, err := parseMappingEntry(test.entry)
-		if err != nil {
-			t.Error(err)
-		}
-		if !reflect.DeepEqual(test.want, got) {
-			t.Errorf("%s want=%v got=%v", test.entry, test.want, got)
-		}
-	}
 }
 
 // Test merge leaves the main binary in place.
