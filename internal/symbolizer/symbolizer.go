@@ -290,8 +290,7 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 
 		if m.File == "" {
 			if midx == 0 {
-				ui.PrintErr("Main binary filename not available.\n" +
-					"Try passing the path to the main binary before the profile.")
+				ui.PrintErr("Main binary filename not available.")
 				continue
 			}
 			missingBinaries = true
@@ -314,6 +313,7 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 		f, err := obj.Open(m.File, m.Start, m.Limit, m.Offset)
 		if err != nil {
 			ui.PrintErr("Local symbolization failed for ", name, ": ", err)
+			missingBinaries = true
 			continue
 		}
 		if fid := f.BuildID(); m.BuildID != "" && fid != "" && fid != m.BuildID {
@@ -325,7 +325,8 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 		mt.segments[m] = f
 	}
 	if missingBinaries {
-		ui.PrintErr("Some binary filenames not available. Symbolization may be incomplete.")
+		ui.PrintErr("Some binary filenames not available. Symbolization may be incomplete.\n" +
+			"Try setting PPROF_BINARY_PATH to the search path for local binaries.")
 	}
 	return mt, nil
 }
