@@ -57,12 +57,12 @@ var (
 	cHex           = `(?:0x)?([[:xdigit:]]+)`
 	cHexRange      = `\s*` + cHex + `[\s-]?` + oSpace + cHex + `:?`
 	cSpaceString   = `(?:\s+(\S+))?`
-	cSpaceHex      = `\s+([[:xdigit:]]+)`
+	cSpaceHex      = `(?:\s+([[:xdigit:]]+))?`
 	cSpaceAtOffset = `(?:\s+\(@([[:xdigit:]]+)\))?`
 	cPerm          = `(?:\s+([-rwxp]+))?`
 
-	procMapsRE  = regexp.MustCompile(`^` + cHexRange + cPerm + cSpaceHex + hexPair + spaceDigits + cSpaceString + `\s*$`)
-	briefMapsRE = regexp.MustCompile(`^` + cHexRange + cPerm + cSpaceString + cSpaceAtOffset + cSpaceString + `\s*$`)
+	procMapsRE  = regexp.MustCompile(`^` + cHexRange + cPerm + cSpaceHex + hexPair + spaceDigits + cSpaceString)
+	briefMapsRE = regexp.MustCompile(`^` + cHexRange + cPerm + cSpaceString + cSpaceAtOffset + cSpaceHex)
 )
 
 func isSpaceOrComment(line string) bool {
