@@ -216,12 +216,12 @@ func (p *Profile) massageMappings() {
 		mappings := []*Mapping{p.Mapping[0]}
 		for _, m := range p.Mapping[1:] {
 			lm := mappings[len(mappings)-1]
-			if offset := lm.Offset + (lm.Limit - lm.Start); lm.Limit == m.Start &&
-				offset == m.Offset &&
-				(lm.File == m.File || lm.File == "") {
-				lm.File = m.File
+			if adjacent(lm, m) {
 				lm.Limit = m.Limit
-				if lm.BuildID == "" {
+				if m.File != "" {
+					lm.File = m.File
+				}
+				if m.BuildID != "" {
 					lm.BuildID = m.BuildID
 				}
 				p.updateLocationMapping(m, lm)
@@ -253,6 +253,32 @@ func (p *Profile) massageMappings() {
 	for i, m := range p.Mapping {
 		m.ID = uint64(i + 1)
 	}
+}
+
+// adjacent returns whether two mapping entries represent the same
+// mapping that has been split into two. Check that their addresses are adjacent,
+// and if the offsets match, if they are available.
+func adjacent(m1, m2 *Mapping) bool {
+	if m1.File != "" && m2.File != "" {
+		if m1.File != m2.File {
+			return false
+		}
+	}
+	if m1.BuildID != "" && m2.BuildID != "" {
+		if m1.BuildID != m2.BuildID {
+			return false
+		}
+	}
+	if m1.Limit != m2.Start {
+		return false
+	}
+	if m1.Offset != 0 && m2.Offset != 0 {
+		offset := m1.Offset + (m1.Limit - m1.Start)
+		if offset != m2.Offset {
+			return false
+		}
+	}
+	return true
 }
 
 func (p *Profile) updateLocationMapping(from, to *Mapping) {
