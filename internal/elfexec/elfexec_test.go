@@ -60,6 +60,7 @@ func TestGetBase(t *testing.T) {
 		{"exec chromeos kernel 2", fhExec, kernelHeader, uint64p(0xffffffff81000198), 0, 0x10198, 0, 0x7efffe68, false},
 		{"exec chromeos kernel 3", fhExec, kernelHeader, uint64p(0xffffffff81000198), 0x198, 0x100000, 0, 0x7f000000, false},
 		{"exec chromeos kernel 4", fhExec, kernelHeader, uint64p(0xffffffff81200198), 0x198, 0x100000, 0, 0x7ee00000, false},
+		{"exec chromeos kernel unremapped", fhExec, kernelHeader, uint64p(0xffffffff810001c8), 0xffffffff834001c8, 0xffffffffc0000000, 0xffffffff834001c8, 0x2400000, false},
 		{"dyn", fhDyn, nil, nil, 0x200000, 0x300000, 0, 0x200000, false},
 		{"dyn offset", fhDyn, lsOffset, nil, 0x0, 0x300000, 0, 0xFFFFFFFFFFC00000, false},
 		{"dyn nomap", fhDyn, nil, nil, 0x0, 0x0, 0, 0, false},
