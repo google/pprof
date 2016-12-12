@@ -158,6 +158,14 @@ func TestParseMappingEntry(t *testing.T) {
 			},
 		},
 		{
+			entry: "  02e00000-02e8a000: /foo/bin (deleted)",
+			want: &Mapping{
+				Start: 0x2e00000,
+				Limit: 0x2e8a000,
+				File:  "/foo/bin",
+			},
+		},
+		{
 			entry: "  02e00000-02e8a000: /foo/bin",
 			want: &Mapping{
 				Start: 0x2e00000,
@@ -218,7 +226,7 @@ func TestParseMappingEntry(t *testing.T) {
 	} {
 		got, err := parseMappingEntry(test.entry)
 		if err != nil {
-			t.Error(err)
+			t.Errorf("%s: %v", test.entry, err)
 		}
 		if !reflect.DeepEqual(test.want, got) {
 			t.Errorf("%s want=%v got=%v", test.entry, test.want, got)
