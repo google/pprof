@@ -69,7 +69,7 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 				if v := pprofVariables[name]; v != nil {
 					if name == "sample_index" {
 						// Error check sample_index=xxx to ensure xxx is a valid sample type.
-						index, err := locateSampleIndex(p, value)
+						index, err := p.SampleIndexByName(value)
 						if err != nil {
 							o.UI.PrintErr(err)
 							continue
@@ -159,6 +159,14 @@ func profileShortcuts(p *profile.Profile) shortcuts {
 		s["mean_"+st.Type] = []string{"mean=1", command}
 	}
 	return s
+}
+
+func sampleTypes(p *profile.Profile) []string {
+	types := make([]string, len(p.SampleType))
+	for i, t := range p.SampleType {
+		types[i] = t.Type
+	}
+	return types
 }
 
 func printCurrentOptions(p *profile.Profile, ui plugin.UI) {
