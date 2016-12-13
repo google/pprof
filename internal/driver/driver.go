@@ -258,7 +258,7 @@ func sampleFormat(p *profile.Profile, sampleIndex string, mean bool) (value, mea
 	if len(p.SampleType) == 0 {
 		return nil, nil, nil, fmt.Errorf("profile has no samples")
 	}
-	index, err := locateSampleIndex(p, sampleIndex)
+	index, err := p.SampleIndexByName(sampleIndex)
 	if err != nil {
 		return nil, nil, nil, err
 	}
