@@ -509,7 +509,7 @@ func parseHeap(b []byte) (p *Profile, err error) {
 			continue
 		}
 
-		if sectionTrigger(line) != unrecognizedSection {
+		if isMemoryMapSentinel(line) {
 			break
 		}
 
@@ -837,7 +837,7 @@ func parseThread(b []byte) (*Profile, error) {
 	if m := threadzStartRE.FindStringSubmatch(line); m != nil {
 		// Advance over initial comments until first stack trace.
 		for s.Scan() {
-			if line = s.Text(); sectionTrigger(line) != unrecognizedSection || strings.HasPrefix(line, "-") {
+			if line = s.Text(); isMemoryMapSentinel(line) || strings.HasPrefix(line, "-") {
 				break
 			}
 		}
@@ -853,7 +853,7 @@ func parseThread(b []byte) (*Profile, error) {
 
 	locs := make(map[uint64]*Location)
 	// Recognize each thread and populate profile samples.
-	for sectionTrigger(line) == unrecognizedSection {
+	for !isMemoryMapSentinel(line) {
 		if strings.HasPrefix(line, "---- no stack trace for") {
 			line = ""
 			break
@@ -944,12 +944,12 @@ func parseThreadSample(s *bufio.Scanner) (nextl string, addrs []uint64, err erro
 // parseAdditionalSections parses any additional sections in the
 // profile, ignoring any unrecognized sections.
 func parseAdditionalSections(s *bufio.Scanner, p *Profile) error {
-	for sectionTrigger(s.Text()) != memoryMapSection && s.Scan() {
+	for !isMemoryMapSentinel(s.Text()) && s.Scan() {
 	}
 	if err := s.Err(); err != nil {
 		return err
 	}
-	return p.parseMemoryMapFromScanner(s)
+	return p.ParseMemoryMapFromScanner(s)
 }
 
 // ParseProcMaps parses a memory map in the format of /proc/self/maps.
@@ -964,12 +964,19 @@ func ParseProcMaps(rd io.Reader) ([]*Mapping, error) {
 func parseProcMapsFromScanner(s *bufio.Scanner) ([]*Mapping, error) {
 	var mapping []*Mapping
 
+	// If the memory-map sentinel is at column X, assume memory mappings
+	// also start at X. This is useful to eliminate logging information.
+	offset := memoryMapSentinelOffset(s.Text())
+
 	var attrs []string
 	var r *strings.Replacer
 	const delimiter = "="
 	for s.Scan() {
-		line := strings.TrimSpace(s.Text())
-		if line == "" {
+		line := s.Text()
+		if len(line) > offset {
+			line = line[offset:]
+		}
+		if line = strings.TrimSpace(line); line == "" {
 			continue
 		}
 
@@ -1005,10 +1012,10 @@ func parseProcMapsFromScanner(s *bufio.Scanner) ([]*Mapping, error) {
 // /proc/self/maps, and overrides the mappings in the current profile.
 // It renumbers the samples and locations in the profile correspondingly.
 func (p *Profile) ParseMemoryMap(rd io.Reader) error {
-	return p.parseMemoryMapFromScanner(bufio.NewScanner(rd))
+	return p.ParseMemoryMapFromScanner(bufio.NewScanner(rd))
 }
 
-func (p *Profile) parseMemoryMapFromScanner(s *bufio.Scanner) error {
+func (p *Profile) ParseMemoryMapFromScanner(s *bufio.Scanner) error {
 	mapping, err := parseProcMapsFromScanner(s)
 	if err != nil {
 		return err
@@ -1054,25 +1061,32 @@ func parseMappingEntry(l string) (*Mapping, error) {
 	return mapping, nil
 }
 
-type sectionType int
-
-const (
-	unrecognizedSection sectionType = iota
-	memoryMapSection
-)
-
-var memoryMapTriggers = []string{
+var memoryMapSentinels = []string{
 	"--- Memory map: ---",
 	"MAPPED_LIBRARIES:",
 }
 
-func sectionTrigger(line string) sectionType {
-	for _, trigger := range memoryMapTriggers {
-		if strings.Contains(line, trigger) {
-			return memoryMapSection
+// isMemoryMapSentinel returns true if the string contains one of the
+// known sentinels for memory map information.
+func isMemoryMapSentinel(line string) bool {
+	for _, s := range memoryMapSentinels {
+		if strings.Contains(line, s) {
+			return true
 		}
 	}
-	return unrecognizedSection
+	return false
+}
+
+// memoryMapSentinelOffset returns the index of a known memory map
+// sentinel in the string. If the string does not contain a sentinel,
+// it returns 0.
+func memoryMapSentinelOffset(line string) int {
+	for _, s := range memoryMapSentinels {
+		if i := strings.Index(line, s); i != -1 {
+			return i
+		}
+	}
+	return 0
 }
 
 func (p *Profile) addLegacyFrameInfo() {
