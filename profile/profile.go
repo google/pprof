@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -581,6 +582,13 @@ func (p *Profile) HasFileLines() bool {
 		}
 	}
 	return true
+}
+
+// Unsymbolizable returns true if a mapping points to a binary for which
+// locations can't be symbolized in principle, at least now.
+func (m *Mapping) Unsymbolizable() bool {
+	name := filepath.Base(m.File)
+	return name == "[vdso]" || strings.HasPrefix(name, "linux-vdso")
 }
 
 // Copy makes a fully independent copy of a profile.
