@@ -298,8 +298,7 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 		}
 
 		// Skip well-known system mappings
-		name := filepath.Base(m.File)
-		if name == "[vdso]" || strings.HasPrefix(name, "linux-vdso") {
+		if m.Unsymbolizable() {
 			continue
 		}
 
@@ -310,6 +309,7 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 			}
 		}
 
+		name := filepath.Base(m.File)
 		f, err := obj.Open(m.File, m.Start, m.Limit, m.Offset)
 		if err != nil {
 			ui.PrintErr("Local symbolization failed for ", name, ": ", err)
