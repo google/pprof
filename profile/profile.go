@@ -322,6 +322,11 @@ func (p *Profile) CheckValid() error {
 		if len(s.Value) != sampleLen {
 			return fmt.Errorf("mismatch: sample has: %d values vs. %d types", len(s.Value), len(p.SampleType))
 		}
+		for _, l := range s.Location {
+			if l == nil {
+				return fmt.Errorf("sample has nil location")
+			}
+		}
 	}
 
 	// Check that all mappings/locations/functions are in the tables
