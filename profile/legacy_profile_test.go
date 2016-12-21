@@ -220,16 +220,47 @@ func TestParseMappingEntry(t *testing.T) {
 				BuildID: "abc123456",
 			},
 		},
+		{entry: "W1220 15:07:15.201776    8272 logger.cc:12033] --- Memory map: ---\n" +
+			"0x40000-0x80000 /path/to/binary      (@FF00)            abc123456",
+			want: &Mapping{
+				Start:   0x40000,
+				Limit:   0x80000,
+				File:    "/path/to/binary",
+				Offset:  0xFF00,
+				BuildID: "abc123456",
+			},
+		},
+		{entry: "W1220 15:07:15.201776    8272 logger.cc:12033] --- Memory map: ---\n" +
+			"W1220 15:07:15.202776    8272 logger.cc:12036]   0x40000-0x80000 /path/to/binary      (@FF00)            abc123456",
+			want: &Mapping{
+				Start:   0x40000,
+				Limit:   0x80000,
+				File:    "/path/to/binary",
+				Offset:  0xFF00,
+				BuildID: "abc123456",
+			},
+		},
 		{entry: "7f5e5435e000-7f5e5455e000 ---p 00002000 00:00 1531        myprogram",
 			want: nil,
 		},
 	} {
-		got, err := parseMappingEntry(test.entry)
+		got, err := ParseProcMaps(strings.NewReader(test.entry))
 		if err != nil {
 			t.Errorf("%s: %v", test.entry, err)
+			continue
 		}
-		if !reflect.DeepEqual(test.want, got) {
-			t.Errorf("%s want=%v got=%v", test.entry, test.want, got)
+		if test.want == nil {
+			if got, want := len(got), 0; got != want {
+				t.Errorf("%s: got %d mappings, want %d", test.entry, got, want)
+			}
+			continue
+		}
+		if got, want := len(got), 1; got != want {
+			t.Errorf("%s: got %d mappings, want %d", test.entry, got, want)
+			continue
+		}
+		if !reflect.DeepEqual(test.want, got[0]) {
+			t.Errorf("%s want=%v got=%v", test.entry, test.want, got[0])
 		}
 	}
 }

@@ -63,6 +63,10 @@ var (
 
 	procMapsRE  = regexp.MustCompile(`^` + cHexRange + cPerm + cSpaceHex + hexPair + spaceDigits + cSpaceString)
 	briefMapsRE = regexp.MustCompile(`^` + cHexRange + cPerm + cSpaceString + cSpaceAtOffset + cSpaceHex)
+
+	// Regular expression to parse log data, of the form:
+	// ... file:line] msg...
+	logInfoRE = regexp.MustCompile(`^[^\[\]]+:[0-9]+]\s`)
 )
 
 func isSpaceOrComment(line string) bool {
@@ -964,25 +968,11 @@ func ParseProcMaps(rd io.Reader) ([]*Mapping, error) {
 func parseProcMapsFromScanner(s *bufio.Scanner) ([]*Mapping, error) {
 	var mapping []*Mapping
 
-	// If the memory-map sentinel is at column X, assume memory mappings
-	// also start at X. This is useful to eliminate logging information.
-	offset := memoryMapSentinelOffset(s.Text())
-
 	var attrs []string
-	var r *strings.Replacer
 	const delimiter = "="
+	r := strings.NewReplacer()
 	for s.Scan() {
-		line := s.Text()
-		if len(line) > offset {
-			line = line[offset:]
-		}
-		if line = strings.TrimSpace(line); line == "" {
-			continue
-		}
-
-		if r != nil {
-			line = r.Replace(line)
-		}
+		line := r.Replace(removeLoggingInfo(s.Text()))
 		m, err := parseMappingEntry(line)
 		if err != nil {
 			if err == errUnrecognized {
@@ -1006,6 +996,16 @@ func parseProcMapsFromScanner(s *bufio.Scanner) ([]*Mapping, error) {
 		return nil, err
 	}
 	return mapping, nil
+}
+
+// removeLoggingInfo detects and removes log prefix entries generated
+// by the glog package. If no logging prefix is detected, the string
+// is returned unmodified.
+func removeLoggingInfo(line string) string {
+	if match := logInfoRE.FindStringIndex(line); match != nil {
+		return line[match[1]:]
+	}
+	return line
 }
 
 // ParseMemoryMap parses a memory map in the format of
@@ -1079,18 +1079,6 @@ func isMemoryMapSentinel(line string) bool {
 		}
 	}
 	return false
-}
-
-// memoryMapSentinelOffset returns the index of a known memory map
-// sentinel in the string. If the string does not contain a sentinel,
-// it returns 0.
-func memoryMapSentinelOffset(line string) int {
-	for _, s := range memoryMapSentinels {
-		if i := strings.Index(line, s); i != -1 {
-			return i
-		}
-	}
-	return 0
 }
 
 func (p *Profile) addLegacyFrameInfo() {
