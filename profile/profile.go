@@ -155,10 +155,12 @@ func ParseData(data []byte) (*Profile, error) {
 			return nil, fmt.Errorf("decompressing profile: %v", err)
 		}
 	}
-	if p, err = ParseUncompressed(data); err != nil {
-		if p, err = parseLegacy(data); err != nil {
-			return nil, fmt.Errorf("parsing profile: %v", err)
-		}
+	if p, err = ParseUncompressed(data); err != nil && err != errNoData {
+		p, err = parseLegacy(data)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("parsing profile: %v", err)
 	}
 
 	if err := p.CheckValid(); err != nil {
@@ -169,6 +171,7 @@ func ParseData(data []byte) (*Profile, error) {
 
 var errUnrecognized = fmt.Errorf("unrecognized profile format")
 var errMalformed = fmt.Errorf("malformed profile format")
+var errNoData = fmt.Errorf("empty input file")
 
 func parseLegacy(data []byte) (*Profile, error) {
 	parsers := []func([]byte) (*Profile, error){
@@ -195,6 +198,9 @@ func parseLegacy(data []byte) (*Profile, error) {
 
 // ParseUncompressed parses an uncompressed protobuf into a profile.
 func ParseUncompressed(data []byte) (*Profile, error) {
+	if len(data) == 0 {
+		return nil, errNoData
+	}
 	p := &Profile{}
 	if err := unmarshal(data, p); err != nil {
 		return nil, err
