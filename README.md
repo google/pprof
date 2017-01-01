@@ -9,7 +9,7 @@ text and graphical reports (through the use of the dot visualization package).
 profile.proto is a protocol buffer that describes a set of callstacks
 and symbolization information. A common usage is to represent a set of
 sampled callstacks from statistical profiling. The format is
-described on the src/proto/profile.proto file. For details on protocol
+described on the proto/profile.proto file. For details on protocol
 buffers, see https://developers.google.com/protocol-buffers
 
 Profiles can be read from a local file, or over http. Multiple
