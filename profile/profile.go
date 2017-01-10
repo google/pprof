@@ -599,7 +599,7 @@ func (p *Profile) HasFileLines() bool {
 // locations can't be symbolized in principle, at least now.
 func (m *Mapping) Unsymbolizable() bool {
 	name := filepath.Base(m.File)
-	return name == "[vdso]" || strings.HasPrefix(name, "linux-vdso")
+	return name == "[vdso]" || strings.HasPrefix(name, "linux-vdso") || name == "[heap]" || strings.HasPrefix(m.File, "/dev/dri/")
 }
 
 // Copy makes a fully independent copy of a profile.
