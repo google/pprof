@@ -9,7 +9,6 @@
 
 #ifndef HAS_GLOBAL_STRING
 using std::string;
-using std::stringstream;
 #endif
 
 #include "detail/string.h"

@@ -12,10 +12,10 @@
 
 #include "base/logging.h"
 
+#include "chromiumos-wide-profiling/binary_data_utils.h"
 #include "chromiumos-wide-profiling/compat/string.h"
 #include "third_party/kernel/perf_internals.h"
 #include "chromiumos-wide-profiling/perf_data_utils.h"
-#include "chromiumos-wide-profiling/utils.h"
 
 namespace quipper {
 namespace testing {
@@ -143,6 +143,7 @@ void ExamplePerfEventAttrEvent_Hardware::WriteTo(std::ostream* out) const {
   attr.config = config_;
   attr.sample_period = 100001;
   attr.sample_type = sample_type_;
+  attr.read_format = read_format_;
   attr.sample_id_all = sample_id_all_;
 
   const size_t event_size =

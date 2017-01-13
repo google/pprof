@@ -21,7 +21,6 @@
 #include "chromiumos-wide-profiling/compat/test.h"
 #include "chromiumos-wide-profiling/dso_test_utils.h"
 #include "chromiumos-wide-profiling/scoped_temp_path.h"
-#include "chromiumos-wide-profiling/utils.h"
 
 namespace quipper {
 

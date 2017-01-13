@@ -12,6 +12,7 @@
 
 #include "base/logging.h"
 
+#include "chromiumos-wide-profiling/binary_data_utils.h"
 #include "chromiumos-wide-profiling/compat/proto.h"
 #include "chromiumos-wide-profiling/compat/string.h"
 #include "third_party/kernel/perf_event.h"
@@ -19,7 +20,6 @@
 #include "chromiumos-wide-profiling/perf_data_utils.h"
 #include "chromiumos-wide-profiling/perf_parser.h"
 #include "chromiumos-wide-profiling/perf_reader.h"
-#include "chromiumos-wide-profiling/utils.h"
 
 namespace quipper {
 
@@ -230,7 +230,10 @@ bool PerfSerializer::SerializeEvent(
         return false;
       break;
     default:
-      LOG(ERROR) << "Unknown event type: " << event.header.type;
+      if (event.header.type < PERF_RECORD_USER_TYPE_START ||
+          event.header.type >= PERF_RECORD_HEADER_MAX) {
+        LOG(ERROR) << "Unknown event type: " << event.header.type;
+      }
       break;
   }
   return true;
@@ -351,6 +354,22 @@ bool PerfSerializer::SerializeSampleEvent(
   // size.  The data is assumed to be all zeroes.  So far it has been such.
   if (sample_type & PERF_SAMPLE_RAW)
     sample->set_raw_size(sample_info.raw_size);
+  if (sample_type & PERF_SAMPLE_READ) {
+    const SampleInfoReader* reader = GetSampleInfoReaderForEvent(event);
+    if (reader) {
+      PerfDataProto_ReadInfo* read_info = sample->mutable_read_info();
+      if (reader->event_attr().read_format & PERF_FORMAT_GROUP) {
+        // TODO(sque): support grouped read format.
+        LOG(ERROR) << "Grouped read format not supported yet.";
+      } else {
+        read_info->set_time_enabled(sample_info.read.time_enabled);
+        read_info->set_time_running(sample_info.read.time_running);
+        auto read_value = read_info->add_read_value();
+        read_value->set_value(sample_info.read.one.value);
+        read_value->set_id(sample_info.read.one.id);
+      }
+    }
+  }
   if (sample_type & PERF_SAMPLE_CALLCHAIN) {
     for (size_t i = 0; i < sample_info.callchain->nr; ++i)
       sample->add_callchain(sample_info.callchain->ips[i]);
@@ -398,6 +417,24 @@ bool PerfSerializer::DeserializeSampleEvent(
     sample_info.cpu = sample.cpu();
   if (sample.has_period())
     sample_info.period = sample.period();
+  if (sample.has_read_info()) {
+    const SampleInfoReader* reader = GetSampleInfoReaderForEvent(*event);
+    if (reader) {
+      const PerfDataProto_ReadInfo& read_info = sample.read_info();
+      sample_info.read.time_enabled = read_info.time_enabled();
+      sample_info.read.time_running = read_info.time_running();
+      if (reader->event_attr().read_format & PERF_FORMAT_GROUP) {
+        // TODO(sque): support grouped read format.
+        LOG(ERROR) << "Grouped read format not supported yet.";
+      } else if (read_info.read_value_size() == 1) {
+        sample_info.read.one.value = read_info.read_value(0).value();
+        sample_info.read.one.id = read_info.read_value(0).id();
+      } else {
+        LOG(ERROR) << "Expected read_value array size of 1 but got "
+                   << read_info.read_value_size();
+      }
+    }
+  }
   if (sample.callchain_size() > 0) {
     uint64_t callchain_size = sample.callchain_size();
     sample_info.callchain = reinterpret_cast<struct ip_callchain*>(

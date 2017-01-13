@@ -14,6 +14,7 @@
 
 #include "chromiumos-wide-profiling/compat/string.h"
 #include "chromiumos-wide-profiling/compat/test.h"
+#include "chromiumos-wide-profiling/file_utils.h"
 #include "chromiumos-wide-profiling/perf_data_structures.h"
 #include "chromiumos-wide-profiling/perf_data_utils.h"
 #include "chromiumos-wide-profiling/perf_protobuf_io.h"
@@ -23,13 +24,12 @@
 #include "chromiumos-wide-profiling/scoped_temp_path.h"
 #include "chromiumos-wide-profiling/test_perf_data.h"
 #include "chromiumos-wide-profiling/test_utils.h"
-#include "chromiumos-wide-profiling/utils.h"
 
 namespace {
 
 // Returns a string representation of an unsigned integer |value|.
 string UintToString(uint64_t value) {
-  stringstream ss;
+  std::stringstream ss;
   ss << value;
   return ss.str();
 }
@@ -197,7 +197,7 @@ TEST(PerfSerializerTest, Test1Cycle) {
     // so that the files can be moved around in the |kPerfDataFiles| list or
     // renamed.
     std::vector<char> test_file_data;
-    ASSERT_TRUE(ReadFileToData(input_perf_data, &test_file_data));
+    ASSERT_TRUE(FileToBuffer(input_perf_data, &test_file_data));
     bool discard = (Md5Prefix(test_file_data) % 2 == 0);
 
     SerializeAndDeserialize(input_perf_data, output_perf_data, false, discard);

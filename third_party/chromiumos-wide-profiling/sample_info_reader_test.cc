@@ -56,7 +56,7 @@ TEST(SampleInfoReaderTest, ReadSampleEvent) {
     }
   };
 
-  stringstream input;
+  std::stringstream input;
   input.write(reinterpret_cast<const char*>(&sample_event_struct),
               sizeof(sample_event_struct));
   input.write(reinterpret_cast<const char*>(sample_event_array),
@@ -116,7 +116,7 @@ TEST(SampleInfoReaderTest, ReadSampleEventCrossEndian) {
     }
   };
 
-  stringstream input;
+  std::stringstream input;
   input.write(reinterpret_cast<const char*>(&sample_event_struct),
               sizeof(sample_event_struct));
   input.write(reinterpret_cast<const char*>(sample_event_array),
@@ -183,7 +183,7 @@ TEST(SampleInfoReaderTest, ReadMmapEvent) {
     // .filename = ..., // written separately
   };
 
-  stringstream input;
+  std::stringstream input;
   input.write(reinterpret_cast<const char*>(&written_mmap_event),
               offsetof(struct mmap_event, filename));
   input.write(mmap_filename, 10+6);
@@ -238,7 +238,7 @@ TEST(SampleInfoReaderTest, ReadReadInfoAllFields) {
     }
   };
 
-  stringstream input;
+  std::stringstream input;
   input.write(reinterpret_cast<const char*>(&sample_event_struct),
               sizeof(sample_event_struct));
   input.write(reinterpret_cast<const char*>(sample_event_array),
@@ -281,7 +281,7 @@ TEST(SampleInfoReaderTest, ReadReadInfoOmitTotalTimeFields) {
     }
   };
 
-  stringstream input;
+  std::stringstream input;
   input.write(reinterpret_cast<const char*>(&sample_event_struct),
               sizeof(sample_event_struct));
   input.write(reinterpret_cast<const char*>(sample_event_array),
@@ -321,7 +321,7 @@ TEST(SampleInfoReaderTest, ReadReadInfoValueFieldOnly) {
     }
   };
 
-  stringstream input;
+  std::stringstream input;
   input.write(reinterpret_cast<const char*>(&sample_event_struct),
               sizeof(sample_event_struct));
   input.write(reinterpret_cast<const char*>(sample_event_array),

@@ -15,14 +15,15 @@
 #include "base/logging.h"
 #include "base/macros.h"
 
+#include "chromiumos-wide-profiling/binary_data_utils.h"
 #include "chromiumos-wide-profiling/buffer_reader.h"
 #include "chromiumos-wide-profiling/buffer_writer.h"
 #include "chromiumos-wide-profiling/compat/string.h"
 #include "chromiumos-wide-profiling/file_reader.h"
+#include "chromiumos-wide-profiling/file_utils.h"
 #include "chromiumos-wide-profiling/perf_data_structures.h"
 #include "chromiumos-wide-profiling/perf_data_utils.h"
 #include "chromiumos-wide-profiling/sample_info_reader.h"
-#include "chromiumos-wide-profiling/utils.h"
 
 namespace quipper {
 
@@ -179,6 +180,12 @@ bool ReadPerfFileSection(DataReader* data, struct perf_file_section* section) {
   return true;
 }
 
+// Returns true if |e1| has an earlier timestamp than |e2|. Used to sort an
+// array of events.
+bool CompareEventTimes(const PerfEvent& e1, const PerfEvent& e2) {
+  return GetTimeFromPerfEvent(e1) < GetTimeFromPerfEvent(e2);
+}
+
 }  // namespace
 
 PerfReader::PerfReader() : is_cross_endian_(false) {
@@ -304,7 +311,7 @@ bool PerfReader::ReadFromData(DataReader* data) {
 
 bool PerfReader::WriteFile(const string& filename) {
   std::vector<char> data;
-  return WriteToVector(&data) && WriteDataToFile(data, filename);
+  return WriteToVector(&data) && BufferToFile(filename, data);
 }
 
 bool PerfReader::WriteToVector(std::vector<char>* data) {
@@ -533,6 +540,21 @@ void PerfReader::GetFilenamesToBuildIDs(
     PerfizeBuildIDString(&build_id_string);
     (*filenames_to_build_ids)[build_id.filename()] = build_id_string;
   }
+}
+
+void PerfReader::MaybeSortEventsByTime() {
+  // Events can not be sorted by time if PERF_SAMPLE_TIME is not set in
+  // attr.sample_type for all attrs.
+  for (const auto& attr : attrs()) {
+    if (!(attr.attr().sample_type() & PERF_SAMPLE_TIME)) {
+      return;
+    }
+  }
+
+  // Sort the events based on timestamp.
+  std::stable_sort(proto_.mutable_events()->begin(),
+                   proto_.mutable_events()->end(),
+                   CompareEventTimes);
 }
 
 bool PerfReader::ReadHeader(DataReader* data) {
@@ -1342,7 +1364,12 @@ bool PerfReader::ReadPipedData(DataReader* data) {
                                         size_without_header);
       break;
     default:
-      LOG(WARNING) << "Event type " << header.type << " is not yet supported!";
+      // For unsupported event types, log a warning only if the type is an
+      // unknown type.
+      if (header.type < PERF_RECORD_USER_TYPE_START ||
+          header.type >= PERF_RECORD_HEADER_MAX) {
+        LOG(WARNING) << "Unknown event type: " << header.type;
+      }
       // Skip over the data in this event.
       data->SeekSet(data->Tell() + size_without_header);
       break;
@@ -1697,6 +1724,7 @@ bool PerfReader::WriteNUMATopologyMetadata(u32 type, DataWriter* data) const {
         !data->WriteDataValue(&node.free_memory, sizeof(node.free_memory),
                               "node free memory") ||
         !data->WriteStringWithSizeToData(node.cpu_list)) {
+      return false;
     }
   }
   return true;

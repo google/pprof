@@ -10,6 +10,7 @@
 #include <sstream>
 #include <vector>
 
+#include "chromiumos-wide-profiling/binary_data_utils.h"
 #include "chromiumos-wide-profiling/compat/proto.h"
 #include "chromiumos-wide-profiling/compat/string.h"
 #include "chromiumos-wide-profiling/perf_option_parser.h"
@@ -18,7 +19,6 @@
 #include "chromiumos-wide-profiling/perf_stat_parser.h"
 #include "chromiumos-wide-profiling/run_command.h"
 #include "chromiumos-wide-profiling/scoped_temp_path.h"
-#include "chromiumos-wide-profiling/utils.h"
 
 namespace quipper {
 
@@ -123,7 +123,7 @@ bool PerfRecorder::RunCommandAndGetSerializedOutput(
     full_perf_args.emplace_back("-v");
 
   // Append the sleep command to run perf for |time_sec| seconds.
-  stringstream time_string;
+  std::stringstream time_string;
   time_string << time_sec;
   full_perf_args.insert(full_perf_args.end(),
                         {"--", "sleep", time_string.str()});

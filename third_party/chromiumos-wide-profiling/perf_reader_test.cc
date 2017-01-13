@@ -14,12 +14,12 @@
 
 #include "chromiumos-wide-profiling/compat/string.h"
 #include "chromiumos-wide-profiling/compat/test.h"
+#include "chromiumos-wide-profiling/file_utils.h"
 #include "chromiumos-wide-profiling/perf_reader.h"
 #include "chromiumos-wide-profiling/perf_test_files.h"
 #include "chromiumos-wide-profiling/scoped_temp_path.h"
 #include "chromiumos-wide-profiling/test_perf_data.h"
 #include "chromiumos-wide-profiling/test_utils.h"
-#include "chromiumos-wide-profiling/utils.h"
 
 namespace quipper {
 
@@ -393,6 +393,165 @@ TEST(PerfReaderTest, CorrectlyReadsPerfEventAttrSize) {
   EXPECT_EQ(302, actual_attr.ids(1));
   EXPECT_EQ(303, actual_attr.ids(2));
   EXPECT_EQ(304, actual_attr.ids(3));
+}
+
+// Tests all sample info fields. When support for new sample_info fields are
+// added to quipper, update this test accordingly.
+TEST(PerfReaderTest, ReadsAndWritesSampleEvent) {
+  using testing::PunU32U64;
+
+  std::stringstream input;
+
+  // header
+  testing::ExamplePipedPerfDataFileHeader().WriteTo(&input);
+
+  // data
+
+  // PERF_RECORD_HEADER_ATTR
+  const u64 sample_type =
+      PERF_SAMPLE_IP |
+      PERF_SAMPLE_TID |
+      PERF_SAMPLE_TIME |
+      PERF_SAMPLE_ADDR |
+      PERF_SAMPLE_READ |
+      PERF_SAMPLE_CALLCHAIN |
+      PERF_SAMPLE_CPU |
+      PERF_SAMPLE_ID |
+      PERF_SAMPLE_PERIOD |
+      PERF_SAMPLE_STREAM_ID |
+      PERF_SAMPLE_BRANCH_STACK;
+
+  const size_t num_sample_event_bits = 10;
+  // not tested:
+  // PERF_SAMPLE_RAW |
+  testing::ExamplePerfEventAttrEvent_Hardware(sample_type,
+                                              true /*sample_id_all*/)
+      .WithId(401)
+      .WithReadFormat(PERF_FORMAT_TOTAL_TIME_ENABLED |
+                      PERF_FORMAT_TOTAL_TIME_RUNNING |
+                      PERF_FORMAT_ID)
+      .WriteTo(&input);
+
+  // PERF_RECORD_SAMPLE
+  const size_t call_chain_size = 6;
+  const size_t branch_stack_size = 5;
+  const sample_event written_sample_event = {
+    .header = {
+      .type = PERF_RECORD_SAMPLE,
+      .misc = PERF_RECORD_MISC_KERNEL,
+      .size = sizeof(struct sample_event) + num_sample_event_bits*sizeof(u64) +
+              4*sizeof(u64) +  // Non-grouped read info, see
+                               // perf_event_read_format in kernel/perf_event.h.
+              call_chain_size*sizeof(u64) +
+              branch_stack_size*sizeof(struct branch_entry),
+    }
+  };
+  const u64 sample_event_array[] = {
+    0xffffffff01234567,                    // IP
+    PunU32U64{.v32 = {0x68d, 0x68e}}.v64,  // TID (u32 pid, tid)
+    1415837014*1000000000ULL,              // TIME
+    0x00007f999c38d15a,                    // ADDR
+    401,                                   // ID
+    1,                                     // STREAM_ID
+    8,                                     // CPU
+    10001,                                 // PERIOD
+
+    // READ
+    0x103c5d0,                             // value
+    0x7f6e8c45a920,                        // time_enabled
+    0x7ffed1a5e950,                        // time_running
+    402,                                   // id
+
+    // CALLCHAIN
+    6,                                     // nr
+        0x1c1000,                          // ips
+        0x1c2000,
+        0x1c3000,
+        0x2c0000,
+        0x2c1000,
+        0x3c1000,
+
+    // BRANCH_STACK
+    5,                                     // nr
+        0x00007f4a313bb8cc, 0x00007f4a313bdb40, 0x02,  // entries
+        0x00007f4a30ce4de2, 0x00007f4a313bb8b3, 0x02,  // predicted = 0x2
+        0x00007f4a313bb8b0, 0x00007f4a30ce4de0, 0x01,  // mispredict = 0x1
+        0x00007f4a30ff45c1, 0x00007f4a313bb8a0, 0x02,
+        0x00007f4a30ff49f2, 0x00007f4a30ff45bb, 0x02,
+  };
+  ASSERT_EQ(written_sample_event.header.size,
+            sizeof(written_sample_event.header) + sizeof(sample_event_array));
+  input.write(reinterpret_cast<const char*>(&written_sample_event),
+              sizeof(written_sample_event));
+  input.write(reinterpret_cast<const char*>(sample_event_array),
+              sizeof(sample_event_array));
+
+  //
+  // Parse input.
+  //
+
+  PerfReader pr1;
+  ASSERT_TRUE(pr1.ReadFromString(input.str()));
+  // Write it out and read it in again, the two should have the same data.
+  std::vector<char> output_perf_data;
+  ASSERT_TRUE(pr1.WriteToVector(&output_perf_data));
+  PerfReader pr2;
+  ASSERT_TRUE(pr2.ReadFromVector(output_perf_data));
+
+  // Test both versions:
+  for (PerfReader* pr : {&pr1, &pr2}) {
+    // PERF_RECORD_HEADER_ATTR is added to attr(), not events().
+    EXPECT_EQ(1, pr->events().size());
+
+    const PerfEvent& event = pr->events().Get(0);
+    EXPECT_EQ(PERF_RECORD_SAMPLE, event.header().type());
+
+    const SampleEvent& sample = event.sample_event();
+    EXPECT_EQ(0xffffffff01234567, sample.ip());
+    EXPECT_EQ(0x68d, sample.pid());
+    EXPECT_EQ(0x68e, sample.tid());
+    EXPECT_EQ(1415837014*1000000000ULL, sample.sample_time_ns());
+    EXPECT_EQ(0x00007f999c38d15a, sample.addr());
+    EXPECT_EQ(401, sample.id());
+    EXPECT_EQ(1, sample.stream_id());
+    EXPECT_EQ(8, sample.cpu());
+    EXPECT_EQ(10001, sample.period());
+
+    // Read info
+    EXPECT_TRUE(sample.has_read_info());
+    EXPECT_EQ(0x7f6e8c45a920, sample.read_info().time_enabled());
+    EXPECT_EQ(0x7ffed1a5e950, sample.read_info().time_running());
+    ASSERT_EQ(1, sample.read_info().read_value_size());
+    EXPECT_EQ(0x103c5d0, sample.read_info().read_value(0).value());
+    EXPECT_EQ(402, sample.read_info().read_value(0).id());
+
+    // Callchain.
+    ASSERT_EQ(6, sample.callchain_size());
+    EXPECT_EQ(0x1c1000, sample.callchain(0));
+    EXPECT_EQ(0x1c2000, sample.callchain(1));
+    EXPECT_EQ(0x1c3000, sample.callchain(2));
+    EXPECT_EQ(0x2c0000, sample.callchain(3));
+    EXPECT_EQ(0x2c1000, sample.callchain(4));
+    EXPECT_EQ(0x3c1000, sample.callchain(5));
+
+    // Branch stack.
+    ASSERT_EQ(5, sample.branch_stack_size());
+    EXPECT_EQ(0x00007f4a313bb8cc, sample.branch_stack(0).from_ip());
+    EXPECT_EQ(0x00007f4a313bdb40, sample.branch_stack(0).to_ip());
+    EXPECT_FALSE(sample.branch_stack(0).mispredicted());
+    EXPECT_EQ(0x00007f4a30ce4de2, sample.branch_stack(1).from_ip());
+    EXPECT_EQ(0x00007f4a313bb8b3, sample.branch_stack(1).to_ip());
+    EXPECT_FALSE(sample.branch_stack(1).mispredicted());
+    EXPECT_EQ(0x00007f4a313bb8b0, sample.branch_stack(2).from_ip());
+    EXPECT_EQ(0x00007f4a30ce4de0, sample.branch_stack(2).to_ip());
+    EXPECT_TRUE(sample.branch_stack(2).mispredicted());
+    EXPECT_EQ(0x00007f4a30ff45c1, sample.branch_stack(3).from_ip());
+    EXPECT_EQ(0x00007f4a313bb8a0, sample.branch_stack(3).to_ip());
+    EXPECT_FALSE(sample.branch_stack(3).mispredicted());
+    EXPECT_EQ(0x00007f4a30ff49f2, sample.branch_stack(4).from_ip());
+    EXPECT_EQ(0x00007f4a30ff45bb, sample.branch_stack(4).to_ip());
+    EXPECT_FALSE(sample.branch_stack(4).mispredicted());
+  }
 }
 
 TEST(PerfReaderTest, ReadsAndWritesSampleAndSampleIdAll) {

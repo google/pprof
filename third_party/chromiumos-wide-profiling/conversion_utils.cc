@@ -14,10 +14,10 @@
 
 #include "chromiumos-wide-profiling/compat/proto.h"
 #include "chromiumos-wide-profiling/compat/string.h"
+#include "chromiumos-wide-profiling/file_utils.h"
 #include "chromiumos-wide-profiling/perf_parser.h"
 #include "chromiumos-wide-profiling/perf_protobuf_io.h"
 #include "chromiumos-wide-profiling/perf_reader.h"
-#include "chromiumos-wide-profiling/utils.h"
 
 namespace quipper {
 

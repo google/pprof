@@ -11,13 +11,14 @@
 #include "base/logging.h"
 
 #include "chromiumos-wide-profiling/compat/proto.h"
-#include "chromiumos-wide-profiling/utils.h"
+#include "chromiumos-wide-profiling/file_utils.h"
+#include "chromiumos-wide-profiling/string_utils.h"
 
 namespace quipper {
 
 bool ParsePerfStatFileToProto(const string& path, PerfStatProto* proto) {
   std::vector<char> data;
-  if (!ReadFileToData(path, &data)) {
+  if (!FileToBuffer(path, &data)) {
     return false;
   }
   string data_str(data.begin(), data.end());

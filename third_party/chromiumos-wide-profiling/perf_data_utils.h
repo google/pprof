@@ -10,11 +10,14 @@
 
 #include <memory>
 
+#include "chromiumos-wide-profiling/binary_data_utils.h"  // for Align<T>
 #include "chromiumos-wide-profiling/compat/string.h"
 #include "third_party/kernel/perf_internals.h"
-#include "chromiumos-wide-profiling/utils.h"  // for Align<T>
 
 namespace quipper {
+
+class PerfDataProto_PerfEvent;
+class PerfDataProto_SampleInfo;
 
 // Based on kernel/perf_internals.h
 const size_t kBuildIDArraySize = 20;
@@ -69,6 +72,14 @@ void PerfizeBuildIDString(string* build_id);
 // zero bytes (or eight '0' characters) until there are no more such sequences,
 // or the build id would be empty if the process were repeated.
 void TrimZeroesFromBuildIDString(string* build_id);
+
+// If |event| is not of type PERF_RECORD_SAMPLE, returns the SampleInfo field
+// within it. Otherwise returns nullptr.
+const PerfDataProto_SampleInfo* GetSampleInfoForEvent(
+    const PerfDataProto_PerfEvent& event);
+
+// Returns the correct |sample_time_ns| field of a PerfEvent.
+uint64_t GetTimeFromPerfEvent(const PerfDataProto_PerfEvent& event);
 
 }  // namespace quipper
 

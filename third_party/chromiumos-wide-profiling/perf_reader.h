@@ -20,7 +20,6 @@
 #include "third_party/kernel/perf_event.h"
 #include "chromiumos-wide-profiling/perf_serializer.h"
 #include "chromiumos-wide-profiling/sample_info_reader.h"
-#include "chromiumos-wide-profiling/utils.h"
 
 namespace quipper {
 
@@ -83,6 +82,10 @@ class PerfReader {
   // since there may be no build id event corresponding to the MMAP/MMAP2.
   void GetFilenamesToBuildIDs(
       std::map<string, string>* filenames_to_build_ids) const;
+
+  // Sort all events in |proto_| by timestamps if they are available. Otherwise
+  // event order is unchanged.
+  void MaybeSortEventsByTime();
 
   // Accessors and mutators.
 
