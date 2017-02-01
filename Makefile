@@ -51,13 +51,15 @@ MAIN_SOURCES = $(QUIPPER_MAIN_SOURCES) $(CONVERTER_MAIN_SOURCES)
 MAIN_OBJECTS = $(MAIN_SOURCES:%.cc=%.o)
 PROGRAMS = $(QUIPPER_PROGRAMS) $(CONVERTER_PROGRAMS)
 
-QUIPPER_LIBRARY_SOURCES = address_mapper.cc buffer_reader.cc \
-	buffer_writer.cc conversion_utils.cc data_reader.cc data_writer.cc \
-	file_reader.cc mybase/base/logging.cc perf_option_parser.cc \
-	perf_data_utils.cc perf_parser.cc perf_protobuf_io.cc perf_reader.cc \
-	perf_recorder.cc perf_serializer.cc perf_stat_parser.cc \
-	run_command.cc sample_info_reader.cc scoped_temp_path.cc utils.cc \
-	compat/ext/detail/log_level.cc dso.cc huge_pages_mapping_deducer.cc
+QUIPPER_LIBRARY_SOURCES = \
+	address_mapper.cc binary_data_utils.cc buffer_reader.cc buffer_writer.cc \
+	conversion_utils.cc compat/ext/detail/log_level.cc data_reader.cc \
+	data_writer.cc dso.cc file_reader.cc file_utils.cc \
+	huge_pages_mapping_deducer.cc \
+	mybase/base/logging.cc perf_option_parser.cc perf_data_utils.cc \
+	perf_parser.cc perf_protobuf_io.cc perf_reader.cc perf_recorder.cc \
+	perf_serializer.cc perf_stat_parser.cc run_command.cc \
+	sample_info_reader.cc scoped_temp_path.cc string_utils.cc
 QUIPPER_LIBRARY_SOURCES := \
 	$(QUIPPER_LIBRARY_SOURCES:%=${CWP}/%)
 CONVERTER_LIBRARY_SOURCES = perf_data_converter.cc perf_data_handler.cc \
@@ -90,12 +92,12 @@ TEST_COMMON_OBJECTS = $(TEST_COMMON_SOURCES:.cc=.o)
 INTEGRATION_TEST_SOURCES = ${CWP}/conversion_utils_test.cc
 PERF_RECORDER_TEST_SOURCES = ${CWP}/perf_recorder_test.cc
 QUIPPER_UNIT_TEST_SOURCES = \
-	address_mapper_test.cc buffer_reader_test.cc buffer_writer_test.cc \
-	file_reader_test.cc perf_data_utils_test.cc perf_option_parser_test.cc \
-	perf_parser_test.cc perf_reader_test.cc perf_serializer_test.cc \
-	perf_stat_parser_test.cc run_command_test.cc \
-	sample_info_reader_test.cc scoped_temp_path_test.cc utils_test.cc \
-	dso_test_utils.cc huge_pages_mapping_deducer_test.cc
+	address_mapper_test.cc binary_data_utils_test.cc buffer_reader_test.cc \
+	buffer_writer_test.cc file_reader_test.cc \
+	huge_pages_mapping_deducer_test.cc perf_data_utils_test.cc \
+	perf_option_parser_test.cc perf_parser_test.cc perf_reader_test.cc \
+	perf_serializer_test.cc perf_stat_parser_test.cc run_command_test.cc \
+	sample_info_reader_test.cc scoped_temp_path_test.cc
 QUIPPER_UNIT_TEST_SOURCES := \
 	$(QUIPPER_UNIT_TEST_SOURCES:%=${CWP}/%)
 

@@ -8,9 +8,9 @@
 
 #include "chromiumos-wide-profiling/compat/string.h"
 #include "chromiumos-wide-profiling/compat/test.h"
+#include "chromiumos-wide-profiling/file_utils.h"
 #include "chromiumos-wide-profiling/perf_stat_parser.h"
 #include "chromiumos-wide-profiling/scoped_temp_path.h"
-#include "chromiumos-wide-profiling/utils.h"
 
 namespace quipper {
 

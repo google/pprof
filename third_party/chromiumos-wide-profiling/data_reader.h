@@ -8,8 +8,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "chromiumos-wide-profiling/binary_data_utils.h"
 #include "chromiumos-wide-profiling/compat/string.h"
-#include "chromiumos-wide-profiling/utils.h"
 
 namespace quipper {
 

@@ -8,8 +8,8 @@
 #include "base/logging.h"
 
 #include "chromiumos-wide-profiling/compat/string.h"
+#include "chromiumos-wide-profiling/file_utils.h"
 #include "chromiumos-wide-profiling/perf_recorder.h"
-#include "chromiumos-wide-profiling/utils.h"
 
 namespace {
 
@@ -17,7 +17,7 @@ const char kDefaultOutputFile[] = "/dev/stdout";
 
 int StringToInt(const string& s) {
   int r;
-  stringstream ss;
+  std::stringstream ss;
   ss << s;
   ss >> r;
   return r;

@@ -11,7 +11,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <algorithm>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -19,11 +18,11 @@
 #include "base/logging.h"
 
 #include "chromiumos-wide-profiling/address_mapper.h"
+#include "chromiumos-wide-profiling/binary_data_utils.h"
 #include "chromiumos-wide-profiling/compat/proto.h"
 #include "chromiumos-wide-profiling/compat/string.h"
 #include "chromiumos-wide-profiling/dso.h"
 #include "chromiumos-wide-profiling/huge_pages_mapping_deducer.h"
-#include "chromiumos-wide-profiling/utils.h"
 
 namespace quipper {
 
@@ -50,13 +49,6 @@ const char kChromeFilename[] = "/opt/google/chrome/chrome";
 // address. Requires that |kMmapPageAlignment| be a power of 2.
 uint64_t GetPageAlignedOffset(uint64_t addr) {
   return addr % kMmapPageAlignment;
-}
-
-// Returns true if |e1| has an earlier timestamp than |e2|. Used to sort an
-// array of events.
-bool CompareParsedEventTimes(const ParsedEvent& e1, const ParsedEvent& e2) {
-  return (GetTimeFromPerfEvent(*e1.event_ptr) <
-          GetTimeFromPerfEvent(*e2.event_ptr));
 }
 
 bool IsNullBranchStackEntry(const BranchStackEntry& entry) {
@@ -131,6 +123,10 @@ PerfParser::PerfParser(PerfReader* reader, const PerfParserOptions& options)
       options_(options) {}
 
 bool PerfParser::ParseRawEvents() {
+  if (options_.sort_events_by_time) {
+    reader_->MaybeSortEventsByTime();
+  }
+
   // Just in case there was data from a previous call.
   process_mappers_.clear();
 
@@ -157,7 +153,6 @@ bool PerfParser::ParseRawEvents() {
   }
   parsed_events_.resize(write_index);
 
-  MaybeSortParsedEvents();
   ProcessEvents();
 
   if (!options_.discard_unused_events)
@@ -355,7 +350,7 @@ string FindDsoBuildId(const DSOInfo& dso_info) {
   for (PidTid pidtid : dso_info.threads) {
     u32 pid, tid;
     std::tie(pid, tid) = pidtid;
-    stringstream dso_path_stream;
+    std::stringstream dso_path_stream;
     dso_path_stream << "/proc/" << tid << "/root/" << dso_name;
     string dso_path = dso_path_stream.str();
     if (ReadElfBuildIdIfSameInode(dso_path, dso_info, &buildid_bin)) {
@@ -367,7 +362,7 @@ string FindDsoBuildId(const DSOInfo& dso_info) {
       continue;
     last_pid = pid;
     // Try the parent process:
-    stringstream parent_dso_path_stream;
+    std::stringstream parent_dso_path_stream;
     parent_dso_path_stream << "/proc/" << pid << "/root/" << dso_name;
     string parent_dso_path = parent_dso_path_stream.str();
     if (ReadElfBuildIdIfSameInode(parent_dso_path, dso_info, &buildid_bin)) {
@@ -409,27 +404,6 @@ bool PerfParser::FillInDsoBuildIds() {
   if (new_buildids.empty())
     return true;
   return reader_->InjectBuildIDs(new_buildids);
-}
-
-void PerfParser::MaybeSortParsedEvents() {
-  if (!options_.sort_events_by_time)
-    return;
-
-  bool have_sample_time = true;
-  for (const auto& attr : reader_->attrs()) {
-    if (!(attr.attr().sample_type() & PERF_SAMPLE_TIME)) {
-      have_sample_time = false;
-    }
-  }
-  if (!have_sample_time) {
-    return;
-  }
-
-  // Sort the events based on timestamp.
-  std::stable_sort(parsed_events_.begin(), parsed_events_.end(),
-                   CompareParsedEventTimes);
-
-  UpdatePerfEventsFromParsedEvents();
 }
 
 void PerfParser::UpdatePerfEventsFromParsedEvents() {

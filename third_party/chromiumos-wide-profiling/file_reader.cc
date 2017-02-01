@@ -25,7 +25,9 @@ FileReader::FileReader(const string& filename) {
 }
 
 FileReader::~FileReader() {
-  fclose(infile_);
+  if (IsOpen()) {
+    fclose(infile_);
+  }
 }
 
 bool FileReader::ReadData(const size_t size, void* dest) {

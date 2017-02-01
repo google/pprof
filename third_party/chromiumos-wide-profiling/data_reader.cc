@@ -8,7 +8,7 @@
 
 #include "base/logging.h"
 
-#include "chromiumos-wide-profiling/utils.h"
+#include "chromiumos-wide-profiling/binary_data_utils.h"
 
 namespace quipper {
 

@@ -9,9 +9,9 @@
 #include <ostream>  // NOLINT
 #include <vector>
 
+#include "chromiumos-wide-profiling/binary_data_utils.h"
 #include "chromiumos-wide-profiling/compat/string.h"
 #include "third_party/kernel/perf_internals.h"
-#include "chromiumos-wide-profiling/utils.h"
 
 namespace quipper {
 namespace testing {
@@ -117,20 +117,25 @@ class ExamplePerfEventAttrEvent_Hardware : public StreamWriteable {
                                               bool sample_id_all)
       : attr_size_(sizeof(perf_event_attr)),
         sample_type_(sample_type),
+        read_format_(0),
         sample_id_all_(sample_id_all),
         config_(0) {
   }
   SelfT& WithConfig(u64 config) { config_ = config; return *this; }
   SelfT& WithAttrSize(u32 size) { attr_size_ = size; return *this; }
+  SelfT& WithReadFormat(u64 format) { read_format_ = format; return *this; }
+
   SelfT& WithId(u64 id) { ids_.push_back(id); return *this; }
   SelfT& WithIds(std::initializer_list<u64> ids) {
     ids_.insert(ids_.end(), ids.begin(), ids.end());
     return *this;
   }
   void WriteTo(std::ostream* out) const override;
+
  private:
   u32 attr_size_;
   const u64 sample_type_;
+  u64 read_format_;
   const bool sample_id_all_;
   u64 config_;
   std::vector<u64> ids_;
@@ -287,6 +292,7 @@ class ExampleMmap2Event : public StreamWriteable {
   }
 
   void WriteTo(std::ostream* out) const override;
+
  private:
   const u32 pid_;
   const u32 tid_;

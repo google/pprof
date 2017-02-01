@@ -2,10 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <string>
-
+#include "chromiumos-wide-profiling/binary_data_utils.h"
 #include "chromiumos-wide-profiling/compat/test.h"
-#include "chromiumos-wide-profiling/utils.h"
 
 namespace quipper {
 
@@ -15,13 +13,13 @@ const size_t kHexArraySize = 8;
 
 }  // namespace
 
-TEST(UtilsTest, TestMD5) {
+TEST(BinaryDataUtilsTest, MD5) {
   ASSERT_EQ(Md5Prefix(""), 0xd41d8cd98f00b204LL);
   ASSERT_EQ(Md5Prefix("The quick brown fox jumps over the lazy dog."),
             0xe4d909c290d0fb1cLL);
 }
 
-TEST(UtilsTest, Align) {
+TEST(BinaryDataUtilsTest, Align) {
   EXPECT_EQ(12,  Align<4>(10));
   EXPECT_EQ(12,  Align<4>(12));
   EXPECT_EQ(16,  Align<4>(13));
@@ -35,7 +33,7 @@ TEST(UtilsTest, Align) {
   EXPECT_EQ(112, Align<uint64_t>(112));
 }
 
-TEST(UtilsTest, TestRawDataToHexString) {
+TEST(BinaryDataUtilsTest, RawDataToHexString) {
   u8 hex_number[kHexArraySize];
   // Generate a sequence of bytes and check its hex string representation.
   for (size_t i = 0; i < arraysize(hex_number); ++i)
@@ -50,10 +48,10 @@ TEST(UtilsTest, TestRawDataToHexString) {
             RawDataToHexString(hex_number, arraysize(hex_number)));
 }
 
-TEST(UtilsTest, TestStringToHex) {
+TEST(BinaryDataUtilsTest, StringToHex) {
   u8 output[kHexArraySize], expected[kHexArraySize];
 
-  // Use the same tests as in TestHexToString, except reversed.
+  // Use the same tests as in RawDataToHexString, except reversed.
   for (size_t i = 0; i < arraysize(expected); ++i)
     expected[i] = i << i;
   EXPECT_TRUE(HexStringToRawData("0002081840a08080", output,

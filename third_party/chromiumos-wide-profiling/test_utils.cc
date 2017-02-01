@@ -7,16 +7,17 @@
 #include <string.h>
 
 #include <algorithm>
-#include <cstdio>
 #include <cstdlib>
 #include <sstream>
 
 #include "base/logging.h"
 
 #include "chromiumos-wide-profiling/compat/proto.h"
+#include "chromiumos-wide-profiling/file_reader.h"
+#include "chromiumos-wide-profiling/file_utils.h"
 #include "chromiumos-wide-profiling/perf_protobuf_io.h"
 #include "chromiumos-wide-profiling/run_command.h"
-#include "chromiumos-wide-profiling/utils.h"
+#include "chromiumos-wide-profiling/string_utils.h"
 
 using quipper::PerfDataProto;
 using quipper::SplitString;
@@ -126,12 +127,10 @@ string GetPerfPath() {
 #endif  // !QUIPPER_EXTERNAL_TEST_PATHS
 
 int64_t GetFileSize(const string& filename) {
-  FILE* fp = fopen(filename.c_str(), "rb");
-  if (!fp)
+  FileReader reader(filename);
+  if (!reader.IsOpen())
     return -1;
-  int64_t file_size = GetFileSizeFromHandle(fp);
-  fclose(fp);
-  return file_size;
+  return reader.size();
 }
 
 bool CompareFileContents(const string& filename1, const string& filename2) {

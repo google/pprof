@@ -18,12 +18,14 @@ MAIN_SOURCES = quipper.cc perf_converter.cc
 PROGRAMS = $(MAIN_SOURCES:.cc=)
 
 LIBRARY_SOURCES = \
-	address_mapper.cc buffer_reader.cc buffer_writer.cc conversion_utils.cc \
-	compat/ext/detail/log_level.cc data_reader.cc data_writer.cc dso.cc \
-	file_reader.cc huge_pages_mapping_deducer.cc mybase/base/logging.cc \
-	perf_option_parser.cc perf_data_utils.cc perf_parser.cc perf_protobuf_io.cc \
-	perf_reader.cc perf_recorder.cc perf_serializer.cc perf_stat_parser.cc \
-	run_command.cc sample_info_reader.cc scoped_temp_path.cc utils.cc
+	address_mapper.cc binary_data_utils.cc buffer_reader.cc buffer_writer.cc \
+	conversion_utils.cc compat/ext/detail/log_level.cc data_reader.cc \
+	data_writer.cc dso.cc file_reader.cc file_utils.cc \
+	huge_pages_mapping_deducer.cc \
+	mybase/base/logging.cc perf_option_parser.cc perf_data_utils.cc \
+	perf_parser.cc perf_protobuf_io.cc perf_reader.cc perf_recorder.cc \
+	perf_serializer.cc perf_stat_parser.cc run_command.cc \
+	sample_info_reader.cc scoped_temp_path.cc string_utils.cc
 GENERATED_SOURCES = perf_data.pb.cc perf_stat.pb.cc
 GENERATED_HEADERS = $(GENERATED_SOURCES:.pb.cc=.pb.h)
 
@@ -36,13 +38,14 @@ TEST_COMMON_OBJECTS = $(TEST_COMMON_SOURCES:.cc=.o)
 INTEGRATION_TEST_SOURCES = conversion_utils_test.cc
 PERF_RECORDER_TEST_SOURCES = perf_recorder_test.cc
 UNIT_TEST_SOURCES = \
-	address_mapper_test.cc buffer_reader_test.cc buffer_writer_test.cc \
-	file_reader_test.cc perf_data_utils_test.cc perf_option_parser_test.cc \
-	perf_parser_test.cc perf_reader_test.cc perf_serializer_test.cc \
-	perf_stat_parser_test.cc run_command_test.cc sample_info_reader_test.cc \
-	scoped_temp_path_test.cc utils_test.cc huge_pages_mapping_deducer_test.cc
+	address_mapper_test.cc binary_data_utils_test.cc buffer_reader_test.cc \
+	buffer_writer_test.cc file_reader_test.cc \
+	huge_pages_mapping_deducer_test.cc perf_data_utils_test.cc \
+	perf_option_parser_test.cc perf_parser_test.cc perf_reader_test.cc \
+	perf_serializer_test.cc perf_stat_parser_test.cc run_command_test.cc \
+	sample_info_reader_test.cc scoped_temp_path_test.cc
 TEST_SOURCES = $(INTEGRATION_TEST_SOURCES) $(PERF_RECORDER_TEST_SOURCES) \
-							 $(UNIT_TEST_SOURCES) $(TEST_COMMON_SOURCES) test_runner.cc
+	$(UNIT_TEST_SOURCES) $(TEST_COMMON_SOURCES) test_runner.cc
 TEST_OBJECTS = $(TEST_SOURCES:.cc=.o)
 
 ALL_SOURCES = $(MAIN_SOURCES) $(COMMON_SOURCES) $(TEST_SOURCES)

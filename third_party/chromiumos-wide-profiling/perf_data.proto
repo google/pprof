@@ -267,6 +267,23 @@ message PerfDataProto {
   }
 
   // Next tag: 4
+  message ReadInfo {
+    optional uint64 time_enabled = 1;
+
+    optional uint64 time_running = 2;
+
+    message ReadValue {
+      optional uint64 value = 1;
+      optional uint64 id = 2;
+    }
+
+    // Based on the value of |PerfEventAttr::read_format & PERF_FORMAT_GROUP|,
+    // the read info could contain one or multiple read values and IDs. If the
+    // format is non-grouped, the repeated field will have only one entry.
+    repeated ReadValue read_value = 3;
+  }
+
+  // Next tag: 4
   message BranchStackEntry {
     // Branch source address.
     optional uint64 from_ip = 1;
@@ -278,7 +295,7 @@ message PerfDataProto {
     optional bool mispredicted = 3;
   }
 
-  // Next tag: 17
+  // Next tag: 19
   message SampleEvent {
     // Instruction pointer.
     optional uint64 ip = 1;
@@ -309,6 +326,9 @@ message PerfDataProto {
 
     // The raw size of the event in bytes.
     optional uint32 raw_size = 10;
+
+    // The read field.
+    optional ReadInfo read_info = 18;
 
     // Sample callchain info.
     repeated uint64 callchain = 11;
