@@ -264,3 +264,41 @@ func TestParseMappingEntry(t *testing.T) {
 		}
 	}
 }
+
+func TestParseGoCount(t *testing.T) {
+	for _, test := range []struct {
+		in  string
+		typ string
+	}{
+		{
+			in: `# ignored comment
+
+threadcreate profile: total 123
+`,
+			typ: "threadcreate",
+		},
+		{
+			in: `
+# ignored comment
+goroutine profile: total 123456
+`,
+			typ: "goroutine",
+		},
+		{
+			in: `
+sub/dir-ect_o.ry profile: total 999
+`,
+			typ: "sub/dir-ect_o.ry",
+		},
+	} {
+		t.Run(test.typ, func(t *testing.T) {
+			p, err := parseGoCount([]byte(test.in))
+			if err != nil {
+				t.Fatalf("parseGoCount(%q) = %v", test.in, err)
+			}
+			if typ := p.PeriodType.Type; typ != test.typ {
+				t.Fatalf("parseGoCount(%q).PeriodType.Type = %q want %q", test.in, typ, test.typ)
+			}
+		})
+	}
+}

@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	countStartRE = regexp.MustCompile(`\A(\w+) profile: total \d+\z`)
+	countStartRE = regexp.MustCompile(`\A(\S+) profile: total \d+\z`)
 	countRE      = regexp.MustCompile(`\A(\d+) @(( 0x[0-9a-f]+)+)\z`)
 
 	heapHeaderRE = regexp.MustCompile(`heap profile: *(\d+): *(\d+) *\[ *(\d+): *(\d+) *\] *@ *(heap[_a-z0-9]*)/?(\d*)`)
