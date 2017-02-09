@@ -94,11 +94,22 @@ func postURL(source, post string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("http post %s: %v", source, err)
 	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("server response: %s", resp.Status)
-	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, statusCodeError(resp)
+	}
 	return ioutil.ReadAll(resp.Body)
+}
+
+func statusCodeError(resp *http.Response) error {
+	if resp.Header.Get("X-Go-Pprof") != "" && strings.Contains(resp.Header.Get("Content-Type"), "text/plain") {
+		// error is from pprof endpoint
+		body, err := ioutil.ReadAll(resp.Body)
+		if err == nil {
+			return fmt.Errorf("server response: %s - %s", resp.Status, body)
+		}
+	}
+	return fmt.Errorf("server response: %s", resp.Status)
 }
 
 // doLocalSymbolize adds symbol and line number information to all locations
