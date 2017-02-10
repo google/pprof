@@ -20,7 +20,6 @@ package driver
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -59,20 +58,6 @@ func PProf(eo *plugin.Options) error {
 func generateReport(p *profile.Profile, cmd []string, vars variables, o *plugin.Options) error {
 	p = p.Copy() // Prevent modification to the incoming profile.
 
-	var w io.Writer
-	switch output := vars["output"].value; output {
-	case "":
-		w = os.Stdout
-	default:
-		o.UI.PrintErr("Generating report in ", output)
-		outputFile, err := o.Writer.Open(output)
-		if err != nil {
-			return err
-		}
-		defer outputFile.Close()
-		w = outputFile
-	}
-
 	vars = applyCommandOverrides(cmd, vars)
 
 	// Delay focus after configuring report to get percentages on all samples.
@@ -91,7 +76,6 @@ func generateReport(p *profile.Profile, cmd []string, vars variables, o *plugin.
 		panic("unexpected nil command")
 	}
 	ropt.OutputFormat = c.format
-	post := c.postProcess
 	if len(cmd) == 2 {
 		s, err := regexp.Compile(cmd[1])
 		if err != nil {
@@ -106,21 +90,47 @@ func generateReport(p *profile.Profile, cmd []string, vars variables, o *plugin.
 			return err
 		}
 	}
-
 	if err := aggregate(p, vars); err != nil {
 		return err
 	}
 
-	if post == nil {
-		return report.Generate(w, rpt, o.Obj)
-	}
-
-	// Capture output into buffer and send to postprocessing command.
-	buf := &bytes.Buffer{}
-	if err := report.Generate(buf, rpt, o.Obj); err != nil {
+	// Generate the report.
+	dst := new(bytes.Buffer)
+	if err := report.Generate(dst, rpt, o.Obj); err != nil {
 		return err
 	}
-	return post(buf.Bytes(), w, o.UI)
+	src := dst
+
+	// If necessary, perform any data post-processing.
+	if c.postProcess != nil {
+		dst = new(bytes.Buffer)
+		if err := c.postProcess(src, dst, o.UI); err != nil {
+			return err
+		}
+		src = dst
+	}
+
+	// If no output is specified, use default visualizer.
+	output := vars["output"].value
+	if output == "" {
+		if c.visualizer != nil {
+			return c.visualizer(src, os.Stdout, o.UI)
+		}
+		_, err := src.WriteTo(os.Stdout)
+		return err
+	}
+
+	// Output to specified file.
+	o.UI.PrintErr("Generating report in ", output)
+	out, err := os.Create(output)
+	if err != nil {
+		return err
+	}
+	if _, err := src.WriteTo(out); err != nil {
+		out.Close()
+		return err
+	}
+	return out.Close()
 }
 
 func applyCommandOverrides(cmd []string, v variables) variables {

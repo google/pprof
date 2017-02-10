@@ -41,6 +41,7 @@ type commands map[string]*command
 type command struct {
 	format      int           // report format to generate
 	postProcess PostProcessor // postprocessing to run on report
+	visualizer  PostProcessor // display output using some callback
 	hasParam    bool          // collect a parameter from the CLI
 	description string        // single-line description text saying what the command does
 	usage       string        // multi-line help text saying how the command is used
@@ -64,7 +65,7 @@ func (c *command) help(name string) string {
 // specialized visualization formats. If the command specified already
 // exists, it is overwritten.
 func AddCommand(cmd string, format int, post PostProcessor, desc, usage string) {
-	pprofCommands[cmd] = &command{format, post, false, desc, usage}
+	pprofCommands[cmd] = &command{format, post, nil, false, desc, usage}
 }
 
 // SetVariableDefault sets the default value for a pprof
@@ -76,7 +77,7 @@ func SetVariableDefault(variable, value string) {
 }
 
 // PostProcessor is a function that applies post-processing to the report output
-type PostProcessor func(input []byte, output io.Writer, ui plugin.UI) error
+type PostProcessor func(input io.Reader, output io.Writer, ui plugin.UI) error
 
 // interactiveMode is true if pprof is running on interactive mode, reading
 // commands from its shell.
@@ -85,43 +86,43 @@ var interactiveMode = false
 // pprofCommands are the report generation commands recognized by pprof.
 var pprofCommands = commands{
 	// Commands that require no post-processing.
-	"comments": {report.Comments, nil, false, "Output all profile comments", ""},
-	"disasm":   {report.Dis, nil, true, "Output assembly listings annotated with samples", listHelp("disasm", true)},
-	"dot":      {report.Dot, nil, false, "Outputs a graph in DOT format", reportHelp("dot", false, true)},
-	"list":     {report.List, nil, true, "Output annotated source for functions matching regexp", listHelp("list", false)},
-	"peek":     {report.Tree, nil, true, "Output callers/callees of functions matching regexp", "peek func_regex\nDisplay callers and callees of functions matching func_regex."},
-	"raw":      {report.Raw, nil, false, "Outputs a text representation of the raw profile", ""},
-	"tags":     {report.Tags, nil, false, "Outputs all tags in the profile", "tags [tag_regex]* [-ignore_regex]* [>file]\nList tags with key:value matching tag_regex and exclude ignore_regex."},
-	"text":     {report.Text, nil, false, "Outputs top entries in text form", reportHelp("text", true, true)},
-	"top":      {report.Text, nil, false, "Outputs top entries in text form", reportHelp("top", true, true)},
-	"topproto": {report.TopProto, awayFromTTY("pb.gz"), false, "Outputs top entries in compressed protobuf format", ""},
-	"traces":   {report.Traces, nil, false, "Outputs all profile samples in text form", ""},
-	"tree":     {report.Tree, nil, false, "Outputs a text rendering of call graph", reportHelp("tree", true, true)},
+	"comments": {report.Comments, nil, nil, false, "Output all profile comments", ""},
+	"disasm":   {report.Dis, nil, nil, true, "Output assembly listings annotated with samples", listHelp("disasm", true)},
+	"dot":      {report.Dot, nil, nil, false, "Outputs a graph in DOT format", reportHelp("dot", false, true)},
+	"list":     {report.List, nil, nil, true, "Output annotated source for functions matching regexp", listHelp("list", false)},
+	"peek":     {report.Tree, nil, nil, true, "Output callers/callees of functions matching regexp", "peek func_regex\nDisplay callers and callees of functions matching func_regex."},
+	"raw":      {report.Raw, nil, nil, false, "Outputs a text representation of the raw profile", ""},
+	"tags":     {report.Tags, nil, nil, false, "Outputs all tags in the profile", "tags [tag_regex]* [-ignore_regex]* [>file]\nList tags with key:value matching tag_regex and exclude ignore_regex."},
+	"text":     {report.Text, nil, nil, false, "Outputs top entries in text form", reportHelp("text", true, true)},
+	"top":      {report.Text, nil, nil, false, "Outputs top entries in text form", reportHelp("top", true, true)},
+	"traces":   {report.Traces, nil, nil, false, "Outputs all profile samples in text form", ""},
+	"tree":     {report.Tree, nil, nil, false, "Outputs a text rendering of call graph", reportHelp("tree", true, true)},
 
 	// Save binary formats to a file
-	"callgrind": {report.Callgrind, awayFromTTY("callgraph.out"), false, "Outputs a graph in callgrind format", reportHelp("callgrind", false, true)},
-	"proto":     {report.Proto, awayFromTTY("pb.gz"), false, "Outputs the profile in compressed protobuf format", ""},
+	"callgrind": {report.Callgrind, nil, awayFromTTY("callgraph.out"), false, "Outputs a graph in callgrind format", reportHelp("callgrind", false, true)},
+	"proto":     {report.Proto, nil, awayFromTTY("pb.gz"), false, "Outputs the profile in compressed protobuf format", ""},
+	"topproto":  {report.TopProto, nil, awayFromTTY("pb.gz"), false, "Outputs top entries in compressed protobuf format", ""},
 
 	// Generate report in DOT format and postprocess with dot
-	"gif": {report.Dot, invokeDot("gif"), false, "Outputs a graph image in GIF format", reportHelp("gif", false, true)},
-	"pdf": {report.Dot, invokeDot("pdf"), false, "Outputs a graph in PDF format", reportHelp("pdf", false, true)},
-	"png": {report.Dot, invokeDot("png"), false, "Outputs a graph image in PNG format", reportHelp("png", false, true)},
-	"ps":  {report.Dot, invokeDot("ps"), false, "Outputs a graph in PS format", reportHelp("ps", false, true)},
+	"gif": {report.Dot, invokeDot("gif"), awayFromTTY("gif"), false, "Outputs a graph image in GIF format", reportHelp("gif", false, true)},
+	"pdf": {report.Dot, invokeDot("pdf"), awayFromTTY("pdf"), false, "Outputs a graph in PDF format", reportHelp("pdf", false, true)},
+	"png": {report.Dot, invokeDot("png"), awayFromTTY("png"), false, "Outputs a graph image in PNG format", reportHelp("png", false, true)},
+	"ps":  {report.Dot, invokeDot("ps"), awayFromTTY("ps"), false, "Outputs a graph in PS format", reportHelp("ps", false, true)},
 
 	// Save SVG output into a file
-	"svg": {report.Dot, saveSVGToFile(), false, "Outputs a graph in SVG format", reportHelp("svg", false, true)},
+	"svg": {report.Dot, massageDotSVG(), awayFromTTY("svg"), false, "Outputs a graph in SVG format", reportHelp("svg", false, true)},
 
 	// Visualize postprocessed dot output
-	"eog":    {report.Dot, invokeVisualizer(invokeDot("svg"), "svg", []string{"eog"}), false, "Visualize graph through eog", reportHelp("eog", false, false)},
-	"evince": {report.Dot, invokeVisualizer(invokeDot("pdf"), "pdf", []string{"evince"}), false, "Visualize graph through evince", reportHelp("evince", false, false)},
-	"gv":     {report.Dot, invokeVisualizer(invokeDot("ps"), "ps", []string{"gv --noantialias"}), false, "Visualize graph through gv", reportHelp("gv", false, false)},
-	"web":    {report.Dot, invokeVisualizer(saveSVGToFile(), "svg", browsers()), false, "Visualize graph through web browser", reportHelp("web", false, false)},
+	"eog":    {report.Dot, invokeDot("svg"), invokeVisualizer("svg", []string{"eog"}), false, "Visualize graph through eog", reportHelp("eog", false, false)},
+	"evince": {report.Dot, invokeDot("pdf"), invokeVisualizer("pdf", []string{"evince"}), false, "Visualize graph through evince", reportHelp("evince", false, false)},
+	"gv":     {report.Dot, invokeDot("ps"), invokeVisualizer("ps", []string{"gv --noantialias"}), false, "Visualize graph through gv", reportHelp("gv", false, false)},
+	"web":    {report.Dot, massageDotSVG(), invokeVisualizer("svg", browsers()), false, "Visualize graph through web browser", reportHelp("web", false, false)},
 
 	// Visualize callgrind output
-	"kcachegrind": {report.Callgrind, invokeVisualizer(nil, "grind", kcachegrind), false, "Visualize report in KCachegrind", reportHelp("kcachegrind", false, false)},
+	"kcachegrind": {report.Callgrind, nil, invokeVisualizer("grind", kcachegrind), false, "Visualize report in KCachegrind", reportHelp("kcachegrind", false, false)},
 
 	// Visualize HTML directly generated by report.
-	"weblist": {report.WebList, invokeVisualizer(awayFromTTY("html"), "html", browsers()), true, "Display annotated source in a web browser", listHelp("weblist", false)},
+	"weblist": {report.WebList, nil, invokeVisualizer("html", browsers()), true, "Display annotated source in a web browser", listHelp("weblist", false)},
 }
 
 // pprofVariables are the configuration parameters that affect the
@@ -360,70 +361,54 @@ var kcachegrind = []string{"kcachegrind"}
 // the terminal screen. This is used to avoid dumping binary data on
 // the screen.
 func awayFromTTY(format string) PostProcessor {
-	return func(input []byte, output io.Writer, ui plugin.UI) error {
+	return func(input io.Reader, output io.Writer, ui plugin.UI) error {
 		if output == os.Stdout && (ui.IsTerminal() || interactiveMode) {
 			tempFile, err := newTempFile("", "profile", "."+format)
 			if err != nil {
 				return err
 			}
 			ui.PrintErr("Generating report in ", tempFile.Name())
-			_, err = fmt.Fprint(tempFile, string(input))
-			return err
+			output = tempFile
 		}
-		_, err := fmt.Fprint(output, string(input))
+		_, err := io.Copy(output, input)
 		return err
 	}
 }
 
 func invokeDot(format string) PostProcessor {
-	divert := awayFromTTY(format)
-	return func(input []byte, output io.Writer, ui plugin.UI) error {
+	return func(input io.Reader, output io.Writer, ui plugin.UI) error {
 		cmd := exec.Command("dot", "-T"+format)
-		var buf bytes.Buffer
-		cmd.Stdin, cmd.Stdout, cmd.Stderr = bytes.NewBuffer(input), &buf, os.Stderr
+		cmd.Stdin, cmd.Stdout, cmd.Stderr = input, output, os.Stderr
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("Failed to execute dot. Is Graphviz installed? Error: %v", err)
 		}
-		return divert(buf.Bytes(), output, ui)
+		return nil
 	}
 }
 
-func saveSVGToFile() PostProcessor {
+// massageDotSVG invokes the dot tool to generate an SVG image and alters
+// the image to have panning capabilities when viewed in a browser.
+func massageDotSVG() PostProcessor {
 	generateSVG := invokeDot("svg")
-	divert := awayFromTTY("svg")
-	return func(input []byte, output io.Writer, ui plugin.UI) error {
-		baseSVG := &bytes.Buffer{}
+	return func(input io.Reader, output io.Writer, ui plugin.UI) error {
+		baseSVG := new(bytes.Buffer)
 		if err := generateSVG(input, baseSVG, ui); err != nil {
 			return err
 		}
-
-		return divert([]byte(svg.Massage(*baseSVG)), output, ui)
+		_, err := output.Write([]byte(svg.Massage(baseSVG.String())))
+		return err
 	}
 }
 
-func invokeVisualizer(format PostProcessor, suffix string, visualizers []string) PostProcessor {
-	return func(input []byte, output io.Writer, ui plugin.UI) error {
-		if output != os.Stdout {
-			if format != nil {
-				return format(input, output, ui)
-			}
-			_, err := fmt.Fprint(output, string(input))
-			return err
-		}
-
+func invokeVisualizer(suffix string, visualizers []string) PostProcessor {
+	return func(input io.Reader, output io.Writer, ui plugin.UI) error {
 		tempFile, err := newTempFile(os.TempDir(), "pprof", "."+suffix)
 		if err != nil {
 			return err
 		}
 		deferDeleteTempFile(tempFile.Name())
-		if format != nil {
-			if err := format(input, tempFile, ui); err != nil {
-				return err
-			}
-		} else {
-			if _, err := fmt.Fprint(tempFile, string(input)); err != nil {
-				return err
-			}
+		if _, err := io.Copy(tempFile, input); err != nil {
+			return err
 		}
 		tempFile.Close()
 		// Try visualizers until one is successful

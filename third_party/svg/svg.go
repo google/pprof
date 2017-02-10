@@ -16,7 +16,6 @@
 package svg
 
 import (
-	"bytes"
 	"regexp"
 	"strings"
 )
@@ -30,9 +29,7 @@ var (
 // Massage enhances the SVG output from DOT to provide better
 // panning inside a web browser. It uses the SVGPan library, which is
 // embedded into the svgPanJS variable.
-func Massage(in bytes.Buffer) string {
-	svg := string(in.Bytes())
-
+func Massage(svg string) string {
 	// Work around for dot bug which misses quoting some ampersands,
 	// resulting on unparsable SVG.
 	svg = strings.Replace(svg, "&;", "&amp;;", -1)

@@ -80,7 +80,7 @@ func TestShell(t *testing.T) {
 }
 
 var testCommands = commands{
-	"check": &command{report.Raw, nil, true, "", ""},
+	"check": &command{report.Raw, nil, nil, true, "", ""},
 }
 
 func testVariables(base variables) variables {
