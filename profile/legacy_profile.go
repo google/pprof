@@ -710,15 +710,12 @@ func parseContention(b []byte) (*Profile, error) {
 	const delimiter = "="
 	for s.Scan() {
 		line := s.Text()
-
-		if line = strings.TrimSpace(line); line == "" {
+		if line = strings.TrimSpace(line); isSpaceOrComment(line) {
 			continue
 		}
-
 		if strings.HasPrefix(line, "---") {
 			break
 		}
-
 		attr := strings.SplitN(line, delimiter, 2)
 		if len(attr) != 2 {
 			break
@@ -761,30 +758,31 @@ func parseContention(b []byte) (*Profile, error) {
 		if strings.HasPrefix(line, "---") {
 			break
 		}
-		value, addrs, err := parseContentionSample(line, p.Period, cpuHz)
-		if err != nil {
-			return nil, err
-		}
-		var sloc []*Location
-		for _, addr := range addrs {
-			// Addresses from stack traces point to the next instruction after
-			// each call. Adjust by -1 to land somewhere on the actual call.
-			addr--
-			loc := locs[addr]
-			if locs[addr] == nil {
-				loc = &Location{
-					Address: addr,
-				}
-				p.Location = append(p.Location, loc)
-				locs[addr] = loc
+		if !isSpaceOrComment(line) {
+			value, addrs, err := parseContentionSample(line, p.Period, cpuHz)
+			if err != nil {
+				return nil, err
 			}
-			sloc = append(sloc, loc)
+			var sloc []*Location
+			for _, addr := range addrs {
+				// Addresses from stack traces point to the next instruction after
+				// each call. Adjust by -1 to land somewhere on the actual call.
+				addr--
+				loc := locs[addr]
+				if locs[addr] == nil {
+					loc = &Location{
+						Address: addr,
+					}
+					p.Location = append(p.Location, loc)
+					locs[addr] = loc
+				}
+				sloc = append(sloc, loc)
+			}
+			p.Sample = append(p.Sample, &Sample{
+				Value:    value,
+				Location: sloc,
+			})
 		}
-		p.Sample = append(p.Sample, &Sample{
-			Value:    value,
-			Location: sloc,
-		})
-
 		if !s.Scan() {
 			break
 		}
