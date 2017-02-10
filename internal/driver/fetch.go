@@ -18,12 +18,14 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -391,10 +393,21 @@ func fetchURL(source string, timeout time.Duration) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("http fetch: %v", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("server response: %s", resp.Status)
+		defer resp.Body.Close()
+		return nil, statusCodeError(resp)
 	}
 
 	return resp.Body, nil
+}
+
+func statusCodeError(resp *http.Response) error {
+	if resp.Header.Get("X-Go-Pprof") != "" && strings.Contains(resp.Header.Get("Content-Type"), "text/plain") {
+		// error is from pprof endpoint
+		if body, err := ioutil.ReadAll(resp.Body); err == nil {
+			return fmt.Errorf("server response: %s - %s", resp.Status, body)
+		}
+	}
+	return fmt.Errorf("server response: %s", resp.Status)
 }
 
 // isPerfFile checks if a file is in perf.data format. It also returns false
