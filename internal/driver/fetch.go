@@ -16,6 +16,7 @@ package driver
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -487,12 +488,27 @@ func adjustURL(source string, duration, timeout time.Duration) (string, time.Dur
 
 // httpGet is a wrapper around http.Get; it is defined as a variable
 // so it can be redefined during for testing.
-var httpGet = func(url string, timeout time.Duration) (*http.Response, error) {
+var httpGet = func(source string, timeout time.Duration) (*http.Response, error) {
+	url, err := url.Parse(source)
+	if err != nil {
+		return nil, err
+	}
+
+	var tlsConfig *tls.Config
+	if url.Scheme == "https+insecure" {
+		tlsConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		url.Scheme = "https"
+		source = url.String()
+	}
+
 	client := &http.Client{
 		Transport: &http.Transport{
 			ResponseHeaderTimeout: timeout + 5*time.Second,
-			Proxy: http.ProxyFromEnvironment,
+			Proxy:           http.ProxyFromEnvironment,
+			TLSClientConfig: tlsConfig,
 		},
 	}
-	return client.Get(url)
+	return client.Get(source)
 }
