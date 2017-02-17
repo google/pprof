@@ -622,32 +622,29 @@ func parseHeapSample(line string, rate int64, sampling string, includeAlloc bool
 		return nil, 0, nil, err
 	}
 
-	addrs = parseHexAddresses(sampleData[5])
+	addrs, err = parseHexAddresses(sampleData[5])
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("malformed sample: %s: %v", line, err)
+	}
 
 	return value, blocksize, addrs, nil
 }
 
-// extractHexAddresses extracts hex numbers from a string and returns
-// them, together with their numeric value, in a slice.
-func extractHexAddresses(s string) ([]string, []uint64) {
+// parseHexAddresses extracts hex numbers from a string, attempts to convert
+// each to an unsigned 64-bit number and returns the resulting numbers as a
+// slice, or an error if the string contains hex numbers which are too large to
+// handle (which means a malformed profile).
+func parseHexAddresses(s string) ([]uint64, error) {
 	hexStrings := hexNumberRE.FindAllString(s, -1)
-	var ids []uint64
+	var addrs []uint64
 	for _, s := range hexStrings {
-		if id, err := strconv.ParseUint(s, 0, 64); err == nil {
-			ids = append(ids, id)
+		if addr, err := strconv.ParseUint(s, 0, 64); err == nil {
+			addrs = append(addrs, addr)
 		} else {
-			// Do not expect any parsing failures due to the regexp matching.
-			panic("failed to parse hex value:" + s)
+			return nil, fmt.Errorf("failed to parse as hex 64-bit number: %s", s)
 		}
 	}
-	return hexStrings, ids
-}
-
-// parseHexAddresses parses hex numbers from a string and returns them
-// in a slice.
-func parseHexAddresses(s string) []uint64 {
-	_, ids := extractHexAddresses(s)
-	return ids
+	return addrs, nil
 }
 
 // scaleHeapSample adjusts the data from a heapz Sample to
@@ -803,16 +800,16 @@ func parseContention(b []byte) (*Profile, error) {
 func parseContentionSample(line string, period, cpuHz int64) (value []int64, addrs []uint64, err error) {
 	sampleData := contentionSampleRE.FindStringSubmatch(line)
 	if sampleData == nil {
-		return value, addrs, errUnrecognized
+		return nil, nil, errUnrecognized
 	}
 
 	v1, err := strconv.ParseInt(sampleData[1], 10, 64)
 	if err != nil {
-		return value, addrs, fmt.Errorf("malformed sample: %s: %v", line, err)
+		return nil, nil, fmt.Errorf("malformed sample: %s: %v", line, err)
 	}
 	v2, err := strconv.ParseInt(sampleData[2], 10, 64)
 	if err != nil {
-		return value, addrs, fmt.Errorf("malformed sample: %s: %v", line, err)
+		return nil, nil, fmt.Errorf("malformed sample: %s: %v", line, err)
 	}
 
 	// Unsample values if period and cpuHz are available.
@@ -827,7 +824,10 @@ func parseContentionSample(line string, period, cpuHz int64) (value []int64, add
 	}
 
 	value = []int64{v2, v1}
-	addrs = parseHexAddresses(sampleData[3])
+	addrs, err = parseHexAddresses(sampleData[3])
+	if err != nil {
+		return nil, nil, fmt.Errorf("malformed sample: %s: %v", line, err)
+	}
 
 	return value, addrs, nil
 }
@@ -872,7 +872,7 @@ func parseThread(b []byte) (*Profile, error) {
 		var err error
 		line, addrs, err = parseThreadSample(s)
 		if err != nil {
-			return nil, errUnrecognized
+			return nil, err
 		}
 		if len(addrs) == 0 {
 			// We got a --same as previous threads--. Bump counters.
@@ -936,7 +936,11 @@ func parseThreadSample(s *bufio.Scanner) (nextl string, addrs []uint64, err erro
 			continue
 		}
 
-		addrs = append(addrs, parseHexAddresses(line)...)
+		curAddrs, err := parseHexAddresses(line)
+		if err != nil {
+			return "", nil, fmt.Errorf("malformed sample: %s: %v", line, err)
+		}
+		addrs = append(addrs, curAddrs...)
 	}
 	if err := s.Err(); err != nil {
 		return "", nil, err

@@ -265,6 +265,21 @@ func TestParseMappingEntry(t *testing.T) {
 	}
 }
 
+func TestParseThreadProfileWithInvalidAddress(t *testing.T) {
+	profile := `
+--- threadz 1 ---
+
+--- Thread 7eff063d9940 (name: main/25376) stack: ---
+  PC: 0x40b688 0x4d5f51 0x40be31 0x473add693e639c6f0
+--- Memory map: ---
+  00400000-00fcb000: /home/rsilvera/cppbench/cppbench_server_main.unstripped
+	`
+	wantErr := "failed to parse as hex 64-bit number: 0x473add693e639c6f0"
+	if _, gotErr := parseThread([]byte(profile)); !strings.Contains(gotErr.Error(), wantErr) {
+		t.Errorf("parseThread(): got error %q, want error containing %q", gotErr, wantErr)
+	}
+}
+
 func TestParseGoCount(t *testing.T) {
 	for _, test := range []struct {
 		in  string
