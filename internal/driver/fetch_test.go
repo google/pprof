@@ -161,16 +161,29 @@ func TestFetch(t *testing.T) {
 	// Intercept http.Get calls from HTTPFetcher.
 	httpGet = stubHTTPGet
 
-	for _, source := range [][2]string{
-		{path + "go.crc32.cpu", "go.crc32.cpu"},
-		{"http://localhost/profile?file=cppbench.cpu", "cppbench.cpu"},
+	type testcase struct {
+		source, execName string
+	}
+
+	for _, tc := range []testcase{
+		{path + "go.crc32.cpu", ""},
+		{path + "go.nomappings.crash", "/bin/gotest.exe"},
+		{"http://localhost/profile?file=cppbench.cpu", ""},
 	} {
-		p, _, err := fetch(source[0], 0, 10*time.Second, &proftest.TestUI{t, 0})
+		p, _, _, err := grabProfile(&source{ExecName: tc.execName}, tc.source, 0, nil, testObj{}, &proftest.TestUI{t, 0})
 		if err != nil {
-			t.Fatalf("%s: %s", source[0], err)
+			t.Fatalf("%s: %s", tc.source, err)
 		}
 		if len(p.Sample) == 0 {
-			t.Errorf("want non-zero samples")
+			t.Errorf("%s: want non-zero samples", tc.source)
+		}
+		if e := tc.execName; e != "" {
+			switch {
+			case len(p.Mapping) == 0 || p.Mapping[0] == nil:
+				t.Errorf("%s: want mapping[0].execName == %s, got no mappings", tc.source, e)
+			case p.Mapping[0].File != e:
+				t.Errorf("%s: want mapping[0].execName == %s, got %s", tc.source, e, p.Mapping[0].File)
+			}
 		}
 	}
 }
