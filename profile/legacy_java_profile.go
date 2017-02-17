@@ -178,10 +178,15 @@ func parseJavaSamples(pType string, b []byte, p *Profile) ([]byte, map[uint64]*L
 
 			// Java profiles have data/fields inverted compared to other
 			// profile types.
-			value1, value2, addrs := sample[2], sample[1], sample[3]
+			var err error
+			value1, value2, value3 := sample[2], sample[1], sample[3]
+			addrs, err := parseHexAddresses(value3)
+			if err != nil {
+				return nil, nil, fmt.Errorf("malformed sample: %s: %v", line, err)
+			}
 
 			var sloc []*Location
-			for _, addr := range parseHexAddresses(addrs) {
+			for _, addr := range addrs {
 				loc := locs[addr]
 				if locs[addr] == nil {
 					loc = &Location{
@@ -197,7 +202,6 @@ func parseJavaSamples(pType string, b []byte, p *Profile) ([]byte, map[uint64]*L
 				Location: sloc,
 			}
 
-			var err error
 			if s.Value[0], err = strconv.ParseInt(value1, 0, 64); err != nil {
 				return nil, nil, fmt.Errorf("parsing sample %s: %v", line, err)
 			}
