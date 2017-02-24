@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"regexp"
+	"runtime"
 	"testing"
 
 	"github.com/google/pprof/internal/binutils"
@@ -75,6 +76,9 @@ func TestSource(t *testing.T) {
 		gold, err := ioutil.ReadFile(tc.want)
 		if err != nil {
 			t.Fatalf("%s: %v", tc.want, err)
+		}
+		if runtime.GOOS == "windows" {
+			gold = bytes.Replace(gold, []byte("testdata/"), []byte("testdata\\"), -1)
 		}
 		if string(b.String()) != string(gold) {
 			d, err := proftest.Diff(gold, b.Bytes())

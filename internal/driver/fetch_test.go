@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"runtime"
 	"testing"
 	"time"
 
@@ -32,6 +33,10 @@ import (
 )
 
 func TestSymbolizationPath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("test assumes Unix paths")
+	}
+
 	// Save environment variables to restore after test
 	saveHome := os.Getenv("HOME")
 	savePath := os.Getenv("PPROF_BINARY_PATH")
