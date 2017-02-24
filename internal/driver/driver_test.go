@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -161,6 +162,10 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			t.Errorf("reading solution file %s: %v", solution, err)
 			continue
+		}
+		if runtime.GOOS == "windows" {
+			sbuf = bytes.Replace(sbuf, []byte("testdata/"), []byte("testdata\\"), -1)
+			sbuf = bytes.Replace(sbuf, []byte("/path/to/"), []byte("\\path\\to\\"), -1)
 		}
 
 		if flags[0] == "svg" {
