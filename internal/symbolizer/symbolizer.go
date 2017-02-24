@@ -314,7 +314,7 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 
 		// Skip mappings pointing to a source URL
 		if m.BuildID == "" {
-			if u, err := url.Parse(m.File); err == nil && u.IsAbs() {
+			if u, err := url.Parse(m.File); err == nil && u.IsAbs() && strings.Contains(strings.ToLower(u.Scheme), "http") {
 				continue
 			}
 		}
