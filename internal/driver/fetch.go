@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -214,13 +215,24 @@ type profileSource struct {
 	err    error
 }
 
+func homeEnv() string {
+	switch runtime.GOOS {
+	case "windows":
+		return "USERPROFILE"
+	case "plan9":
+		return "home"
+	default:
+		return "HOME"
+	}
+}
+
 // setTmpDir prepares the directory to use to save profiles retrieved
 // remotely. It is selected from PPROF_TMPDIR, defaults to $HOME/pprof.
 func setTmpDir(ui plugin.UI) (string, error) {
 	if profileDir := os.Getenv("PPROF_TMPDIR"); profileDir != "" {
 		return profileDir, nil
 	}
-	for _, tmpDir := range []string{os.Getenv("HOME") + "/pprof", os.TempDir()} {
+	for _, tmpDir := range []string{os.Getenv(homeEnv()) + "/pprof", os.TempDir()} {
 		if err := os.MkdirAll(tmpDir, 0755); err != nil {
 			ui.PrintErr("Could not use temp dir ", tmpDir, ": ", err.Error())
 			continue
@@ -315,7 +327,7 @@ func locateBinaries(p *profile.Profile, s *source, obj plugin.ObjTool, ui plugin
 	searchPath := os.Getenv("PPROF_BINARY_PATH")
 	if searchPath == "" {
 		// Use $HOME/pprof/binaries as default directory for local symbolization binaries
-		searchPath = filepath.Join(os.Getenv("HOME"), "pprof", "binaries")
+		searchPath = filepath.Join(os.Getenv(homeEnv()), "pprof", "binaries")
 	}
 mapping:
 	for _, m := range p.Mapping {
