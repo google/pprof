@@ -105,7 +105,7 @@ func TestCollectMappingSources(t *testing.T) {
 		}
 		got := collectMappingSources(p, url)
 		if !reflect.DeepEqual(got, tc.want) {
-			t.Errorf("%s:%s, want %s, got %s", tc.file, tc.buildID, tc.want, got)
+			t.Errorf("%s:%s, want %v, got %v", tc.file, tc.buildID, tc.want, got)
 		}
 	}
 }
