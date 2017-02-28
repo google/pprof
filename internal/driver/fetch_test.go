@@ -57,6 +57,7 @@ func TestSymbolizationPath(t *testing.T) {
 	}{
 		{"", "/usr/bin/binary", "", "/usr/bin/binary", 0},
 		{"", "/usr/bin/binary", "fedcb10000", "/usr/bin/binary", 0},
+		{"/usr", "/bin/binary", "", "/usr/bin/binary", 0},
 		{"", "/prod/path/binary", "abcde10001", filepath.Join(tempdir, "pprof/binaries/abcde10001/binary"), 0},
 		{"/alternate/architecture", "/usr/bin/binary", "", "/alternate/architecture/binary", 0},
 		{"/alternate/architecture", "/usr/bin/binary", "abcde10001", "/alternate/architecture/binary", 0},

@@ -344,8 +344,13 @@ mapping:
 					fileNames = append(fileNames, matches...)
 				}
 			}
-			if baseName != "" {
-				fileNames = append(fileNames, filepath.Join(path, baseName))
+			if m.File != "" {
+				// Try both the basename and the full path, to support the same directory
+				// structure as the perf symfs option.
+				if baseName != "" {
+					fileNames = append(fileNames, filepath.Join(path, baseName))
+				}
+				fileNames = append(fileNames, filepath.Join(path, m.File))
 			}
 			for _, name := range fileNames {
 				if f, err := obj.Open(name, m.Start, m.Limit, m.Offset); err == nil {
