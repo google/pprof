@@ -42,12 +42,12 @@ func (o *Options) InternalOptions() *plugin.Options {
 		sym = &internalSymbolizer{o.Sym}
 	}
 	return &plugin.Options{
-		Writer: o.Writer,
+		Writer:  o.Writer,
 		Flagset: o.Flagset,
-		Fetch: o.Fetch,
-		Sym: sym,
-		Obj: obj,
-		UI: o.UI,
+		Fetch:   o.Fetch,
+		Sym:     sym,
+		Obj:     obj,
+		UI:      o.UI,
 	}
 }
 
