@@ -125,6 +125,9 @@ func (rpt *Report) newTrimmedGraph() (g *graph.Graph, origCount, droppedNodes, d
 	visualMode := o.OutputFormat == Dot
 	cumSort := o.CumSort
 
+	// The call_tree option is only honored when generating visual representations of the callgraph.
+	callTree := o.CallTree && (o.OutputFormat == Dot || o.OutputFormat == Callgrind)
+
 	// First step: Build complete graph to identify low frequency nodes, based on their cum weight.
 	g = rpt.newGraph(nil)
 	totalValue, _ := g.Nodes.Sum()
@@ -133,7 +136,7 @@ func (rpt *Report) newTrimmedGraph() (g *graph.Graph, origCount, droppedNodes, d
 
 	// Filter out nodes with cum value below nodeCutoff.
 	if nodeCutoff > 0 {
-		if o.CallTree {
+		if callTree {
 			if nodesKept := g.DiscardLowFrequencyNodePtrs(nodeCutoff); len(g.Nodes) != len(nodesKept) {
 				droppedNodes = len(g.Nodes) - len(nodesKept)
 				g.TrimTree(nodesKept)
@@ -154,7 +157,7 @@ func (rpt *Report) newTrimmedGraph() (g *graph.Graph, origCount, droppedNodes, d
 		// Remove low frequency tags and edges as they affect selection.
 		g.TrimLowFrequencyTags(nodeCutoff)
 		g.TrimLowFrequencyEdges(edgeCutoff)
-		if o.CallTree {
+		if callTree {
 			if nodesKept := g.SelectTopNodePtrs(nodeCount, visualMode); len(g.Nodes) != len(nodesKept) {
 				g.TrimTree(nodesKept)
 				g.SortNodes(cumSort, visualMode)
