@@ -49,7 +49,7 @@ func TestParse(t *testing.T) {
 	}{
 		{"text,functions,flat", "cpu"},
 		{"tree,addresses,flat,nodecount=4", "cpusmall"},
-		{"text,functions,flat", "unknown"},
+		{"text,functions,flat,nodecount=5,call_tree", "unknown"},
 		{"text,alloc_objects,flat", "heap_alloc"},
 		{"text,files,flat", "heap"},
 		{"text,inuse_objects,flat", "heap"},
@@ -59,8 +59,10 @@ func TestParse(t *testing.T) {
 		{"tree,lines,cum,focus=[24]00", "heap"},
 		{"tree,relative_percentages,cum,focus=[24]00", "heap"},
 		{"callgrind", "cpu"},
+		{"callgrind,call_tree", "cpu"},
 		{"callgrind", "heap"},
 		{"dot,functions,flat", "cpu"},
+		{"dot,functions,flat,call_tree", "cpu"},
 		{"dot,lines,flat,focus=[12]00", "heap"},
 		{"dot,addresses,flat,ignore=[X3]002,focus=[X1]000", "contention"},
 		{"dot,files,cum", "contention"},
@@ -222,6 +224,7 @@ func solutionFilename(source string, f *testFlags) string {
 	name = addString(name, f, []string{"inuse_space", "inuse_objects", "alloc_space", "alloc_objects"})
 	name = addString(name, f, []string{"relative_percentages"})
 	name = addString(name, f, []string{"seconds"})
+	name = addString(name, f, []string{"call_tree"})
 	name = addString(name, f, []string{"text", "tree", "callgrind", "dot", "svg", "tags", "dot", "traces", "disasm", "peek", "weblist", "topproto", "comments"})
 	if f.strings["focus"] != "" || f.strings["tagfocus"] != "" {
 		name = append(name, "focus")
