@@ -101,6 +101,7 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			t.Errorf("cannot create tempfile: %v", err)
 		}
+		defer os.Remove(protoTempFile.Name())
 		defer protoTempFile.Close()
 		f.strings["output"] = protoTempFile.Name()
 
@@ -126,6 +127,7 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			t.Errorf("cannot create tempfile: %v", err)
 		}
+		defer os.Remove(outputTempFile.Name())
 		defer outputTempFile.Close()
 		f.strings["output"] = outputTempFile.Name()
 		f.args = []string{protoTempFile.Name()}
