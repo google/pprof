@@ -196,18 +196,13 @@ func aggregate(prof *profile.Profile, v variables) error {
 	case v["functions"].boolValue():
 		inlines = true
 		function = true
-		filename = true
 	case v["noinlines"].boolValue():
 		function = true
-		filename = true
 	case v["addressnoinlines"].boolValue():
 		function = true
 		filename = true
 		linenumber = true
 		address = true
-	case v["functionnameonly"].boolValue():
-		inlines = true
-		function = true
 	default:
 		return fmt.Errorf("unexpected granularity")
 	}
