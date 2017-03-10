@@ -227,9 +227,6 @@ var pprofVariables = variables{
 	"functions": &variable{boolKind, "t", "granularity", helpText(
 		"Aggregate at the function level.",
 		"Takes into account the filename/lineno where the function was defined.")},
-	"functionnameonly": &variable{boolKind, "f", "granularity", helpText(
-		"Aggregate at the function level.",
-		"Ignores the filename/lineno where the function was defined.")},
 	"files": &variable{boolKind, "f", "granularity", "Aggregate at the file level."},
 	"lines": &variable{boolKind, "f", "granularity", "Aggregate at the source code line level."},
 	"addresses": &variable{boolKind, "f", "granularity", helpText(
