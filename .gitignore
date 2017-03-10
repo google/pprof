@@ -1,0 +1,6 @@
+.DS_Store
+*~
+*.orig
+*.exe
+.*.swp
+core
