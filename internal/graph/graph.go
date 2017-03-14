@@ -834,17 +834,6 @@ func countTags(n *Node) int {
 	return count
 }
 
-// countEdges counts the number of edges below the specified cutoff.
-func countEdges(el EdgeMap, cutoff int64) int {
-	count := 0
-	for _, e := range el {
-		if e.Weight > cutoff {
-			count++
-		}
-	}
-	return count
-}
-
 // RemoveRedundantEdges removes residual edges if the destination can
 // be reached through another path. This is done to simplify the graph
 // while preserving connectivity.

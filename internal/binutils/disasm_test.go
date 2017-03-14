@@ -134,8 +134,6 @@ func TestFunctionAssembly(t *testing.T) {
 		},
 	}
 
-	const objdump = "testdata/wrapper/objdump"
-
 	for _, tc := range testcases {
 		insts, err := disassemble([]byte(tc.asm))
 		if err != nil {

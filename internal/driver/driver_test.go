@@ -350,9 +350,6 @@ func baseFlags() testFlags {
 	}
 }
 
-type testProfile struct {
-}
-
 const testStart = 0x1000
 const testOffset = 0x5000
 
