@@ -29,10 +29,10 @@ import (
 // manager. Then it generates a report formatted according to the
 // options selected through the flags package.
 func PProf(o *Options) error {
-	return internaldriver.PProf(o.InternalOptions())
+	return internaldriver.PProf(o.internalOptions())
 }
 
-func (o *Options) InternalOptions() *plugin.Options {
+func (o *Options) internalOptions() *plugin.Options {
 	var obj plugin.ObjTool
 	if o.Obj != nil {
 		obj = &internalObjTool{o.Obj}
