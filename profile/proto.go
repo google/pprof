@@ -71,7 +71,7 @@ func encodeLength(b *buffer, tag int, len int) {
 
 func encodeUint64(b *buffer, tag int, x uint64) {
 	// append varint to b.data
-	encodeVarint(b, uint64(tag)<<3|0)
+	encodeVarint(b, uint64(tag)<<3)
 	encodeVarint(b, x)
 }
 
