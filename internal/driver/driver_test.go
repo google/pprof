@@ -1051,7 +1051,7 @@ func (m *mockObjTool) Disasm(file string, start, end uint64) ([]plugin.Inst, err
 }
 
 type mockFile struct {
-	name, buildId string
+	name, buildID string
 	base          uint64
 }
 
@@ -1067,7 +1067,7 @@ func (m *mockFile) Base() uint64 {
 
 // BuildID returns the GNU build ID of the file, or an empty string.
 func (m *mockFile) BuildID() string {
-	return m.buildId
+	return m.buildID
 }
 
 // SourceLine reports the source line information for a given
