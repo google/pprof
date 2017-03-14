@@ -154,10 +154,9 @@ func encodeBool(b *buffer, tag int, x bool) {
 }
 
 func encodeBoolOpt(b *buffer, tag int, x bool) {
-	if x == false {
-		return
+	if x {
+		encodeBool(b, tag, x)
 	}
-	encodeBool(b, tag, x)
 }
 
 func encodeMessage(b *buffer, tag int, m message) {

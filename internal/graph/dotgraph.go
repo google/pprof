@@ -210,7 +210,7 @@ func (b *builder) addNodelets(node *Node, nodeID int) bool {
 
 	// Populate two Tag slices, one for LabelTags and one for NumericTags.
 	var ts []*Tag
-	lnts := make(map[string][]*Tag, 0)
+	lnts := make(map[string][]*Tag)
 	for _, t := range node.LabelTags {
 		ts = append(ts, t)
 	}

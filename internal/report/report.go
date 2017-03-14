@@ -1058,9 +1058,7 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 
 	var label []string
 	if len(rpt.options.ProfileLabels) > 0 {
-		for _, l := range rpt.options.ProfileLabels {
-			label = append(label, l)
-		}
+		label = append(label, rpt.options.ProfileLabels...)
 	} else if fullHeaders || !rpt.options.CompactLabels {
 		label = ProfileLabels(rpt)
 	}

@@ -160,20 +160,20 @@ func applyCommandOverrides(cmd []string, v variables) variables {
 			v.set("nodecount", "80")
 		}
 	}
-	if trim == false {
+	if !trim {
 		v.set("nodecount", "0")
 		v.set("nodefraction", "0")
 		v.set("edgefraction", "0")
 	}
-	if focus == false {
+	if !focus {
 		v.set("focus", "")
 		v.set("ignore", "")
 	}
-	if tagfocus == false {
+	if !tagfocus {
 		v.set("tagfocus", "")
 		v.set("tagignore", "")
 	}
-	if hide == false {
+	if !hide {
 		v.set("hide", "")
 		v.set("show", "")
 	}
