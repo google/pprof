@@ -240,6 +240,8 @@ type Edge struct {
 	Inline bool
 }
 
+// WeightValue returns the weight value for this edge, normalizing if a
+// divisor is available.
 func (e *Edge) WeightValue() int64 {
 	if e.WeightDiv == 0 {
 		return e.Weight
