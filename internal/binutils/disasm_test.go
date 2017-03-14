@@ -73,7 +73,7 @@ func TestFindSymbols(t *testing.T) {
 
 func checkSymbol(got []*plugin.Sym, want []plugin.Sym) error {
 	if len(got) != len(want) {
-		return fmt.Errorf("unexpected number of symbols %d (want %d)\n", len(got), len(want))
+		return fmt.Errorf("unexpected number of symbols %d (want %d)", len(got), len(want))
 	}
 
 	for i, g := range got {
