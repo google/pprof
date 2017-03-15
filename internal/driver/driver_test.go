@@ -16,8 +16,17 @@ package driver
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
+	"math/big"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"regexp"
 	"runtime"
@@ -327,6 +336,15 @@ func (f testFlags) StringList(s, d, c string) *[]*string {
 
 func (f testFlags) Parse(func()) []string {
 	return f.args
+}
+
+func emptyFlags() testFlags {
+	return testFlags{
+		bools:   map[string]bool{},
+		ints:    map[string]int{},
+		floats:  map[string]float64{},
+		strings: map[string]string{},
+	}
 }
 
 func baseFlags() testFlags {
@@ -1018,6 +1036,99 @@ func TestSymbolzAfterMerge(t *testing.T) {
 			t.Errorf("symbolz %#x, got %s, want %s", address, got, want)
 		}
 	}
+}
+
+func TestHttpsInsecure(t *testing.T) {
+	baseVars := pprofVariables
+	pprofVariables = baseVars.makeCopy()
+	defer func() { pprofVariables = baseVars }()
+
+	tlsConfig := &tls.Config{Certificates: []tls.Certificate{selfSignedCert(t)}}
+
+	l, err := tls.Listen("tcp", "localhost:0", tlsConfig)
+	if err != nil {
+		t.Fatalf("net.Listen: got error %v, want no error", err)
+	}
+
+	donec := make(chan error, 1)
+	go func(donec chan<- error) {
+		donec <- http.Serve(l, nil)
+	}(donec)
+	defer func() {
+		if got, want := <-donec, "use of closed"; !strings.Contains(got.Error(), want) {
+			t.Fatalf("Serve got error %v, want %q", got, want)
+		}
+	}()
+	defer l.Close()
+
+	go func() {
+		deadline := time.Now().Add(5 * time.Second)
+		for time.Now().Before(deadline) {
+			// Simulate a hotspot function.
+		}
+	}()
+
+	outputTempFile, err := ioutil.TempFile("", "profile_output")
+	if err != nil {
+		t.Fatalf("Failed to create tempfile: %v", err)
+	}
+	defer os.Remove(outputTempFile.Name())
+	defer outputTempFile.Close()
+
+	f := emptyFlags()
+	o := setDefaults(nil)
+	o.Flagset = &f
+
+	f.args = []string{"https+insecure://" + l.Addr().String() + "/debug/pprof/profile?seconds=5"}
+	addFlags(&f, []string{
+		"top",
+		"symbolize=remote",
+		"output=" + outputTempFile.Name(),
+	})
+
+	if err := PProf(o); err != nil {
+		t.Fatalf("PProf(%v): got error %v, want no error", o, err)
+	}
+
+	b, err := ioutil.ReadFile(outputTempFile.Name())
+	if err != nil {
+		t.Fatalf("ReadFile(%s) got error %v, want no error", outputTempFile.Name(), err)
+	}
+	// TODO(aalexand): Fix to reqiure "TestHttpsInsecure" in the output once #120
+	// is fixed which causes symbolization issues on OSX with Go 1.8.
+	if got, want := string(b), "Showing nodes accounting"; !strings.Contains(got, want) {
+		t.Fatalf("Pprof(%v): got %v, want %q substring", o, got, want)
+	}
+}
+
+func selfSignedCert(t *testing.T) tls.Certificate {
+	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("failed to generate private key: %v", err)
+	}
+	b, err := x509.MarshalECPrivateKey(privKey)
+	if err != nil {
+		t.Fatalf("failed to marshal private key: %v", err)
+	}
+	bk := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: b})
+
+	tmpl := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().Add(10 * time.Minute),
+	}
+
+	b, err = x509.CreateCertificate(rand.Reader, &tmpl, &tmpl, privKey.Public(), privKey)
+	if err != nil {
+		t.Fatalf("failed to create cert: %v", err)
+	}
+	bc := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: b})
+
+	cert, err := tls.X509KeyPair(bc, bk)
+	if err != nil {
+		t.Fatalf("failed to create TLS key pair: %v", err)
+	}
+	return cert
 }
 
 type mockObjTool struct{}
