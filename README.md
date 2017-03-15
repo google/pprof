@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/google/pprof.svg?branch=master)](https://travis-ci.org/google/pprof)
+
 # Introduction
 
 pprof is a tool for visualization and analysis of profiling data.
@@ -24,7 +26,7 @@ them through the use of the native binutils tools (addr2line and nm).
 
 Prerequisites:
 
-- Go development kit. Known to work with Go 1.5.
+- Go development kit. Requires Go 1.7 or newer.
   Follow [these instructions](http://golang.org/doc/code.html) to install the 
   go tool and set up GOPATH.
 
