@@ -1044,21 +1044,22 @@ func TestHttpsInsecure(t *testing.T) {
 	defer func() { pprofVariables = baseVars }()
 
 	tlsConfig := &tls.Config{Certificates: []tls.Certificate{selfSignedCert(t)}}
-	donec := make(chan struct{}, 1)
 
 	l, err := tls.Listen("tcp", "localhost:0", tlsConfig)
 	if err != nil {
 		t.Fatalf("net.Listen: got error %v, want no error", err)
 	}
-	defer func() { <-donec }()
-	defer l.Close()
 
-	go func(donec chan<- struct{}) {
-		defer func() { donec <- struct{}{} }()
-		if got, want := http.Serve(l, nil), "use of closed"; !strings.Contains(got.Error(), want) {
+	donec := make(chan error, 1)
+	go func(donec chan<- error) {
+		donec <- http.Serve(l, nil)
+	}(donec)
+	defer func() {
+		if got, want := <-donec, "use of closed"; !strings.Contains(got.Error(), want) {
 			t.Fatalf("Serve got error %v, want %q", got, want)
 		}
-	}(donec)
+	}()
+	defer l.Close()
 
 	go func() {
 		deadline := time.Now().Add(5 * time.Second)
