@@ -131,7 +131,7 @@ func GetBuildID(binary io.ReaderAt) ([]byte, error) {
 				if buildID == nil {
 					buildID = note.Desc
 				} else {
-					return nil, fmt.Errorf("multiple build ids found, don't know which to use!")
+					return nil, fmt.Errorf("multiple build ids found, don't know which to use")
 				}
 			}
 		}

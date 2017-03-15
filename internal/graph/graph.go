@@ -240,6 +240,8 @@ type Edge struct {
 	Inline bool
 }
 
+// WeightValue returns the weight value for this edge, normalizing if a
+// divisor is available.
 func (e *Edge) WeightValue() int64 {
 	if e.WeightDiv == 0 {
 		return e.Weight
@@ -827,17 +829,6 @@ func countTags(n *Node) int {
 			if e.Flat != 0 {
 				count++
 			}
-		}
-	}
-	return count
-}
-
-// countEdges counts the number of edges below the specified cutoff.
-func countEdges(el EdgeMap, cutoff int64) int {
-	count := 0
-	for _, e := range el {
-		if e.Weight > cutoff {
-			count++
 		}
 	}
 	return count

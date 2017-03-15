@@ -468,7 +468,7 @@ func (vars variables) set(name, value string) error {
 	case boolKind:
 		var b bool
 		if b, err = stringToBool(value); err == nil {
-			if v.group != "" && b == false {
+			if v.group != "" && !b {
 				err = fmt.Errorf("%q can only be set to true", name)
 			}
 		}

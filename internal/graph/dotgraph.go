@@ -50,7 +50,7 @@ type DotConfig struct {
 	Total       int64                      // The total weight of the graph, used to compute percentages
 }
 
-// Compose creates and writes a in the DOT format to the writer, using
+// ComposeDot creates and writes a in the DOT format to the writer, using
 // the configurations given.
 func ComposeDot(w io.Writer, g *Graph, a *DotAttributes, c *DotConfig) {
 	builder := &builder{w, a, c}
@@ -210,7 +210,7 @@ func (b *builder) addNodelets(node *Node, nodeID int) bool {
 
 	// Populate two Tag slices, one for LabelTags and one for NumericTags.
 	var ts []*Tag
-	lnts := make(map[string][]*Tag, 0)
+	lnts := make(map[string][]*Tag)
 	for _, t := range node.LabelTags {
 		ts = append(ts, t)
 	}

@@ -240,19 +240,19 @@ func TestTagCollapse(t *testing.T) {
 	}
 
 	tagWant := [][]*Tag{
-		[]*Tag{
+		{
 			makeTag("1B..2GB", "", 0, 2401, 2401),
 		},
-		[]*Tag{
+		{
 			makeTag("2GB", "", 0, 1000, 1000),
 			makeTag("1B..12MB", "", 0, 1401, 1401),
 		},
-		[]*Tag{
+		{
 			makeTag("2GB", "", 0, 1000, 1000),
 			makeTag("12MB", "", 0, 100, 100),
 			makeTag("1B..1MB", "", 0, 1301, 1301),
 		},
-		[]*Tag{
+		{
 			makeTag("2GB", "", 0, 1000, 1000),
 			makeTag("1MB", "", 0, 1000, 1000),
 			makeTag("2B..1kB", "", 0, 201, 201),

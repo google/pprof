@@ -167,7 +167,7 @@ func printWebSource(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 	}
 
 	if len(fileNodes) == 0 {
-		return fmt.Errorf("No source information for %s\n", o.Symbol.String())
+		return fmt.Errorf("No source information for %s", o.Symbol.String())
 	}
 
 	sourceFiles := make(graph.Nodes, 0, len(fileNodes))
