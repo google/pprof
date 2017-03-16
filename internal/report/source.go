@@ -322,10 +322,10 @@ func printFunctionSourceLine(w io.Writer, fn *graph.Node, assembly []assemblyIns
 		if an.cumDiv != 0 {
 			cum = cum / an.cumDiv
 		}
-		fmt.Fprintf(w, " %8s %10s %10s %8x: %-48s <span class=%s>%s</span>\n", "",
+		fmt.Fprintf(w, " %8s %10s %10s %8x: %s <span class=%s>%s</span>\n", "",
 			valueOrDot(flat, rpt), valueOrDot(cum, rpt),
 			an.address,
-			template.HTMLEscapeString(an.instruction),
+			template.HTMLEscapeString(fmt.Sprintf("%-48s", strings.Replace(an.instruction, "\t", " ", -1))),
 			class,
 			template.HTMLEscapeString(fileline))
 	}
