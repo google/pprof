@@ -3,6 +3,10 @@ go:
   - 1.7.x
   - 1.8.x
 
+os:
+  - linux
+  - osx
+
 before_install:
   - go get -u github.com/golang/lint/golint honnef.co/go/tools/cmd/...
 
