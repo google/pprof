@@ -22,6 +22,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -40,6 +41,8 @@ import (
 	"github.com/google/pprof/internal/symbolz"
 	"github.com/google/pprof/profile"
 )
+
+var updateFlag = flag.Bool("update", false, "Update the golden files")
 
 func TestParse(t *testing.T) {
 	// Override weblist command to collect output in buffer
@@ -193,6 +196,12 @@ func TestParse(t *testing.T) {
 				t.Fatalf("diff %s %v", solution, err)
 			}
 			t.Errorf("%s\n%s\n", solution, d)
+			if *updateFlag {
+				err := ioutil.WriteFile(solution, b, 0644)
+				if err != nil {
+					t.Errorf("failed to update the solution file %q: %v", solution, err)
+				}
+			}
 		}
 	}
 }
