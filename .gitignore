@@ -4,3 +4,4 @@
 *.exe
 .*.swp
 core
+coverage.txt
