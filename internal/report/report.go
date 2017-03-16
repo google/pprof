@@ -25,6 +25,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/google/pprof/internal/graph"
@@ -620,24 +621,22 @@ func printTags(w io.Writer, rpt *Report) error {
 	for _, s := range p.Sample {
 		for key, vals := range s.Label {
 			for _, val := range vals {
-				if valueMap, ok := tagMap[key]; ok {
-					valueMap[val] = valueMap[val] + s.Value[0]
-					continue
+				valueMap, ok := tagMap[key]
+				if !ok {
+					valueMap = make(map[string]int64)
 				}
-				valueMap := make(map[string]int64)
-				valueMap[val] = s.Value[0]
+				valueMap[val] += o.SampleValue(s.Value)
 				tagMap[key] = valueMap
 			}
 		}
 		for key, vals := range s.NumLabel {
 			for _, nval := range vals {
 				val := formatTag(nval, key)
-				if valueMap, ok := tagMap[key]; ok {
-					valueMap[val] = valueMap[val] + s.Value[0]
-					continue
+				valueMap, ok := tagMap[key]
+				if !ok {
+					valueMap = make(map[string]int64)
 				}
-				valueMap := make(map[string]int64)
-				valueMap[val] = s.Value[0]
+				valueMap[val] += o.SampleValue(s.Value)
 				tagMap[key] = valueMap
 			}
 		}
@@ -647,6 +646,7 @@ func printTags(w io.Writer, rpt *Report) error {
 	for key := range tagMap {
 		tagKeys = append(tagKeys, &graph.Tag{Name: key})
 	}
+	tabw := tabwriter.NewWriter(w, 0, 0, 1, ' ', tabwriter.AlignRight)
 	for _, tagKey := range graph.SortTags(tagKeys, true) {
 		var total int64
 		key := tagKey.Name
@@ -656,18 +656,21 @@ func printTags(w io.Writer, rpt *Report) error {
 			tags = append(tags, &graph.Tag{Name: t, Flat: c})
 		}
 
-		fmt.Fprintf(w, "%s: Total %d\n", key, total)
+		f, u := measurement.Scale(total, o.SampleUnit, o.OutputUnit)
+		fmt.Fprintf(tabw, "%s:\t Total %.1f%s\n", key, f, u)
 		for _, t := range graph.SortTags(tags, true) {
+			f, u := measurement.Scale(t.FlatValue(), o.SampleUnit, o.OutputUnit)
 			if total > 0 {
-				fmt.Fprintf(w, "  %8d (%s): %s\n", t.FlatValue(),
-					percentage(t.FlatValue(), total), t.Name)
+				fmt.Fprintf(tabw, " \t%.1f%s (%s):\t %s\n", f, u, percentage(t.FlatValue(), total), t.Name)
 			} else {
-				fmt.Fprintf(w, "  %8d: %s\n", t.FlatValue(), t.Name)
+				fmt.Fprintf(tabw, " \t%.1f%s:\t %s\n", f, u, t.Name)
 			}
 		}
-		fmt.Fprintln(w)
+		fmt.Fprintln(tabw)
 	}
+	tabw.Flush()
 	return nil
+
 }
 
 // printComments prints all freeform comments in the profile.
