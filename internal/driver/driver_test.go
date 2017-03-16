@@ -1063,10 +1063,10 @@ func (m *mockObjTool) Disasm(file string, start, end uint64) ([]plugin.Inst, err
 	switch start {
 	case 0x1000:
 		return []plugin.Inst{
-			{Addr: 0x1000, Text: "instruction one"},
-			{Addr: 0x1001, Text: "instruction two"},
-			{Addr: 0x1002, Text: "instruction three"},
-			{Addr: 0x1003, Text: "instruction four"},
+			{Addr: 0x1000, Text: "instruction one", File: "file1000.src", Line: 1},
+			{Addr: 0x1001, Text: "instruction two", File: "file1000.src", Line: 1},
+			{Addr: 0x1002, Text: "instruction three", File: "file1000.src", Line: 2},
+			{Addr: 0x1003, Text: "instruction four", File: "file1000.src", Line: 1},
 		}, nil
 	case 0x3000:
 		return []plugin.Inst{
