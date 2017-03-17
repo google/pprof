@@ -15,8 +15,15 @@
 package driver
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"net/http"
 	"net/url"
 	"os"
@@ -24,6 +31,7 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -165,6 +173,8 @@ func TestFetch(t *testing.T) {
 	const path = "testdata/"
 
 	// Intercept http.Get calls from HTTPFetcher.
+	savedHTTPGet := httpGet
+	defer func() { httpGet = savedHTTPGet }()
 	httpGet = stubHTTPGet
 
 	type testcase struct {
@@ -226,4 +236,81 @@ func stubHTTPGet(source string, _ time.Duration) (*http.Response, error) {
 
 	c := &http.Client{Transport: t}
 	return c.Get("file:///" + file)
+}
+
+func TestHttpsInsecure(t *testing.T) {
+	baseVars := pprofVariables
+	pprofVariables = baseVars.makeCopy()
+	defer func() { pprofVariables = baseVars }()
+
+	tlsConfig := &tls.Config{Certificates: []tls.Certificate{selfSignedCert(t)}}
+
+	l, err := tls.Listen("tcp", "localhost:0", tlsConfig)
+	if err != nil {
+		t.Fatalf("net.Listen: got error %v, want no error", err)
+	}
+
+	donec := make(chan error, 1)
+	go func(donec chan<- error) {
+		donec <- http.Serve(l, nil)
+	}(donec)
+	defer func() {
+		if got, want := <-donec, "use of closed"; !strings.Contains(got.Error(), want) {
+			t.Fatalf("Serve got error %v, want %q", got, want)
+		}
+	}()
+	defer l.Close()
+
+	go func() {
+		deadline := time.Now().Add(5 * time.Second)
+		for time.Now().Before(deadline) {
+			// Simulate a hotspot function.
+		}
+	}()
+
+	outputTempFile, err := ioutil.TempFile("", "profile_output")
+	if err != nil {
+		t.Fatalf("Failed to create tempfile: %v", err)
+	}
+	defer os.Remove(outputTempFile.Name())
+	defer outputTempFile.Close()
+
+	address := "https+insecure://" + l.Addr().String() + "/debug/pprof/profile?seconds=5"
+	p, _, _, err := grabProfile(&source{}, address, 0, nil, testObj{}, &proftest.TestUI{T: t})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(p.SampleType) == 0 {
+		t.Fatalf("grabProfile(%s) got empty profile: len(p.SampleType)==0", address)
+	}
+}
+
+func selfSignedCert(t *testing.T) tls.Certificate {
+	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("failed to generate private key: %v", err)
+	}
+	b, err := x509.MarshalECPrivateKey(privKey)
+	if err != nil {
+		t.Fatalf("failed to marshal private key: %v", err)
+	}
+	bk := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: b})
+
+	tmpl := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().Add(10 * time.Minute),
+	}
+
+	b, err = x509.CreateCertificate(rand.Reader, &tmpl, &tmpl, privKey.Public(), privKey)
+	if err != nil {
+		t.Fatalf("failed to create cert: %v", err)
+	}
+	bc := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: b})
+
+	cert, err := tls.X509KeyPair(bc, bk)
+	if err != nil {
+		t.Fatalf("failed to create TLS key pair: %v", err)
+	}
+	return cert
 }

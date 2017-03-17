@@ -16,17 +16,10 @@ package driver
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/pem"
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"math/big"
-	"net/http"
+	"net"
 	_ "net/http/pprof"
 	"os"
 	"regexp"
@@ -55,7 +48,6 @@ func TestParse(t *testing.T) {
 	savePath := os.Getenv("PPROF_BINARY_PATH")
 	os.Setenv("PPROF_BINARY_PATH", "/path/to")
 	defer os.Setenv("PPROF_BINARY_PATH", savePath)
-
 	testcase := []struct {
 		flags, source string
 	}{
@@ -236,9 +228,13 @@ func addFlags(f *testFlags, flags []string) {
 	}
 }
 
+func testSourceURL(port int) string {
+	return fmt.Sprintf("http://%s/", net.JoinHostPort(testSourceAddress, strconv.Itoa(port)))
+}
+
 // solutionFilename returns the name of the solution file for the test
 func solutionFilename(source string, f *testFlags) string {
-	name := []string{"pprof", strings.TrimPrefix(source, "http://host:8000/")}
+	name := []string{"pprof", strings.TrimPrefix(source, testSourceURL(8000))}
 	name = addString(name, f, []string{"flat", "cum"})
 	name = addString(name, f, []string{"functions", "files", "lines", "addresses"})
 	name = addString(name, f, []string{"inuse_space", "inuse_objects", "alloc_space", "alloc_objects"})
@@ -347,15 +343,6 @@ func (f testFlags) Parse(func()) []string {
 	return f.args
 }
 
-func emptyFlags() testFlags {
-	return testFlags{
-		bools:   map[string]bool{},
-		ints:    map[string]int{},
-		floats:  map[string]float64{},
-		strings: map[string]string{},
-	}
-}
-
 func baseFlags() testFlags {
 	return testFlags{
 		bools: map[string]bool{
@@ -384,7 +371,6 @@ type testFetcher struct{}
 
 func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string, error) {
 	var p *profile.Profile
-	s = strings.TrimPrefix(s, "http://host:8000/")
 	switch s {
 	case "cpu", "unknown":
 		p = cpuProfile()
@@ -402,17 +388,10 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 		p = contentionProfile()
 	case "symbolz":
 		p = symzProfile()
-	case "http://host2/symbolz":
-		p = symzProfile()
-		p.Mapping[0].Start += testOffset
-		p.Mapping[0].Limit += testOffset
-		for i := range p.Location {
-			p.Location[i].Address += testOffset
-		}
 	default:
 		return nil, "", fmt.Errorf("unexpected source: %s", s)
 	}
-	return p, s, nil
+	return p, testSourceURL(8000) + s, nil
 }
 
 type testSymbolizer struct{}
@@ -435,7 +414,19 @@ func (testSymbolizeDemangler) Symbolize(_ string, _ plugin.MappingSources, p *pr
 func testFetchSymbols(source, post string) ([]byte, error) {
 	var buf bytes.Buffer
 
-	if source == "http://host2/symbolz" {
+	switch source {
+	case testSourceURL(8000) + "symbolz":
+		for _, address := range strings.Split(post, "+") {
+			a, _ := strconv.ParseInt(address, 0, 64)
+			fmt.Fprintf(&buf, "%v\t", address)
+			if a-testStart > testOffset {
+				fmt.Fprintf(&buf, "wrong_source_%v_", address)
+				continue
+			}
+			fmt.Fprintf(&buf, "%#x\n", a-testStart)
+		}
+		return buf.Bytes(), nil
+	case testSourceURL(8001) + "symbolz":
 		for _, address := range strings.Split(post, "+") {
 			a, _ := strconv.ParseInt(address, 0, 64)
 			fmt.Fprintf(&buf, "%v\t", address)
@@ -446,17 +437,9 @@ func testFetchSymbols(source, post string) ([]byte, error) {
 			fmt.Fprintf(&buf, "%#x\n", a-testStart-testOffset)
 		}
 		return buf.Bytes(), nil
+	default:
+		return nil, fmt.Errorf("unexpected source: %s", source)
 	}
-	for _, address := range strings.Split(post, "+") {
-		a, _ := strconv.ParseInt(address, 0, 64)
-		fmt.Fprintf(&buf, "%v\t", address)
-		if a-testStart > testOffset {
-			fmt.Fprintf(&buf, "wrong_source_%v_", address)
-			continue
-		}
-		fmt.Fprintf(&buf, "%#x\n", a-testStart)
-	}
-	return buf.Bytes(), nil
 }
 
 type testSymbolzSymbolizer struct{}
@@ -1006,13 +989,36 @@ func TestTagFilter(t *testing.T) {
 	}
 }
 
+type testSymbolzMergeFetcher struct{}
+
+func (testSymbolzMergeFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string, error) {
+	var p *profile.Profile
+	switch s {
+	case testSourceURL(8000) + "symbolz":
+		p = symzProfile()
+	case testSourceURL(8001) + "symbolz":
+		p = symzProfile()
+		p.Mapping[0].Start += testOffset
+		p.Mapping[0].Limit += testOffset
+		for i := range p.Location {
+			p.Location[i].Address += testOffset
+		}
+	default:
+		return nil, "", fmt.Errorf("unexpected source: %s", s)
+	}
+	return p, s, nil
+}
+
 func TestSymbolzAfterMerge(t *testing.T) {
 	baseVars := pprofVariables
 	pprofVariables = baseVars.makeCopy()
 	defer func() { pprofVariables = baseVars }()
 
 	f := baseFlags()
-	f.args = []string{"symbolz", "http://host2/symbolz"}
+	f.args = []string{
+		testSourceURL(8000) + "symbolz",
+		testSourceURL(8001) + "symbolz",
+	}
 
 	o := setDefaults(nil)
 	o.Flagset = f
@@ -1026,7 +1032,7 @@ func TestSymbolzAfterMerge(t *testing.T) {
 		t.Fatalf("parseFlags returned command %v, want [proto]", cmd)
 	}
 
-	o.Fetch = testFetcher{}
+	o.Fetch = testSymbolzMergeFetcher{}
 	o.Sym = testSymbolzSymbolizer{}
 	p, err := fetchProfiles(src, o)
 	if err != nil {
@@ -1045,99 +1051,6 @@ func TestSymbolzAfterMerge(t *testing.T) {
 			t.Errorf("symbolz %#x, got %s, want %s", address, got, want)
 		}
 	}
-}
-
-func TestHttpsInsecure(t *testing.T) {
-	baseVars := pprofVariables
-	pprofVariables = baseVars.makeCopy()
-	defer func() { pprofVariables = baseVars }()
-
-	tlsConfig := &tls.Config{Certificates: []tls.Certificate{selfSignedCert(t)}}
-
-	l, err := tls.Listen("tcp", "localhost:0", tlsConfig)
-	if err != nil {
-		t.Fatalf("net.Listen: got error %v, want no error", err)
-	}
-
-	donec := make(chan error, 1)
-	go func(donec chan<- error) {
-		donec <- http.Serve(l, nil)
-	}(donec)
-	defer func() {
-		if got, want := <-donec, "use of closed"; !strings.Contains(got.Error(), want) {
-			t.Fatalf("Serve got error %v, want %q", got, want)
-		}
-	}()
-	defer l.Close()
-
-	go func() {
-		deadline := time.Now().Add(5 * time.Second)
-		for time.Now().Before(deadline) {
-			// Simulate a hotspot function.
-		}
-	}()
-
-	outputTempFile, err := ioutil.TempFile("", "profile_output")
-	if err != nil {
-		t.Fatalf("Failed to create tempfile: %v", err)
-	}
-	defer os.Remove(outputTempFile.Name())
-	defer outputTempFile.Close()
-
-	f := emptyFlags()
-	o := setDefaults(nil)
-	o.Flagset = &f
-
-	f.args = []string{"https+insecure://" + l.Addr().String() + "/debug/pprof/profile?seconds=5"}
-	addFlags(&f, []string{
-		"top",
-		"symbolize=remote",
-		"output=" + outputTempFile.Name(),
-	})
-
-	if err := PProf(o); err != nil {
-		t.Fatalf("PProf(%v): got error %v, want no error", o, err)
-	}
-
-	b, err := ioutil.ReadFile(outputTempFile.Name())
-	if err != nil {
-		t.Fatalf("ReadFile(%s) got error %v, want no error", outputTempFile.Name(), err)
-	}
-	// TODO(aalexand): Fix to reqiure "TestHttpsInsecure" in the output once #120
-	// is fixed which causes symbolization issues on OSX with Go 1.8.
-	if got, want := string(b), "Showing nodes accounting"; !strings.Contains(got, want) {
-		t.Fatalf("Pprof(%v): got %v, want %q substring", o, got, want)
-	}
-}
-
-func selfSignedCert(t *testing.T) tls.Certificate {
-	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatalf("failed to generate private key: %v", err)
-	}
-	b, err := x509.MarshalECPrivateKey(privKey)
-	if err != nil {
-		t.Fatalf("failed to marshal private key: %v", err)
-	}
-	bk := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: b})
-
-	tmpl := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		NotBefore:    time.Now(),
-		NotAfter:     time.Now().Add(10 * time.Minute),
-	}
-
-	b, err = x509.CreateCertificate(rand.Reader, &tmpl, &tmpl, privKey.Public(), privKey)
-	if err != nil {
-		t.Fatalf("failed to create cert: %v", err)
-	}
-	bc := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: b})
-
-	cert, err := tls.X509KeyPair(bc, bk)
-	if err != nil {
-		t.Fatalf("failed to create TLS key pair: %v", err)
-	}
-	return cert
 }
 
 type mockObjTool struct{}
