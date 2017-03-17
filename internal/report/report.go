@@ -624,9 +624,9 @@ func printTags(w io.Writer, rpt *Report) error {
 				valueMap, ok := tagMap[key]
 				if !ok {
 					valueMap = make(map[string]int64)
+					tagMap[key] = valueMap
 				}
 				valueMap[val] += o.SampleValue(s.Value)
-				tagMap[key] = valueMap
 			}
 		}
 		for key, vals := range s.NumLabel {
@@ -635,9 +635,9 @@ func printTags(w io.Writer, rpt *Report) error {
 				valueMap, ok := tagMap[key]
 				if !ok {
 					valueMap = make(map[string]int64)
+					tagMap[key] = valueMap
 				}
 				valueMap[val] += o.SampleValue(s.Value)
-				tagMap[key] = valueMap
 			}
 		}
 	}
@@ -668,9 +668,7 @@ func printTags(w io.Writer, rpt *Report) error {
 		}
 		fmt.Fprintln(tabw)
 	}
-	tabw.Flush()
-	return nil
-
+	return tabw.Flush()
 }
 
 // printComments prints all freeform comments in the profile.
