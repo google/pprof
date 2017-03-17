@@ -242,6 +242,8 @@ func setTmpDir(ui plugin.UI) (string, error) {
 	return "", fmt.Errorf("failed to identify temp dir")
 }
 
+const testSourceAddress = "pproftest.local"
+
 // grabProfile fetches a profile. Returns the profile, sources for the
 // profile mappings, a bool indicating if the profile was fetched
 // remotely, and an error.
@@ -276,6 +278,11 @@ func grabProfile(s *source, source string, scale float64, fetcher plugin.Fetcher
 	if src != "" {
 		msrc = collectMappingSources(p, src)
 		remote = true
+		if strings.HasPrefix(src, "http://"+testSourceAddress) {
+			// Treat test inputs as local to avoid saving
+			// testcase profiles during driver testing.
+			remote = false
+		}
 	}
 	return
 }
