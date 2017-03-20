@@ -1,0 +1,23 @@
+language: cpp
+
+sudo: required
+
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y libelf-dev libssl-dev
+  - git submodule update --init --recursive
+
+install:
+  # install gcc-4.8 with c++11 support: https://github.com/travis-ci-tester/travis-test-gcc-cxx-11
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  - sudo apt-get update
+  - sudo apt-get install g++-4.8
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90
+  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 90
+
+compiler:
+  - clang
+  - gcc
+
+script:
+  - make perf_to_profile check
