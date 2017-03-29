@@ -532,6 +532,7 @@ type assemblyInstruction struct {
 	line            int
 	flat, cum       int64
 	flatDiv, cumDiv int64
+	startsBlock     bool
 }
 
 func (a *assemblyInstruction) flatValue() int64 {
