@@ -802,7 +802,11 @@ func (g *Graph) selectTopNodes(maxNodes int, visualMode bool) Nodes {
 			// If generating a visual graph, count tags as nodes. Update
 			// maxNodes to account for them.
 			for i, n := range g.Nodes {
-				if count += countTags(n) + 1; count >= maxNodes {
+				tags := countTags(n)
+				if tags > maxNodelets {
+					tags = maxNodelets
+				}
+				if count += tags + 1; count >= maxNodes {
 					maxNodes = i + 1
 					break
 				}
