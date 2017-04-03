@@ -209,6 +209,59 @@ func compareGraphs(t *testing.T, got, want []byte) {
 	}
 }
 
+func TestNodeletCountCapping(t *testing.T) {
+	labelTags := make(TagMap)
+	for i := 0; i < 10; i++ {
+		name := fmt.Sprintf("tag-%d", i)
+		labelTags[name] = &Tag{
+			Name: name,
+			Flat: 10,
+			Cum:  10,
+		}
+	}
+	numTags := make(TagMap)
+	for i := 0; i < 10; i++ {
+		name := fmt.Sprintf("num-tag-%d", i)
+		numTags[name] = &Tag{
+			Name:  name,
+			Unit:  "mb",
+			Value: 16,
+			Flat:  10,
+			Cum:   10,
+		}
+	}
+	node1 := &Node{
+		Info:        NodeInfo{Name: "node1-with-tags"},
+		Flat:        10,
+		Cum:         10,
+		NumericTags: map[string]TagMap{"": numTags},
+		LabelTags:   labelTags,
+	}
+	node2 := &Node{
+		Info: NodeInfo{Name: "node2"},
+		Flat: 15,
+		Cum:  15,
+	}
+	node3 := &Node{
+		Info: NodeInfo{Name: "node3"},
+		Flat: 15,
+		Cum:  15,
+	}
+	g := &Graph{
+		Nodes: Nodes{
+			node1,
+			node2,
+			node3,
+		},
+	}
+	for n := 1; n <= 3; n++ {
+		input := maxNodelets + n
+		if got, want := len(g.SelectTopNodes(input, true)), n; got != want {
+			t.Errorf("SelectTopNodes(%d): got %d nodes, want %d", input, got, want)
+		}
+	}
+}
+
 func TestMultilinePrintableName(t *testing.T) {
 	ni := &NodeInfo{
 		Name:    "test1.test2::test3",
