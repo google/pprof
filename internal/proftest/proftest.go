@@ -94,7 +94,7 @@ func (ui *TestUI) PrintErr(args ...interface{}) {
 	if ui.IgnoreRx != "" {
 		if matched, err := regexp.MatchString(ui.IgnoreRx, fmt.Sprint(args)); matched || err != nil {
 			if err != nil {
-				ui.T.Error(args)
+				ui.T.Errorf("failed to match against regex %q: %v", ui.IgnoreRx, err)
 			}
 			return
 		}
