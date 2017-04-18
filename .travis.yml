@@ -3,6 +3,8 @@ go:
   - 1.7.x
   - 1.8.x
 
+go_import_path: github.com/google/pprof
+
 os:
   - linux
   - osx
