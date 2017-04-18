@@ -35,8 +35,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/pprof/internal/binutils"
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/internal/proftest"
+	"github.com/google/pprof/internal/symbolizer"
 	"github.com/google/pprof/profile"
 )
 
@@ -275,14 +277,37 @@ func TestHttpsInsecure(t *testing.T) {
 	defer os.Remove(outputTempFile.Name())
 	defer outputTempFile.Close()
 
-	address := "https+insecure://" + l.Addr().String() + "/debug/pprof/profile?seconds=5"
-	p, _, _, err := grabProfile(&source{}, address, 0, nil, testObj{}, &proftest.TestUI{T: t})
+	address := "https+insecure://" + l.Addr().String() + "/debug/pprof/profile"
+	s := &source{
+		Sources:   []string{address},
+		Seconds:   10,
+		Timeout:   10,
+		Symbolize: "remote",
+	}
+	o := &plugin.Options{
+		Obj: &binutils.Binutils{},
+		UI:  &proftest.TestUI{T: t, IgnoreRx: "Saved profile in"},
+	}
+	o.Sym = &symbolizer.Symbolizer{Obj: o.Obj, UI: o.UI}
+	p, err := fetchProfiles(s, o)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(p.SampleType) == 0 {
 		t.Fatalf("grabProfile(%s) got empty profile: len(p.SampleType)==0", address)
 	}
+	if err := checkProfileHasFunction(p, "TestHttpsInsecure"); err != nil {
+		t.Fatalf("grabProfile(%s) %v", address, err)
+	}
+}
+
+func checkProfileHasFunction(p *profile.Profile, fname string) error {
+	for _, f := range p.Function {
+		if strings.Contains(f.Name, fname) {
+			return nil
+		}
+	}
+	return fmt.Errorf("got %s, want function %q", p.String(), fname)
 }
 
 func selfSignedCert(t *testing.T) tls.Certificate {
