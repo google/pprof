@@ -1,4 +1,4 @@
-// Copyright 2014 Google Inc. All Rights Reserved.
+// Copyright 2017 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@ package measurement
 import (
 	"testing"
 )
-
-//func Scale(value int64, fromUnit, toUnit string) (float64, string) {
 
 func TestScale(t *testing.T) {
 	for _, tc := range []struct {
