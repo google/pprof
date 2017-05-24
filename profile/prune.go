@@ -37,6 +37,10 @@ func (p *Profile) Prune(dropRx, keepRx *regexp.Regexp) {
 				funcName := strings.TrimPrefix(fn.Name, ".")
 				// Account for unsimplified names -- trim starting from the first '('.
 				if index := strings.Index(funcName, "("); index > 0 {
+					// ... unless the thing in brackets is an anonymous namespace marker
+					if !strings.HasPrefix(funcName[index:], "(anonymous namespace)") {
+						funcName = funcName[:index]
+					}
 					funcName = funcName[:index]
 				}
 				if dropRx.MatchString(funcName) {
@@ -130,6 +134,10 @@ func (p *Profile) PruneFrom(dropRx *regexp.Regexp) {
 				funcName := strings.TrimPrefix(fn.Name, ".")
 				// Account for unsimplified names -- trim starting from the first '('.
 				if index := strings.Index(funcName, "("); index > 0 {
+					// ... unless the thing in brackets is an anonymous namespace marker
+					if !strings.HasPrefix(funcName[index:], "(anonymous namespace)") {
+						funcName = funcName[:index]
+					}
 					funcName = funcName[:index]
 				}
 				if dropRx.MatchString(funcName) {
