@@ -41,7 +41,6 @@ func (p *Profile) Prune(dropRx, keepRx *regexp.Regexp) {
 					if !strings.HasPrefix(funcName[index:], "(anonymous namespace)") {
 						funcName = funcName[:index]
 					}
-					funcName = funcName[:index]
 				}
 				if dropRx.MatchString(funcName) {
 					if keepRx == nil || !keepRx.MatchString(funcName) {
@@ -138,7 +137,6 @@ func (p *Profile) PruneFrom(dropRx *regexp.Regexp) {
 					if !strings.HasPrefix(funcName[index:], "(anonymous namespace)") {
 						funcName = funcName[:index]
 					}
-					funcName = funcName[:index]
 				}
 				if dropRx.MatchString(funcName) {
 					// Found matching entry to prune.
