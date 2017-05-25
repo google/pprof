@@ -53,6 +53,8 @@ var funs = []*Function{
 	{ID: 6, Name: "fun5", SystemName: "fun5", Filename: "fun.c"},
 	{ID: 7, Name: "unsimplified_fun(int)", SystemName: "unsimplified_fun(int)", Filename: "fun.c"},
 	{ID: 8, Name: "Foo::(anonymous namespace)::Test::Bar", SystemName: "Foo::(anonymous namespace)::Test::Bar", Filename: "fun.c"},
+	{ID: 9, Name: "Hello::(anonymous namespace)::World(const Foo::(anonymous namespace)::Test::Bar)", SystemName: "Hello::(anonymous namespace)::World(const Foo::(anonymous namespace)::Test::Bar)", Filename: "fun.c"},
+	{ID: 10, Name: "Foo::operator()(::Bar)", SystemName: "Foo::operator()(::Bar)", Filename: "fun.c"},
 }
 
 var locs1 = []*Location{
@@ -160,6 +162,18 @@ var locs2 = []*Location{
 			{Function: funs[7], Line: 1},
 		},
 	},
+	{
+		ID: 4,
+		Line: []Line{
+			{Function: funs[8], Line: 1},
+		},
+	},
+	{
+		ID: 5,
+		Line: []Line{
+			{Function: funs[9], Line: 1},
+		},
+	},
 }
 
 var in2 = &Profile{
@@ -171,20 +185,30 @@ var in2 = &Profile{
 		{Type: "cpu", Unit: "milliseconds"},
 	},
 	Sample: []*Sample{
+		// Unsimplified name with parameters shouldn't match.
 		{
 			Location: []*Location{locs2[1], locs2[0]},
 			Value:    []int64{1, 1},
 		},
+		// .*Foo::.*::Bar.* should (and will be dropped) regardless of the anonymous namespace.
 		{
 			Location: []*Location{locs2[2], locs2[0]},
 			Value:    []int64{1, 1},
 		},
+		// .*Foo::.*::Bar.* shouldn't match inside the parameter list.
+		{
+			Location: []*Location{locs2[3], locs2[0]},
+			Value:    []int64{1, 1},
+		},
+		// .*operator\(\) should match, regardless of parameters.
+		{
+			Location: []*Location{locs2[4], locs2[0]},
+			Value:    []int64{1, 1},
+		},
 	},
-	Location: locs2,
-	Function: funs,
-	// Unsimplified name with parameters shouldn't match,
-	// Foo::.*::Bar should (and will be dropped) regardless of the anonymous namespace.
-	DropFrames: `unsimplified_fun\(int\)|Foo::.*::Bar`,
+	Location:   locs2,
+	Function:   funs,
+	DropFrames: `unsimplified_fun\(int\)|.*Foo::.*::Bar.*|.*operator\(\)`,
 }
 
 const out2 = `PeriodType: cpu milliseconds
@@ -194,9 +218,13 @@ Samples:
 samples/count cpu/milliseconds
           1          1: 2 1
           1          1: 1
+          1          1: 4 1
+          1          1: 1
 Locations
      1: 0x0 main main.c:1 s=0
      2: 0x0 unsimplified_fun(int) fun.c:1 s=0
      3: 0x0 Foo::(anonymous namespace)::Test::Bar fun.c:1 s=0
+     4: 0x0 Hello::(anonymous namespace)::World(const Foo::(anonymous namespace)::Test::Bar) fun.c:1 s=0
+     5: 0x0 Foo::operator()(::Bar) fun.c:1 s=0
 Mappings
 `

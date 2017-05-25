@@ -22,6 +22,38 @@ import (
 	"strings"
 )
 
+var (
+	reservedNames = []string{"(anonymous namespace)", "operator()"}
+	bracketRx     = rx.MustCompile("(" + strings.Replace(strings.Replace(
+		strings.Join(append(reservedNames, "("), "|"),
+		"(", "\\(", -1), ")", "\\)", -1) + ")")
+)
+
+// simplifyFunc does some primitive simplification of function names.
+func simplifyFunc(f string) string {
+	fmt.Println(rx)
+	// Account for leading '.' on the PPC ELF v1 ABI.
+	funcName := strings.TrimPrefix(f, ".")
+	// Account for unsimplified names -- try  to remove the argument list by trimming
+	// starting from the first '(', but skipping reserved names that have '('.
+	if indeces := bracketRx.FindAllStringSubmatchIndex(funcName, -1); indeces != nil {
+		for _, ind := range indeces {
+			foundReserved := false
+			for _, res := range reservedNames {
+				if funcName[ind[0]:ind[1]] == res {
+					foundReserved = true
+					break
+				}
+			}
+			if !foundReserved {
+				funcName = funcName[:ind[0]]
+				break
+			}
+		}
+	}
+	return funcName
+}
+
 // Prune removes all nodes beneath a node matching dropRx, and not
 // matching keepRx. If the root node of a Sample matches, the sample
 // will have an empty stack.
@@ -33,15 +65,7 @@ func (p *Profile) Prune(dropRx, keepRx *regexp.Regexp) {
 		var i int
 		for i = len(loc.Line) - 1; i >= 0; i-- {
 			if fn := loc.Line[i].Function; fn != nil && fn.Name != "" {
-				// Account for leading '.' on the PPC ELF v1 ABI.
-				funcName := strings.TrimPrefix(fn.Name, ".")
-				// Account for unsimplified names -- trim starting from the first '('.
-				if index := strings.Index(funcName, "("); index > 0 {
-					// ... unless the thing in brackets is an anonymous namespace marker
-					if !strings.HasPrefix(funcName[index:], "(anonymous namespace)") {
-						funcName = funcName[:index]
-					}
-				}
+				funcName := simplifyFunc(fn.Name)
 				if dropRx.MatchString(funcName) {
 					if keepRx == nil || !keepRx.MatchString(funcName) {
 						break
@@ -129,15 +153,7 @@ func (p *Profile) PruneFrom(dropRx *regexp.Regexp) {
 	for _, loc := range p.Location {
 		for i := 0; i < len(loc.Line); i++ {
 			if fn := loc.Line[i].Function; fn != nil && fn.Name != "" {
-				// Account for leading '.' on the PPC ELF v1 ABI.
-				funcName := strings.TrimPrefix(fn.Name, ".")
-				// Account for unsimplified names -- trim starting from the first '('.
-				if index := strings.Index(funcName, "("); index > 0 {
-					// ... unless the thing in brackets is an anonymous namespace marker
-					if !strings.HasPrefix(funcName[index:], "(anonymous namespace)") {
-						funcName = funcName[:index]
-					}
-				}
+				funcName := simplifyFunc(fn.Name)
 				if dropRx.MatchString(funcName) {
 					// Found matching entry to prune.
 					pruneBeneath[loc.ID] = true
