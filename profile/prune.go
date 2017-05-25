@@ -24,14 +24,13 @@ import (
 
 var (
 	reservedNames = []string{"(anonymous namespace)", "operator()"}
-	bracketRx     = rx.MustCompile("(" + strings.Replace(strings.Replace(
+	bracketRx     = regexp.MustCompile("(" + strings.Replace(strings.Replace(
 		strings.Join(append(reservedNames, "("), "|"),
 		"(", "\\(", -1), ")", "\\)", -1) + ")")
 )
 
 // simplifyFunc does some primitive simplification of function names.
 func simplifyFunc(f string) string {
-	fmt.Println(rx)
 	// Account for leading '.' on the PPC ELF v1 ABI.
 	funcName := strings.TrimPrefix(f, ".")
 	// Account for unsimplified names -- try  to remove the argument list by trimming
