@@ -27,6 +27,8 @@
 
 #include "perf_data_converter.h"
 
+#include <algorithm>
+#include <deque>
 #include <map>
 #include <sstream>
 #include <vector>
@@ -45,29 +47,8 @@ namespace {
 
 typedef perftools::profiles::Profile Profile;
 typedef perftools::profiles::Builder ProfileBuilder;
-typedef std::vector<std::unique_ptr<Profile>> ProfileVector;
 
 typedef uint32 Pid;
-
-// List of profile location IDs, currently used to represent a call stack.
-typedef std::vector<uint64> LocationIdVector;
-
-// Map from different stacks to corresponding profile samples.
-typedef std::map<LocationIdVector, perftools::profiles::Sample*> SampleMap;
-
-// Map from a virtual address to a profile location ID. It only keys off the
-// address, not also the mapping ID since the map / its portions are invalidated
-// by Comm() and MMap() methods to force re-creation of those locations.
-//
-// TODO(aalexand): It might be simpler to just have the mapping pointer / ID a
-// part of the key and skip the invalidation part altogether though it would
-// increase the memory usage some.
-typedef std::map<uint64, uint64> LocationMap;
-
-// Map from the handler mapping object to profile mapping ID. The mappings
-// the handler creates are immutable and reasonably shared (as in no new mapping
-// object is created per, say, each sample), so using the pointers is OK.
-typedef std::unordered_map<const PerfDataHandler::Mapping*, uint64> MappingMap;
 
 enum ExecutionMode {
   Unknown,
@@ -96,13 +77,55 @@ const char* ExecModeString(ExecutionMode mode) {
   }
 }
 
-// Adds the string to the profile builder, ensuring the string contains
-// structurally valid UTF-8.  All strings inserted into the profile string table
-// must be valid UTF-8, otherwise unmarshalling the proto fails in Go.
+ExecutionMode PerfExecMode(const PerfDataHandler::SampleContext& sample) {
+  if (sample.header.has_misc()) {
+    switch (sample.header.misc()) {
+      case PERF_RECORD_MISC_KERNEL:
+        return HostKernel;
+      case PERF_RECORD_MISC_USER:
+        return HostUser;
+      case PERF_RECORD_MISC_GUEST_KERNEL:
+        return GuestKernel;
+      case PERF_RECORD_MISC_GUEST_USER:
+        return GuestUser;
+      case PERF_RECORD_MISC_HYPERVISOR:
+        return Hypervisor;
+    }
+  }
+  return Unknown;
+}
+
+// Adds the string to the profile builder. If the UTF-8 library is included,
+// this also ensures the string contains structurally valid UTF-8.
+// In order to successfully unmarshal the proto in Go, all strings inserted into
+// the profile string table must be valid UTF-8.
 int64 UTF8StringId(const string& s, ProfileBuilder* builder) {
-  // TODO(aalexand): Implement this.
+  #ifdef ENFORCE_UTF8_VALIDITY
+  if (!utf8::is_valid(s.begin(), s.end())) {
+    // Non-UTF8 strings are likely garbage so avoid loading any part of those.
+    // Using a well-known placeholder enables querying to see if we get any.
+    return builder->StringId("<invalid-utf8>");
+  }
+  #endif  // ENFORCE_UTF8_VALIDITY.
   return builder->StringId(s.c_str());
 }
+
+// Returns the file name of the mapping as either the real file path if it's
+// present or the string representation of the file path MD5 checksum prefix
+// when the real file path was stripped from the data for privacy reasons.
+string MappingFilename(const PerfDataHandler::Mapping* m) {
+  if (m->filename != nullptr && !m->filename->empty()) {
+    return *m->filename;
+  } else if (m->filename_md5_prefix != 0) {
+    std::stringstream filename;
+    filename << std::hex << m->filename_md5_prefix;
+    return filename.str();
+  }
+  return "";
+}
+
+// List of profile location IDs, currently used to represent a call stack.
+typedef std::vector<uint64> LocationIdVector;
 
 // It is sufficient to key the location and mapping maps by PID.
 // However, when Samples include labels, it is necessary to key their maps
@@ -113,46 +136,106 @@ int64 UTF8StringId(const string& s, ProfileBuilder* builder) {
 //
 // If any of these values are not used as labels, they should be set to 0.
 struct SampleKey {
- public:
-  Pid pid;
-  Pid tid;
-  uint64 time_ns;
-  ExecutionMode exec_mode;
-  SampleKey() {
-    pid = 0;
-    tid = 0;
-    time_ns = 0;
-    exec_mode = Unknown;
-  }
+  Pid pid = 0;
+  Pid tid = 0;
+  uint64 time_ns = 0;
+  ExecutionMode exec_mode = Unknown;
+  // The index of the sample's command in the profile's string table.
+  uint64 comm = 0;
+  LocationIdVector stack;
 };
 
 struct SampleKeyEqualityTester {
   bool operator()(const SampleKey a, const SampleKey b) const {
     return ((a.pid == b.pid) && (a.tid == b.tid) && (a.time_ns == b.time_ns) &&
-            (a.exec_mode == b.exec_mode));
+            (a.exec_mode == b.exec_mode) && (a.comm == b.comm) &&
+            (a.stack == b.stack));
   }
 };
 
 struct SampleKeyHasher {
   size_t operator()(const SampleKey k) const {
-    return (std::hash<int32>()(k.pid) ^ std::hash<int32>()(k.tid) ^
-            std::hash<uint64>()(k.time_ns) ^ std::hash<int>()(k.exec_mode));
+    size_t hash = 0;
+    hash ^= std::hash<int32>()(k.pid);
+    hash ^= std::hash<int32>()(k.tid);
+    hash ^= std::hash<uint64>()(k.time_ns);
+    hash ^= std::hash<int>()(k.exec_mode);
+    hash ^= std::hash<uint64>()(k.comm);
+    for (const auto& id : k.stack) {
+      hash ^= std::hash<uint64>()(id);
+    }
+    return hash;
   }
+};
+
+// While Locations and Mappings are per-address-space (=per-process), samples
+// can be thread-specific.  If the requested sample labels include PID and
+// TID, we'll need to maintain separate profile sample objects for samples
+// that are identical except for TID.  Likewise, if the requested sample
+// labels include timestamp_ns, then we'll need to have separate
+// profile_proto::Samples for samples that are identical except for timestamp.
+typedef std::unordered_map<SampleKey, perftools::profiles::Sample*,
+                           SampleKeyHasher, SampleKeyEqualityTester> SampleMap;
+
+// Map from a virtual address to a profile location ID. It only keys off the
+// address, not also the mapping ID since the map / its portions are invalidated
+// by Comm() and MMap() methods to force re-creation of those locations.
+//
+// TODO(aalexand): It might be simpler to just have the mapping pointer / ID a
+// part of the key and skip the invalidation part altogether though it would
+// increase the memory usage some.
+typedef std::map<uint64, uint64> LocationMap;
+
+// Map from the handler mapping object to profile mapping ID. The mappings
+// the handler creates are immutable and reasonably shared (as in no new mapping
+// object is created per, say, each sample), so using the pointers is OK.
+typedef std::unordered_map<const PerfDataHandler::Mapping*, uint64> MappingMap;
+
+// Per-process (aggregated when no PID grouping requested) info.
+// See docs on ProcessProfile in the header file for details on the fields.
+class ProcessMeta {
+ public:
+  // Constructs the object for the specified PID.
+  explicit ProcessMeta(Pid pid) : pid_(pid) {}
+
+  // Updates the bounding time interval ranges per specified timestamp.
+  void UpdateTimestamps(int64 time_nsec) {
+    if (min_sample_time_ns_ == 0 || time_nsec < min_sample_time_ns_) {
+      min_sample_time_ns_ = time_nsec;
+    }
+    if (max_sample_time_ns_ == 0 || time_nsec > max_sample_time_ns_) {
+      max_sample_time_ns_ = time_nsec;
+    }
+  }
+
+  std::unique_ptr<ProcessProfile> makeProcessProfile(Profile* data) {
+    ProcessProfile* pp = new ProcessProfile();
+    pp->pid = pid_;
+    pp->data.Swap(data);
+    pp->min_sample_time_ns = min_sample_time_ns_;
+    pp->max_sample_time_ns = max_sample_time_ns_;
+    return std::unique_ptr<ProcessProfile>(pp);
+  }
+
+ private:
+  Pid pid_;
+  int64 min_sample_time_ns_ = 0;
+  int64 max_sample_time_ns_ = 0;
 };
 
 class PerfDataConverter : public PerfDataHandler {
  public:
   explicit PerfDataConverter(const quipper::PerfDataProto& perf_data,
                              uint32 sample_labels = kNoLabels,
-                             bool group_by_pids = true)
+                             uint32 options = kGroupByPids)
       : perf_data_(perf_data),
         sample_labels_(sample_labels),
-        group_by_pids_(group_by_pids) {}
+        options_(options) {}
   PerfDataConverter(const PerfDataConverter&) = delete;
   PerfDataConverter& operator=(const PerfDataConverter&) = delete;
   virtual ~PerfDataConverter() {}
 
-  ProfileVector Profiles();
+  ProcessProfiles Profiles();
 
   // Callbacks for PerfDataHandler
   virtual void Sample(const PerfDataHandler::SampleContext& sample);
@@ -165,7 +248,6 @@ class PerfDataConverter : public PerfDataHandler {
   // with the sample if the sample was added before.
   void AddOrUpdateSample(const PerfDataHandler::SampleContext& context,
                          const Pid& pid, const SampleKey& sample_key,
-                         const LocationIdVector& stack,
                          ProfileBuilder* builder);
 
   // Adds a new location to the profile if such location is not present in the
@@ -181,36 +263,152 @@ class PerfDataConverter : public PerfDataHandler {
   uint64 AddOrGetMapping(const Pid& pid, const PerfDataHandler::Mapping* smap,
                          ProfileBuilder* builder);
 
-  bool IncludePidLabels() { return (sample_labels_ & kPidLabel); }
-  bool IncludeTidLabels() { return (sample_labels_ & kTidLabel); }
-  bool IncludeTimestampNsLabels() {
+  // Returns whether pid labels were requested for inclusion in the
+  // profile.proto's Sample.Label field.
+  bool IncludePidLabels() const { return (sample_labels_ & kPidLabel); }
+  // Returns whether tid labels were requested for inclusion in the
+  // profile.proto's Sample.Label field.
+  bool IncludeTidLabels() const { return (sample_labels_ & kTidLabel); }
+  // Returns whether timestamp_ns labels were requested for inclusion in the
+  // profile.proto's Sample.Label field.
+  bool IncludeTimestampNsLabels() const {
     return (sample_labels_ & kTimestampNsLabel);
   }
-  bool IncludeExecutionModeLabels() {
+  // Returns whether execution_mode labels were requested for inclusion in the
+  // profile.proto's Sample.Label field.
+  bool IncludeExecutionModeLabels() const {
     return (sample_labels_ & kExecutionModeLabel);
   }
+  // Returns whether comm labels were requested for inclusion in the
+  // profile.proto's Sample.Label field.
+  bool IncludeCommLabels() const { return (sample_labels_ & kCommLabel); }
+
+  SampleKey MakeSampleKey(const PerfDataHandler::SampleContext& sample,
+                          ProfileBuilder* builder);
+
+  ProfileBuilder* GetOrCreateBuilder(
+      const PerfDataHandler::SampleContext& sample);
 
   const quipper::PerfDataProto& perf_data_;
-  std::vector<std::unique_ptr<ProfileBuilder>> builders_;
+  // Using deque so that appends do not invalidate existing pointers.
+  std::deque<ProfileBuilder> builders_;
+  std::deque<ProcessMeta> process_metas_;
 
-  std::unordered_map<Pid, ProfileBuilder*> pid_to_builder_;
-  std::unordered_map<Pid, LocationMap> pid_to_location_map_;
-  std::unordered_map<Pid, MappingMap> pid_to_mapping_map_;
-
-  // While Locations and Mappings are per-address-space (=per-process), samples
-  // can be thread-specific.  If the requested sample labels include PID and
-  // TID, we'll need to maintain separate profile sample objects for samples
-  // that are identical except for TID.  Likewise, if the requested sample
-  // labels include timestamp_ns, then we'll need to have separate
-  // profile_proto::Samples for samples that are identical except for timestamp.
-  std::unordered_map<SampleKey, SampleMap, SampleKeyHasher,
-                     SampleKeyEqualityTester>
-      sample_key_to_map_;
+  struct PerPidInfo {
+    ProfileBuilder* builder = nullptr;
+    ProcessMeta* process_meta = nullptr;
+    LocationMap location_map;
+    MappingMap mapping_map;
+    std::unordered_map<Pid, string> tid_to_comm_map;
+    SampleMap sample_map;
+    void clear() {
+      builder = nullptr;
+      process_meta = nullptr;
+      location_map.clear();
+      mapping_map.clear();
+      tid_to_comm_map.clear();
+      sample_map.clear();
+    }
+  };
+  std::unordered_map<Pid, PerPidInfo> per_pid_;
 
   const uint32 sample_labels_;
-
-  const bool group_by_pids_ = true;
+  const uint32 options_;
 };
+
+SampleKey PerfDataConverter::MakeSampleKey(
+    const PerfDataHandler::SampleContext& sample, ProfileBuilder* builder) {
+  SampleKey sample_key;
+  sample_key.pid = sample.sample.has_pid() ? sample.sample.pid() : 0;
+  sample_key.tid =
+      (IncludeTidLabels() && sample.sample.has_tid()) ? sample.sample.tid() : 0;
+  sample_key.time_ns =
+      (IncludeTimestampNsLabels() && sample.sample.has_sample_time_ns())
+          ? sample.sample.sample_time_ns()
+          : 0;
+  if (IncludeExecutionModeLabels()) {
+    sample_key.exec_mode = PerfExecMode(sample);
+  }
+  if (IncludeCommLabels() && sample.sample.has_pid() &&
+      sample.sample.has_tid()) {
+    Pid pid = sample.sample.pid();
+    Pid tid = sample.sample.tid();
+    const string& comm = per_pid_[pid].tid_to_comm_map[tid];
+    if (!comm.empty()) {
+      sample_key.comm = UTF8StringId(comm, builder);
+    }
+  }
+  return sample_key;
+}
+
+ProfileBuilder* PerfDataConverter::GetOrCreateBuilder(
+    const PerfDataHandler::SampleContext& sample) {
+  Pid builder_pid = (options_ & kGroupByPids) ? sample.sample.pid() : 0;
+  auto& per_pid = per_pid_[builder_pid];
+  if (per_pid.builder == nullptr) {
+    builders_.push_back(ProfileBuilder());
+    per_pid.builder = &builders_.back();
+    process_metas_.push_back(ProcessMeta(builder_pid));
+    per_pid.process_meta = &process_metas_.back();
+
+    ProfileBuilder* builder = per_pid.builder;
+    Profile* profile = builder->mutable_profile();
+    int unknown_event_idx = 0;
+    for (int event_idx = 0; event_idx < perf_data_.file_attrs_size();
+         ++event_idx) {
+      // Come up with an event name for this event.  perf.data will usually
+      // contain an event_types section of the same cardinality as its
+      // file_attrs; in this case we can just use the name there.  Otherwise
+      // we just give it an anonymous name.
+      string event_name = "";
+      if (perf_data_.file_attrs_size() == perf_data_.event_types_size()) {
+        const auto& event_type = perf_data_.event_types(event_idx);
+        if (event_type.has_name()) {
+          event_name = event_type.name() + "_";
+        }
+      }
+      if (event_name == "") {
+        event_name = "event_" + std::to_string(unknown_event_idx++) + "_";
+      }
+      auto sample_type = profile->add_sample_type();
+      sample_type->set_type(UTF8StringId(event_name + "sample", builder));
+      sample_type->set_unit(builder->StringId("count"));
+      sample_type = profile->add_sample_type();
+      sample_type->set_type(UTF8StringId(event_name + "event", builder));
+      sample_type->set_unit(builder->StringId("count"));
+    }
+    if (sample.main_mapping == nullptr) {
+      auto fake_main = profile->add_mapping();
+      fake_main->set_id(profile->mapping_size());
+      fake_main->set_memory_start(0);
+      fake_main->set_memory_limit(1);
+    } else {
+      AddOrGetMapping(sample.sample.pid(), sample.main_mapping, builder);
+    }
+  } else {
+    Profile* profile = per_pid.builder->mutable_profile();
+    if ((options_ & kGroupByPids) && sample.main_mapping != nullptr &&
+        sample.main_mapping->filename != nullptr) {
+      const string& filename =
+          profile->string_table(profile->mapping(0).filename());
+      const string& sample_filename = MappingFilename(sample.main_mapping);
+
+      if (filename != sample_filename) {
+        if (options_ & kFailOnMainMappingMismatch) {
+          LOG(FATAL) << "main mapping mismatch: " << sample.sample.pid() << " "
+                     << filename << " " << sample_filename;
+        } else {
+          LOG(WARNING) << "main mapping mismatch: " << sample.sample.pid()
+                       << " " << filename << " " << sample_filename;
+        }
+      }
+    }
+  }
+  if (sample.sample.sample_time_ns()) {
+    per_pid.process_meta->UpdateTimestamps(sample.sample.sample_time_ns());
+  }
+  return per_pid.builder;
+}
 
 uint64 PerfDataConverter::AddOrGetMapping(const Pid& pid,
                                           const PerfDataHandler::Mapping* smap,
@@ -224,18 +422,9 @@ uint64 PerfDataConverter::AddOrGetMapping(const Pid& pid,
     return 0;
   }
 
-  MappingMap* mapmap = nullptr;
-  auto mapmap_it = pid_to_mapping_map_.find(pid);
-  if (mapmap_it != pid_to_mapping_map_.end()) {
-    mapmap = &mapmap_it->second;
-  }
-  if (mapmap == nullptr) {
-    pid_to_mapping_map_[pid] = MappingMap();
-    mapmap = &pid_to_mapping_map_[pid];
-  }
-
-  auto it = mapmap->find(smap);
-  if (it != mapmap->end()) {
+  MappingMap& mapmap = per_pid_[pid].mapping_map;
+  auto it = mapmap.find(smap);
+  if (it != mapmap.end()) {
     return it->second;
   }
 
@@ -249,13 +438,7 @@ uint64 PerfDataConverter::AddOrGetMapping(const Pid& pid,
   if (smap->build_id != nullptr && !smap->build_id->empty()) {
     mapping->set_build_id(UTF8StringId(*smap->build_id, builder));
   }
-  if (smap->filename != nullptr && !smap->filename->empty()) {
-    mapping->set_filename(UTF8StringId(*smap->filename, builder));
-  } else if (smap->filename_md5_prefix != 0) {
-    std::stringstream filename;
-    filename << std::hex << smap->filename_md5_prefix;
-    mapping->set_filename(UTF8StringId(filename.str(), builder));
-  }
+  mapping->set_filename(UTF8StringId(MappingFilename(smap), builder));
   if (mapping->memory_start() >= mapping->memory_limit()) {
     std::cerr << "The start of the mapping must be strictly less than its"
               << "limit in file: " << mapping->filename() << std::endl
@@ -263,49 +446,49 @@ uint64 PerfDataConverter::AddOrGetMapping(const Pid& pid,
               << "Limit: " << mapping->memory_limit() << std::endl;
     abort();
   }
-  mapmap->insert(std::make_pair(smap, mapping_id));
+  mapmap.insert(std::make_pair(smap, mapping_id));
   return mapping_id;
 }
 
 void PerfDataConverter::AddOrUpdateSample(
     const PerfDataHandler::SampleContext& context, const Pid& pid,
-    const SampleKey& sample_key, const LocationIdVector& stack,
+    const SampleKey& sample_key,
     ProfileBuilder* builder) {
-  auto& sample_map = sample_key_to_map_[sample_key];
 
-  perftools::profiles::Sample* sample = nullptr;
-  auto sample_map_it = sample_map.find(stack);
-  if (sample_map_it != sample_map.end()) {
-    sample = sample_map_it->second;
-  }
+  perftools::profiles::Sample* sample = per_pid_[pid].sample_map[sample_key];
 
   if (sample == nullptr) {
     Profile* profile = builder->mutable_profile();
     sample = profile->add_sample();
-    sample_map[stack] = sample;
-    for (const auto& location_id : stack) {
+    per_pid_[pid].sample_map[sample_key] = sample;
+    for (const auto& location_id : sample_key.stack) {
       sample->add_location_id(location_id);
     }
     // Emit any requested labels.
     if (IncludePidLabels() && context.sample.has_pid()) {
-      auto label = sample->add_label();
+      auto* label = sample->add_label();
       label->set_key(builder->StringId(PidLabelKey));
       label->set_num(static_cast<int64>(context.sample.pid()));
     }
     if (IncludeTidLabels() && context.sample.has_tid()) {
-      auto label = sample->add_label();
+      auto* label = sample->add_label();
       label->set_key(builder->StringId(TidLabelKey));
       label->set_num(static_cast<int64>(context.sample.tid()));
     }
+    if (IncludeCommLabels() && sample_key.comm != 0) {
+      auto* label = sample->add_label();
+      label->set_key(builder->StringId(CommLabelKey));
+      label->set_str(sample_key.comm);
+    }
     if (IncludeTimestampNsLabels() && context.sample.has_sample_time_ns()) {
-      auto label = sample->add_label();
+      auto* label = sample->add_label();
       label->set_key(builder->StringId(TimestampNsLabelKey));
       int64 timestamp_ns_as_int64 =
           static_cast<int64>(context.sample.sample_time_ns());
       label->set_num(timestamp_ns_as_int64);
     }
     if (IncludeExecutionModeLabels() && sample_key.exec_mode != Unknown) {
-      auto label = sample->add_label();
+      auto* label = sample->add_label();
       label->set_key(builder->StringId(ExecutionModeLabelKey));
       label->set_str(builder->StringId(ExecModeString(sample_key.exec_mode)));
     }
@@ -339,7 +522,7 @@ void PerfDataConverter::AddOrUpdateSample(
 uint64 PerfDataConverter::AddOrGetLocation(
     const Pid& pid, uint64 addr, const PerfDataHandler::Mapping* mapping,
     ProfileBuilder* builder) {
-  LocationMap& loc_map = pid_to_location_map_[pid];
+  LocationMap& loc_map = per_pid_[pid].location_map;
   auto loc_it = loc_map.find(addr);
   if (loc_it != loc_map.end()) {
     return loc_it->second;
@@ -365,32 +548,22 @@ uint64 PerfDataConverter::AddOrGetLocation(
 }
 
 void PerfDataConverter::Comm(const CommContext& comm) {
-  if (comm.comm->pid() == comm.comm->tid()) {
+  Pid pid = comm.comm->pid();
+  Pid tid = comm.comm->tid();
+  if (pid == tid) {
     // pid==tid means an exec() happened, so clear everything from the
     // existing pid.
-
-    Pid pid = comm.comm->pid();
-    pid_to_builder_[pid] = nullptr;
-    pid_to_location_map_[pid].clear();
-    pid_to_mapping_map_[pid].clear();
-
-    // Every sample with this PID gets wiped.
-    for (auto samples_it = sample_key_to_map_.begin();
-         samples_it != sample_key_to_map_.end(); ++samples_it) {
-      if (samples_it->first.pid == pid) {
-        samples_it->second.clear();
-      }
-    }
+    per_pid_[pid].clear();
   }
+
+  per_pid_[pid].tid_to_comm_map[tid] = comm.comm->comm();
 }
 
-// Invalidates the locations in pid_to_location_map_ in the mmap event's range.
+// Invalidates the locations in location_map in the mmap event's range.
 void PerfDataConverter::MMap(const MMapContext& mmap) {
-  auto it = pid_to_location_map_.find(mmap.pid);
-  if (it != pid_to_location_map_.end()) {
-    it->second.erase(it->second.lower_bound(mmap.mapping->start),
-                     it->second.lower_bound(mmap.mapping->limit));
-  }
+  LocationMap& loc_map = per_pid_[mmap.pid].location_map;
+  loc_map.erase(loc_map.lower_bound(mmap.mapping->start),
+                loc_map.lower_bound(mmap.mapping->limit));
 }
 
 void PerfDataConverter::Sample(const PerfDataHandler::SampleContext& sample) {
@@ -401,213 +574,134 @@ void PerfDataConverter::Sample(const PerfDataHandler::SampleContext& sample) {
     return;
   }
 
-  Pid builder_pid = group_by_pids_ ? sample.sample.pid() : 0;
   Pid event_pid = sample.sample.pid();
-  SampleKey sample_key;
-  sample_key.pid = sample.sample.has_pid() ? sample.sample.pid() : 0;
-  sample_key.tid =
-      (IncludeTidLabels() && sample.sample.has_tid()) ? sample.sample.tid() : 0;
-  sample_key.time_ns =
-      (IncludeTimestampNsLabels() && sample.sample.has_sample_time_ns())
-          ? sample.sample.sample_time_ns()
-          : 0;
-  if (IncludeExecutionModeLabels() && sample.header.has_misc()) {
-    switch (sample.header.misc()) {
-      case PERF_RECORD_MISC_KERNEL:
-        sample_key.exec_mode = HostKernel;
-        break;
-      case PERF_RECORD_MISC_USER:
-        sample_key.exec_mode = HostUser;
-        break;
-      case PERF_RECORD_MISC_GUEST_KERNEL:
-        sample_key.exec_mode = GuestKernel;
-        break;
-      case PERF_RECORD_MISC_GUEST_USER:
-        sample_key.exec_mode = GuestUser;
-        break;
-      case PERF_RECORD_MISC_HYPERVISOR:
-        sample_key.exec_mode = Hypervisor;
-        break;
-    }
-  }
-  ProfileBuilder* builder = nullptr;
-  auto pb_it = pid_to_builder_.find(builder_pid);
-  if (pb_it != pid_to_builder_.end()) {
-    builder = pb_it->second;
-  }
-  if (builder == nullptr) {
-    builder = new ProfileBuilder();
-    pid_to_builder_[builder_pid] = builder;
-    builders_.emplace_back(builder);
-    Profile* profile = builder->mutable_profile();
+  ProfileBuilder *builder = GetOrCreateBuilder(sample);
+  SampleKey sample_key = MakeSampleKey(sample, builder);
 
-    int unknown_event_idx = 0;
-    for (int event_idx = 0; event_idx < perf_data_.file_attrs_size();
-         ++event_idx) {
-      // Come up with an event name for this event.  perf.data will usually
-      // contain an event_types section of the same cardinality as its
-      // file_attrs; in this case we can just use the name there.  Otherwise
-      // we just give it an anonymous name.
-      string event_name = "";
-      if (perf_data_.file_attrs_size() == perf_data_.event_types_size()) {
-        const auto& event_type = perf_data_.event_types(event_idx);
-        if (event_type.has_name()) {
-          event_name = event_type.name() + "_";
-        }
-      }
-      if (event_name == "") {
-        event_name = "event_" + std::to_string(unknown_event_idx++) + "_";
-      }
-      auto sample_type = profile->add_sample_type();
-      sample_type->set_type(UTF8StringId(event_name + "sample", builder));
-      sample_type->set_unit(builder->StringId("count"));
-      sample_type = profile->add_sample_type();
-      sample_type->set_type(UTF8StringId(event_name + "event", builder));
-      sample_type->set_unit(builder->StringId("count"));
-    }
-    if (sample.main_mapping == nullptr) {
-      auto fake_main = profile->add_mapping();
-      fake_main->set_id(profile->mapping_size());
-      fake_main->set_memory_start(0);
-      fake_main->set_memory_limit(1);
-    } else {
-      AddOrGetMapping(event_pid, sample.main_mapping, builder);
-    }
-  } else {
-    Profile* profile = builder->mutable_profile();
-    if (group_by_pids_ && sample.main_mapping != nullptr &&
-        sample.main_mapping->filename != nullptr) {
-      string filename = profile->string_table(profile->mapping(0).filename());
-
-      if (filename != *sample.main_mapping->filename) {
-        LOG(WARNING) << "main mismatch: " << sample.sample.pid() << " "
-                     << filename << " " << *sample.main_mapping->filename;
-      }
+  uint64 ip = sample.sample_mapping != nullptr ? sample.sample.ip() : 0;
+  if (ip != 0) {
+    const auto start = sample.sample_mapping->start;
+    const auto limit = sample.sample_mapping->limit;
+    if (ip < start || ip >= limit) {
+      std::cerr << "IP is out of bound of mapping." << std::endl
+                << "IP: " << ip << std::endl
+                << "Start: " << start << std::endl
+                << "Limit: " << limit << std::endl;
     }
   }
 
-  if (!sample.branch_stack.empty()) {
-    std::cerr << "don't know how to handle branch_stack" << std::endl;
-    abort();
-  }
+  // Leaf at stack[0]
+  sample_key.stack.push_back(
+      AddOrGetLocation(event_pid, ip, sample.sample_mapping, builder));
 
-  if (sample.branch_stack.empty()) {
-    // Normal sample or has callchain.
-    //
-    LocationIdVector sample_stack;
-
-    uint64 ip = sample.sample_mapping != nullptr ? sample.sample.ip() : 0;
-    if (ip != 0) {
-      const auto start = sample.sample_mapping->start;
-      const auto limit = sample.sample_mapping->limit;
-      if (ip < start || ip >= limit) {
-        std::cerr << "IP is out of bound of mapping." << std::endl
-                  << "IP: " << ip << std::endl
-                  << "Start: " << start << std::endl
-                  << "Limit: " << limit << std::endl;
-      }
+  // LBR callstacks include only user call chains. If this is an LBR sample,
+  // we get the kernel callstack from the sample's callchain, and the user
+  // callstack from the sample's branch_stack.
+  const bool lbr_sample = !sample.branch_stack.empty();
+  bool skipped_dup = false;
+  for (const auto& frame : sample.callchain) {
+    if (lbr_sample && frame.ip == PERF_CONTEXT_USER) {
+      break;
+    }
+    if (!skipped_dup && sample_key.stack.size() == 1 && frame.ip == ip) {
+      skipped_dup = true;
+      // Newer versions of perf_events include the IP at the leaf of
+      // the callchain.
+      continue;
+    }
+    if (frame.mapping == nullptr) {
+      continue;
+    }
+    uint64 frame_ip = frame.ip;
+    // Why <=? Because this is a return address, which should be
+    // preceded by a call (the "real" context.)  If we're at the edge
+    // of the mapping, we're really off its edge.
+    if (frame_ip <= frame.mapping->start) {
+      continue;
+    }
+    // these aren't real callchain entries, just hints as to kernel/user
+    // addresses.
+    if (frame_ip >= PERF_CONTEXT_MAX) {
+      continue;
     }
 
-    // Leaf at stack[0]
-    sample_stack.push_back(
-        AddOrGetLocation(event_pid, ip, sample.sample_mapping, builder));
-
-    bool skipped_dup = false;
-    for (const auto& frame : sample.callchain) {
-      if (!skipped_dup && sample_stack.size() == 1 && frame.ip == ip) {
-        skipped_dup = true;
-        // Newer versions of perf_events include the IP at the leaf of
-        // the callchain.
-        continue;
-      }
-      if (frame.mapping == nullptr) {
-        continue;
-      }
-      uint64 frame_ip = frame.ip;
-      // Why <=? Because this is a return address, which should be
-      // preceded by a call (the "real" context.)  If we're at the edge
-      // of the mapping, we're really off its edge.
-      if (frame_ip <= frame.mapping->start) {
-        continue;
-      }
-      // these aren't real callchain entries, just hints as to kernel/user
-      // addresses.
-      if (frame_ip >= PERF_CONTEXT_MAX) {
-        continue;
-      }
-
-      // subtract one so we point to the call instead of the return addr.
-      frame_ip--;
-      sample_stack.push_back(
-          AddOrGetLocation(event_pid, frame_ip, frame.mapping, builder));
-    }
-    AddOrUpdateSample(sample, event_pid, sample_key, sample_stack, builder);
+    // subtract one so we point to the call instead of the return addr.
+    frame_ip--;
+    sample_key.stack.push_back(
+        AddOrGetLocation(event_pid, frame_ip, frame.mapping, builder));
   }
+  for (const auto& frame : sample.branch_stack) {
+    // branch_stack entries are pairs of <from, to> locations corresponding to
+    // addresses of call instructions and target addresses of those calls.
+    // We need only the addresses of the function call instructions, stored in
+    // the 'from' field, to recover the call chains.
+    if (frame.from.mapping == nullptr) {
+      continue;
+    }
+    // An LBR entry includes the address of the call instruction, so we don't
+    // have to do any adjustments.
+    if (frame.from.ip < frame.from.mapping->start) {
+      continue;
+    }
+    sample_key.stack.push_back(AddOrGetLocation(event_pid, frame.from.ip,
+                                                frame.from.mapping, builder));
+  }
+  AddOrUpdateSample(sample, event_pid, sample_key, builder);
 }
 
-ProfileVector PerfDataConverter::Profiles() {
-  ProfileVector profiles;
-  for (auto& builder : builders_) {
-    builder->Finalize();
-    Profile* profile = new Profile();
-    profile->Swap(builder->mutable_profile());
-    profiles.emplace_back(std::unique_ptr<Profile>(profile));
+ProcessProfiles PerfDataConverter::Profiles() {
+  ProcessProfiles pps;
+  for (int i = 0; i < builders_.size(); i++) {
+    auto& b = builders_[i];
+    b.Finalize();
+    auto pp = process_metas_[i].makeProcessProfile(b.mutable_profile());
+    pps.push_back(std::move(pp));
   }
-
-  return profiles;
-}
-
-ProfileVector PerfDataProtoToProfileList(quipper::PerfDataProto* perf_data,
-                                         uint32 sample_labels,
-                                         bool group_by_pids) {
-  PerfDataConverter converter(*perf_data, sample_labels, group_by_pids);
-  PerfDataHandler::Process(*perf_data, &converter);
-  return converter.Profiles();
+  return pps;
 }
 
 }  // namespace
 
-ProfileVector RawPerfDataToProfileProto(const void* raw, int raw_size,
-                                        const std::map<string, string> &build_id_map,
-                                        uint32 sample_labels,
-                                        bool group_by_pids) {
+ProcessProfiles PerfDataProtoToProfiles(const quipper::PerfDataProto* perf_data,
+                                        const uint32 sample_labels,
+                                        const uint32 options) {
+  PerfDataConverter converter(*perf_data, sample_labels, options);
+  PerfDataHandler::Process(*perf_data, &converter);
+  return converter.Profiles();
+}
+
+ProcessProfiles RawPerfDataToProfiles(const void* raw, const int raw_size,
+                                      const std::map<string, string>& build_ids,
+                                      const uint32 sample_labels,
+                                      const uint32 options) {
   std::unique_ptr<quipper::PerfReader> reader(new quipper::PerfReader);
   if (!reader->ReadFromPointer(reinterpret_cast<const char*>(raw), raw_size)) {
     LOG(ERROR) << "Could not read input perf.data";
-    return ProfileVector();
+    return ProcessProfiles();
   }
 
-  std::unique_ptr<quipper::PerfParser> parser(
-      new quipper::PerfParser(reader.get()));
-  if (!parser->ParseRawEvents()) {
-    LOG(ERROR) << "Could not parse input perf data";
-    return ProfileVector();
-  }
-
-  reader->InjectBuildIDs(build_id_map);
+  reader->InjectBuildIDs(build_ids);
   // Perf populates info about the kernel using multiple pathways,
   // which don't actually all match up how they name kernel data; in
   // particular, buildids are reported by a different name than the
-  // actual "mmap" info.  Normalize these names so our ProfileVector
+  // actual "mmap" info.  Normalize these names so our ProcessProfiles
   // will match kernel mappings to a buildid.
   reader->LocalizeUsingFilenames({
       {"[kernel.kallsyms]_text", "[kernel.kallsyms]"},
       {"[kernel.kallsyms]_stext", "[kernel.kallsyms]"},
   });
+
+  // Will sort the events by time if the timestamps are present.
+  // The further processing of the perf data proto implies time-ordered data.
+  reader->MaybeSortEventsByTime();
+
   quipper::PerfDataProto perf_data;
   if (!reader->Serialize(&perf_data)) {
     LOG(ERROR) << "Could not serialize perf.data";
-    return ProfileVector();
+    return ProcessProfiles();
   }
-  return PerfDataProtoToProfileList(&perf_data, sample_labels, group_by_pids);
-}
 
-ProfileVector SerializedPerfDataProtoToProfileProto(
-    const string& serialized_perf_data, uint32 sample_labels,
-    bool group_by_pids) {
-  quipper::PerfDataProto perf_data;
-  perf_data.ParseFromString(serialized_perf_data);
-  return PerfDataProtoToProfileList(&perf_data, sample_labels, group_by_pids);
+  return PerfDataProtoToProfiles(&perf_data, sample_labels, options);
 }
 
 }  // namespace perftools

@@ -42,29 +42,29 @@ namespace {
 class Command {
  public:
   virtual ~Command() {}
-  virtual void ExecuteOn(IntervalMap<string> *map) const = 0;
+  virtual void ExecuteOn(IntervalMap<string>* map) const = 0;
 };
 
 class SetCommand : public Command {
  public:
-  SetCommand(uint64 start, uint64 limit, const char *value)
+  SetCommand(uint64 start, uint64 limit, const char* value)
       : start_(start), limit_(limit), value_(value) {}
 
-  void ExecuteOn(IntervalMap<string> *map) const override {
+  void ExecuteOn(IntervalMap<string>* map) const override {
     map->Set(start_, limit_, value_);
   }
 
  private:
   const uint64 start_;
   const uint64 limit_;
-  const char *value_;
+  const char* value_;
 };
 
 class NumIntervalsCommand : public Command {
  public:
   explicit NumIntervalsCommand(uint64 expected) : expected_(expected) {}
 
-  void ExecuteOn(IntervalMap<string> *map) const override {
+  void ExecuteOn(IntervalMap<string>* map) const override {
     ASSERT_EQ(expected_, map->Size());
   }
 
@@ -74,10 +74,10 @@ class NumIntervalsCommand : public Command {
 
 class LookupCommand : public Command {
  public:
-  LookupCommand(uint64 from, uint64 to, const char *expected)
+  LookupCommand(uint64 from, uint64 to, const char* expected)
       : from_(from), to_(to), expected_(expected) {}
 
-  void ExecuteOn(IntervalMap<string> *map) const override {
+  void ExecuteOn(IntervalMap<string>* map) const override {
     for (uint64 key = from_; key <= to_; ++key) {
       string result;
       ASSERT_TRUE(map->Lookup(key, &result)) << "Did not find value for key: "
@@ -91,7 +91,7 @@ class LookupCommand : public Command {
  private:
   const uint64 from_;
   const uint64 to_;
-  const char *expected_;
+  const char* expected_;
 };
 
 class FailLookupCommand : public Command {
@@ -99,7 +99,7 @@ class FailLookupCommand : public Command {
   explicit FailLookupCommand(std::vector<uint64> keys)
       : keys_(std::move(keys)) {}
 
-  void ExecuteOn(IntervalMap<string> *map) const override {
+  void ExecuteOn(IntervalMap<string>* map) const override {
     string result;
     for (auto key : keys_) {
       ASSERT_FALSE(map->Lookup(key, &result)) << "Found value for key: " << key;
@@ -113,13 +113,13 @@ class FailLookupCommand : public Command {
 class FindNextCommand : public Command {
  public:
   FindNextCommand(uint64 key, uint64 expected_start, uint64 expected_limit,
-                  const char *expected_value)
+                  const char* expected_value)
       : key_(key),
         expected_start_(expected_start),
         expected_limit_(expected_limit),
         expected_value_(expected_value) {}
 
-  void ExecuteOn(IntervalMap<string> *map) const override {
+  void ExecuteOn(IntervalMap<string>* map) const override {
     uint64 start;
     uint64 limit;
     string value;
@@ -142,14 +142,14 @@ class FindNextCommand : public Command {
   uint64 key_;
   uint64 expected_start_;
   uint64 expected_limit_;
-  const char *expected_value_;
+  const char* expected_value_;
 };
 
 class FailFindNextCommand : public Command {
  public:
   explicit FailFindNextCommand(uint64 key) : key_(key) {}
 
-  void ExecuteOn(IntervalMap<string> *map) const override {
+  void ExecuteOn(IntervalMap<string>* map) const override {
     uint64 start;
     uint64 limit;
     string value;
@@ -165,7 +165,7 @@ class FailFindNextCommand : public Command {
   uint64 key_;
 };
 
-std::shared_ptr<Command> Set(uint64 start, uint64 limit, const char *value) {
+std::shared_ptr<Command> Set(uint64 start, uint64 limit, const char* value) {
   return std::make_shared<SetCommand>(start, limit, value);
 }
 
@@ -175,7 +175,7 @@ std::shared_ptr<Command> NumIntervals(uint64 size) {
 
 // Looks up every key in the interval [from, to] and expects them all to be
 // equal to expected.
-std::shared_ptr<Command> Lookup(uint64 from, uint64 to, const char *expected) {
+std::shared_ptr<Command> Lookup(uint64 from, uint64 to, const char* expected) {
   return std::make_shared<LookupCommand>(from, to, expected);
 }
 
@@ -184,7 +184,7 @@ std::shared_ptr<Command> FailLookup(std::vector<uint64> keys) {
 }
 
 std::shared_ptr<Command> FindNext(uint64 key, uint64 start, uint64 limit,
-                                  const char *expected) {
+                                  const char* expected) {
   return std::make_shared<FindNextCommand>(key, start, limit, expected);
 }
 
@@ -288,8 +288,8 @@ const std::vector<std::shared_ptr<Command>> tests[] = {
 
 TEST_P(IntervalMapTest, GenericTest) {
   IntervalMap<string> map;
-  const auto &commands = GetParam();
-  for (const auto &command : commands) {
+  const auto& commands = GetParam();
+  for (const auto& command : commands) {
     command->ExecuteOn(&map);
     // Failed asserts in subroutines aren't actually fatal so we have to return
     // manually.
@@ -303,7 +303,7 @@ INSTANTIATE_TEST_CASE_P(AllIntervalMapTests, IntervalMapTest,
 }  // namespace
 }  // namespace perftools
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
