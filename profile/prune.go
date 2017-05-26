@@ -39,19 +39,18 @@ func simplifyFunc(f string) string {
 	funcName := strings.TrimPrefix(f, ".")
 	// Account for unsimplified names -- try  to remove the argument list by trimming
 	// starting from the first '(', but skipping reserved names that have '('.
-	if indices := bracketRx.FindAllStringSubmatchIndex(funcName, -1); indices != nil {
-		for _, ind := range indices {
-			foundReserved := false
-			for _, res := range reservedNames {
-				if funcName[ind[0]:ind[1]] == res {
-					foundReserved = true
-					break
-				}
-			}
-			if !foundReserved {
-				funcName = funcName[:ind[0]]
+	indices := bracketRx.FindAllStringSubmatchIndex(funcName, -1)
+	for _, ind := range indices {
+		foundReserved := false
+		for _, res := range reservedNames {
+			if funcName[ind[0]:ind[1]] == res {
+				foundReserved = true
 				break
 			}
+		}
+		if !foundReserved {
+			funcName = funcName[:ind[0]]
+			break
 		}
 	}
 	return funcName
