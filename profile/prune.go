@@ -24,9 +24,13 @@ import (
 
 var (
 	reservedNames = []string{"(anonymous namespace)", "operator()"}
-	bracketRx     = regexp.MustCompile("(" + strings.Replace(strings.Replace(
-		strings.Join(append(reservedNames, "("), "|"),
-		"(", "\\(", -1), ")", "\\)", -1) + ")")
+	bracketRx     = func() *regexp.Regexp {
+		var quotedNames []string
+		for _, name := range append(reservedNames, "(") {
+			quotedNames = append(quotedNames, regexp.QuoteMeta(name))
+		}
+		return regexp.MustCompile(strings.Join(quotedNames, "|"))
+	}()
 )
 
 // simplifyFunc does some primitive simplification of function names.
