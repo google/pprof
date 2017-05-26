@@ -39,8 +39,8 @@ func simplifyFunc(f string) string {
 	funcName := strings.TrimPrefix(f, ".")
 	// Account for unsimplified names -- try  to remove the argument list by trimming
 	// starting from the first '(', but skipping reserved names that have '('.
-	if indeces := bracketRx.FindAllStringSubmatchIndex(funcName, -1); indeces != nil {
-		for _, ind := range indeces {
+	if indices := bracketRx.FindAllStringSubmatchIndex(funcName, -1); indices != nil {
+		for _, ind := range indices {
 			foundReserved := false
 			for _, res := range reservedNames {
 				if funcName[ind[0]:ind[1]] == res {
