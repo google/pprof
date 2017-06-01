@@ -42,8 +42,9 @@ type DotNodeAttributes struct {
 // DotConfig contains attributes about how a graph should be
 // constructed and how it should look.
 type DotConfig struct {
-	Title  string   // The title of the DOT graph
-	Labels []string // The labels for the DOT's legend
+	Title     string   // The title of the DOT graph
+	LegendURL string   // The URL to link to from the legend.
+	Labels    []string // The labels for the DOT's legend
 
 	FormatValue func(int64) string         // A formatting function for values
 	FormatTag   func(int64, string) string // A formatting function for numeric tags
@@ -126,7 +127,15 @@ func (b *builder) addLegend() {
 	if len(labels) > 0 {
 		title = labels[0]
 	}
-	fmt.Fprintf(b, `subgraph cluster_L { "%s" [shape=box fontsize=16 label="%s\l"] }`+"\n", title, strings.Join(labels, `\l`))
+	fmt.Fprintf(b, `subgraph cluster_L { "%s" [shape=box fontsize=16`, title)
+	fmt.Fprintf(b, ` label="%s\l"`, strings.Join(labels, `\l`))
+	if b.config.LegendURL != "" {
+		fmt.Fprintf(b, ` URL="%s" target="_blank"`, b.config.LegendURL)
+	}
+	if b.config.Title != "" {
+		fmt.Fprintf(b, ` tooltip="%s"`, b.config.Title)
+	}
+	fmt.Fprintf(b, "] }\n")
 }
 
 // addNode generates a graph node in DOT format.
