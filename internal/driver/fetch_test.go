@@ -241,6 +241,10 @@ func stubHTTPGet(source string, _ time.Duration) (*http.Response, error) {
 }
 
 func TestHttpsInsecure(t *testing.T) {
+	if runtime.GOOS == "nacl" {
+		t.Skip("test assumes tcp available")
+	}
+
 	baseVars := pprofVariables
 	pprofVariables = baseVars.makeCopy()
 	defer func() { pprofVariables = baseVars }()
