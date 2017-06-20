@@ -150,6 +150,22 @@ func TestComposeWithEmptyGraph(t *testing.T) {
 	compareGraphs(t, buf.Bytes(), want)
 }
 
+func TestComposeWithStandardGraphAndURL(t *testing.T) {
+	g := baseGraph()
+	a, c := baseAttrsAndConfig()
+	c.LegendURL = "http://example.com"
+
+	var buf bytes.Buffer
+	ComposeDot(&buf, g, a, c)
+
+	want, err := ioutil.ReadFile(path + "compose6.dot")
+	if err != nil {
+		t.Fatalf("error reading test file: %v", err)
+	}
+
+	compareGraphs(t, buf.Bytes(), want)
+}
+
 func baseGraph() *Graph {
 	src := &Node{
 		Info:        NodeInfo{Name: "src"},
