@@ -238,6 +238,13 @@ func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) 
 		NodeFraction: vars["nodefraction"].floatValue(),
 		EdgeFraction: vars["edgefraction"].floatValue(),
 
+		Focus:				vars["focus"].value,
+		Ignore:				vars["ignore"].value,
+		Hide:					vars["hide"].value,
+		Show:					vars["show"].value,
+		TagFocus:			vars["tagfocus"].value,
+		TagIgnore:		vars["tagignore"].value,
+
 		SampleValue:       value,
 		SampleMeanDivisor: meanDiv,
 		SampleType:        stype,

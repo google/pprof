@@ -64,6 +64,12 @@ type Options struct {
 	Ratio               float64
 	Title               string
 	ProfileLabels       []string
+	Focus								string
+	Ignore							string
+	Hide								string
+	Show								string
+	TagFocus						string
+	TagIgnore						string
 
 	NodeCount    int
 	NodeFraction float64
@@ -1070,6 +1076,35 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 		flatSum = flatSum + n.FlatValue()
 	}
 
+	if rpt.options.Focus != "" {
+		label = append(label, fmt.Sprintf("Restricting profile to samples with locations matching %s",
+			rpt.options.Focus))
+	}
+	if rpt.options.Ignore != "" {
+		label = append(label, fmt.Sprintf("Removed profile samples with locations matching %s",
+			rpt.options.Ignore))
+	}
+	if rpt.options.Hide != "" {
+		label = append(label, fmt.Sprintf("Removed nodes matching %s",
+			rpt.options.Hide))
+	}
+	if rpt.options.Show != "" {
+		label = append(label, fmt.Sprintf("Restricting graph to nodes matching %s",
+			rpt.options.Show))
+	}
+	if rpt.options.TagFocus != "" {
+		parsedTag := parseTagFocus(rpt.options.TagFocus)
+		if parsedTag != "" {
+			label = append(label, fmt.Sprintf("Focusing on %s", parsedTag))
+		}
+	}
+	if rpt.options.TagIgnore != "" {
+		parsedTag := parseTagFocus(rpt.options.TagIgnore)
+		if parsedTag != "" {
+			label = append(label, fmt.Sprintf("Ignoring %s", parsedTag))
+		}
+	}
+
 	label = append(label, fmt.Sprintf("Showing nodes accounting for %s, %s of %s total", rpt.formatValue(flatSum), strings.TrimSpace(percentage(flatSum, rpt.total)), rpt.formatValue(rpt.total)))
 
 	if rpt.total != 0 {
@@ -1087,6 +1122,24 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 		}
 	}
 	return label
+}
+
+func parseTagFocus(tag string) string {
+	rng := strings.Split(tag, ":")
+	if len(rng) == 1 {
+		return fmt.Sprintf("allocations of %s", rng[0])
+	} else if len(rng) >= 2 {
+		if rng[0] == "" && rng[1] != "" {
+			return fmt.Sprintf("allocations smaller than or equal to %s", rng[1])
+		}
+		if rng[1] == "" && rng[0] != "" {
+			return fmt.Sprintf("allocations larger than or equal to %s", rng[0])
+		}
+		if rng[0] != "" && rng[1] != "" {
+			return fmt.Sprintf("allocations between %s and %s (inclusive)", rng[0], rng[1])
+		}
+	}
+	return ""
 }
 
 func genLabel(d int, n, l, f string) string {
