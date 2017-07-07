@@ -6,5 +6,5 @@ import (
 
 func Fuzz(data []byte) int {
 	profile.ParseData(data)
-	return 0;
+	return 0
 }
