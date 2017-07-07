@@ -1080,28 +1080,28 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 
 	var filters []string
 	if rpt.options.Focus != "" {
-		filters = append(filters, fmt.Sprintf("focus=%s", rpt.options.Focus))
+		filters = append(filters, "focus="+ rpt.options.Focus)
 	}
 	if rpt.options.Ignore != "" {
-		filters = append(filters, fmt.Sprintf("ignore=%s", rpt.options.Ignore))
+		filters = append(filters, "ignore="+ rpt.options.Ignore)
 	}
 	if rpt.options.Hide != "" {
-		filters = append(filters, fmt.Sprintf("hide=%s", rpt.options.Hide))
+		filters = append(filters, "hide="+ rpt.options.Hide)
 	}
 	if rpt.options.Show != "" {
-		filters = append(filters, fmt.Sprintf("show=%s", rpt.options.Show))
+		filters = append(filters, "show="+ rpt.options.Show)
 	}
 	if rpt.options.TagFocus != "" {
-		filters = append(filters, fmt.Sprintf("tagfocus=%s", rpt.options.TagFocus))
+		filters = append(filters, "tagfocus="+ rpt.options.TagFocus)
 	}
 	if rpt.options.TagIgnore != "" {
-		filters = append(filters, fmt.Sprintf("tagignore=%s", rpt.options.TagIgnore))
+		filters = append(filters, "tagignore="+ rpt.options.TagIgnore)
 	}
 	if rpt.options.TagShow != "" {
-		filters = append(filters, fmt.Sprintf("tagshow=%s", rpt.options.TagShow))
+		filters = append(filters, "tagshow="+ rpt.options.TagShow)
 	}
 	if rpt.options.TagHide != "" {
-		filters = append(filters, fmt.Sprintf("taghide=%s", rpt.options.TagHide))
+		filters = append(filters, "taghide="+ rpt.options.TagHide)
 	}
 
 	if len(filters) > 0 {

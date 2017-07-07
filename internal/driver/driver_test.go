@@ -167,7 +167,6 @@ func TestParse(t *testing.T) {
 			t.Errorf("Failed to read profile %s: %v", outputTempFile.Name(), err)
 		}
 
-		fmt.Println(solution)
 		// Read data file with expected solution
 		solution = "testdata/" + solution
 		sbuf, err := ioutil.ReadFile(solution)
