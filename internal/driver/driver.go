@@ -244,6 +244,8 @@ func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) 
 		Show:      vars["show"].value,
 		TagFocus:  vars["tagfocus"].value,
 		TagIgnore: vars["tagignore"].value,
+		TagShow:   vars["tagshow"].value,
+		TagHide:   vars["taghide"].value,
 
 		SampleValue:       value,
 		SampleMeanDivisor: meanDiv,

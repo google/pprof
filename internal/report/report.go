@@ -70,6 +70,8 @@ type Options struct {
 	Show                string
 	TagFocus            string
 	TagIgnore           string
+	TagShow             string
+	TagHide             string
 
 	NodeCount    int
 	NodeFraction float64
@@ -1093,16 +1095,20 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 			rpt.options.Show))
 	}
 	if rpt.options.TagFocus != "" {
-		parsedTag := parseTagFocus(rpt.options.TagFocus)
-		if parsedTag != "" {
-			label = append(label, fmt.Sprintf("Focusing on %s", parsedTag))
-		}
+		parsedTag := parseTagFocusIgnore(rpt.options.TagFocus)
+		label = append(label, fmt.Sprintf("Focusing on tags %s", parsedTag))
 	}
 	if rpt.options.TagIgnore != "" {
-		parsedTag := parseTagFocus(rpt.options.TagIgnore)
-		if parsedTag != "" {
-			label = append(label, fmt.Sprintf("Ignoring %s", parsedTag))
-		}
+		parsedTag := parseTagFocusIgnore(rpt.options.TagIgnore)
+		label = append(label, fmt.Sprintf("Ignoring tags %s", parsedTag))
+	}
+	if rpt.options.TagShow != "" {
+		label = append(label, fmt.Sprintf("Only considering tags matching %s",
+			rpt.options.TagShow))
+	}
+	if rpt.options.TagHide != "" {
+		label = append(label, fmt.Sprintf("Skipped tags matching %s",
+			rpt.options.TagHide))
 	}
 
 	label = append(label, fmt.Sprintf("Showing nodes accounting for %s, %s of %s total", rpt.formatValue(flatSum), strings.TrimSpace(percentage(flatSum, rpt.total)), rpt.formatValue(rpt.total)))
@@ -1124,22 +1130,28 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 	return label
 }
 
-func parseTagFocus(tag string) string {
-	rng := strings.Split(tag, ":")
-	if len(rng) == 1 {
-		return fmt.Sprintf("allocations of %s", rng[0])
-	} else if len(rng) >= 2 {
-		if rng[0] == "" && rng[1] != "" {
-			return fmt.Sprintf("allocations smaller than or equal to %s", rng[1])
-		}
-		if rng[1] == "" && rng[0] != "" {
-			return fmt.Sprintf("allocations larger than or equal to %s", rng[0])
-		}
-		if rng[0] != "" && rng[1] != "" {
-			return fmt.Sprintf("allocations between %s and %s (inclusive)", rng[0], rng[1])
+func parseTagFocusIgnore(tag string) string {
+	tagFilterRangeRx := regexp.MustCompile("([[:digit:]]+)([[:alpha:]]+)")
+	ranges := tagFilterRangeRx.FindAllStringSubmatch(tag, 2)
+	if ranges == nil {
+		return "matching " + tag
+	}
+	if len(ranges) == 1 {
+		switch match := ranges[0][0]; tag {
+		case match:
+			return fmt.Sprintf("with allocations of %s", tag)
+		case match + ":":
+			return fmt.Sprintf("with allocations larger than or equal to %s", ranges[0][0])
+		case ":" + match:
+			return fmt.Sprintf("with allocations smaller than or equal to %s", ranges[0][0])
+		default:
+			return "matching " + tag
 		}
 	}
-	return ""
+	if tag == ranges[0][0] + ":" + ranges[1][0] {
+		return fmt.Sprintf("with allocations between %s and %s (inclusive)", ranges[0][0], ranges[1][0])
+	}
+	return "matching " + tag
 }
 
 func genLabel(d int, n, l, f string) string {
