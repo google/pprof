@@ -1077,7 +1077,7 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 	}
 
 	if rpt.options.Focus != "" {
-		label = append(label, fmt.Sprintf("Restricting profile to samples with locations matching %s",
+		label = append(label, fmt.Sprintf("Using only samples with locations matching %s",
 			rpt.options.Focus))
 	}
 	if rpt.options.Ignore != "" {
@@ -1089,7 +1089,7 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 			rpt.options.Hide))
 	}
 	if rpt.options.Show != "" {
-		label = append(label, fmt.Sprintf("Restricting graph to nodes matching %s",
+		label = append(label, fmt.Sprintf("Using only nodes matching %s",
 			rpt.options.Show))
 	}
 	if rpt.options.TagFocus != "" {
