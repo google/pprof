@@ -225,6 +225,14 @@ func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) 
 		return nil, fmt.Errorf("zero divisor specified")
 	}
 
+	var filters []string
+	for _,k := range []string{"focus", "ignore", "hide", "show", "tagfocus", "tagignore", "tagshow", "taghide"} {
+		v := vars[k].value
+		if v != "" {
+			filters = append(filters, k+"="+v)
+		}
+	}
+
 	ropt := &report.Options{
 		CumSort:             vars["cum"].boolValue(),
 		CallTree:            vars["call_tree"].boolValue(),
@@ -238,14 +246,7 @@ func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) 
 		NodeFraction: vars["nodefraction"].floatValue(),
 		EdgeFraction: vars["edgefraction"].floatValue(),
 
-		Focus:     vars["focus"].value,
-		Ignore:    vars["ignore"].value,
-		Hide:      vars["hide"].value,
-		Show:      vars["show"].value,
-		TagFocus:  vars["tagfocus"].value,
-		TagIgnore: vars["tagignore"].value,
-		TagShow:   vars["tagshow"].value,
-		TagHide:   vars["taghide"].value,
+		ActiveFilters: filters,
 
 		SampleValue:       value,
 		SampleMeanDivisor: meanDiv,

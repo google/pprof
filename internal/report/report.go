@@ -64,14 +64,7 @@ type Options struct {
 	Ratio               float64
 	Title               string
 	ProfileLabels       []string
-	Focus               string
-	Ignore              string
-	Hide                string
-	Show                string
-	TagFocus            string
-	TagIgnore           string
-	TagShow             string
-	TagHide             string
+	ActiveFilters       []string
 
 	NodeCount    int
 	NodeFraction float64
@@ -1078,35 +1071,8 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 		flatSum = flatSum + n.FlatValue()
 	}
 
-	var filters []string
-	if rpt.options.Focus != "" {
-		filters = append(filters, "focus="+ rpt.options.Focus)
-	}
-	if rpt.options.Ignore != "" {
-		filters = append(filters, "ignore="+ rpt.options.Ignore)
-	}
-	if rpt.options.Hide != "" {
-		filters = append(filters, "hide="+ rpt.options.Hide)
-	}
-	if rpt.options.Show != "" {
-		filters = append(filters, "show="+ rpt.options.Show)
-	}
-	if rpt.options.TagFocus != "" {
-		filters = append(filters, "tagfocus="+ rpt.options.TagFocus)
-	}
-	if rpt.options.TagIgnore != "" {
-		filters = append(filters, "tagignore="+ rpt.options.TagIgnore)
-	}
-	if rpt.options.TagShow != "" {
-		filters = append(filters, "tagshow="+ rpt.options.TagShow)
-	}
-	if rpt.options.TagHide != "" {
-		filters = append(filters, "taghide="+ rpt.options.TagHide)
-	}
-
-	if len(filters) > 0 {
-		filter := strings.Join(filters, ", ")
-		label = append(label, fmt.Sprintf("Active Filters: %s", filter))
+	if len(rpt.options.ActiveFilters) > 0 {
+		label = append(label, "Active Filters: "+strings.Join(rpt.options.ActiveFilters, ", "))
 	}
 
 	label = append(label, fmt.Sprintf("Showing nodes accounting for %s, %s of %s total", rpt.formatValue(flatSum), strings.TrimSpace(percentage(flatSum, rpt.total)), rpt.formatValue(rpt.total)))
