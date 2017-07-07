@@ -1148,7 +1148,7 @@ func parseTagFocusIgnore(tag string) string {
 			return "matching " + tag
 		}
 	}
-	if tag == ranges[0][0] + ":" + ranges[1][0] {
+	if tag == ranges[0][0]+":"+ranges[1][0] {
 		return fmt.Sprintf("with allocations between %s and %s (inclusive)", ranges[0][0], ranges[1][0])
 	}
 	return "matching " + tag
