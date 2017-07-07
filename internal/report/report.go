@@ -1078,37 +1078,35 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 		flatSum = flatSum + n.FlatValue()
 	}
 
+	var filters []string
 	if rpt.options.Focus != "" {
-		label = append(label, fmt.Sprintf("Using only samples with locations matching %s",
-			rpt.options.Focus))
+		filters = append(filters, fmt.Sprintf("focus=%s", rpt.options.Focus))
 	}
 	if rpt.options.Ignore != "" {
-		label = append(label, fmt.Sprintf("Removed profile samples with locations matching %s",
-			rpt.options.Ignore))
+		filters = append(filters, fmt.Sprintf("ignore=%s", rpt.options.Ignore))
 	}
 	if rpt.options.Hide != "" {
-		label = append(label, fmt.Sprintf("Removed nodes matching %s",
-			rpt.options.Hide))
+		filters = append(filters, fmt.Sprintf("hide=%s", rpt.options.Hide))
 	}
 	if rpt.options.Show != "" {
-		label = append(label, fmt.Sprintf("Using only nodes matching %s",
-			rpt.options.Show))
+		filters = append(filters, fmt.Sprintf("show=%s", rpt.options.Show))
 	}
 	if rpt.options.TagFocus != "" {
-		parsedTag := parseTagFocusIgnore(rpt.options.TagFocus)
-		label = append(label, fmt.Sprintf("Focusing on tags %s", parsedTag))
+		filters = append(filters, fmt.Sprintf("tagfocus=%s", rpt.options.TagFocus))
 	}
 	if rpt.options.TagIgnore != "" {
-		parsedTag := parseTagFocusIgnore(rpt.options.TagIgnore)
-		label = append(label, fmt.Sprintf("Ignoring tags %s", parsedTag))
+		filters = append(filters, fmt.Sprintf("tagignore=%s", rpt.options.TagFocus))
 	}
 	if rpt.options.TagShow != "" {
-		label = append(label, fmt.Sprintf("Only considering tags matching %s",
-			rpt.options.TagShow))
+		filters = append(filters, fmt.Sprintf("tagshow=%s", rpt.options.TagFocus))
 	}
 	if rpt.options.TagHide != "" {
-		label = append(label, fmt.Sprintf("Skipped tags matching %s",
-			rpt.options.TagHide))
+		filters = append(filters, fmt.Sprintf("taghide=%s", rpt.options.TagFocus))
+	}
+
+	if len(filters) > 0 {
+		filter := strings.Join(filters, ", ")
+		label = append(label, fmt.Sprintf("Active Filters: %s", filter))
 	}
 
 	label = append(label, fmt.Sprintf("Showing nodes accounting for %s, %s of %s total", rpt.formatValue(flatSum), strings.TrimSpace(percentage(flatSum, rpt.total)), rpt.formatValue(rpt.total)))
@@ -1128,30 +1126,6 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 		}
 	}
 	return label
-}
-
-func parseTagFocusIgnore(tag string) string {
-	tagFilterRangeRx := regexp.MustCompile("([[:digit:]]+)([[:alpha:]]+)")
-	ranges := tagFilterRangeRx.FindAllStringSubmatch(tag, 2)
-	if ranges == nil {
-		return "matching " + tag
-	}
-	if len(ranges) == 1 {
-		switch match := ranges[0][0]; tag {
-		case match:
-			return fmt.Sprintf("with allocations of %s", tag)
-		case match + ":":
-			return fmt.Sprintf("with allocations larger than or equal to %s", ranges[0][0])
-		case ":" + match:
-			return fmt.Sprintf("with allocations smaller than or equal to %s", ranges[0][0])
-		default:
-			return "matching " + tag
-		}
-	}
-	if tag == ranges[0][0]+":"+ranges[1][0] {
-		return fmt.Sprintf("with allocations between %s and %s (inclusive)", ranges[0][0], ranges[1][0])
-	}
-	return "matching " + tag
 }
 
 func genLabel(d int, n, l, f string) string {
