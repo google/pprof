@@ -64,12 +64,12 @@ type Options struct {
 	Ratio               float64
 	Title               string
 	ProfileLabels       []string
-	Focus								string
-	Ignore							string
-	Hide								string
-	Show								string
-	TagFocus						string
-	TagIgnore						string
+	Focus               string
+	Ignore              string
+	Hide                string
+	Show                string
+	TagFocus            string
+	TagIgnore           string
 
 	NodeCount    int
 	NodeFraction float64
