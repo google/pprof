@@ -56,9 +56,11 @@ func TestParse(t *testing.T) {
 		{"text,functions,flat,nodecount=5,call_tree", "unknown"},
 		{"text,alloc_objects,flat", "heap_alloc"},
 		{"text,files,flat", "heap"},
+		{"text,files,flat,focus=[12]00,taghide=[X3]00", "heap"},
 		{"text,inuse_objects,flat", "heap"},
 		{"text,lines,cum,hide=line[X3]0", "cpu"},
 		{"text,lines,cum,show=[12]00", "cpu"},
+		{"text,lines,cum,hide=line[X3]0,focus=[12]00", "cpu"},
 		{"topproto,lines,cum,hide=mangled[X3]0", "cpu"},
 		{"tree,lines,cum,focus=[24]00", "heap"},
 		{"tree,relative_percentages,cum,focus=[24]00", "heap"},
@@ -78,6 +80,7 @@ func TestParse(t *testing.T) {
 		{"tags,unit=bytes", "heap"},
 		{"traces", "cpu"},
 		{"dot,alloc_space,flat,focus=[234]00", "heap_alloc"},
+		{"dot,alloc_space,flat,tagshow=[2]00", "heap_alloc"},
 		{"dot,alloc_space,flat,hide=line.*1?23?", "heap_alloc"},
 		{"dot,inuse_space,flat,tagfocus=1mb:2gb", "heap"},
 		{"dot,inuse_space,flat,tagfocus=30kb:,tagignore=1mb:2mb", "heap"},
@@ -164,6 +167,7 @@ func TestParse(t *testing.T) {
 			t.Errorf("Failed to read profile %s: %v", outputTempFile.Name(), err)
 		}
 
+		fmt.Println(solution)
 		// Read data file with expected solution
 		solution = "testdata/" + solution
 		sbuf, err := ioutil.ReadFile(solution)

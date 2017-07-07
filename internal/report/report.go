@@ -1095,13 +1095,13 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 		filters = append(filters, fmt.Sprintf("tagfocus=%s", rpt.options.TagFocus))
 	}
 	if rpt.options.TagIgnore != "" {
-		filters = append(filters, fmt.Sprintf("tagignore=%s", rpt.options.TagFocus))
+		filters = append(filters, fmt.Sprintf("tagignore=%s", rpt.options.TagIgnore))
 	}
 	if rpt.options.TagShow != "" {
-		filters = append(filters, fmt.Sprintf("tagshow=%s", rpt.options.TagFocus))
+		filters = append(filters, fmt.Sprintf("tagshow=%s", rpt.options.TagShow))
 	}
 	if rpt.options.TagHide != "" {
-		filters = append(filters, fmt.Sprintf("taghide=%s", rpt.options.TagFocus))
+		filters = append(filters, fmt.Sprintf("taghide=%s", rpt.options.TagHide))
 	}
 
 	if len(filters) > 0 {
