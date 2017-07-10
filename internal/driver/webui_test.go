@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os/exec"
 	"regexp"
 	"strings"
 	"testing"
@@ -46,18 +47,29 @@ func TestWebInterface(t *testing.T) {
 		}))
 	defer server.Close()
 
+	haveDot := false
+	if _, err := exec.LookPath("dot"); err == nil {
+		haveDot = true
+	}
+
 	type testCase struct {
-		path string
-		want []string
+		path    string
+		want    []string
+		needDot bool
 	}
 	testcases := []testCase{
-		{"/", []string{"F1", "F2", "F3"}},
+		{"/", []string{"F1", "F2", "F3"}, true},
 		{"/weblist?f=" + url.QueryEscape("F[12]"),
-			[]string{"F1", "F2", "300ms line1"}},
+			[]string{"F1", "F2", "300ms line1"}, false},
 		{"/disasm?f=" + url.QueryEscape("F[12]"),
-			[]string{"f1:asm", "f2:asm"}},
+			[]string{"f1:asm", "f2:asm"}, false},
 	}
 	for _, c := range testcases {
+		if c.needDot && !haveDot {
+			t.Log("skpping", c.path, "since dot (graphviz) does not seem to be installed")
+			continue
+		}
+
 		res, err := http.Get(server.URL + c.path)
 		if err != nil {
 			t.Error("could not fetch", c.path, err)
