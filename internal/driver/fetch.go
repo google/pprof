@@ -82,6 +82,7 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 	unsourceMappings(p)
 
 	// Save a copy of the merged profile if there is at least one remote source.
+	save = true
 	if save {
 		dir, err := setTmpDir(o.UI)
 		if err != nil {

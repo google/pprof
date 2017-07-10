@@ -219,7 +219,7 @@ var pprofVariables = variables{
 		"Profiles contain multiple values per sample.",
 		"Use sample_index=i to select the ith value (starting at 0).")},
 	"normalize": &variable{boolKind, "f", "", helpText(
-		"Scales profile to match the total of the base profile")},
+		"Scales profile based on the base profile.")},
 
 	// Data sorting criteria
 	"flat": &variable{boolKind, "t", "cumulative", helpText("Sort entries based on own weight")},

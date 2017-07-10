@@ -284,6 +284,7 @@ func TestFetchWithBase(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		fmt.Printf("%s\n", tc.testDescription)
 		var sources []profileSource
 		for _, tcp := range tc.sources {
 			scale := float64(1.0)
