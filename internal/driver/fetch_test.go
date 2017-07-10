@@ -206,6 +206,119 @@ func TestFetch(t *testing.T) {
 	}
 }
 
+func TestFetchWithBase(t *testing.T) {
+	const path = "testdata/"
+	// set up testcases
+	type testcaseProfile struct {
+		source string
+		isBase bool
+	}
+	type testcase struct {
+		sources         []testcaseProfile
+		execName        string
+		normalize       bool
+		testDescription string
+		expectSamples   bool
+	}
+
+	testcases := []testcase{
+		{
+			[]testcaseProfile{
+				{path + "cppbench.cpu", false},
+				{path + "cppbench.cpu", true},
+			},
+			"",
+			false,
+			"not normalized, base is same as non-base",
+			false,
+		},
+		{
+			[]testcaseProfile{
+				{path + "cppbench.cpu", false},
+				{path + "cppbench.cpu", true},
+				{path + "cppbench.cpu", true}},
+			"",
+			false,
+			"not normalized, single non-base, multiple base (all profiles same)",
+			true,
+		},
+		{
+			[]testcaseProfile{
+				{path + "cppbench.cpu", false},
+				{path + "go.crc32.cpu", true},
+			},
+			"",
+			false,
+			"not normalized, different base and non-base",
+			true,
+		},
+		{
+			[]testcaseProfile{
+				{path + "cppbench.cpu", false},
+				{path + "cppbench.cpu", true}},
+			"",
+			true,
+			"normalized, base is same as non-base",
+			false,
+		},
+		{
+			[]testcaseProfile{
+				{path + "cppbench.cpu", false},
+				{path + "cppbench.cpu", true},
+				{path + "cppbench.cpu", true}},
+			"",
+			true,
+			"normalized, single non-base, multiple base (all profiles same)",
+			false,
+		},
+		{
+			[]testcaseProfile{
+				{path + "cppbench.cpu", false},
+				{path + "go.crc32.cpu", true},
+			},
+			"",
+			true,
+			"normalized, different base and non-base",
+			true,
+		},
+	}
+
+	for _, tc := range testcases {
+		fmt.Printf("%s\n", tc.testDescription)
+		var sources []profileSource
+		for _, tcp := range tc.sources {
+			scale := float64(1.0)
+			if tcp.isBase {
+				scale = -1
+			}
+			ps := profileSource{
+				addr:   tcp.source,
+				source: &source{ExecName: tc.execName},
+				scale:  scale,
+				isBase: tcp.isBase,
+			}
+			sources = append(sources, ps)
+		}
+		p, _, _, _, err := concurrentGrab(sources, tc.normalize, nil, testObj{}, &proftest.TestUI{T: t})
+
+		if err != nil {
+			t.Fatalf("%s: %s", tc.testDescription, err)
+		}
+
+		if tc.expectSamples {
+			if len(p.Sample) == 0 {
+				fmt.Printf("%s:\n%v, %v", tc.testDescription, p, p.Sample)
+				t.Errorf("%s: want non-zero number of samples", tc.testDescription)
+			}
+		} else {
+			if len(p.Sample) != 0 {
+				fmt.Printf("%s:\n%v, %v", tc.testDescription, p, p.Sample)
+				t.Errorf("%s: want no samples", tc.testDescription)
+			}
+		}
+	}
+}
+
 // mappingSources creates MappingSources map with a single item.
 func mappingSources(key, source string, start uint64) plugin.MappingSources {
 	return plugin.MappingSources{

@@ -217,7 +217,7 @@ var cpuL = []*Location{
 	},
 }
 
-var testProfile = &Profile{
+var testProfile1 = &Profile{
 	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
 	Period:        1,
 	DurationNanos: 10e9,
@@ -272,6 +272,83 @@ var testProfile = &Profile{
 	Mapping:  cpuM,
 }
 
+var testProfile2 = &Profile{
+	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
+	Period:        1,
+	DurationNanos: 10e9,
+	SampleType: []*ValueType{
+		{Type: "samples", Unit: "count"},
+		{Type: "cpu", Unit: "milliseconds"},
+	},
+	Sample: []*Sample{
+		{
+			Location: []*Location{cpuL[0]},
+			Value:    []int64{70, 1000},
+			Label: map[string][]string{
+				"key1": {"tag1"},
+				"key2": {"tag1"},
+			},
+		},
+		{
+			Location: []*Location{cpuL[1], cpuL[0]},
+			Value:    []int64{60, 100},
+			Label: map[string][]string{
+				"key1": {"tag2"},
+				"key3": {"tag2"},
+			},
+		},
+		{
+			Location: []*Location{cpuL[2], cpuL[0]},
+			Value:    []int64{50, 10},
+			Label: map[string][]string{
+				"key1": {"tag3"},
+				"key2": {"tag2"},
+			},
+		},
+		{
+			Location: []*Location{cpuL[3], cpuL[0]},
+			Value:    []int64{40, 10000},
+			Label: map[string][]string{
+				"key1": {"tag4"},
+				"key2": {"tag1"},
+			},
+		},
+		{
+			Location: []*Location{cpuL[4], cpuL[0]},
+			Value:    []int64{1, 1},
+			Label: map[string][]string{
+				"key1": {"tag4"},
+				"key2": {"tag1"},
+			},
+		},
+	},
+	Location: cpuL,
+	Function: cpuF,
+	Mapping:  cpuM,
+}
+
+var testProfile3 = &Profile{
+	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
+	Period:        1,
+	DurationNanos: 10e9,
+	SampleType: []*ValueType{
+		{Type: "samples", Unit: "count"},
+	},
+	Sample: []*Sample{
+		{
+			Location: []*Location{cpuL[0]},
+			Value:    []int64{1000},
+			Label: map[string][]string{
+				"key1": {"tag1"},
+				"key2": {"tag1"},
+			},
+		},
+	},
+	Location: cpuL,
+	Function: cpuF,
+	Mapping:  cpuM,
+}
+
 var aggTests = map[string]aggTest{
 	"precise":         {true, true, true, true, 5},
 	"fileline":        {false, true, true, true, 4},
@@ -287,7 +364,7 @@ type aggTest struct {
 const totalSamples = int64(11111)
 
 func TestAggregation(t *testing.T) {
-	prof := testProfile.Copy()
+	prof := testProfile1.Copy()
 	for _, resolution := range []string{"precise", "fileline", "inline_function", "function"} {
 		a := aggTests[resolution]
 		if !a.precise {
@@ -362,7 +439,7 @@ func checkAggregation(prof *Profile, a *aggTest) error {
 
 // Test merge leaves the main binary in place.
 func TestMergeMain(t *testing.T) {
-	prof := testProfile.Copy()
+	prof := testProfile1.Copy()
 	p1, err := Merge([]*Profile{prof})
 	if err != nil {
 		t.Fatalf("merge error: %v", err)
@@ -377,7 +454,7 @@ func TestMerge(t *testing.T) {
 	// -2. Should end up with an empty profile (all samples for a
 	// location should add up to 0).
 
-	prof := testProfile.Copy()
+	prof := testProfile1.Copy()
 	p1, err := Merge([]*Profile{prof, prof})
 	if err != nil {
 		t.Errorf("merge error: %v", err)
@@ -409,7 +486,7 @@ func TestMergeAll(t *testing.T) {
 	// Aggregate 10 copies of the profile.
 	profs := make([]*Profile, 10)
 	for i := 0; i < 10; i++ {
-		profs[i] = testProfile.Copy()
+		profs[i] = testProfile1.Copy()
 	}
 	prof, err := Merge(profs)
 	if err != nil {
@@ -420,11 +497,90 @@ func TestMergeAll(t *testing.T) {
 		tb := locationHash(s)
 		samples[tb] = samples[tb] + s.Value[0]
 	}
-	for _, s := range testProfile.Sample {
+	for _, s := range testProfile1.Sample {
 		tb := locationHash(s)
 		if samples[tb] != s.Value[0]*10 {
 			t.Errorf("merge got wrong value at %s : %d instead of %d", tb, samples[tb], s.Value[0]*10)
 		}
+	}
+}
+
+func TestNormalizeBySameProfile(t *testing.T) {
+	baseProfs := []*Profile{testProfile1.Copy()}
+	srcProfs := []*Profile{testProfile1.Copy()}
+
+	err := Normalize(srcProfs, baseProfs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i, s := range srcProfs[0].Sample {
+		for j, v := range s.Value {
+			expectedSampleValue := testProfile1.Sample[i].Value[j]
+			if v != expectedSampleValue {
+				t.Errorf("For sample %d, value %d want %d got %d", i, j, expectedSampleValue, v)
+			}
+		}
+	}
+}
+
+func TestNormalizeByMultipleCopiesOfSameProfile(t *testing.T) {
+	baseProfs := make([]*Profile, 10)
+	for i := 0; i < 10; i++ {
+		baseProfs[i] = testProfile1.Copy()
+	}
+	srcProfs := []*Profile{testProfile1.Copy(), testProfile1.Copy()}
+
+	err := Normalize(srcProfs, baseProfs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i, prof := range srcProfs {
+		for j, s := range prof.Sample {
+			for k, v := range s.Value {
+				expectedSampleValue := 5 * testProfile1.Sample[j].Value[k]
+				if v != expectedSampleValue {
+					t.Errorf("For profile %d, sample %d, value %d, want %d got %d", i, j, k, expectedSampleValue, v)
+				}
+			}
+		}
+	}
+}
+
+func TestNormalizeByDifferentProfile(t *testing.T) {
+	srcProfs := []*Profile{testProfile1.Copy()}
+	baseProfs := []*Profile{testProfile2.Copy()}
+
+	err := Normalize(srcProfs, baseProfs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedSampleValues := [][]int64{
+		{19, 1000},
+		{1, 100},
+		{0, 10},
+		{198, 10000},
+		{0, 1},
+	}
+
+	for i, s := range srcProfs[0].Sample {
+		for j, v := range s.Value {
+			if v != expectedSampleValues[i][j] {
+				t.Errorf("For sample %d, value %d want %d got %d", i, j, expectedSampleValues[i][j], v)
+			}
+		}
+	}
+}
+
+func TestNormalizeIncompatibleProfiles(t *testing.T) {
+	baseProfs := []*Profile{testProfile1.Copy()}
+	srcProfs := []*Profile{testProfile3.Copy()}
+
+	err := Normalize(srcProfs, baseProfs)
+	if err == nil {
+		t.Errorf("Expected an error")
 	}
 }
 
@@ -442,7 +598,7 @@ func TestFilter(t *testing.T) {
 		{nil, regexp.MustCompile("foo.c"), nil, nil, true, true, false, false},
 		{nil, nil, regexp.MustCompile("lib.so"), nil, true, false, true, false},
 	} {
-		prof := *testProfile.Copy()
+		prof := *testProfile1.Copy()
 		gf, gi, gh, gnh := prof.FilterSamplesByName(tc.focus, tc.ignore, tc.hide, tc.show)
 		if gf != tc.fm {
 			t.Errorf("Filter #%d, got fm=%v, want %v", tx, gf, tc.fm)
@@ -488,7 +644,7 @@ func TestTagFilter(t *testing.T) {
 		{regexp.MustCompile("key1"), nil, true, false, 1},
 		{nil, regexp.MustCompile("key[12]"), true, true, 1},
 	} {
-		prof := testProfile.Copy()
+		prof := testProfile1.Copy()
 		gim, gem := prof.FilterTagsByName(tc.include, tc.exclude)
 		if gim != tc.im {
 			t.Errorf("Filter #%d, got include match=%v, want %v", tx, gim, tc.im)
@@ -514,8 +670,8 @@ func locationHash(s *Sample) string {
 }
 
 func TestSetMain(t *testing.T) {
-	testProfile.massageMappings()
-	if testProfile.Mapping[0].File != mainBinary {
-		t.Errorf("got %s for main", testProfile.Mapping[0].File)
+	testProfile1.massageMappings()
+	if testProfile1.Mapping[0].File != mainBinary {
+		t.Errorf("got %s for main", testProfile1.Mapping[0].File)
 	}
 }
