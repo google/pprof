@@ -67,15 +67,6 @@ func checkLocalHost(h http.Handler) http.Handler {
 	})
 }
 
-func fromLocalHost(req *http.Request) bool {
-	addr := req.RemoteAddr
-	pstart := strings.LastIndexByte(addr, ':')
-	if pstart >= 0 {
-		addr = addr[:pstart]
-	}
-	return addr == "127.0.0.1" || addr == "[::1]"
-}
-
 // disasm generates a web page containing an svg diagram..
 func (ui *webUI) dot(w http.ResponseWriter, req *http.Request) {
 	if req.URL.Path != "/" {
