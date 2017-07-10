@@ -27,6 +27,11 @@ all files that caused ParseData to crash in ./fuzz/crashers.
 
 For more details on the usage, see github.com/dvyukov/go-fuzz/
 
-# Adding to corpus
-One can add profiles into the corpus by placing these files in the corpus directory (pprof/fuzz/corpus) 
+# About the to corpus
+
+Right now, fuzz/corpus contains the corpus initially given to the fuzzer
+
+If using the above commands, fuzz/corpus will be used to generate the initial corpus during fuzz testing.
+
+One can add profiles into the corpus by placing these files in the corpus directory (fuzz/corpus)
 prior to calling go-fuzz-build.
