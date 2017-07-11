@@ -106,10 +106,11 @@ button {
 </div>
 <button id="list">List</button>
 <button id="disasm">Disasm</button>
-<input id="searchbox" type="text" placeholder="Search" autocomplete="off" autocapitalize="none" size=40/>
+<input id="searchbox" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40/>
 <button id="focus">Focus</button>
-<button id="ignore">Ignore</button>
+<button id="show">Show</button>
 <button id="hide">Hide</button>
+<button id="ignore">Ignore</button>
 <button id="reset">Reset</button>
 </div>
 <div id="rightbuttons">
@@ -336,6 +337,7 @@ function dotviewer(nodes) {
   var disasmButton = document.getElementById("disasm")
   var resetButton = document.getElementById("reset")
   var focusButton = document.getElementById("focus")
+  var showButton = document.getElementById("show")
   var ignoreButton = document.getElementById("ignore")
   var hideButton = document.getElementById("hide")
   var search = document.getElementById("searchbox")
@@ -362,6 +364,7 @@ function dotviewer(nodes) {
   var handleList   = function() { navigate("/weblist", "f", true) }
   var handleDisasm = function() { navigate("/disasm", "f", true) }
   var handleFocus  = function() { navigate("/", "f", false) }
+  var handleShow   = function() { navigate("/", "s", false) }
   var handleIgnore = function() { navigate("/", "i", false) }
   var handleHide   = function() { navigate("/", "h", false) }
 
@@ -488,9 +491,9 @@ function dotviewer(nodes) {
     url.hash = ""
 
     if (re != "") {
-      // For focus, forget old parameter.  For others, add to re.
+      // For focus/show, forget old parameter.  For others, add to re.
       var params = url.searchParams
-      if (param != "f" && params.has(param)) {
+      if (param != "f" && param != "s" && params.has(param)) {
         var old = params.get(param)
         if (old != "") {
           re += "|" + old
@@ -514,6 +517,7 @@ function dotviewer(nodes) {
     listButton.disabled = d
     disasmButton.disabled = d
     focusButton.disabled = d
+    showButton.disabled = d
     ignoreButton.disabled = d
     hideButton.disabled = d
   }
@@ -530,6 +534,7 @@ function dotviewer(nodes) {
     disasmButton.addEventListener(evt, handleDisasm)
     resetButton.addEventListener(evt, handleReset)
     focusButton.addEventListener(evt, handleFocus)
+    showButton.addEventListener(evt, handleShow)
     ignoreButton.addEventListener(evt, handleIgnore)
     hideButton.addEventListener(evt, handleHide)
   }

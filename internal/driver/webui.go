@@ -78,6 +78,7 @@ func (ui *webUI) dot(w http.ResponseWriter, req *http.Request) {
 	args := []string{"svg"}
 	vars := pprofVariables.makeCopy()
 	vars["focus"].value = req.URL.Query().Get("f")
+	vars["show"].value = req.URL.Query().Get("s")
 	vars["ignore"].value = req.URL.Query().Get("i")
 	vars["hide"].value = req.URL.Query().Get("h")
 	_, rpt, err := generateRawReport(ui.prof, args, vars, ui.options)
