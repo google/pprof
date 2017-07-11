@@ -158,7 +158,9 @@ function initPanAndZoom(svg, clickHandler) {
     var p = svg.createSVGPoint()
     p.x = x
     p.y = y
-    return p.matrixTransform(svg.getCTM().inverse())
+    var m = svg.getCTM()
+    if (m == null) m = svg.getScreenCTM();  // Firefox workaround.
+    return p.matrixTransform(m.inverse())
   }
 
   // Change the scaling for the svg to s, keeping the point denoted
@@ -220,9 +222,13 @@ function initPanAndZoom(svg, clickHandler) {
     panLastX = x
     panLastY = y
 
+    // Firefox workaround: get dimensions from parentNode.
+    var swidth = svg.clientWidth || svg.parentNode.clientWidth
+    var sheight = svg.clientHeight || svg.parentNode.clientHeight
+
     // Convert deltas from screen space to svg space.
-    dx *= (svg.viewBox.baseVal.width / svg.clientWidth)
-    dy *= (svg.viewBox.baseVal.height / svg.clientHeight)
+    dx *= (svg.viewBox.baseVal.width / swidth)
+    dy *= (svg.viewBox.baseVal.height / sheight)
 
     svg.viewBox.baseVal.x -= dx
     svg.viewBox.baseVal.y -= dy
@@ -231,17 +237,17 @@ function initPanAndZoom(svg, clickHandler) {
   var handleScanStart = function(e) {
     if (e.button != 0) return  // Do not catch right-clicks etc.
     setMode(MOUSEPAN)
-    panStart(e.screenX, e.screenY)
+    panStart(e.clientX, e.clientY)
     e.preventDefault()
     svg.addEventListener("mousemove", handleScanMove)
   }
 
   var handleScanMove = function(e) {
-    if (mode == MOUSEPAN) panMove(e.screenX, e.screenY)
+    if (mode == MOUSEPAN) panMove(e.clientX, e.clientY)
   }
 
   var handleScanEnd = function(e) {
-    if (mode == MOUSEPAN) panMove(e.screenX, e.screenY)
+    if (mode == MOUSEPAN) panMove(e.clientX, e.clientY)
     setMode(IDLE)
     svg.removeEventListener("mousemove", handleScanMove)
     if (!moved) clickHandler(e.target)
@@ -269,7 +275,7 @@ function initPanAndZoom(svg, clickHandler) {
       var t = e.changedTouches[0]
       setMode(TOUCHPAN)
       touchid = t.identifier
-      panStart(t.screenX, t.screenY)
+      panStart(t.clientX, t.clientY)
       e.preventDefault()
     } else if (mode == TOUCHPAN && e.touches.length == 2) {
       // Start pinch zooming
@@ -294,7 +300,7 @@ function initPanAndZoom(svg, clickHandler) {
         setMode(IDLE)
         return
       }
-      panMove(t.screenX, t.screenY)
+      panMove(t.clientX, t.clientY)
       e.preventDefault()
     } else if (mode == TOUCHZOOM) {
       // Get two touches; new gap; rescale to ratio.
@@ -311,7 +317,7 @@ function initPanAndZoom(svg, clickHandler) {
     if (mode == TOUCHPAN) {
       var t = findTouch(e.changedTouches, touchid)
       if (t == null) return
-      panMove(t.screenX, t.screenY)
+      panMove(t.clientX, t.clientY)
       setMode(IDLE)
       e.preventDefault()
       if (!moved) clickHandler(t.target)
