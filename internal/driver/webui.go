@@ -21,10 +21,12 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/google/pprof/internal/graph"
 	"github.com/google/pprof/internal/plugin"
@@ -53,7 +55,42 @@ func serveWebInterface(port int, p *profile.Profile, o *plugin.Options) error {
 	http.Handle("/", wrap(http.HandlerFunc(ui.dot)))
 	http.Handle("/disasm", wrap(http.HandlerFunc(ui.disasm)))
 	http.Handle("/weblist", wrap(http.HandlerFunc(ui.weblist)))
+	go openBrowser(port)
 	return http.ListenAndServe(fmt.Sprint(":", port), nil)
+}
+
+func openBrowser(port int) {
+	// Construct URL.
+	u, _ := url.Parse(fmt.Sprint("http://localhost:", port))
+	q := u.Query()
+	for _, p := range []struct{ param, key string }{
+		{"f", "focus"},
+		{"s", "show"},
+		{"i", "ignore"},
+		{"h", "hide"},
+	} {
+		if v := pprofVariables[p.key].value; v != "" {
+			q.Set(p.param, v)
+		}
+	}
+	u.RawQuery = q.Encode()
+
+	// Give server a little time to get ready.
+	time.Sleep(time.Millisecond * 500)
+
+	for _, b := range browsers() {
+		args := strings.Split(b, " ")
+		if len(args) == 0 {
+			continue
+		}
+		viewer := exec.Command(args[0], append(args[1:], u.String())...)
+		viewer.Stderr = os.Stderr
+		if err := viewer.Start(); err == nil {
+			return
+		}
+	}
+	// No visualizer succeeded, so just print URL.
+	fmt.Fprintln(os.Stderr, "Visit", u.String(), "in a web browser")
 }
 
 func checkLocalHost(h http.Handler) http.Handler {
