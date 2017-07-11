@@ -1072,7 +1072,12 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 	}
 
 	if len(rpt.options.ActiveFilters) > 0 {
-		label = append(label, "Active filters: "+strings.Join(rpt.options.ActiveFilters, ", "))
+		for i, s := range rpt.options.ActiveFilters {
+			if len(s) > 80 {
+				rpt.options.ActiveFilters[i] = s[:70] + "...(regex continues)"
+			}
+		}
+		label = append(label, "Active filters: "+strings.Join(rpt.options.ActiveFilters, ", \n"))
 	}
 
 	label = append(label, fmt.Sprintf("Showing nodes accounting for %s, %s of %s total", rpt.formatValue(flatSum), strings.TrimSpace(percentage(flatSum, rpt.total)), rpt.formatValue(rpt.total)))
