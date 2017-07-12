@@ -1,28 +1,8 @@
 /*
  * Copyright (c) 2016, Google Inc.
  * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of Google Inc. nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL Google Inc. BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
  */
 
 #include "perf_data_converter.h"
@@ -33,14 +13,13 @@
 #include <sstream>
 #include <vector>
 
+#include "int_compat.h"
+#include "perf_data_handler.h"
+#include "string_compat.h"
 #include "builder.h"
 #include "chromiumos-wide-profiling/perf_data.pb.h"
 #include "chromiumos-wide-profiling/perf_parser.h"
 #include "chromiumos-wide-profiling/perf_reader.h"
-#include "int_compat.h"
-#include "intervalmap.h"
-#include "perf_data_handler.h"
-#include "string_compat.h"
 
 namespace perftools {
 namespace {
@@ -100,13 +79,6 @@ ExecutionMode PerfExecMode(const PerfDataHandler::SampleContext& sample) {
 // In order to successfully unmarshal the proto in Go, all strings inserted into
 // the profile string table must be valid UTF-8.
 int64 UTF8StringId(const string& s, ProfileBuilder* builder) {
-  #ifdef ENFORCE_UTF8_VALIDITY
-  if (!utf8::is_valid(s.begin(), s.end())) {
-    // Non-UTF8 strings are likely garbage so avoid loading any part of those.
-    // Using a well-known placeholder enables querying to see if we get any.
-    return builder->StringId("<invalid-utf8>");
-  }
-  #endif  // ENFORCE_UTF8_VALIDITY.
   return builder->StringId(s.c_str());
 }
 
@@ -181,9 +153,6 @@ typedef std::unordered_map<SampleKey, perftools::profiles::Sample*,
 // address, not also the mapping ID since the map / its portions are invalidated
 // by Comm() and MMap() methods to force re-creation of those locations.
 //
-// TODO(aalexand): It might be simpler to just have the mapping pointer / ID a
-// part of the key and skip the invalidation part altogether though it would
-// increase the memory usage some.
 typedef std::map<uint64, uint64> LocationMap;
 
 // Map from the handler mapping object to profile mapping ID. The mappings
@@ -674,34 +643,36 @@ ProcessProfiles RawPerfDataToProfiles(const void* raw, const int raw_size,
                                       const std::map<string, string>& build_ids,
                                       const uint32 sample_labels,
                                       const uint32 options) {
-  std::unique_ptr<quipper::PerfReader> reader(new quipper::PerfReader);
-  if (!reader->ReadFromPointer(reinterpret_cast<const char*>(raw), raw_size)) {
+  quipper::PerfReader reader;
+  if (!reader.ReadFromPointer(reinterpret_cast<const char*>(raw), raw_size)) {
     LOG(ERROR) << "Could not read input perf.data";
     return ProcessProfiles();
   }
 
-  reader->InjectBuildIDs(build_ids);
+  reader.InjectBuildIDs(build_ids);
   // Perf populates info about the kernel using multiple pathways,
   // which don't actually all match up how they name kernel data; in
   // particular, buildids are reported by a different name than the
   // actual "mmap" info.  Normalize these names so our ProcessProfiles
   // will match kernel mappings to a buildid.
-  reader->LocalizeUsingFilenames({
+  reader.LocalizeUsingFilenames({
       {"[kernel.kallsyms]_text", "[kernel.kallsyms]"},
       {"[kernel.kallsyms]_stext", "[kernel.kallsyms]"},
   });
 
-  // Will sort the events by time if the timestamps are present.
-  // The further processing of the perf data proto implies time-ordered data.
-  reader->MaybeSortEventsByTime();
-
-  quipper::PerfDataProto perf_data;
-  if (!reader->Serialize(&perf_data)) {
-    LOG(ERROR) << "Could not serialize perf.data";
+  // Use PerfParser to modify reader's events to have magic done to them such
+  // as hugepage deduction and sorting events based on time, if timestamps are
+  // present.
+  quipper::PerfParserOptions opts;
+  opts.sort_events_by_time = true;
+  opts.combine_huge_pages_mappings = true;
+  quipper::PerfParser parser(&reader, opts);
+  if (!parser.ParseRawEvents()) {
+    LOG(ERROR) << "Could not parse perf events.";
     return ProcessProfiles();
   }
 
-  return PerfDataProtoToProfiles(&perf_data, sample_labels, options);
+  return PerfDataProtoToProfiles(&reader.proto(), sample_labels, options);
 }
 
 }  // namespace perftools

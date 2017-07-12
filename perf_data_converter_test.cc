@@ -1,28 +1,8 @@
 /*
  * Copyright (c) 2016, Google Inc.
  * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of Google Inc. nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL Google Inc. BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
  */
 
 // Tests converting perf.data files to sets of Profile
@@ -40,17 +20,17 @@
 #include <utility>
 #include <vector>
 
-#include "chromiumos-wide-profiling/perf_parser.h"
-#include "chromiumos-wide-profiling/perf_reader.h"
 #include "int_compat.h"
 #include "intervalmap.h"
 #include "string_compat.h"
 #include "test_compat.h"
+#include "chromiumos-wide-profiling/perf_parser.h"
+#include "chromiumos-wide-profiling/perf_reader.h"
 
-using quipper::PerfDataProto;
 using perftools::ProcessProfiles;
 using perftools::profiles::Location;
 using perftools::profiles::Mapping;
+using quipper::PerfDataProto;
 
 namespace {
 
@@ -115,6 +95,15 @@ MapCounts GetMapCounts(const ProcessProfiles& pps) {
   return map_counts;
 }
 
+std::unordered_set<string> AllBuildIDs(const ProcessProfiles& pps) {
+  std::unordered_set<string> ret;
+  for (const auto& pp : pps) {
+    for (const auto& it : pp->data.mapping()) {
+      ret.insert(pp->data.string_table(it.build_id()));
+    }
+  }
+  return ret;
+}
 }  // namespace
 
 namespace perftools {
@@ -127,16 +116,6 @@ void GetContents(const string& path, string* content) {
   std::stringstream contents;
   contents << file.rdbuf();
   *content = contents.str();
-}
-
-// Reads the content of the file at path as ASCII proto as a binary proto.
-PerfDataProto AsciiQuipperProtoToPerfDataProto(const string& asciiProto) {
-  PerfDataProto perf_data;
-  if (!google::protobuf::TextFormat::ParseFromString(asciiProto, &perf_data)) {
-    std::cerr << "Not an ASCII PerfDataProto: " << asciiProto << std::endl;
-    abort();
-  }
-  return perf_data;
 }
 
 // Set dir to the current directory, or return false if an error occurs.
@@ -160,7 +139,8 @@ inline string Basename(const string& path) {
 string GetResource(const string& relpath) {
   string cwd;
   GetCurrentDirectory(&cwd);
-  return cwd + "/" + relpath;
+  string resdir = cwd + "/" + relpath;
+  return resdir;
 }
 
 PerfDataProto ToPerfDataProto(const string& raw_perf_data) {
@@ -193,12 +173,17 @@ struct TestCase {
 // be validated via manual inspection of new golden values.
 TEST_F(PerfDataConverterTest, Converts) {
   string single_profile(
-      GetResource("testdata/single-event-single-process.perf.data"));
+      GetResource("testdata"
+                  "/single-event-single-process.perf.data"));
   string multi_pid_profile(
-      GetResource("testdata/single-event-multi-process.perf.data"));
+      GetResource("testdata"
+                  "/single-event-multi-process.perf.data"));
   string multi_event_profile(
-      GetResource("testdata/multi-event-single-process.perf.data"));
-  string stack_profile(GetResource("testdata/with-callchain.perf.data"));
+      GetResource("testdata"
+                  "/multi-event-single-process.perf.data"));
+  string stack_profile(
+      GetResource("testdata"
+                  "/with-callchain.perf.data"));
 
   std::vector<TestCase> cases;
   cases.emplace_back(TestCase{single_profile, 1061, 1061, 0});
@@ -248,7 +233,8 @@ TEST_F(PerfDataConverterTest, Converts) {
 
 TEST_F(PerfDataConverterTest, ConvertsGroupPid) {
   string multiple_profile(
-      GetResource("testdata/single-event-multi-process.perf.data"));
+      GetResource("testdata"
+                  "/single-event-multi-process.perf.data"));
 
   // Fetch the stdout_injected result and emit it to a profile.proto.  Group by
   // PIDs so the inner vector will have multiple entries.
@@ -278,41 +264,32 @@ TEST_F(PerfDataConverterTest, ConvertsGroupPid) {
 }
 
 TEST_F(PerfDataConverterTest, Injects) {
-  string path = GetResource("testdata/with-callchain.perf.data");
+  string path = GetResource("testdata"
+                            "/with-callchain.perf.data");
   string raw_perf_data;
   GetContents(path, &raw_perf_data);
-  const string want_buildid = "abcdabcd";
-  std::map<string, string> build_ids;
-  build_ids["[kernel.kallsyms]"] = want_buildid;
+  const string want_build_id = "abcdabcd";
+  std::map<string, string> build_ids = {
+      {"[kernel.kallsyms]", want_build_id}};
 
   // Test RawPerfData input.
-  const auto pps = RawPerfDataToProfiles(
+  const ProcessProfiles pps = RawPerfDataToProfiles(
       reinterpret_cast<const void*>(raw_perf_data.c_str()),
       raw_perf_data.size(), build_ids);
-  bool found = false;
-  for (const auto& pp : pps) {
-    for (const auto& it : pp->data.mapping()) {
-      if (pp->data.string_table(it.build_id()) == want_buildid) {
-        found = true;
-        goto done;
-      }
-    }
-  }
-done:
-  EXPECT_TRUE(found) << want_buildid << " not found in profiles";
+  std::unordered_set<string> all_build_ids = AllBuildIDs(pps);
+  EXPECT_TRUE(all_build_ids.find(want_build_id) != all_build_ids.end());
 }
 
 TEST_F(PerfDataConverterTest, HandlesKernelMmapOverlappingUserCode) {
-  string path =
-      GetResource("testdata/perf-overlapping-kernel-mapping.pb_proto");
+  string path = GetResource("testdata"
+                            "/perf-overlapping-kernel-mapping.pb_proto");
   string asciiPb;
   GetContents(path, &asciiPb);
-  const auto perf_data_proto = AsciiQuipperProtoToPerfDataProto(asciiPb);
-
+  PerfDataProto perf_data_proto;
+  ASSERT_TRUE(google::protobuf::TextFormat::ParseFromString(asciiPb, &perf_data_proto));
   ProcessProfiles pps = PerfDataProtoToProfiles(&perf_data_proto);
   EXPECT_EQ(1, pps.size());
   const auto& profile = pps[0]->data;
-  fprintf(stderr, "%s\n", profile.DebugString().c_str());
   EXPECT_EQ(3, profile.sample_size());
 
   EXPECT_EQ(2, profile.mapping_size());
