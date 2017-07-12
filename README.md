@@ -80,14 +80,15 @@ Type 'help' for available commands/options.
 ## Run pprof via a web interface
 
 If the `-http=port` option is specified, pprof starts a web server at
-the specified port that you can visit in your browser to get an interactive
-interface to pprof.
+the specified port that provides an interactive web-based interface to pprof.
 
 ```
 pprof -http=[port] [main_binary] profile.pb.gz
-
-This will run a server that can be visited in the browser.
 ```
+
+The preceding command should automatically open your web browser at
+the right page; if not, you can manually visit the specified port in
+your web browser.
 
 ## Using pprof with Linux Perf
 

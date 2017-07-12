@@ -58,7 +58,7 @@ func TestWebInterface(t *testing.T) {
 		needDot bool
 	}
 	testcases := []testCase{
-		{"/", []string{"F1", "F2", "F3"}, true},
+		{"/", []string{"F1", "F2", "F3", "testbin", "cpu"}, true},
 		{"/weblist?f=" + url.QueryEscape("F[12]"),
 			[]string{"F1", "F2", "300ms line1"}, false},
 		{"/disasm?f=" + url.QueryEscape("F[12]"),

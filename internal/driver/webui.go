@@ -104,7 +104,7 @@ func checkLocalHost(h http.Handler) http.Handler {
 	})
 }
 
-// disasm generates a web page containing an svg diagram..
+// dot generates a web page containing an svg diagram.
 func (ui *webUI) dot(w http.ResponseWriter, req *http.Request) {
 	if req.URL.Path != "/" {
 		http.NotFound(w, req)
@@ -132,7 +132,7 @@ func (ui *webUI) dot(w http.ResponseWriter, req *http.Request) {
 	// Convert to svg.
 	svg, err := dotToSvg(dot.Bytes())
 	if err != nil {
-		reportHandlerError(w, "Failed to execute dot. Is Graphviz installed?", err)
+		reportHandlerError(w, "failed to execute dot. Is Graphviz installed?", err)
 		return
 	}
 
