@@ -64,6 +64,7 @@ type Options struct {
 	Ratio               float64
 	Title               string
 	ProfileLabels       []string
+	ActiveFilters       []string
 
 	NodeCount    int
 	NodeFraction float64
@@ -1070,6 +1071,11 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 		flatSum = flatSum + n.FlatValue()
 	}
 
+	if len(rpt.options.ActiveFilters) > 0 {
+		activeFilters := legendActiveFilters(rpt.options.ActiveFilters)
+		label = append(label, activeFilters...)
+	}
+
 	label = append(label, fmt.Sprintf("Showing nodes accounting for %s, %s of %s total", rpt.formatValue(flatSum), strings.TrimSpace(percentage(flatSum, rpt.total)), rpt.formatValue(rpt.total)))
 
 	if rpt.total != 0 {
@@ -1087,6 +1093,18 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 		}
 	}
 	return label
+}
+
+func legendActiveFilters(activeFilters []string) []string {
+	legendActiveFilters := make([]string, len(activeFilters)+1)
+	legendActiveFilters[0] = "Active filters:"
+	for i, s := range activeFilters {
+		if len(s) > 80 {
+			s = s[:80] + "…"
+		}
+		legendActiveFilters[i+1] = "   " + s
+	}
+	return legendActiveFilters
 }
 
 func genLabel(d int, n, l, f string) string {
