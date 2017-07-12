@@ -1072,13 +1072,8 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 	}
 
 	if len(rpt.options.ActiveFilters) > 0 {
-		label = append(label, "Active filters:")
-		for i, s := range rpt.options.ActiveFilters {
-			if len(s) > 80 {
-				rpt.options.ActiveFilters[i] = s[:70] + "...(regex continues)"
-			}
-			label = append(label, rpt.options.ActiveFilters[i])
-		}
+		activeFilters := legendActiveFilters(rpt.options.ActiveFilters)
+		label = append(label, activeFilters...)
 	}
 
 	label = append(label, fmt.Sprintf("Showing nodes accounting for %s, %s of %s total", rpt.formatValue(flatSum), strings.TrimSpace(percentage(flatSum, rpt.total)), rpt.formatValue(rpt.total)))
@@ -1098,6 +1093,18 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 		}
 	}
 	return label
+}
+
+func legendActiveFilters(activeFilters []string) ([]string) {
+	legendActiveFilters := make([]string, len(activeFilters)+1)
+	legendActiveFilters[0] = "Active filters:"
+	for i, s := range activeFilters {
+		if len(s) > 80 {
+			s = s[:80] + "…"
+		}
+		legendActiveFilters[i+1] = "   " + s
+	}
+	return legendActiveFilters
 }
 
 func genLabel(d int, n, l, f string) string {
