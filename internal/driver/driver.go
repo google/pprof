@@ -229,7 +229,7 @@ func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) 
 	for _, k := range []string{"focus", "ignore", "hide", "show", "tagfocus", "tagignore", "tagshow", "taghide"} {
 		v := vars[k].value
 		if v != "" {
-			filters = append(filters, "   " + k+"="+v)
+			filters = append(filters, "   "+k+"="+v)
 		}
 	}
 
