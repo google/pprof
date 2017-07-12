@@ -1095,7 +1095,7 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 	return label
 }
 
-func legendActiveFilters(activeFilters []string) ([]string) {
+func legendActiveFilters(activeFilters []string) []string {
 	legendActiveFilters := make([]string, len(activeFilters)+1)
 	legendActiveFilters[0] = "Active filters:"
 	for i, s := range activeFilters {
