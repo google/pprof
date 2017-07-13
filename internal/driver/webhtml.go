@@ -20,7 +20,7 @@ var graphTemplate = template.Must(template.New("graph").Parse(
 	`<!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8"/>
+<meta charset="utf-8">
 <title>{{.Title}}</title>
 <style type="text/css">
 html, body {
@@ -107,7 +107,7 @@ button {
 </div>
 <button id="list">List</button>
 <button id="disasm">Disasm</button>
-<input id="searchbox" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40/>
+<input id="searchbox" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
 <button id="focus">Focus</button>
 <button id="ignore">Ignore</button>
 <button id="hide">Hide</button>
@@ -123,50 +123,49 @@ button {
 </div>
 
 </div>
-</body>
-</html>
 <script>
-
 // Make svg pannable and zoomable.
 // Call clickHandler(t) if a click event is caught by the pan event handlers.
 function initPanAndZoom(svg, clickHandler) {
+  'use strict';
+
   // Current mouse/touch handling mode
   const IDLE = 0
   const MOUSEPAN = 1
   const TOUCHPAN = 2
   const TOUCHZOOM = 3
-  var mode = IDLE
+  let mode = IDLE
 
   // State needed to implement zooming.
-  var currentScale = 1.0
-  var initWidth = svg.viewBox.baseVal.width
-  var initHeight = svg.viewBox.baseVal.height
+  let currentScale = 1.0
+  const initWidth = svg.viewBox.baseVal.width
+  const initHeight = svg.viewBox.baseVal.height
 
   // State needed to implement panning.
-  var panLastX = 0      // Last event X coordinate
-  var panLastY = 0      // Last event Y coordinate
-  var moved = false     // Have we seen significant movement
-  var touchid = null;   // Current touch identifier
+  let panLastX = 0      // Last event X coordinate
+  let panLastY = 0      // Last event Y coordinate
+  let moved = false     // Have we seen significant movement
+  let touchid = null    // Current touch identifier
 
   // State needed for pinch zooming
-  var touchid2 = null;    // Second id for pinch zooming
-  var initGap = 1.0       // Starting gap between two touches
-  var initScale = 1.0     // currentScale when pinch zoom started
-  var centerPoint = null  // Center point for scaling
+  let touchid2 = null     // Second id for pinch zooming
+  let initGap = 1.0       // Starting gap between two touches
+  let initScale = 1.0     // currentScale when pinch zoom started
+  let centerPoint = null  // Center point for scaling
 
   // Convert event coordinates to svg coordinates.
-  var toSvg = function(x, y) {
-    var p = svg.createSVGPoint()
+  function toSvg(x, y) {
+    const p = svg.createSVGPoint()
     p.x = x
     p.y = y
-    var m = svg.getCTM()
-    if (m == null) m = svg.getScreenCTM();  // Firefox workaround.
+    let m = svg.getCTM()
+    if (m == null) m = svg.getScreenCTM()  // Firefox workaround.
     return p.matrixTransform(m.inverse())
   }
 
   // Change the scaling for the svg to s, keeping the point denoted
   // by u (in svg coordinates]) fixed at the same screen location.
-  var rescale = function(s, u) {
+  function rescale(s, u) {
     // Limit to a good range.
     if (s < 0.2) s = 0.2
     if (s > 10.0) s = 10.0
@@ -176,11 +175,11 @@ function initPanAndZoom(svg, clickHandler) {
     // svg.viewBox defines the visible portion of the user coordinate
     // system.  So to magnify by s, divide the visible portion by s,
     // which will then be stretched to fit the viewport.
-    var vb = svg.viewBox
-    var w1 = vb.baseVal.width
-    var w2 = initWidth / s
-    var h1 = vb.baseVal.height
-    var h2 = initHeight / s
+    const vb = svg.viewBox
+    const w1 = vb.baseVal.width
+    const w2 = initWidth / s
+    const h1 = vb.baseVal.height
+    const h2 = initHeight / s
     vb.baseVal.width = w2
     vb.baseVal.height = h2
 
@@ -195,28 +194,28 @@ function initPanAndZoom(svg, clickHandler) {
     vb.baseVal.y = u.y - (u.y - vb.baseVal.y) * (h2 / h1)
   }
 
-  var handleWheel = function(e) {
+  function handleWheel(e) {
     if (e.deltaY == 0) return
     // Change scale factor by 1.1 or 1/1.1
     rescale(currentScale * (e.deltaY < 0 ? 1.1 : (1/1.1)),
             toSvg(e.offsetX, e.offsetY))
   }
 
-  var setMode = function(m) {
+  function setMode(m) {
     mode = m
     touchid = null
     touchid2 = null
   }
 
-  var panStart = function(x, y) {
+  function panStart(x, y) {
     moved = false
     panLastX = x
     panLastY = y
   }
 
-  var panMove = function(x, y) {
-    var dx = x - panLastX
-    var dy = y - panLastY
+  function panMove(x, y) {
+    let dx = x - panLastX
+    let dy = y - panLastY
     if (Math.abs(dx) <= 2 && Math.abs(dy) <= 2) return  // Ignore tiny moves
 
     moved = true
@@ -224,8 +223,8 @@ function initPanAndZoom(svg, clickHandler) {
     panLastY = y
 
     // Firefox workaround: get dimensions from parentNode.
-    var swidth = svg.clientWidth || svg.parentNode.clientWidth
-    var sheight = svg.clientHeight || svg.parentNode.clientHeight
+    const swidth = svg.clientWidth || svg.parentNode.clientWidth
+    const sheight = svg.clientHeight || svg.parentNode.clientHeight
 
     // Convert deltas from screen space to svg space.
     dx *= (svg.viewBox.baseVal.width / swidth)
@@ -235,7 +234,7 @@ function initPanAndZoom(svg, clickHandler) {
     svg.viewBox.baseVal.y -= dy
   }
 
-  var handleScanStart = function(e) {
+  function handleScanStart(e) {
     if (e.button != 0) return  // Do not catch right-clicks etc.
     setMode(MOUSEPAN)
     panStart(e.clientX, e.clientY)
@@ -243,11 +242,11 @@ function initPanAndZoom(svg, clickHandler) {
     svg.addEventListener("mousemove", handleScanMove)
   }
 
-  var handleScanMove = function(e) {
+  function handleScanMove(e) {
     if (mode == MOUSEPAN) panMove(e.clientX, e.clientY)
   }
 
-  var handleScanEnd = function(e) {
+  function handleScanEnd(e) {
     if (mode == MOUSEPAN) panMove(e.clientX, e.clientY)
     setMode(IDLE)
     svg.removeEventListener("mousemove", handleScanMove)
@@ -255,25 +254,24 @@ function initPanAndZoom(svg, clickHandler) {
   }
 
   // Find touch object with specified identifier.
-  var findTouch = function(tlist, id) {
-    for (var i = 0; i < tlist.length; i++) {
-      var t = tlist[i]
+  function findTouch(tlist, id) {
+    for (const t of tlist) {
       if (t.identifier == id) return t
     }
     return null
   }
 
  // Return distance between two touch points
-  var touchGap = function(t1, t2) {
-    var dx = t1.clientX - t2.clientX
-    var dy = t1.clientY - t2.clientY
-    return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2))
+  function touchGap(t1, t2) {
+    const dx = t1.clientX - t2.clientX
+    const dy = t1.clientY - t2.clientY
+    return Math.hypot(dx, dy)
   }
 
-  var handleTouchStart = function(e) {
+  function handleTouchStart(e) {
     if (mode == IDLE && e.changedTouches.length == 1) {
       // Start touch based panning
-      var t = e.changedTouches[0]
+      const t = e.changedTouches[0]
       setMode(TOUCHPAN)
       touchid = t.identifier
       panStart(t.clientX, t.clientY)
@@ -281,8 +279,8 @@ function initPanAndZoom(svg, clickHandler) {
     } else if (mode == TOUCHPAN && e.touches.length == 2) {
       // Start pinch zooming
       setMode(TOUCHZOOM)
-      var t1 = e.touches[0]
-      var t2 = e.touches[1]
+      const t1 = e.touches[0]
+      const t2 = e.touches[1]
       touchid = t1.identifier
       touchid2 = t2.identifier
       initScale = currentScale
@@ -293,9 +291,9 @@ function initPanAndZoom(svg, clickHandler) {
     }
   }
 
-  var handleTouchMove = function(e) {
+  function handleTouchMove(e) {
     if (mode == TOUCHPAN) {
-      var t = findTouch(e.changedTouches, touchid)
+      const t = findTouch(e.changedTouches, touchid)
       if (t == null) return
       if (e.touches.length != 1) {
         setMode(IDLE)
@@ -305,18 +303,18 @@ function initPanAndZoom(svg, clickHandler) {
       e.preventDefault()
     } else if (mode == TOUCHZOOM) {
       // Get two touches; new gap; rescale to ratio.
-      var t1 = findTouch(e.touches, touchid)
-      var t2 = findTouch(e.touches, touchid2)
+      const t1 = findTouch(e.touches, touchid)
+      const t2 = findTouch(e.touches, touchid2)
       if (t1 == null || t2 == null) return
-      var gap = touchGap(t1, t2)
+      const gap = touchGap(t1, t2)
       rescale(initScale * gap / initGap, centerPoint)
       e.preventDefault()
     }
   }
 
-  var handleTouchEnd = function(e) {
+  function handleTouchEnd(e) {
     if (mode == TOUCHPAN) {
-      var t = findTouch(e.changedTouches, touchid)
+      const t = findTouch(e.changedTouches, touchid)
       if (t == null) return
       panMove(t.clientX, t.clientY)
       setMode(IDLE)
@@ -337,27 +335,29 @@ function initPanAndZoom(svg, clickHandler) {
 }
 
 function dotviewer(nodes) {
+  'use strict';
+
   // Elements
-  var detailsButton = document.getElementById("details")
-  var detailsText = document.getElementById("detailtext")
-  var listButton = document.getElementById("list")
-  var disasmButton = document.getElementById("disasm")
-  var resetButton = document.getElementById("reset")
-  var focusButton = document.getElementById("focus")
-  var showButton = document.getElementById("show")
-  var ignoreButton = document.getElementById("ignore")
-  var hideButton = document.getElementById("hide")
-  var search = document.getElementById("searchbox")
-  var graph0 = document.getElementById("graph0")
-  var svg = graph0.parentElement
+  const detailsButton = document.getElementById("details")
+  const detailsText = document.getElementById("detailtext")
+  const listButton = document.getElementById("list")
+  const disasmButton = document.getElementById("disasm")
+  const resetButton = document.getElementById("reset")
+  const focusButton = document.getElementById("focus")
+  const showButton = document.getElementById("show")
+  const ignoreButton = document.getElementById("ignore")
+  const hideButton = document.getElementById("hide")
+  const search = document.getElementById("searchbox")
+  const graph0 = document.getElementById("graph0")
+  const svg = graph0.parentElement
 
-  var currentRe = ""
-  var selected = new Map()
-  var origFill = new Map()
-  var searchAlarm = null
-  var buttonsEnabled = true
+  let currentRe = ""
+  let selected = new Map()
+  let origFill = new Map()
+  let searchAlarm = null
+  let buttonsEnabled = true
 
-  var handleDetails = function() {
+  function handleDetails() {
     if (detailtext.style.display == "block") {
       detailtext.style.display = "none"
       detailsButton.innerText = "\u25b7 Details"
@@ -367,15 +367,15 @@ function dotviewer(nodes) {
     }
   }
 
-  var handleReset  = function() { window.location.href = "/" }
-  var handleList   = function() { navigate("/weblist", "f", true) }
-  var handleDisasm = function() { navigate("/disasm", "f", true) }
-  var handleFocus  = function() { navigate("/", "f", false) }
-  var handleShow   = function() { navigate("/", "s", false) }
-  var handleIgnore = function() { navigate("/", "i", false) }
-  var handleHide   = function() { navigate("/", "h", false) }
+  function handleReset() { window.location.href = "/" }
+  function handleList() { navigate("/weblist", "f", true) }
+  function handleDisasm() { navigate("/disasm", "f", true) }
+  function handleFocus() { navigate("/", "f", false) }
+  function handleShow() { navigate("/", "s", false) }
+  function handleIgnore() { navigate("/", "i", false) }
+  function handleHide() { navigate("/", "h", false) }
 
-  var handleSearch = function() {
+  function handleSearch() {
     // Delay processing so a flurry of key strokes is handled once.
     if (searchAlarm != null) {
       clearTimeout(searchAlarm)
@@ -383,9 +383,9 @@ function dotviewer(nodes) {
     searchAlarm = setTimeout(doSearch, 300)
   }
 
-  doSearch = function() {
+  function doSearch() {
     searchAlarm = null
-    var re = null
+    let re = null
     if (search.value != "") {
       try {
         re = new RegExp(search.value)
@@ -396,7 +396,7 @@ function dotviewer(nodes) {
     }
     currentRe = search.value
 
-    match = function(text) {
+    function match(text) {
       return re != null && re.test(text)
     }
 
@@ -408,7 +408,7 @@ function dotviewer(nodes) {
     })
 
     // add matching items that are not currently selected.
-    for (var n = 0; n < nodes.length; n++) {
+    for (let n = 0; n < nodes.length; n++) {
       if (!selected.has(n) && match(nodes[n])) {
         select(n, document.getElementById("node" + n))
       }
@@ -417,7 +417,7 @@ function dotviewer(nodes) {
     updateButtons()
   }
 
-  var toggleSelect = function(elem) {
+  function toggleSelect(elem) {
     // Walk up to immediate child of graph0
     while (elem != null && elem.parentElement != graph0) {
       elem = elem.parentElement
@@ -427,7 +427,7 @@ function dotviewer(nodes) {
     // Disable regexp mode.
     currentRe = ""
 
-    var n = nodeId(elem)
+    const n = nodeId(elem)
     if (n < 0) return
     if (selected.has(n)) {
       unselect(n, elem)
@@ -437,30 +437,30 @@ function dotviewer(nodes) {
     updateButtons()
   }
 
-  unselect = function(n, elem) {
+  function unselect(n, elem) {
     if (elem == null) return
     selected.delete(n)
     setBackground(elem, false)
   }
 
-  select = function(n, elem) {
+  function select(n, elem) {
     if (elem == null) return
     selected.set(n, true)
     setBackground(elem, true)
   }
 
-  var nodeId = function(elem) {
-    var id = elem.id
+  function nodeId(elem) {
+    const id = elem.id
     if (!id) return -1
     if (!id.startsWith("node")) return -1
-    var n = parseInt(id.slice(4), 10)
+    const n = parseInt(id.slice(4), 10)
     if (isNaN(n)) return -1
     if (n < 0 || n >= nodes.length) return -1
     return n
   }
 
-  var setBackground = function(elem, set) {
-    var p = findPolygon(elem)
+  function setBackground(elem, set) {
+    const p = findPolygon(elem)
     if (p != null) {
       if (set) {
         origFill.set(p, p.style.fill)
@@ -471,10 +471,10 @@ function dotviewer(nodes) {
     }
   }
 
-  var findPolygon = function(elem) {
+  function findPolygon(elem) {
     if (elem.localName == "polygon") return elem
-    for (var i = 0; i < elem.children.length; i++) {
-      var p = findPolygon(elem.children[i])
+    for (const c of elem.children) {
+      const p = findPolygon(c)
       if (p != null) return p
     }
     return null
@@ -482,10 +482,10 @@ function dotviewer(nodes) {
 
   // Navigate to specified path with current selection reflected
   // in the named parameter.
-  var navigate = function(path, param, newWindow) {
+  function navigate(path, param, newWindow) {
     // The selection can be in one of two modes: regexp-based or
     // list-based.  Construct regular expression depending on mode.
-    var re = currentRe
+    let re = currentRe
     if (re == "") {
       selected.forEach(function(v, key) {
         if (re != "") re += "|"
@@ -493,15 +493,15 @@ function dotviewer(nodes) {
       })
     }
 
-    var url = new URL(window.location.href)
+    const url = new URL(window.location.href)
     url.pathname = path
     url.hash = ""
 
     if (re != "") {
       // For focus/show, forget old parameter.  For others, add to re.
-      var params = url.searchParams
+      const params = url.searchParams
       if (param != "f" && param != "s" && params.has(param)) {
-        var old = params.get(param)
+        const old = params.get(param)
         if (old != "") {
           re += "|" + old
         }
@@ -516,17 +516,16 @@ function dotviewer(nodes) {
     }
   }
 
-  var updateButtons = function() {
-    var enable = (currentRe != "" || selected.size != 0)
+  function updateButtons() {
+    const enable = (currentRe != "" || selected.size != 0)
     if (buttonsEnabled == enable) return
     buttonsEnabled = enable
-    var d = enable ? false : true
-    listButton.disabled = d
-    disasmButton.disabled = d
-    focusButton.disabled = d
-    showButton.disabled = d
-    ignoreButton.disabled = d
-    hideButton.disabled = d
+    listButton.disabled = !enable
+    disasmButton.disabled = !enable
+    focusButton.disabled = !enable
+    showButton.disabled = !enable
+    ignoreButton.disabled = !enable
+    hideButton.disabled = !enable
   }
 
   // Initialize button states
@@ -535,7 +534,7 @@ function dotviewer(nodes) {
   // Setup event handlers
   initPanAndZoom(svg, toggleSelect)
   
-  var bindButtons = function(evt) {
+  function bindButtons(evt) {
     detailsButton.addEventListener(evt, handleDetails)
     listButton.addEventListener(evt, handleList)
     disasmButton.addEventListener(evt, handleDisasm)
@@ -552,4 +551,6 @@ function dotviewer(nodes) {
 
 dotviewer({{.Nodes}})
 </script>
+</body>
+</html>
 `))
