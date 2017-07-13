@@ -86,9 +86,9 @@ func Merge(srcs []*Profile) (*Profile, error) {
 	return p, nil
 }
 
-// Normalizes the source profiles by multiplying each value in profiles by the absolute value of
-// the ratio of the sum of the base profile value's of that sample type to the sum of the source
-// profiles value of that sample type.
+// Normalize normalizes the source profiles by multiplying each value in profiles by the
+// absolute value of the ratio of the sum of the base profile value's of that sample type
+// to the sum of the source profiles value of that sample type.
 func Normalize(srcProfiles, baseProfiles []*Profile) error {
 	if len(srcProfiles) == 0 {
 		return fmt.Errorf("no non-base profiles to normalize")
