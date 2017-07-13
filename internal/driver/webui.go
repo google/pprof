@@ -34,15 +34,26 @@ import (
 	"github.com/google/pprof/profile"
 )
 
-// webUI holds the state needed for serving a browser based interface.
-type webUI struct {
+// webInterface holds the state needed for serving a browser based interface.
+type webInterface struct {
 	prof    *profile.Profile
 	options *plugin.Options
 }
 
+// errorCatcher is a UI that captures errors for reporting to the browser.
+type errorCatcher struct {
+	plugin.UI
+	errors []string
+}
+
+func (ec *errorCatcher) PrintErr(args ...interface{}) {
+	ec.errors = append(ec.errors, strings.TrimSuffix(fmt.Sprintln(args...), "\n"))
+	ec.UI.PrintErr(args...)
+}
+
 func serveWebInterface(port int, p *profile.Profile, o *plugin.Options) error {
 	interactiveMode = true
-	ui := &webUI{
+	ui := &webInterface{
 		prof:    p,
 		options: o,
 	}
@@ -55,11 +66,11 @@ func serveWebInterface(port int, p *profile.Profile, o *plugin.Options) error {
 	http.Handle("/", wrap(http.HandlerFunc(ui.dot)))
 	http.Handle("/disasm", wrap(http.HandlerFunc(ui.disasm)))
 	http.Handle("/weblist", wrap(http.HandlerFunc(ui.weblist)))
-	go openBrowser(port)
+	go openBrowser(port, o)
 	return http.ListenAndServe(fmt.Sprint(":", port), nil)
 }
 
-func openBrowser(port int) {
+func openBrowser(port int, o *plugin.Options) {
 	// Construct URL.
 	u, _ := url.Parse(fmt.Sprint("http://localhost:", port))
 	q := u.Query()
@@ -90,7 +101,7 @@ func openBrowser(port int) {
 		}
 	}
 	// No visualizer succeeded, so just print URL.
-	fmt.Fprintln(os.Stderr, "Visit", u.String(), "in a web browser")
+	o.UI.PrintErr(u.String())
 }
 
 func checkLocalHost(h http.Handler) http.Handler {
@@ -105,11 +116,16 @@ func checkLocalHost(h http.Handler) http.Handler {
 }
 
 // dot generates a web page containing an svg diagram.
-func (ui *webUI) dot(w http.ResponseWriter, req *http.Request) {
+func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 	if req.URL.Path != "/" {
 		http.NotFound(w, req)
 		return
 	}
+
+	// Capture any error messages generated while generating a report.
+	catcher := &errorCatcher{UI: ui.options.UI}
+	options := *ui.options
+	options.UI = catcher
 
 	// Generate dot graph.
 	args := []string{"svg"}
@@ -118,9 +134,10 @@ func (ui *webUI) dot(w http.ResponseWriter, req *http.Request) {
 	vars["show"].value = req.URL.Query().Get("s")
 	vars["ignore"].value = req.URL.Query().Get("i")
 	vars["hide"].value = req.URL.Query().Get("h")
-	_, rpt, err := generateRawReport(ui.prof, args, vars, ui.options)
+	_, rpt, err := generateRawReport(ui.prof, args, vars, &options)
 	if err != nil {
-		reportHandlerError(w, "could not generate report", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ui.options.UI.PrintErr(err)
 		return
 	}
 	g, config := report.GetDOT(rpt)
@@ -132,7 +149,9 @@ func (ui *webUI) dot(w http.ResponseWriter, req *http.Request) {
 	// Convert to svg.
 	svg, err := dotToSvg(dot.Bytes())
 	if err != nil {
-		reportHandlerError(w, "failed to execute dot. Is Graphviz installed?", err)
+		http.Error(w, "Could not execute dot; may need to install graphviz.",
+			http.StatusNotImplemented)
+		ui.options.UI.PrintErr("Failed to execute dot. Is Graphviz installed?\n", err)
 		return
 	}
 
@@ -147,18 +166,21 @@ func (ui *webUI) dot(w http.ResponseWriter, req *http.Request) {
 	profile := getFromLegend(legend, "Type: ", "unknown")
 	data := struct {
 		Title  string
+		Errors []string
 		Svg    template.HTML
 		Legend []string
 		Nodes  []string
 	}{
 		Title:  file + " " + profile,
+		Errors: catcher.errors,
 		Svg:    template.HTML(string(svg)),
 		Legend: legend,
 		Nodes:  nodes,
 	}
 	html := &bytes.Buffer{}
 	if err := graphTemplate.Execute(html, data); err != nil {
-		reportHandlerError(w, "internal template error", err)
+		http.Error(w, "internal template error", http.StatusInternalServerError)
+		ui.options.UI.PrintErr(err)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html")
@@ -184,35 +206,52 @@ func dotToSvg(dot []byte) ([]byte, error) {
 }
 
 // disasm generates a web page containing disassembly.
-func (ui *webUI) disasm(w http.ResponseWriter, req *http.Request) {
+func (ui *webInterface) disasm(w http.ResponseWriter, req *http.Request) {
 	ui.output(w, req, "disasm", "text/plain")
 }
 
 // weblist generates a web page containing disassembly.
-func (ui *webUI) weblist(w http.ResponseWriter, req *http.Request) {
+func (ui *webInterface) weblist(w http.ResponseWriter, req *http.Request) {
 	ui.output(w, req, "weblist", "text/html")
 }
 
 // output generates a webpage that contains the output of the specified pprof cmd.
-func (ui *webUI) output(w http.ResponseWriter, req *http.Request, cmd, ctype string) {
+func (ui *webInterface) output(w http.ResponseWriter, req *http.Request, cmd, ctype string) {
 	focus := req.URL.Query().Get("f")
 	if focus == "" {
 		fmt.Fprintln(w, "no argument supplied for "+cmd)
 		return
 	}
+
+	// Capture any error messages generated while generating a report.
+	catcher := &errorCatcher{UI: ui.options.UI}
+	options := *ui.options
+	options.UI = catcher
+
 	args := []string{cmd, focus}
 	vars := pprofVariables.makeCopy()
-	_, rpt, err := generateRawReport(ui.prof, args, vars, ui.options)
+	_, rpt, err := generateRawReport(ui.prof, args, vars, &options)
 	if err != nil {
-		reportHandlerError(w, "error generating report", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ui.options.UI.PrintErr(err)
 		return
 	}
 
 	out := &bytes.Buffer{}
 	if err := report.Generate(out, rpt, ui.options.Obj); err != nil {
-		reportHandlerError(w, "error generating report", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ui.options.UI.PrintErr(err)
 		return
 	}
+
+	if len(catcher.errors) > 0 {
+		w.Header().Set("Content-Type", "text/plain")
+		for _, msg := range catcher.errors {
+			fmt.Println(w, msg)
+		}
+		return
+	}
+
 	w.Header().Set("Content-Type", ctype)
 	io.Copy(w, out)
 }
@@ -226,9 +265,4 @@ func getFromLegend(legend []string, param, def string) string {
 		}
 	}
 	return def
-}
-
-func reportHandlerError(w http.ResponseWriter, msg string, err error) {
-	fmt.Fprintf(os.Stderr, "%s: %v\n", msg, err)
-	http.Error(w, msg, http.StatusInternalServerError)
 }

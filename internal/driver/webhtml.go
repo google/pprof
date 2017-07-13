@@ -87,7 +87,6 @@ button {
   position: absolute;
   background-color: #ffffff;
   min-width: 160px;
-  xborder: 1px solid black;
   border-top: 1px solid black;
   box-shadow: 2px 2px 2px 0px #aaa;
   z-index: 1;
@@ -97,6 +96,8 @@ button {
 <body>
 <h1>{{.Title}}</h1>
 <div id="page">
+
+<div id="errors">{{range .Errors}}<div>{{.}}</div>{{end}}</div>
 
 <div id="header">
 <div id="leftbuttons">
@@ -108,9 +109,9 @@ button {
 <button id="disasm">Disasm</button>
 <input id="searchbox" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40/>
 <button id="focus">Focus</button>
-<button id="show">Show</button>
-<button id="hide">Hide</button>
 <button id="ignore">Ignore</button>
+<button id="hide">Hide</button>
+<button id="show">Show</button>
 <button id="reset">Reset</button>
 </div>
 <div id="rightbuttons">
