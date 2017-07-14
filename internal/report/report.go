@@ -975,8 +975,9 @@ func printTree(w io.Writer, rpt *Report) error {
 	return nil
 }
 
-// printDOT prints an annotated callgraph in DOT format.
-func printDOT(w io.Writer, rpt *Report) error {
+// GetDOT returns a graph suitable for dot processing along with some
+// configuration information.
+func GetDOT(rpt *Report) (*graph.Graph, *graph.DotConfig) {
 	g, origCount, droppedNodes, droppedEdges := rpt.newTrimmedGraph()
 	rpt.selectOutputUnit(g)
 	labels := reportLabels(rpt, g, origCount, droppedNodes, droppedEdges, true)
@@ -993,6 +994,12 @@ func printDOT(w io.Writer, rpt *Report) error {
 		FormatTag:   formatTag,
 		Total:       rpt.total,
 	}
+	return g, c
+}
+
+// printDOT prints an annotated callgraph in DOT format.
+func printDOT(w io.Writer, rpt *Report) error {
+	g, c := GetDOT(rpt)
 	graph.ComposeDot(w, g, &graph.DotAttributes{}, c)
 	return nil
 }

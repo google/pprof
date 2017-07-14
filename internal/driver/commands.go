@@ -263,7 +263,7 @@ func usage(commandLine bool) string {
 
 	var help string
 	if commandLine {
-		help = "  Output formats (select only one):\n"
+		help = "  Output formats (select at most one):\n"
 	} else {
 		help = "  Commands:\n"
 		commands = append(commands, fmtHelp("o/options", "List options and their current values"))

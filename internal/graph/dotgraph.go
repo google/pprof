@@ -123,10 +123,10 @@ func (b *builder) finish() {
 // addLegend generates a legend in DOT format.
 func (b *builder) addLegend() {
 	labels := b.config.Labels
-	var title string
-	if len(labels) > 0 {
-		title = labels[0]
+	if len(labels) == 0 {
+		return
 	}
+	title := labels[0]
 	fmt.Fprintf(b, `subgraph cluster_L { "%s" [shape=box fontsize=16`, title)
 	fmt.Fprintf(b, ` label="%s\l"`, strings.Join(labels, `\l`))
 	if b.config.LegendURL != "" {

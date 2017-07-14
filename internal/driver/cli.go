@@ -32,6 +32,7 @@ type source struct {
 	Seconds   int
 	Timeout   int
 	Symbolize string
+	HTTPPort  int
 }
 
 // Parse parses the command lines through the specified flags package
@@ -58,6 +59,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	flagTools := flag.String("tools", os.Getenv("PPROF_TOOLS"), "Path for object tool pathnames")
 
 	flagTimeout := flag.Int("timeout", -1, "Timeout in seconds for fetching a profile")
+	flagHTTPPort := flag.Int("http", 0, "Present interactive web based UI at the specified http port")
 
 	// Flags used during command processing
 	installedFlags := installFlags(flag)
@@ -106,6 +108,9 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	if cmd != nil && *flagHTTPPort != 0 {
+		return nil, nil, fmt.Errorf("--http is not compatible with an output format on the command line")
+	}
 
 	si := pprofVariables["sample_index"].value
 	si = sampleIndex(flagTotalDelay, si, "delay", "-total_delay", o.UI)
@@ -128,6 +133,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		Seconds:   *flagSeconds,
 		Timeout:   *flagTimeout,
 		Symbolize: *flagSymbolize,
+		HTTPPort:  *flagHTTPPort,
 	}
 
 	for _, s := range *flagBase {
@@ -240,7 +246,25 @@ func outputFormat(bcmd map[string]*bool, acmd map[string]*string) (cmd []string,
 	return cmd, nil
 }
 
-var usageMsgHdr = "usage: pprof [options] [-base source] [binary] <source> ...\n"
+var usageMsgHdr = `usage:
+
+Produce output in the specified format.
+
+   pprof <format> [options] [binary] <source> ...
+
+Omit the format to get an interactive shell whose commands can be used
+to generate various views of a profile
+
+   pprof [options] [binary] <source> ...
+
+Omit the format and provide the "-http" flag to get an interactive web
+interface at the specified port that can be used to navigate through
+various views of a profile.
+
+   pprof -http <port> [options] [binary] <source> ...
+
+Details:
+`
 
 var usageMsgSrc = "\n\n" +
 	"  Source options:\n" +
@@ -261,6 +285,7 @@ var usageMsgSrc = "\n\n" +
 
 var usageMsgVars = "\n\n" +
 	"  Misc options:\n" +
+	"   -http port             Provide web based interface at port\n" +
 	"   -tools                 Search path for object tools\n" +
 	"\n" +
 	"  Environment Variables:\n" +
