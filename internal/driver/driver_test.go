@@ -1137,3 +1137,4 @@ func (m *mockFile) Symbols(r *regexp.Regexp, addr uint64) ([]*plugin.Sym, error)
 func (*mockFile) Close() error {
 	return nil
 }
+
