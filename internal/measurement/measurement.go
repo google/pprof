@@ -129,6 +129,9 @@ func Scale(value int64, fromUnit, toUnit string) (float64, string) {
 	if t, u, ok := timeLabel(value, fromUnit, toUnit); ok {
 		return t, u
 	}
+	if isMemoryUnit(toUnit) || isTimeUnit(toUnit){
+		return float64(value), fromUnit
+	}
 	// Skip non-interesting units.
 	switch toUnit {
 	case "count", "sample", "unit", "minimum", "auto":
