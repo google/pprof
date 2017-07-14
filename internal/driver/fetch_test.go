@@ -284,7 +284,6 @@ func TestFetchWithBase(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		fmt.Printf("%s\n", tc.testDescription)
 		var sources []profileSource
 		for _, tcp := range tc.sources {
 			scale := float64(1.0)
@@ -307,12 +306,10 @@ func TestFetchWithBase(t *testing.T) {
 
 		if tc.expectSamples {
 			if len(p.Sample) == 0 {
-				fmt.Printf("%s:\n%v, %v", tc.testDescription, p, p.Sample)
 				t.Errorf("%s: want non-zero number of samples", tc.testDescription)
 			}
 		} else {
 			if len(p.Sample) != 0 {
-				fmt.Printf("%s:\n%v, %v", tc.testDescription, p, p.Sample)
 				t.Errorf("%s: want no samples", tc.testDescription)
 			}
 		}
