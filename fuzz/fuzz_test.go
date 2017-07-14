@@ -1,9 +1,10 @@
 package pprof
 
 import (
-	"github.com/google/pprof/profile"
 	"io/ioutil"
 	"testing"
+
+	"github.com/google/pprof/profile"
 )
 
 func TestParseData(t *testing.T) {

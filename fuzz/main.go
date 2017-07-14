@@ -1,3 +1,6 @@
+// Package is used in conjunction with github.com/dvyukov/go-fuzz/go-fuzz
+// to fuzz ParseData function.
+
 package pprof
 
 import (
