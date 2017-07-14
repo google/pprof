@@ -1,3 +1,5 @@
+// Package is used in conjunction with
+
 package pprof
 
 import (

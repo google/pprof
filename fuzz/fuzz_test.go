@@ -1,9 +1,13 @@
+// Package is used in conjunction with github.com/dvyukov/go-fuzz/go-fuzz
+// to fuzz ParseData function
+
 package pprof
 
 import (
-	"github.com/google/pprof/profile"
 	"io/ioutil"
 	"testing"
+
+	"github.com/google/pprof/profile"
 )
 
 func TestParseData(t *testing.T) {
