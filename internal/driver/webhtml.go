@@ -48,24 +48,6 @@ h1 {
   min-width: 100%;
   margin: 0px;
 }
-#header {
-  flex: 0 0 auto;
-  width: 100%;
-}
-#leftbuttons {
-  float: left;
-}
-#rightbuttons {
-  float: right;
-  display: table-cell;
-  vertical-align: middle;
-}
-#rightbuttons label {
-  vertical-align: middle;
-}
-#scale {
-  vertical-align: middle;
-}
 #graph {
   flex: 1 1 auto;
   overflow: hidden;
@@ -73,13 +55,12 @@ h1 {
 svg {
   width: 100%;
   height: auto;
-  border: 1px solid black;
 }
 button {
   margin-top: 5px;
   margin-bottom: 5px;
 }
-#reset, #scale {
+#reset {
   margin-left: 10px;
 }
 #detailtext {
@@ -91,34 +72,56 @@ button {
   box-shadow: 2px 2px 2px 0px #aaa;
   z-index: 1;
 }
+#actionbox {
+  display: none;
+  position: fixed;
+  background-color: #ffffff;
+  border: 1px solid black;
+  box-shadow: 2px 2px 2px 0px #aaa;
+  padding: 1em;
+  top: 20px;
+  right: 20px;
+}
+#actionbox > button {
+  display: block;
+  width: 100%;
+}
+#home {
+  font-size: 24px;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
 </style>
 </head>
 <body>
-<h1>{{.Title}}</h1>
-<div id="page">
 
-<div id="errors">{{range .Errors}}<div>{{.}}</div>{{end}}</div>
-
-<div id="header">
-<div id="leftbuttons">
 <button id="details">&#x25b7; Details</button>
 <div id="detailtext">
 {{range .Legend}}<div>{{.}}</div>{{end}}
 </div>
-<button id="list">List</button>
-<button id="disasm">Disasm</button>
-<input id="searchbox" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
-<button id="focus">Focus</button>
-<button id="ignore">Ignore</button>
-<button id="hide">Hide</button>
-<button id="show">Show</button>
+
 <button id="reset">Reset</button>
-</div>
-<div id="rightbuttons">
-</div>
-</div>
+
+<span id="home">{{.Title}}</span>
+
+<input id="searchbox" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
+
+<div id="page">
+
+<div id="errors">{{range .Errors}}<div>{{.}}</div>{{end}}</div>
 
 <div id="graph">
+
+<div id="actionbox">
+<button title="{{.Help.list}}" id="list">List</button>
+<button title="{{.Help.disasm}}" id="disasm">Disassemble</button>
+<button title="{{.Help.peek}}" id="peek">Peek</button>
+<button title="{{.Help.focus}}" id="focus">Focus</button>
+<button title="{{.Help.ignore}}" id="ignore">Ignore</button>
+<button title="{{.Help.hide}}" id="hide">Hide</button>
+<button title="{{.Help.show}}" id="show">Show</button>
+</div>
+
 {{.Svg}}
 </div>
 
@@ -340,9 +343,11 @@ function dotviewer(nodes) {
   // Elements
   const detailsButton = document.getElementById("details")
   const detailsText = document.getElementById("detailtext")
+  const actionBox = document.getElementById("actionbox")
   const listButton = document.getElementById("list")
   const disasmButton = document.getElementById("disasm")
   const resetButton = document.getElementById("reset")
+  const peekButton = document.getElementById("peek")
   const focusButton = document.getElementById("focus")
   const showButton = document.getElementById("show")
   const ignoreButton = document.getElementById("ignore")
@@ -351,7 +356,7 @@ function dotviewer(nodes) {
   const graph0 = document.getElementById("graph0")
   const svg = graph0.parentElement
 
-  let currentRe = ""
+  let regexpActive = false
   let selected = new Map()
   let origFill = new Map()
   let searchAlarm = null
@@ -370,20 +375,30 @@ function dotviewer(nodes) {
   function handleReset() { window.location.href = "/" }
   function handleList() { navigate("/weblist", "f", true) }
   function handleDisasm() { navigate("/disasm", "f", true) }
+  function handlePeek() { navigate("/peek", "f", true) }
   function handleFocus() { navigate("/", "f", false) }
   function handleShow() { navigate("/", "s", false) }
   function handleIgnore() { navigate("/", "i", false) }
   function handleHide() { navigate("/", "h", false) }
 
+  function handleKey(e) {
+    if (e.keyCode != 13) return
+    handleFocus()
+    e.preventDefault()
+  }
+
   function handleSearch() {
-    // Delay processing so a flurry of key strokes is handled once.
+    // Delay expensive processing so a flurry of key strokes is handled once.
     if (searchAlarm != null) {
       clearTimeout(searchAlarm)
     }
-    searchAlarm = setTimeout(doSearch, 300)
+    searchAlarm = setTimeout(selectMatching, 300)
+
+    regexpActive = true
+    updateButtons()
   }
 
-  function doSearch() {
+  function selectMatching() {
     searchAlarm = null
     let re = null
     if (search.value != "") {
@@ -394,7 +409,6 @@ function dotviewer(nodes) {
         return
       }
     }
-    currentRe = search.value
 
     function match(text) {
       return re != null && re.test(text)
@@ -425,7 +439,7 @@ function dotviewer(nodes) {
     if (!elem) return
 
     // Disable regexp mode.
-    currentRe = ""
+    regexpActive = false
 
     const n = nodeId(elem)
     if (n < 0) return
@@ -485,8 +499,8 @@ function dotviewer(nodes) {
   function navigate(path, param, newWindow) {
     // The selection can be in one of two modes: regexp-based or
     // list-based.  Construct regular expression depending on mode.
-    let re = currentRe
-    if (re == "") {
+    let re = regexpActive ? search.value : ""
+    if (!regexpActive) {
       selected.forEach(function(v, key) {
         if (re != "") re += "|"
         re += nodes[key]
@@ -517,15 +531,10 @@ function dotviewer(nodes) {
   }
 
   function updateButtons() {
-    const enable = (currentRe != "" || selected.size != 0)
+    const enable = (search.value != "" || selected.size != 0)
     if (buttonsEnabled == enable) return
     buttonsEnabled = enable
-    listButton.disabled = !enable
-    disasmButton.disabled = !enable
-    focusButton.disabled = !enable
-    showButton.disabled = !enable
-    ignoreButton.disabled = !enable
-    hideButton.disabled = !enable
+    actionBox.style.display = enable ? "block" : "none"
   }
 
   // Initialize button states
@@ -536,9 +545,10 @@ function dotviewer(nodes) {
   
   function bindButtons(evt) {
     detailsButton.addEventListener(evt, handleDetails)
+    resetButton.addEventListener(evt, handleReset)
     listButton.addEventListener(evt, handleList)
     disasmButton.addEventListener(evt, handleDisasm)
-    resetButton.addEventListener(evt, handleReset)
+    peekButton.addEventListener(evt, handlePeek)
     focusButton.addEventListener(evt, handleFocus)
     showButton.addEventListener(evt, handleShow)
     ignoreButton.addEventListener(evt, handleIgnore)
@@ -547,6 +557,7 @@ function dotviewer(nodes) {
   bindButtons("click")
   bindButtons("touchstart")
   search.addEventListener("input", handleSearch)
+  search.addEventListener("keydown", handleKey)
 }
 
 dotviewer({{.Nodes}})

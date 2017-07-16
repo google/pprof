@@ -38,6 +38,7 @@ import (
 type webInterface struct {
 	prof    *profile.Profile
 	options *plugin.Options
+	help    map[string]string
 }
 
 // errorCatcher is a UI that captures errors for reporting to the browser.
@@ -56,6 +57,13 @@ func serveWebInterface(port int, p *profile.Profile, o *plugin.Options) error {
 	ui := &webInterface{
 		prof:    p,
 		options: o,
+		help:    make(map[string]string),
+	}
+	for n, c := range pprofCommands {
+		ui.help[n] = c.description
+	}
+	for n, v := range pprofVariables {
+		ui.help[n] = v.help
 	}
 	// authorization wrapper
 	wrap := o.HTTPWrapper
@@ -66,6 +74,7 @@ func serveWebInterface(port int, p *profile.Profile, o *plugin.Options) error {
 	http.Handle("/", wrap(http.HandlerFunc(ui.dot)))
 	http.Handle("/disasm", wrap(http.HandlerFunc(ui.disasm)))
 	http.Handle("/weblist", wrap(http.HandlerFunc(ui.weblist)))
+	http.Handle("/peek", wrap(http.HandlerFunc(ui.peek)))
 	go openBrowser(port, o)
 	return http.ListenAndServe(fmt.Sprint(":", port), nil)
 }
@@ -170,12 +179,14 @@ func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 		Svg    template.HTML
 		Legend []string
 		Nodes  []string
+		Help   map[string]string
 	}{
 		Title:  file + " " + profile,
 		Errors: catcher.errors,
 		Svg:    template.HTML(string(svg)),
 		Legend: legend,
 		Nodes:  nodes,
+		Help:   ui.help,
 	}
 	html := &bytes.Buffer{}
 	if err := graphTemplate.Execute(html, data); err != nil {
@@ -213,6 +224,11 @@ func (ui *webInterface) disasm(w http.ResponseWriter, req *http.Request) {
 // weblist generates a web page containing disassembly.
 func (ui *webInterface) weblist(w http.ResponseWriter, req *http.Request) {
 	ui.output(w, req, "weblist", "text/html")
+}
+
+// peek generates a web page listing callers/callers.
+func (ui *webInterface) peek(w http.ResponseWriter, req *http.Request) {
+	ui.output(w, req, "peek", "text/plain")
 }
 
 // output generates a webpage that contains the output of the specified pprof cmd.
