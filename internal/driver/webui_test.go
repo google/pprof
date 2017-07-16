@@ -31,7 +31,11 @@ import (
 
 func TestWebInterface(t *testing.T) {
 	prof := makeFakeProfile()
-	ui := &webInterface{prof, &plugin.Options{Obj: fakeObjTool{}}}
+	ui := &webInterface{
+		prof:    prof,
+		options: &plugin.Options{Obj: fakeObjTool{}},
+		help:    make(map[string]string),
+	}
 
 	// Start test server.
 	server := httptest.NewServer(http.HandlerFunc(
