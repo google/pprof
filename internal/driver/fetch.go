@@ -67,7 +67,7 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 		return nil, err
 	}
 	if countsrc == 0 {
-		return nil, fmt.Errorf("failed to fetch any profiles")
+		return nil, fmt.Errorf("failed to fetch any source profiles")
 	}
 	if want, got := len(sources), countsrc; want != got {
 		o.UI.PrintErr(fmt.Sprintf("fetched %d source profiles out of %d", got, want))
