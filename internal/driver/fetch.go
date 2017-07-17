@@ -71,7 +71,6 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 		wg := sync.WaitGroup{}
 		wg.Add(2)
 
-
 		var psrc, pbase *profile.Profile
 		var msrc, mbase plugin.MappingSources
 		var savesrc, savebase bool
@@ -86,7 +85,6 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 			pbase, mbase, savebase, cntbase, errbase = chunkedGrab(bases, o.Fetch, o.Obj, o.UI)
 		}()
 		wg.Wait()
-
 
 		if errsrc != nil {
 			return nil, errsrc
@@ -111,7 +109,7 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 
 		err := psrc.Normalize(pbase)
 		if err != nil {
-			return nil,err
+			return nil, err
 		}
 		p, msrcs, err = combineProfiles([]*profile.Profile{psrc, pbase}, []plugin.MappingSources{msrc, mbase})
 		if err != nil {
@@ -189,7 +187,6 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 
 	return p, nil
 }
-
 
 // chunkedGrab fetches the profiles described in source and merges them into
 // a single profile. It fetches a chunk of profiles concurrently, with a maximum

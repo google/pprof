@@ -211,7 +211,7 @@ func TestFetchWithBase(t *testing.T) {
 	// set up testcases
 	type testcase struct {
 		sources         []string
-		bases        		[]string
+		bases           []string
 		normalize       bool
 		testDescription string
 		expectSamples   bool
@@ -301,7 +301,7 @@ func TestFetchWithBase(t *testing.T) {
 		}
 
 		f := testFlags{
-			stringLists: map[string][]*string {
+			stringLists: map[string][]*string{
 				"base": base,
 			},
 			bools: map[string]bool{
@@ -331,6 +331,7 @@ func TestFetchWithBase(t *testing.T) {
 		}
 	}
 }
+
 // mappingSources creates MappingSources map with a single item.
 func mappingSources(key, source string, start uint64) plugin.MappingSources {
 	return plugin.MappingSources{
