@@ -100,7 +100,7 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 		p.RemoveUninteresting()
 		unsourceMappings(p)
 	} else {
-		sources := make([]profileSource, 0, len(s.Sources) + len(s.Base))
+		sources := make([]profileSource, 0, len(s.Sources)+len(s.Base))
 		for _, src := range s.Sources {
 			sources = append(sources, profileSource{
 				addr:   src,
@@ -398,7 +398,7 @@ func locateBinaries(p *profile.Profile, s *source, obj plugin.ObjTool, ui plugin
 		// Use $HOME/pprof/binaries as default directory for local symbolization binaries
 		searchPath = filepath.Join(os.Getenv(homeEnv()), "pprof", "binaries")
 	}
-	mapping:
+mapping:
 	for _, m := range p.Mapping {
 		var baseName string
 		if m.File != "" {
