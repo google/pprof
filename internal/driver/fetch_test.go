@@ -34,7 +34,7 @@ import (
 	"strings"
 	"testing"
 	"time"
-	
+
 	"github.com/google/pprof/internal/binutils"
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/internal/proftest"
