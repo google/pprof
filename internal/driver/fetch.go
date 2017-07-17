@@ -42,44 +42,99 @@ import (
 // fetch any profiles.
 func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 	normalize := s.Normalize
-	if normalize && len(s.Base) == 0 {
-		return nil, fmt.Errorf("base profile required when normalizing")
-	}
 
-	sources := make([]profileSource, 0, len(s.Sources)+len(s.Base))
-	for _, src := range s.Sources {
-		sources = append(sources, profileSource{
-			addr:   src,
-			source: s,
-			scale:  1,
-			isBase: false,
-		})
-	}
-	for _, src := range s.Base {
-		sources = append(sources, profileSource{
-			addr:   src,
-			source: s,
-			scale:  -1,
-			isBase: true,
-		})
-	}
-	p, msrcs, save, cnt, err := chunkedGrab(sources, normalize, o.Fetch, o.Obj, o.UI)
-	if err != nil {
-		return nil, err
-	}
-	if cnt == 0 {
-		return nil, fmt.Errorf("failed to fetch any profiles")
-	}
-	if want, got := len(sources), cnt; want != got {
-		o.UI.PrintErr(fmt.Sprintf("fetched %d profiles out of %d", got, want))
-	}
+	var p *profile.Profile
+	var save bool
+	var msrcs plugin.MappingSources
 
-	// Symbolize the merged profile.
-	if err := o.Sym.Symbolize(s.Symbolize, msrcs, p); err != nil {
-		return nil, err
+	if normalize {
+		if len(s.Base) == 0 {
+			return nil, fmt.Errorf("base profile required when normalizing")
+		}
+		sources := make([]profileSource, 0, len(s.Sources))
+		bases := make([]profileSource, 0, len(s.Base))
+		for _, src := range s.Sources {
+			sources = append(sources, profileSource{
+				addr:   src,
+				source: s,
+				scale:  1,
+			})
+		}
+		for _, base := range s.Base {
+			bases = append(bases, profileSource{
+				addr:   base,
+				source: s,
+				scale:  -1,
+			})
+		}
+		psrc, msrc, savesrc, cnt, err := chunkedGrab(sources, o.Fetch, o.Obj, o.UI)
+		if err != nil {
+			return nil, err
+		}
+		if cnt == 0 {
+			return nil, fmt.Errorf("failed to fetch any source profiles")
+		}
+		if want, got := len(sources), cnt; want != got {
+			o.UI.PrintErr(fmt.Sprintf("fetched %d source profiles out of %d", got, want))
+		}
+
+		pbase, mbase, savebase, cnt, err := chunkedGrab(sources, o.Fetch, o.Obj, o.UI)
+		if err != nil {
+			return nil, err
+		}
+		if cnt == 0 {
+			return nil, fmt.Errorf("failed to fetch any base profiles")
+		}
+		if want, got := len(bases), cnt; want != got {
+			o.UI.PrintErr(fmt.Sprintf("fetched %d base profiles out of %d", got, want))
+		}
+
+		save = savesrc || savebase
+
+		psrc.Normalize(pbase)
+		p, msrcs, err = combineProfiles([]*profile.Profile{psrc, pbase}, []plugin.MappingSources{msrc, mbase})
+		if err != nil {
+			return nil, err
+		}
+
+		p.RemoveUninteresting()
+		unsourceMappings(p)
+	} else {
+		sources := make([]profileSource, 0, len(s.Sources) + len(s.Base))
+		for _, src := range s.Sources {
+			sources = append(sources, profileSource{
+				addr:   src,
+				source: s,
+				scale:  1,
+			})
+		}
+		for _, src := range s.Base {
+			sources = append(sources, profileSource{
+				addr:   src,
+				source: s,
+				scale:  -1,
+			})
+		}
+		var cnt int
+		var err error
+		p, msrcs, save, cnt, err = chunkedGrab(sources, o.Fetch, o.Obj, o.UI)
+		if err != nil {
+			return nil, err
+		}
+		if cnt == 0 {
+			return nil, fmt.Errorf("failed to fetch any profiles")
+		}
+		if want, got := len(sources), cnt; want != got {
+			o.UI.PrintErr(fmt.Sprintf("fetched %d profiles out of %d", got, want))
+		}
+
+		// Symbolize the merged profile.
+		if err := o.Sym.Symbolize(s.Symbolize, msrcs, p); err != nil {
+			return nil, err
+		}
+		p.RemoveUninteresting()
+		unsourceMappings(p)
 	}
-	p.RemoveUninteresting()
-	unsourceMappings(p)
 
 	// Save a copy of the merged profile if there is at least one remote source.
 	if save {
@@ -117,7 +172,7 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 // chunkedGrab fetches the profiles described in source and merges them into
 // a single profile. It fetches a chunk of profiles concurrently, with a maximum
 // chunk size to limit its memory usage.
-func chunkedGrab(sources []profileSource, normalize bool, fetch plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (*profile.Profile, plugin.MappingSources, bool, int, error) {
+func chunkedGrab(sources []profileSource, fetch plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (*profile.Profile, plugin.MappingSources, bool, int, error) {
 	const chunkSize = 64
 
 	var p *profile.Profile
@@ -130,7 +185,7 @@ func chunkedGrab(sources []profileSource, normalize bool, fetch plugin.Fetcher, 
 		if end > len(sources) {
 			end = len(sources)
 		}
-		chunkP, chunkMsrc, chunkSave, chunkCount, chunkErr := concurrentGrab(sources[start:end], normalize, fetch, obj, ui)
+		chunkP, chunkMsrc, chunkSave, chunkCount, chunkErr := concurrentGrab(sources[start:end], fetch, obj, ui)
 		switch {
 		case chunkErr != nil:
 			return nil, nil, false, 0, chunkErr
@@ -153,10 +208,9 @@ func chunkedGrab(sources []profileSource, normalize bool, fetch plugin.Fetcher, 
 }
 
 // concurrentGrab fetches multiple profiles concurrently
-func concurrentGrab(sources []profileSource, normalize bool, fetch plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (*profile.Profile, plugin.MappingSources, bool, int, error) {
+func concurrentGrab(sources []profileSource, fetch plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (*profile.Profile, plugin.MappingSources, bool, int, error) {
 	wg := sync.WaitGroup{}
 	wg.Add(len(sources))
-
 	for i := range sources {
 		go func(s *profileSource) {
 			defer wg.Done()
@@ -164,26 +218,6 @@ func concurrentGrab(sources []profileSource, normalize bool, fetch plugin.Fetche
 		}(&sources[i])
 	}
 	wg.Wait()
-
-	if normalize {
-		sourceProfiles := []*profile.Profile{}
-		baseProfiles := []*profile.Profile{}
-		for _, s := range sources {
-			if err := s.err; err != nil {
-				ui.PrintErr(s.addr + ": " + err.Error())
-				continue
-			}
-			if s.isBase {
-				baseProfiles = append(baseProfiles, s.p)
-			} else {
-				sourceProfiles = append(sourceProfiles, s.p)
-			}
-		}
-		err := profile.Normalize(sourceProfiles, baseProfiles)
-		if err != nil {
-			return nil, nil, false, 0, err
-		}
-	}
 
 	var save bool
 	profiles := make([]*profile.Profile, 0, len(sources))
@@ -194,7 +228,6 @@ func concurrentGrab(sources []profileSource, normalize bool, fetch plugin.Fetche
 			ui.PrintErr(s.addr + ": " + err.Error())
 			continue
 		}
-
 		save = save || s.remote
 		profiles = append(profiles, s.p)
 		msrcs = append(msrcs, s.msrc)
@@ -237,7 +270,6 @@ type profileSource struct {
 	addr   string
 	source *source
 	scale  float64
-	isBase bool
 
 	p      *profile.Profile
 	msrc   plugin.MappingSources

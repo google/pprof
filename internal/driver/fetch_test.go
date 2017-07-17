@@ -209,13 +209,9 @@ func TestFetch(t *testing.T) {
 func TestFetchWithBase(t *testing.T) {
 	const path = "testdata/"
 	// set up testcases
-	type testcaseProfile struct {
-		source string
-		isBase bool
-	}
 	type testcase struct {
-		sources         []testcaseProfile
-		execName        string
+		sources         []string
+		bases        		[]string
 		normalize       bool
 		testDescription string
 		expectSamples   bool
@@ -223,60 +219,71 @@ func TestFetchWithBase(t *testing.T) {
 
 	testcases := []testcase{
 		{
-			[]testcaseProfile{
-				{path + "cppbench.cpu", false},
-				{path + "cppbench.cpu", true},
+			[]string{
+				path + "cppbench.cpu",
 			},
-			"",
+			[]string{
+				path + "cppbench.cpu",
+			},
 			false,
 			"not normalized, base is same as non-base",
 			false,
 		},
 		{
-			[]testcaseProfile{
-				{path + "cppbench.cpu", false},
-				{path + "cppbench.cpu", true},
-				{path + "cppbench.cpu", true}},
-			"",
+			[]string{
+				path + "cppbench.cpu",
+			},
+			[]string{
+				path + "cppbench.cpu",
+				path + "cppbench.cpu",
+			},
 			false,
 			"not normalized, single non-base, multiple base (all profiles same)",
 			true,
 		},
 		{
-			[]testcaseProfile{
-				{path + "cppbench.cpu", false},
-				{path + "go.crc32.cpu", true},
+			[]string{
+				path + "cppbench.cpu",
 			},
-			"",
+			[]string{
+				path + "go.crc32.cpu",
+			},
 			false,
 			"not normalized, different base and non-base",
 			true,
 		},
 		{
-			[]testcaseProfile{
-				{path + "cppbench.cpu", false},
-				{path + "cppbench.cpu", true}},
-			"",
+
+			[]string{
+				path + "cppbench.cpu",
+			},
+			[]string{
+				path + "cppbench.cpu",
+			},
 			true,
 			"normalized, base is same as non-base",
 			false,
 		},
 		{
-			[]testcaseProfile{
-				{path + "cppbench.cpu", false},
-				{path + "cppbench.cpu", true},
-				{path + "cppbench.cpu", true}},
-			"",
+			[]string{
+				path + "cppbench.cpu",
+			},
+			[]string{
+				path + "cppbench.cpu",
+				path + "cppbench.cpu",
+			},
 			true,
 			"normalized, single non-base, multiple base (all profiles same)",
 			false,
 		},
 		{
-			[]testcaseProfile{
-				{path + "cppbench.cpu", false},
-				{path + "go.crc32.cpu", true},
+
+			[]string{
+				path + "cppbench.cpu",
 			},
-			"",
+			[]string{
+				path + "go.crc32.cpu",
+			},
 			true,
 			"normalized, different base and non-base",
 			true,
@@ -284,21 +291,20 @@ func TestFetchWithBase(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		var sources []profileSource
-		for _, tcp := range tc.sources {
-			scale := float64(1.0)
-			if tcp.isBase {
-				scale = -1
-			}
-			ps := profileSource{
-				addr:   tcp.source,
-				source: &source{ExecName: tc.execName},
-				scale:  scale,
-				isBase: tcp.isBase,
-			}
-			sources = append(sources, ps)
+		src := &source{
+			Sources: tc.sources,
+			ExecName: "",
+			BuildID: "",
+			Base: tc.bases,
+			Normalize: tc.normalize,
 		}
-		p, _, _, _, err := concurrentGrab(sources, tc.normalize, nil, testObj{}, &proftest.TestUI{T: t})
+		o := &plugin.Options{
+			Obj: &binutils.Binutils{},
+			UI:  &proftest.TestUI{T: t, IgnoreRx: "Saved profile in"},
+		}
+		o.Sym = &symbolizer.Symbolizer{Obj: o.Obj, UI: o.UI}
+
+		p, err := fetchProfiles(src, o)
 
 		if err != nil {
 			t.Fatalf("%s: %s", tc.testDescription, err)

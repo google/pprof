@@ -506,15 +506,15 @@ func TestMergeAll(t *testing.T) {
 }
 
 func TestNormalizeBySameProfile(t *testing.T) {
-	baseProfs := []*Profile{testProfile1.Copy()}
-	srcProfs := []*Profile{testProfile1.Copy()}
+	pb := testProfile1.Copy()
+	p := testProfile1.Copy()
 
-	err := Normalize(srcProfs, baseProfs)
+	err := p.Normalize(pb)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for i, s := range srcProfs[0].Sample {
+	for i, s := range p.Sample {
 		for j, v := range s.Value {
 			expectedSampleValue := testProfile1.Sample[i].Value[j]
 			if v != expectedSampleValue {
@@ -524,35 +524,36 @@ func TestNormalizeBySameProfile(t *testing.T) {
 	}
 }
 
-func TestNormalizeByMultipleCopiesOfSameProfile(t *testing.T) {
-	baseProfs := make([]*Profile, 10)
-	for i := 0; i < 10; i++ {
-		baseProfs[i] = testProfile1.Copy()
+func TestNormalizeByMultipleOfSameProfile(t *testing.T) {
+	pb := testProfile1.Copy()
+	for i, s := range pb.Sample {
+		for j, v := range s.Value {
+			pb.Sample[i].Value[j] = 10 * v
+		}
 	}
-	srcProfs := []*Profile{testProfile1.Copy(), testProfile1.Copy()}
 
-	err := Normalize(srcProfs, baseProfs)
+	p := testProfile1.Copy()
+
+	err := p.Normalize(pb)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for i, prof := range srcProfs {
-		for j, s := range prof.Sample {
-			for k, v := range s.Value {
-				expectedSampleValue := 5 * testProfile1.Sample[j].Value[k]
-				if v != expectedSampleValue {
-					t.Errorf("For profile %d, sample %d, value %d, want %d got %d", i, j, k, expectedSampleValue, v)
-				}
+	for i, s := range p.Sample {
+		for j, v := range s.Value {
+			expectedSampleValue := 10 * testProfile1.Sample[i].Value[j]
+			if v != expectedSampleValue {
+				t.Errorf("For sample %d, value %d, want %d got %d", i, j, expectedSampleValue, v)
 			}
 		}
 	}
 }
 
 func TestNormalizeByDifferentProfile(t *testing.T) {
-	srcProfs := []*Profile{testProfile1.Copy()}
-	baseProfs := []*Profile{testProfile2.Copy()}
+	p := testProfile1.Copy()
+	pb := testProfile2.Copy()
 
-	err := Normalize(srcProfs, baseProfs)
+	err := p.Normalize(pb)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -565,7 +566,7 @@ func TestNormalizeByDifferentProfile(t *testing.T) {
 		{0, 1},
 	}
 
-	for i, s := range srcProfs[0].Sample {
+	for i, s := range p.Sample {
 		for j, v := range s.Value {
 			if v != expectedSampleValues[i][j] {
 				t.Errorf("For sample %d, value %d want %d got %d", i, j, expectedSampleValues[i][j], v)
@@ -575,10 +576,10 @@ func TestNormalizeByDifferentProfile(t *testing.T) {
 }
 
 func TestNormalizeIncompatibleProfiles(t *testing.T) {
-	baseProfs := []*Profile{testProfile1.Copy()}
-	srcProfs := []*Profile{testProfile3.Copy()}
+	p := testProfile1.Copy()
+	pb := testProfile3.Copy()
 
-	err := Normalize(srcProfs, baseProfs)
+	err := p.Normalize(pb)
 	if err == nil {
 		t.Errorf("Expected an error")
 	}

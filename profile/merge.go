@@ -89,35 +89,24 @@ func Merge(srcs []*Profile) (*Profile, error) {
 // Normalize normalizes the source profiles by multiplying each value in profiles by the
 // absolute value of the ratio of the sum of the base profile value's of that sample type
 // to the sum of the source profiles value of that sample type.
-func Normalize(srcProfiles, baseProfiles []*Profile) error {
-	if len(srcProfiles) == 0 {
-		return fmt.Errorf("no non-base profiles to normalize")
-	}
+func (p *Profile) Normalize(pb *Profile) error {
 
-	if len(baseProfiles) == 0 {
-		return fmt.Errorf("no base profiles to normalize by")
-	}
-
-	profiles := append(srcProfiles, baseProfiles...)
-	err := compatibleProfiles(profiles)
+	err := p.compatible(pb)
 	if err != nil {
 		return err
 	}
 
-	baseVals := make([]int64, len(srcProfiles[0].SampleType))
-	for _, base := range baseProfiles {
-		for _, s := range base.Sample {
-			for i, v := range s.Value {
-				baseVals[i] += v
-			}
+	baseVals := make([]int64, len(p.SampleType))
+	for _, s := range pb.Sample {
+		for i, v := range s.Value {
+			baseVals[i] += v
 		}
 	}
-	srcVals := make([]int64, len(srcProfiles[0].SampleType))
-	for _, src := range srcProfiles {
-		for _, s := range src.Sample {
-			for i, v := range s.Value {
-				srcVals[i] += v
-			}
+
+	srcVals := make([]int64, len(p.SampleType))
+	for _, s := range p.Sample {
+		for i, v := range s.Value {
+			srcVals[i] += v
 		}
 	}
 
@@ -129,9 +118,7 @@ func Normalize(srcProfiles, baseProfiles []*Profile) error {
 			normScale[i] = math.Abs(float64(baseVals[i]) / float64(srcVals[i]))
 		}
 	}
-	for _, s := range srcProfiles {
-		s.ScaleN(normScale)
-	}
+	p.ScaleN(normScale)
 	return nil
 }
 
@@ -424,9 +411,10 @@ type functionKey struct {
 // combineHeaders checks that all profiles can be merged and returns
 // their combined profile.
 func combineHeaders(srcs []*Profile) (*Profile, error) {
-	err := compatibleProfiles(srcs)
-	if err != nil {
-		return nil, err
+	for _, s := range srcs[1:] {
+		if err := srcs[0].compatible(s); err != nil {
+			return nil, err
+		}
 	}
 
 	var timeNanos, durationNanos, period int64
@@ -462,17 +450,6 @@ func combineHeaders(srcs []*Profile) (*Profile, error) {
 	}
 	copy(p.SampleType, srcs[0].SampleType)
 	return p, nil
-}
-
-// compatibleProfiles determines if profiles can be merged.
-// returns nil if profiles are compatible, otherwise returns an error
-func compatibleProfiles(srcs []*Profile) error {
-	for _, s := range srcs[1:] {
-		if err := srcs[0].compatible(s); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // compatible determines if two profiles can be compared/merged.
