@@ -342,9 +342,8 @@ func (f testFlags) StringVar(p *string, s, d, c string) {
 func (f testFlags) StringList(s, d, c string) *[]*string {
 	if t, ok := f.stringLists[s]; ok {
 		return &t
-	} else {
-		return &[]*string{}
 	}
+	return &[]*string{}
 }
 
 func (f testFlags) Parse(func()) []string {
