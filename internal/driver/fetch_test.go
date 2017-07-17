@@ -206,6 +206,131 @@ func TestFetch(t *testing.T) {
 	}
 }
 
+func TestFetchWithBase(t *testing.T) {
+	const path = "testdata/"
+	// set up testcases
+	type testcase struct {
+		sources         []string
+		bases        		[]string
+		normalize       bool
+		testDescription string
+		expectSamples   bool
+	}
+
+	testcases := []testcase{
+		{
+			[]string{
+				path + "cppbench.cpu",
+			},
+			[]string{
+				path + "cppbench.cpu",
+			},
+			false,
+			"not normalized, base is same as non-base",
+			false,
+		},
+		{
+			[]string{
+				path + "cppbench.cpu",
+			},
+			[]string{
+				path + "cppbench.cpu",
+				path + "cppbench.cpu",
+			},
+			false,
+			"not normalized, single non-base, multiple base (all profiles same)",
+			true,
+		},
+		{
+			[]string{
+				path + "cppbench.cpu",
+			},
+			[]string{
+				path + "go.crc32.cpu",
+			},
+			false,
+			"not normalized, different base and non-base",
+			true,
+		},
+		{
+
+			[]string{
+				path + "cppbench.cpu",
+			},
+			[]string{
+				path + "cppbench.cpu",
+			},
+			true,
+			"normalized, base is same as non-base",
+			false,
+		},
+		{
+			[]string{
+				path + "cppbench.cpu",
+			},
+			[]string{
+				path + "cppbench.cpu",
+				path + "cppbench.cpu",
+			},
+			true,
+			"normalized, single non-base, multiple base (all profiles same)",
+			false,
+		},
+		{
+
+			[]string{
+				path + "cppbench.cpu",
+			},
+			[]string{
+				path + "go.crc32.cpu",
+			},
+			true,
+			"normalized, different base and non-base",
+			true,
+		},
+	}
+
+	for _, tc := range testcases {
+		baseVars := pprofVariables
+		pprofVariables = baseVars.makeCopy()
+		defer func() { pprofVariables = baseVars }()
+
+		base := make([]*string, len(tc.bases))
+		for i, s := range tc.bases {
+			base[i] = &s
+		}
+
+		f := testFlags{
+			stringLists: map[string][]*string {
+				"base": base,
+			},
+			bools: map[string]bool{
+				"normalize": tc.normalize,
+			},
+		}
+		f.args = tc.sources
+
+		o := setDefaults(nil)
+		o.Flagset = f
+		src, _, err := parseFlags(o)
+
+		p, err := fetchProfiles(src, o)
+		pprofVariables = baseVars
+		if err != nil {
+			t.Fatalf("%s: %s", tc.testDescription, err)
+		}
+
+		if tc.expectSamples {
+			if len(p.Sample) == 0 {
+				t.Errorf("%s: want non-zero number of samples", tc.testDescription)
+			}
+		} else {
+			if len(p.Sample) != 0 {
+				t.Errorf("%s: want no samples\n %v", tc.testDescription, p)
+			}
+		}
+	}
+}
 // mappingSources creates MappingSources map with a single item.
 func mappingSources(key, source string, start uint64) plugin.MappingSources {
 	return plugin.MappingSources{
