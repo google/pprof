@@ -188,7 +188,7 @@ func TestFetch(t *testing.T) {
 		{path + "go.nomappings.crash", "/bin/gotest.exe"},
 		{"http://localhost/profile?file=cppbench.cpu", ""},
 	} {
-		p, _, _, err := grabProfile(&source{ExecName: tc.execName}, tc.source, 0, nil, testObj{}, &proftest.TestUI{T: t})
+		p, _, _, err := grabProfile(&source{ExecName: tc.execName}, tc.source, nil, testObj{}, &proftest.TestUI{T: t})
 		if err != nil {
 			t.Fatalf("%s: %s", tc.source, err)
 		}
