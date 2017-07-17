@@ -67,31 +67,52 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 				scale:  -1,
 			})
 		}
-		psrc, msrc, savesrc, cnt, err := chunkedGrab(sources, o.Fetch, o.Obj, o.UI)
-		if err != nil {
-			return nil, err
+
+		wg := sync.WaitGroup{}
+		wg.Add(2)
+
+
+		var psrc, pbase *profile.Profile
+		var msrc, mbase plugin.MappingSources
+		var savesrc, savebase bool
+		var cntsrc, cntbase int
+		var errsrc, errbase error
+		go func() {
+			defer wg.Done()
+			psrc, msrc, savesrc, cntsrc, errsrc = chunkedGrab(sources, o.Fetch, o.Obj, o.UI)
+		}()
+		go func() {
+			defer wg.Done()
+			pbase, mbase, savebase, cntbase, errbase = chunkedGrab(bases, o.Fetch, o.Obj, o.UI)
+		}()
+		wg.Wait()
+
+
+		if errsrc != nil {
+			return nil, errsrc
 		}
-		if cnt == 0 {
+		if cntsrc == 0 {
 			return nil, fmt.Errorf("failed to fetch any source profiles")
 		}
-		if want, got := len(sources), cnt; want != got {
+		if want, got := len(sources), cntsrc; want != got {
 			o.UI.PrintErr(fmt.Sprintf("fetched %d source profiles out of %d", got, want))
 		}
-
-		pbase, mbase, savebase, cnt, err := chunkedGrab(bases, o.Fetch, o.Obj, o.UI)
-		if err != nil {
-			return nil, err
+		if errbase != nil {
+			return nil, errbase
 		}
-		if cnt == 0 {
+		if cntbase == 0 {
 			return nil, fmt.Errorf("failed to fetch any base profiles")
 		}
-		if want, got := len(bases), cnt; want != got {
+		if want, got := len(bases), cntbase; want != got {
 			o.UI.PrintErr(fmt.Sprintf("fetched %d base profiles out of %d", got, want))
 		}
 
 		save = savesrc || savebase
 
-		psrc.Normalize(pbase)
+		err := psrc.Normalize(pbase)
+		if err != nil {
+			return nil,err
+		}
 		p, msrcs, err = combineProfiles([]*profile.Profile{psrc, pbase}, []plugin.MappingSources{msrc, mbase})
 		if err != nil {
 			return nil, err
@@ -168,6 +189,7 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 
 	return p, nil
 }
+
 
 // chunkedGrab fetches the profiles described in source and merges them into
 // a single profile. It fetches a chunk of profiles concurrently, with a maximum

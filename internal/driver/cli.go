@@ -85,7 +85,6 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	if len(args) == 0 {
 		return nil, nil, fmt.Errorf("no profile source specified")
 	}
-	fmt.Printf("Args: %v\n", args)
 
 	var execName string
 	// Recognize first argument as an executable or buildid override.
