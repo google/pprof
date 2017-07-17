@@ -35,12 +35,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dvyukov/go-fuzz/examples/goast/testdata"
 	"github.com/google/pprof/internal/binutils"
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/internal/proftest"
 	"github.com/google/pprof/internal/symbolizer"
 	"github.com/google/pprof/profile"
-	"github.com/dvyukov/go-fuzz/examples/goast/testdata"
 )
 
 func TestSymbolizationPath(t *testing.T) {
@@ -314,7 +314,7 @@ func TestFetchWithBase(t *testing.T) {
 		o := setDefaults(nil)
 		o.Flagset = f
 		src, _, err := parseFlags(o)
-		
+
 		if err != nil {
 			t.Errorf("%s: %v", tc.testDescription, err)
 			continue
