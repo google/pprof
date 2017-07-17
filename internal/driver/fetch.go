@@ -97,8 +97,6 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 			return nil, err
 		}
 
-		p.RemoveUninteresting()
-		unsourceMappings(p)
 	} else {
 		sources := make([]profileSource, 0, len(s.Sources)+len(s.Base))
 		for _, src := range s.Sources {
@@ -128,13 +126,15 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 			o.UI.PrintErr(fmt.Sprintf("fetched %d profiles out of %d", got, want))
 		}
 
-		// Symbolize the merged profile.
-		if err := o.Sym.Symbolize(s.Symbolize, msrcs, p); err != nil {
-			return nil, err
-		}
-		p.RemoveUninteresting()
-		unsourceMappings(p)
 	}
+
+	// Symbolize the merged profile.
+	if err := o.Sym.Symbolize(s.Symbolize, msrcs, p); err != nil {
+		return nil, err
+	}
+
+	p.RemoveUninteresting()
+	unsourceMappings(p)
 
 	// Save a copy of the merged profile if there is at least one remote source.
 	if save {
