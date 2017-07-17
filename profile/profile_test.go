@@ -524,31 +524,6 @@ func TestNormalizeBySameProfile(t *testing.T) {
 	}
 }
 
-func TestNormalizeByMultipleOfSameProfile(t *testing.T) {
-	pb := testProfile1.Copy()
-	for i, s := range pb.Sample {
-		for j, v := range s.Value {
-			pb.Sample[i].Value[j] = 10 * v
-		}
-	}
-
-	p := testProfile1.Copy()
-
-	err := p.Normalize(pb)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for i, s := range p.Sample {
-		for j, v := range s.Value {
-			expectedSampleValue := 10 * testProfile1.Sample[i].Value[j]
-			if v != expectedSampleValue {
-				t.Errorf("For sample %d, value %d, want %d got %d", i, j, expectedSampleValue, v)
-			}
-		}
-	}
-}
-
 func TestNormalizeByDifferentProfile(t *testing.T) {
 	p := testProfile1.Copy()
 	pb := testProfile2.Copy()
@@ -570,6 +545,31 @@ func TestNormalizeByDifferentProfile(t *testing.T) {
 		for j, v := range s.Value {
 			if v != expectedSampleValues[i][j] {
 				t.Errorf("For sample %d, value %d want %d got %d", i, j, expectedSampleValues[i][j], v)
+			}
+		}
+	}
+}
+
+func TestNormalizeByMultipleOfSameProfile(t *testing.T) {
+	pb := testProfile1.Copy()
+	for i, s := range pb.Sample {
+		for j, v := range s.Value {
+			pb.Sample[i].Value[j] = 10 * v
+		}
+	}
+
+	p := testProfile1.Copy()
+
+	err := p.Normalize(pb)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i, s := range p.Sample {
+		for j, v := range s.Value {
+			expectedSampleValue := 10 * testProfile1.Sample[i].Value[j]
+			if v != expectedSampleValue {
+				t.Errorf("For sample %d, value %d, want %d got %d", i, j, expectedSampleValue, v)
 			}
 		}
 	}
