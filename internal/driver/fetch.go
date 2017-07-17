@@ -70,10 +70,10 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 		return nil, fmt.Errorf("failed to fetch any profiles")
 	}
 	if want, got := len(sources), countsrc; want != got {
-		o.UI.PrintErr(fmt.Sprintf("fetched %d profiles out of %d", got, want))
+		o.UI.PrintErr(fmt.Sprintf("fetched %d source profiles out of %d", got, want))
 	}
 	if want, got := len(bases), countbase; want != got {
-		o.UI.PrintErr(fmt.Sprintf("fetched %d profiles out of %d", got, want))
+		o.UI.PrintErr(fmt.Sprintf("fetched %d base profiles out of %d", got, want))
 	}
 
 	// normalize by base, if necessary
@@ -87,7 +87,7 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 		}
 	}
 
-	// subtract base from source profiles, if there are base profiles
+	// subtract base from source profile, if there is a base profile
 	if pb != nil {
 		pb.Scale(-1)
 		var err error
@@ -162,7 +162,7 @@ func grabSourceAndBases(sources, bases []profileSource, fetch plugin.Fetcher, ob
 	} else if errsrc != nil {
 		err = fmt.Errorf("Problem fetching source profiles: %s,", errsrc)
 	} else if errbase != nil {
-		err = fmt.Errorf("Problem fetching base profiles: %s,", errsrc)
+		err = fmt.Errorf("Problem fetching base profiles: %s,", errbase)
 	}
 	return p, pb, msrc, mbase, save, countsrc, countbase, err
 }
