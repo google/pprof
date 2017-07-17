@@ -40,6 +40,7 @@ import (
 	"github.com/google/pprof/internal/proftest"
 	"github.com/google/pprof/internal/symbolizer"
 	"github.com/google/pprof/profile"
+	"github.com/dvyukov/go-fuzz/examples/goast/testdata"
 )
 
 func TestSymbolizationPath(t *testing.T) {
@@ -313,11 +314,17 @@ func TestFetchWithBase(t *testing.T) {
 		o := setDefaults(nil)
 		o.Flagset = f
 		src, _, err := parseFlags(o)
+		
+		if err != nil {
+			t.Errorf("%s: %v", tc.testDescription, err)
+			continue
+		}
 
 		p, err := fetchProfiles(src, o)
 		pprofVariables = baseVars
 		if err != nil {
-			t.Fatalf("%s: %s", tc.testDescription, err)
+			t.Errorf("%s: %v", tc.testDescription, err)
+			continue
 		}
 
 		if tc.expectSamples {
