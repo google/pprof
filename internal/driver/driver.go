@@ -48,6 +48,8 @@ func PProf(eo *plugin.Options) error {
 		return err
 	}
 
+	fmt.Printf("%v", p)
+
 	if cmd != nil {
 		return generateReport(p, cmd, pprofVariables, o)
 	}

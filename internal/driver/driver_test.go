@@ -274,6 +274,7 @@ type testFlags struct {
 	floats  map[string]float64
 	strings map[string]string
 	args    []string
+	stringLists map[string][]*string
 }
 
 func (testFlags) ExtraUsage() string { return "" }
@@ -339,7 +340,11 @@ func (f testFlags) StringVar(p *string, s, d, c string) {
 }
 
 func (f testFlags) StringList(s, d, c string) *[]*string {
-	return &[]*string{}
+	if t, ok := f.stringLists[s]; ok {
+		return &t
+	} else {
+		return &[]*string{}
+	}
 }
 
 func (f testFlags) Parse(func()) []string {

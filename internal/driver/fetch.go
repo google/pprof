@@ -52,7 +52,6 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 			return nil, fmt.Errorf("base profile required when normalizing")
 		}
 		sources := make([]profileSource, 0, len(s.Sources))
-		bases := make([]profileSource, 0, len(s.Base))
 		for _, src := range s.Sources {
 			sources = append(sources, profileSource{
 				addr:   src,
@@ -60,6 +59,7 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 				scale:  1,
 			})
 		}
+		bases := make([]profileSource, 0, len(s.Base))
 		for _, base := range s.Base {
 			bases = append(bases, profileSource{
 				addr:   base,
@@ -78,7 +78,7 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 			o.UI.PrintErr(fmt.Sprintf("fetched %d source profiles out of %d", got, want))
 		}
 
-		pbase, mbase, savebase, cnt, err := chunkedGrab(sources, o.Fetch, o.Obj, o.UI)
+		pbase, mbase, savebase, cnt, err := chunkedGrab(bases, o.Fetch, o.Obj, o.UI)
 		if err != nil {
 			return nil, err
 		}
