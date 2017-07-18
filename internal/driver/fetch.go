@@ -147,16 +147,16 @@ func grabSourcesAndBases(sources, bases []profileSource, fetch plugin.Fetcher, o
 	save := savesrc || savebase
 
 	if errsrc != nil {
-		return nil, nil, nil, nil, false, fmt.Errorf("Problem fetching source profiles: %s", errsrc.Error())
+		return nil, nil, nil, nil, false, fmt.Errorf("problem fetching source profiles: %s", errsrc.Error())
 	}
 	if errbase != nil {
-		return nil, nil, nil, nil, false, fmt.Errorf("Problem fetching base profiles: %s,", errbase.Error())
+		return nil, nil, nil, nil, false, fmt.Errorf("problem fetching base profiles: %s,", errbase.Error())
 	}
 	if countsrc == 0 {
-		return nil, nil, nil, nil, false, fmt.Errorf("Failed to fetch any source profiles")
+		return nil, nil, nil, nil, false, fmt.Errorf("failed to fetch any source profiles")
 	}
 	if countbase == 0 && len(bases) > 0 {
-		return nil, nil, nil, nil, false, fmt.Errorf("Failed to fetch any base profiles")
+		return nil, nil, nil, nil, false, fmt.Errorf("failed to fetch any base profiles")
 	}
 	if want, got := len(sources), countsrc; want != got {
 		ui.PrintErr(fmt.Sprintf("Fetched %d source profiles out of %d", got, want))
