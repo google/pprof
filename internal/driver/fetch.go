@@ -41,8 +41,6 @@ import (
 // there are some failures. It will return an error if it is unable to
 // fetch any profiles.
 func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
-	normalize := s.Normalize
-
 	sources := make([]profileSource, 0, len(s.Sources))
 	for _, src := range s.Sources {
 		sources = append(sources, profileSource{
@@ -60,45 +58,37 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 	}
 
 	// retrieve source and base profiles
-	p, pb, msrcs, mbase, save, countsrc, countbase, err := grabSourceAndBases(sources, bases, o.Fetch, o.Obj, o.UI)
+	psrc, pbase, msrc, mbase, save, err := grabSourcesAndBases(sources, bases, o.Fetch, o.Obj, o.UI)
 
 	// check for problems with retrieving profiles
 	if err != nil {
 		return nil, err
 	}
-	if countsrc == 0 {
-		return nil, fmt.Errorf("failed to fetch any source profiles")
-	}
-	if want, got := len(sources), countsrc; want != got {
-		o.UI.PrintErr(fmt.Sprintf("fetched %d source profiles out of %d", got, want))
-	}
-	if want, got := len(bases), countbase; want != got {
-		o.UI.PrintErr(fmt.Sprintf("fetched %d base profiles out of %d", got, want))
-	}
 
-	// normalize by base, if necessary
-	if normalize {
-		if countbase == 0 {
-			return nil, fmt.Errorf("failed to fetch any base profiles")
+	var p *profile.Profile
+	var m plugin.MappingSources
+	if pbase != nil {
+		// normalize by base, if necessary
+		if s.Normalize {
+			err := psrc.Normalize(pbase)
+			if err != nil {
+				return nil, err
+			}
 		}
-		err := p.Normalize(pb)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// subtract base from source profile, if there is a base profile
-	if pb != nil {
-		pb.Scale(-1)
+		// subtract base from source profile
+		pbase.Scale(-1)
 		var err error
-		p, msrcs, err = combineProfiles([]*profile.Profile{p, pb}, []plugin.MappingSources{msrcs, mbase})
+		p, m, err = combineProfiles([]*profile.Profile{psrc, pbase}, []plugin.MappingSources{msrc, mbase})
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		p = psrc
+		m = msrc
 	}
 
 	// Symbolize the merged profile.
-	if err := o.Sym.Symbolize(s.Symbolize, msrcs, p); err != nil {
+	if err := o.Sym.Symbolize(s.Symbolize, m, p); err != nil {
 		return nil, err
 	}
 	p.RemoveUninteresting()
@@ -137,34 +127,45 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 	return p, nil
 }
 
-func grabSourceAndBases(sources, bases []profileSource, fetch plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (*profile.Profile, *profile.Profile, plugin.MappingSources, plugin.MappingSources, bool, int, int, error) {
+func grabSourcesAndBases(sources, bases []profileSource, fetch plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (*profile.Profile, *profile.Profile, plugin.MappingSources, plugin.MappingSources, bool, error) {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
-	var p, pb *profile.Profile
+	var psrc, pbase *profile.Profile
 	var msrc, mbase plugin.MappingSources
 	var savesrc, savebase bool
 	var errsrc, errbase error
 	var countsrc, countbase int
 	go func() {
 		defer wg.Done()
-		p, msrc, savesrc, countsrc, errsrc = chunkedGrab(sources, fetch, obj, ui)
+		psrc, msrc, savesrc, countsrc, errsrc = chunkedGrab(sources, fetch, obj, ui)
 	}()
 	go func() {
 		defer wg.Done()
-		pb, mbase, savebase, countbase, errbase = chunkedGrab(bases, fetch, obj, ui)
+		pbase, mbase, savebase, countbase, errbase = chunkedGrab(bases, fetch, obj, ui)
 	}()
 	wg.Wait()
 	save := savesrc || savebase
 
-	var err error
-	if errsrc != nil && errbase != nil {
-		err = fmt.Errorf("Problem fetching source profiles: %s, Problem fetching base profiles: %s", errsrc.Error(), errbase.Error())
-	} else if errsrc != nil {
-		err = fmt.Errorf("Problem fetching source profiles: %s,", errsrc)
-	} else if errbase != nil {
-		err = fmt.Errorf("Problem fetching base profiles: %s,", errbase)
+	if errsrc != nil {
+		return nil, nil, nil, nil, false, fmt.Errorf("Problem fetching source profiles: %s", errsrc.Error())
 	}
-	return p, pb, msrc, mbase, save, countsrc, countbase, err
+	if errbase != nil {
+		return nil, nil, nil, nil, false, fmt.Errorf("Problem fetching base profiles: %s,", errbase.Error())
+	}
+	if countsrc == 0 {
+		return nil, nil, nil, nil, false, fmt.Errorf("Failed to fetch any source profiles")
+	}
+	if countbase == 0 && len(bases) > 0 {
+		return nil, nil, nil, nil, false, fmt.Errorf("Failed to fetch any base profiles")
+	}
+	if want, got := len(sources), countsrc; want != got {
+		ui.PrintErr(fmt.Sprintf("Fetched %d source profiles out of %d", got, want))
+	}
+	if want, got := len(bases), countbase; want != got {
+		ui.PrintErr(fmt.Sprintf("Fetched %d base profiles out of %d", got, want))
+	}
+
+	return psrc, pbase, msrc, mbase, save, nil
 }
 
 // chunkedGrab fetches the profiles described in source and merges them into
