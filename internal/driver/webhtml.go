@@ -80,7 +80,7 @@ button {
   width: 100%;
   border-bottom: 1px solid black;
   border-top: 1px solid black;
-  font-size: 16pt;
+  font-size: 14pt;
 }
 #actionbox > button {
   display: block;
@@ -90,7 +90,7 @@ button {
   padding-left: 0.5em;
   background-color: #fff;
   border: none;
-  font-size: 14pt;
+  font-size: 12pt;
 }
 #actionbox > button:hover {
   background-color: #ddd;
