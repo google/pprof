@@ -58,33 +58,23 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 	}
 
 	// retrieve source and base profiles
-	psrc, pbase, msrc, mbase, save, err := grabSourcesAndBases(sources, bases, o.Fetch, o.Obj, o.UI)
-
-	// check for problems with retrieving profiles
+	p, pbase, m, mbase, save, err := grabSourcesAndBases(sources, bases, o.Fetch, o.Obj, o.UI)
 	if err != nil {
 		return nil, err
 	}
 
-	var p *profile.Profile
-	var m plugin.MappingSources
 	if pbase != nil {
-		// normalize by base, if necessary
 		if s.Normalize {
-			err := psrc.Normalize(pbase)
+			err := p.Normalize(pbase)
 			if err != nil {
 				return nil, err
 			}
 		}
-		// subtract base from source profile
 		pbase.Scale(-1)
-		var err error
-		p, m, err = combineProfiles([]*profile.Profile{psrc, pbase}, []plugin.MappingSources{msrc, mbase})
+		p, m, err = combineProfiles([]*profile.Profile{p, pbase}, []plugin.MappingSources{m, mbase})
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		p = psrc
-		m = msrc
 	}
 
 	// Symbolize the merged profile.
