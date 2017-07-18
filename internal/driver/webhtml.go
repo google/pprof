@@ -32,13 +32,6 @@ body {
   width: 100%;
   overflow: hidden;
 }
-h1 {
-  font-weight: normal;
-  font-size: 24px;
-  padding: 0em;
-  margin-top: 5px;
-  margin-bottom: 5px;
-}
 #page {
   display: flex;
   flex-direction: column;
@@ -78,16 +71,32 @@ button {
   background-color: #ffffff;
   border: 1px solid black;
   box-shadow: 2px 2px 2px 0px #aaa;
-  padding: 1em;
   top: 20px;
   right: 20px;
+  z-index: 1;
+}
+.actionhdr {
+  background-color: #ddd;
+  width: 100%;
+  border-bottom: 1px solid black;
+  border-top: 1px solid black;
+  font-size: 16pt;
 }
 #actionbox > button {
   display: block;
   width: 100%;
+  margin: 0px;
+  text-align: left;
+  padding-left: 0.5em;
+  background-color: #fff;
+  border: none;
+  font-size: 14pt;
+}
+#actionbox > button:hover {
+  background-color: #ddd;
 }
 #home {
-  font-size: 24px;
+  font-size: 20pt;
   padding-left: 0.5em;
   padding-right: 0.5em;
 }
@@ -113,10 +122,12 @@ button {
 <div id="graph">
 
 <div id="actionbox">
+<div class="actionhdr">Refine graph</div>
 <button title="{{.Help.focus}}" id="focus">Focus</button>
 <button title="{{.Help.ignore}}" id="ignore">Ignore</button>
 <button title="{{.Help.hide}}" id="hide">Hide</button>
 <button title="{{.Help.show}}" id="show">Show</button>
+<div class="actionhdr">Show Functions</div>
 <button title="{{.Help.peek}}" id="peek">Peek</button>
 <button title="{{.Help.list}}" id="list">List</button>
 <button title="{{.Help.disasm}}" id="disasm">Disassemble</button>
