@@ -46,9 +46,8 @@ type DotConfig struct {
 	LegendURL string   // The URL to link to from the legend.
 	Labels    []string // The labels for the DOT's legend
 
-	FormatValue func(int64) string         // A formatting function for values
-	FormatTag   func(int64, string) string // A formatting function for numeric tags
-	Total       int64                      // The total weight of the graph, used to compute percentages
+	FormatValue func(int64) string // A formatting function for values
+	Total       int64              // The total weight of the graph, used to compute percentages
 }
 
 const maxNodelets = 4 // Number of nodelets for labels (both numeric and non)
@@ -450,14 +449,9 @@ func tagDistance(t, u *Tag) float64 {
 }
 
 func (b *builder) tagGroupLabel(g []*Tag) (label string, flat, cum int64) {
-	formatTag := b.config.FormatTag
-	if formatTag == nil {
-		formatTag = measurement.Label
-	}
-
 	if len(g) == 1 {
 		t := g[0]
-		return formatTag(t.Value, t.Unit), t.FlatValue(), t.CumValue()
+		return t.Name, t.FlatValue(), t.CumValue()
 	}
 	min := g[0]
 	max := g[0]
@@ -481,7 +475,7 @@ func (b *builder) tagGroupLabel(g []*Tag) (label string, flat, cum int64) {
 	if dc != 0 {
 		c = c / dc
 	}
-	return formatTag(min.Value, min.Unit) + ".." + formatTag(max.Value, max.Unit), f, c
+	return min.Name + ".." + max.Name, f, c
 }
 
 func min64(a, b int64) int64 {
