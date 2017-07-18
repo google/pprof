@@ -509,8 +509,7 @@ func TestNormalizeBySameProfile(t *testing.T) {
 	pb := testProfile1.Copy()
 	p := testProfile1.Copy()
 
-	err := p.Normalize(pb)
-	if err != nil {
+	if err := p.Normalize(pb); err != nil {
 		t.Fatal(err)
 	}
 
@@ -528,8 +527,7 @@ func TestNormalizeByDifferentProfile(t *testing.T) {
 	p := testProfile1.Copy()
 	pb := testProfile2.Copy()
 
-	err := p.Normalize(pb)
-	if err != nil {
+	if err := p.Normalize(pb); err != nil {
 		t.Fatal(err)
 	}
 
@@ -579,8 +577,7 @@ func TestNormalizeIncompatibleProfiles(t *testing.T) {
 	p := testProfile1.Copy()
 	pb := testProfile3.Copy()
 
-	err := p.Normalize(pb)
-	if err == nil {
+	if err := p.Normalize(pb); err == nil {
 		t.Errorf("Expected an error")
 	}
 }
