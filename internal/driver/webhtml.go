@@ -113,13 +113,13 @@ button {
 <div id="graph">
 
 <div id="actionbox">
-<button title="{{.Help.list}}" id="list">List</button>
-<button title="{{.Help.disasm}}" id="disasm">Disassemble</button>
-<button title="{{.Help.peek}}" id="peek">Peek</button>
 <button title="{{.Help.focus}}" id="focus">Focus</button>
 <button title="{{.Help.ignore}}" id="ignore">Ignore</button>
 <button title="{{.Help.hide}}" id="hide">Hide</button>
 <button title="{{.Help.show}}" id="show">Show</button>
+<button title="{{.Help.peek}}" id="peek">Peek</button>
+<button title="{{.Help.list}}" id="list">List</button>
+<button title="{{.Help.disasm}}" id="disasm">Disassemble</button>
 </div>
 
 {{.Svg}}
