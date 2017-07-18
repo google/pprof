@@ -21,7 +21,7 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/url"
+	gourl "net/url"
 	"os"
 	"os/exec"
 	"regexp"
@@ -51,7 +51,7 @@ func (ec *errorCatcher) PrintErr(args ...interface{}) {
 	ec.UI.PrintErr(args...)
 }
 
-func serveWebInterface(port int, p *profile.Profile, o *plugin.Options) error {
+func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) error {
 	interactiveMode = true
 	ui := &webInterface{
 		prof:    p,
@@ -63,16 +63,32 @@ func serveWebInterface(port int, p *profile.Profile, o *plugin.Options) error {
 		// only allow requests from local host
 		wrap = checkLocalHost
 	}
-	http.Handle("/", wrap(http.HandlerFunc(ui.dot)))
-	http.Handle("/disasm", wrap(http.HandlerFunc(ui.disasm)))
-	http.Handle("/weblist", wrap(http.HandlerFunc(ui.weblist)))
-	go openBrowser(port, o)
-	return http.ListenAndServe(fmt.Sprint(":", port), nil)
+
+	mux := http.NewServeMux()
+	mux.Handle("/", wrap(http.HandlerFunc(ui.dot)))
+	mux.Handle("/disasm", wrap(http.HandlerFunc(ui.disasm)))
+	mux.Handle("/weblist", wrap(http.HandlerFunc(ui.weblist)))
+
+	ln, err := net.Listen("tcp", hostport)
+	if err != nil {
+		return err
+	}
+
+	s := &http.Server{Handler: mux}
+	host, _, err := net.SplitHostPort(hostport)
+	if err != nil {
+		return err
+	}
+	if host == "" {
+		host = "localhost"
+	}
+	go openBrowser(fmt.Sprint("http://", host, ":", ln.Addr().(*net.TCPAddr).Port), o)
+	return s.Serve(ln)
 }
 
-func openBrowser(port int, o *plugin.Options) {
+func openBrowser(url string, o *plugin.Options) {
 	// Construct URL.
-	u, _ := url.Parse(fmt.Sprint("http://localhost:", port))
+	u, _ := gourl.Parse(url)
 	q := u.Query()
 	for _, p := range []struct{ param, key string }{
 		{"f", "focus"},

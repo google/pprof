@@ -29,10 +29,10 @@ type source struct {
 	BuildID  string
 	Base     []string
 
-	Seconds   int
-	Timeout   int
-	Symbolize string
-	HTTPPort  int
+	Seconds      int
+	Timeout      int
+	Symbolize    string
+	HTTPHostPort string
 }
 
 // Parse parses the command lines through the specified flags package
@@ -59,7 +59,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	flagTools := flag.String("tools", os.Getenv("PPROF_TOOLS"), "Path for object tool pathnames")
 
 	flagTimeout := flag.Int("timeout", -1, "Timeout in seconds for fetching a profile")
-	flagHTTPPort := flag.Int("http", 0, "Present interactive web based UI at the specified http port")
+	flagHTTP := flag.String("http", "", "Present interactive web based UI at the specified http host:port")
 
 	// Flags used during command processing
 	installedFlags := installFlags(flag)
@@ -108,7 +108,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	if cmd != nil && *flagHTTPPort != 0 {
+	if cmd != nil && *flagHTTP != "" {
 		return nil, nil, fmt.Errorf("--http is not compatible with an output format on the command line")
 	}
 
@@ -127,13 +127,13 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	}
 
 	source := &source{
-		Sources:   args,
-		ExecName:  execName,
-		BuildID:   *flagBuildID,
-		Seconds:   *flagSeconds,
-		Timeout:   *flagTimeout,
-		Symbolize: *flagSymbolize,
-		HTTPPort:  *flagHTTPPort,
+		Sources:      args,
+		ExecName:     execName,
+		BuildID:      *flagBuildID,
+		Seconds:      *flagSeconds,
+		Timeout:      *flagTimeout,
+		Symbolize:    *flagSymbolize,
+		HTTPHostPort: *flagHTTP,
 	}
 
 	for _, s := range *flagBase {
@@ -285,7 +285,7 @@ var usageMsgSrc = "\n\n" +
 
 var usageMsgVars = "\n\n" +
 	"  Misc options:\n" +
-	"   -http port             Provide web based interface at port\n" +
+	"   -http host:port        Provide web based interface at host:port\n" +
 	"   -tools                 Search path for object tools\n" +
 	"\n" +
 	"  Environment Variables:\n" +
