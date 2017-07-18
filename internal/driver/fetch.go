@@ -57,7 +57,6 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 		})
 	}
 
-	// retrieve source and base profiles
 	p, pbase, m, mbase, save, err := grabSourcesAndBases(sources, bases, o.Fetch, o.Obj, o.UI)
 	if err != nil {
 		return nil, err

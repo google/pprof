@@ -208,84 +208,55 @@ func TestFetch(t *testing.T) {
 
 func TestFetchWithBase(t *testing.T) {
 	const path = "testdata/"
-	// set up testcases
 	type testcase struct {
-		sources         []string
-		bases           []string
-		normalize       bool
-		testDescription string
-		expectSamples   bool
+		desc          string
+		sources       []string
+		bases         []string
+		normalize     bool
+		expectSamples bool
 	}
 
 	testcases := []testcase{
 		{
-			[]string{
-				path + "cppbench.cpu",
-			},
-			[]string{
-				path + "cppbench.cpu",
-			},
+			"not normalized, base is same as source",
+			[]string{path + "cppbench.cpu"},
+			[]string{path + "cppbench.cpu"},
 			false,
-			"not normalized, base is same as non-base",
 			false,
 		},
 		{
-			[]string{
-				path + "cppbench.cpu",
-			},
-			[]string{
-				path + "cppbench.cpu",
-				path + "cppbench.cpu",
-			},
+			"not normalized, single source, multiple base (all profiles same)",
+			[]string{path + "cppbench.cpu"},
+			[]string{path + "cppbench.cpu",path + "cppbench.cpu"},
 			false,
-			"not normalized, single non-base, multiple base (all profiles same)",
 			true,
 		},
 		{
-			[]string{
-				path + "cppbench.cpu",
-			},
-			[]string{
-				path + "go.crc32.cpu",
-			},
+			"not normalized, different base and source",
+			[]string{path + "cppbench.cpu"},
+			[]string{path + "go.crc32.cpu"},
 			false,
-			"not normalized, different base and non-base",
 			true,
 		},
 		{
-
-			[]string{
-				path + "cppbench.cpu",
-			},
-			[]string{
-				path + "cppbench.cpu",
-			},
+			"normalized, base is same as source",
+			[]string{path + "cppbench.cpu"},
+			[]string{path + "cppbench.cpu"},
 			true,
-			"normalized, base is same as non-base",
 			false,
 		},
 		{
-			[]string{
-				path + "cppbench.cpu",
-			},
-			[]string{
-				path + "cppbench.cpu",
-				path + "cppbench.cpu",
-			},
+			"normalized, single source, multiple base (all profiles same)",
+			[]string{path + "cppbench.cpu"},
+			[]string{path + "cppbench.cpu",path + "cppbench.cpu"},
 			true,
-			"normalized, single non-base, multiple base (all profiles same)",
 			false,
 		},
 		{
-
-			[]string{
-				path + "cppbench.cpu",
-			},
-			[]string{
-				path + "go.crc32.cpu",
-			},
+			"normalized, different base and source",
+			[]string{path + "cppbench.cpu"},
+			[]string{path + "go.crc32.cpu"},
 			true,
-			"normalized, different base and non-base",
 			true,
 		},
 	}
@@ -315,24 +286,24 @@ func TestFetchWithBase(t *testing.T) {
 		src, _, err := parseFlags(o)
 
 		if err != nil {
-			t.Errorf("%s: %v", tc.testDescription, err)
+			t.Errorf("%s: %v", tc.desc, err)
 			continue
 		}
 
 		p, err := fetchProfiles(src, o)
 		pprofVariables = baseVars
 		if err != nil {
-			t.Errorf("%s: %v", tc.testDescription, err)
+			t.Errorf("%s: %v", tc.desc, err)
 			continue
 		}
 
 		if tc.expectSamples {
 			if len(p.Sample) == 0 {
-				t.Errorf("%s: want non-zero number of samples", tc.testDescription)
+				t.Errorf("%s: want non-zero number of samples", tc.desc)
 			}
 		} else {
 			if len(p.Sample) != 0 {
-				t.Errorf("%s: want no samples\n %v", tc.testDescription, p)
+				t.Errorf("%s: want no samples\n %v", tc.desc, p)
 			}
 		}
 	}
