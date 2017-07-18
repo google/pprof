@@ -16,7 +16,6 @@ package profile
 
 import (
 	"fmt"
-	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -86,13 +85,12 @@ func Merge(srcs []*Profile) (*Profile, error) {
 	return p, nil
 }
 
-// Normalize normalizes the source profiles by multiplying each value in profiles by the
-// absolute value of the ratio of the sum of the base profile value's of that sample type
-// to the sum of the source profiles value of that sample type.
+// Normalize normalizes the source profile by multiplying each value in profile by the
+// ratio of the sum of the base profile's values of that sample type to the sum of the
+// source profile's value of that sample type.
 func (p *Profile) Normalize(pb *Profile) error {
 
-	err := p.compatible(pb)
-	if err != nil {
+	if err := p.compatible(pb); err != nil {
 		return err
 	}
 
@@ -115,7 +113,7 @@ func (p *Profile) Normalize(pb *Profile) error {
 		if srcVals[i] == 0 {
 			normScale[i] = 0.0
 		} else {
-			normScale[i] = math.Abs(float64(baseVals[i]) / float64(srcVals[i]))
+			normScale[i] = float64(baseVals[i]) / float64(srcVals[i])
 		}
 	}
 	p.ScaleN(normScale)
