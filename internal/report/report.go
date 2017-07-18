@@ -979,12 +979,19 @@ func printTree(w io.Writer, rpt *Report) error {
 // configuration information.
 func GetDOT(rpt *Report) (*graph.Graph, *graph.DotConfig) {
 	g, origCount, droppedNodes, droppedEdges := rpt.newTrimmedGraph()
-	rpt.selectOutputUnit(g)
 	labels := reportLabels(rpt, g, origCount, droppedNodes, droppedEdges, true)
 
 	o := rpt.options
-	formatTag := func(v int64, key string) string {
-		return measurement.ScaledLabel(v, key, o.OutputUnit)
+
+	var formatTag func(v int64, key string) string
+	if o.OutputUnit == "minimum" {
+		formatTag = func(v int64, key string) string {
+			return measurement.Label(v, key)
+		}
+	} else {
+		formatTag = func(v int64, key string) string {
+			return measurement.ScaledLabel(v, key, o.OutputUnit)
+		}
 	}
 
 	c := &graph.DotConfig{
