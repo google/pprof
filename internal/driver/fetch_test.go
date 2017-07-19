@@ -227,7 +227,7 @@ func TestFetchWithBase(t *testing.T) {
 		{
 			"not normalized, single source, multiple base (all profiles same)",
 			[]string{path + "cppbench.cpu"},
-			[]string{path + "cppbench.cpu",path + "cppbench.cpu"},
+			[]string{path + "cppbench.cpu", path + "cppbench.cpu"},
 			false,
 			true,
 		},
@@ -248,7 +248,7 @@ func TestFetchWithBase(t *testing.T) {
 		{
 			"normalized, single source, multiple base (all profiles same)",
 			[]string{path + "cppbench.cpu"},
-			[]string{path + "cppbench.cpu",path + "cppbench.cpu"},
+			[]string{path + "cppbench.cpu", path + "cppbench.cpu"},
 			true,
 			false,
 		},
