@@ -184,7 +184,7 @@ func makeFakeProfile() *profile.Profile {
 	}
 }
 
-func TestServeWebInterface(t *testing.T) {
+func TestNewListenerAndURL(t *testing.T) {
 	tests := []struct {
 		hostport  string
 		wantErr   bool
@@ -199,6 +199,10 @@ func TestServeWebInterface(t *testing.T) {
 			wantURLRe: regexp.MustCompile("http://localhost:\\d+"),
 		},
 		{
+			hostport:  "127.0.0.1:",
+			wantURLRe: regexp.MustCompile("http://127\\.0\\.0\\.1:\\d+"),
+		},
+		{
 			hostport:  "localhost:12344",
 			wantURLRe: regexp.MustCompile("http://localhost:12344"),
 		},
@@ -208,42 +212,20 @@ func TestServeWebInterface(t *testing.T) {
 		},
 	}
 
-	oldOpenBrownser := openBrowser
-	defer func() {
-		openBrowser = oldOpenBrownser
-	}()
-
-	urlCh := make(chan string)
-	openBrowser = func(url string, o *plugin.Options) {
-		urlCh <- url
-	}
-
-	profile := makeFakeProfile()
 	for _, tt := range tests {
 		t.Run(tt.hostport, func(t *testing.T) {
-			tt := tt
-			go func() {
-				err := serveWebInterface(tt.hostport, profile, &plugin.Options{Obj: fakeObjTool{}})
-				// TODO(jbd): Close the server once test case is executed.
-				urlCh <- "errored" // do not block the channel if server fails.
-				if !tt.wantErr {
-					t.Errorf("%v: serveWebInterface() failed: %v", tt.hostport, err)
-				}
-			}()
-			url := <-urlCh
+			_, url, err := newListenerAndURL(tt.hostport)
 			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("newListenerAndURL(%v) want error; got none", tt.hostport)
+				}
 				return
 			}
-			if !tt.wantURLRe.MatchString(url) {
-				t.Errorf("%v: serveWebInterface() opened %v; want URL matching %v", tt.hostport, url, tt.wantURLRe)
-			}
-			resp, err := http.Get(url)
 			if err != nil {
-				t.Fatalf("%v: cannot GET %v: %v", tt.hostport, url, err)
+				t.Fatalf("newListenerAndURL(%v) = %v", tt.hostport, err)
 			}
-			defer resp.Body.Close()
-			if got, want := resp.StatusCode, http.StatusOK; got != want {
-				t.Errorf("%v: got status code = %v; want %v", tt.hostport, got, want)
+			if !tt.wantURLRe.MatchString(url) {
+				t.Errorf("newListenerAndURL(%v) URL = %v; want URL matching %v", tt.hostport, url, tt.wantURLRe)
 			}
 		})
 	}

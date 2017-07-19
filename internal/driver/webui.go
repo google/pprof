@@ -69,24 +69,32 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) e
 	mux.Handle("/disasm", wrap(http.HandlerFunc(ui.disasm)))
 	mux.Handle("/weblist", wrap(http.HandlerFunc(ui.weblist)))
 
-	ln, err := net.Listen("tcp", hostport)
+	s := &http.Server{Handler: mux}
+	ln, url, err := newListenerAndURL(hostport)
 	if err != nil {
 		return err
 	}
+	go openBrowser(url, o)
+	return s.Serve(ln)
+}
 
-	s := &http.Server{Handler: mux}
+func newListenerAndURL(hostport string) (ln net.Listener, url string, err error) {
 	host, _, err := net.SplitHostPort(hostport)
 	if err != nil {
-		return err
+		return nil, "", err
 	}
 	if host == "" {
 		host = "localhost"
 	}
-	go openBrowser(fmt.Sprint("http://", host, ":", ln.Addr().(*net.TCPAddr).Port), o)
-	return s.Serve(ln)
+	ln, err = net.Listen("tcp", hostport)
+	if err != nil {
+		return nil, "", err
+	}
+	url = fmt.Sprint("http://", host, ":", ln.Addr().(*net.TCPAddr).Port)
+	return ln, url, nil
 }
 
-var openBrowser = func(url string, o *plugin.Options) {
+func openBrowser(url string, o *plugin.Options) {
 	// Construct URL.
 	u, _ := gourl.Parse(url)
 	q := u.Query()
