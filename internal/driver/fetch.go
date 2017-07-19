@@ -41,34 +41,43 @@ import (
 // there are some failures. It will return an error if it is unable to
 // fetch any profiles.
 func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
-	sources := make([]profileSource, 0, len(s.Sources)+len(s.Base))
+	sources := make([]profileSource, 0, len(s.Sources))
 	for _, src := range s.Sources {
 		sources = append(sources, profileSource{
 			addr:   src,
 			source: s,
-			scale:  1,
 		})
 	}
+
+	bases := make([]profileSource, 0, len(s.Base))
 	for _, src := range s.Base {
-		sources = append(sources, profileSource{
+		bases = append(bases, profileSource{
 			addr:   src,
 			source: s,
-			scale:  -1,
 		})
 	}
-	p, msrcs, save, cnt, err := chunkedGrab(sources, o.Fetch, o.Obj, o.UI)
+
+	p, pbase, m, mbase, save, err := grabSourcesAndBases(sources, bases, o.Fetch, o.Obj, o.UI)
 	if err != nil {
 		return nil, err
 	}
-	if cnt == 0 {
-		return nil, fmt.Errorf("failed to fetch any profiles")
-	}
-	if want, got := len(sources), cnt; want != got {
-		o.UI.PrintErr(fmt.Sprintf("fetched %d profiles out of %d", got, want))
+
+	if pbase != nil {
+		if s.Normalize {
+			err := p.Normalize(pbase)
+			if err != nil {
+				return nil, err
+			}
+		}
+		pbase.Scale(-1)
+		p, m, err = combineProfiles([]*profile.Profile{p, pbase}, []plugin.MappingSources{m, mbase})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Symbolize the merged profile.
-	if err := o.Sym.Symbolize(s.Symbolize, msrcs, p); err != nil {
+	if err := o.Sym.Symbolize(s.Symbolize, m, p); err != nil {
 		return nil, err
 	}
 	p.RemoveUninteresting()
@@ -107,6 +116,47 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 	return p, nil
 }
 
+func grabSourcesAndBases(sources, bases []profileSource, fetch plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (*profile.Profile, *profile.Profile, plugin.MappingSources, plugin.MappingSources, bool, error) {
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	var psrc, pbase *profile.Profile
+	var msrc, mbase plugin.MappingSources
+	var savesrc, savebase bool
+	var errsrc, errbase error
+	var countsrc, countbase int
+	go func() {
+		defer wg.Done()
+		psrc, msrc, savesrc, countsrc, errsrc = chunkedGrab(sources, fetch, obj, ui)
+	}()
+	go func() {
+		defer wg.Done()
+		pbase, mbase, savebase, countbase, errbase = chunkedGrab(bases, fetch, obj, ui)
+	}()
+	wg.Wait()
+	save := savesrc || savebase
+
+	if errsrc != nil {
+		return nil, nil, nil, nil, false, fmt.Errorf("problem fetching source profiles: %v", errsrc)
+	}
+	if errbase != nil {
+		return nil, nil, nil, nil, false, fmt.Errorf("problem fetching base profiles: %v,", errbase)
+	}
+	if countsrc == 0 {
+		return nil, nil, nil, nil, false, fmt.Errorf("failed to fetch any source profiles")
+	}
+	if countbase == 0 && len(bases) > 0 {
+		return nil, nil, nil, nil, false, fmt.Errorf("failed to fetch any base profiles")
+	}
+	if want, got := len(sources), countsrc; want != got {
+		ui.PrintErr(fmt.Sprintf("Fetched %d source profiles out of %d", got, want))
+	}
+	if want, got := len(bases), countbase; want != got {
+		ui.PrintErr(fmt.Sprintf("Fetched %d base profiles out of %d", got, want))
+	}
+
+	return psrc, pbase, msrc, mbase, save, nil
+}
+
 // chunkedGrab fetches the profiles described in source and merges them into
 // a single profile. It fetches a chunk of profiles concurrently, with a maximum
 // chunk size to limit its memory usage.
@@ -142,6 +192,7 @@ func chunkedGrab(sources []profileSource, fetch plugin.Fetcher, obj plugin.ObjTo
 			count += chunkCount
 		}
 	}
+
 	return p, msrc, save, count, nil
 }
 
@@ -152,7 +203,7 @@ func concurrentGrab(sources []profileSource, fetch plugin.Fetcher, obj plugin.Ob
 	for i := range sources {
 		go func(s *profileSource) {
 			defer wg.Done()
-			s.p, s.msrc, s.remote, s.err = grabProfile(s.source, s.addr, s.scale, fetch, obj, ui)
+			s.p, s.msrc, s.remote, s.err = grabProfile(s.source, s.addr, fetch, obj, ui)
 		}(&sources[i])
 	}
 	wg.Wait()
@@ -207,7 +258,6 @@ func combineProfiles(profiles []*profile.Profile, msrcs []plugin.MappingSources)
 type profileSource struct {
 	addr   string
 	source *source
-	scale  float64
 
 	p      *profile.Profile
 	msrc   plugin.MappingSources
@@ -247,7 +297,7 @@ const testSourceAddress = "pproftest.local"
 // grabProfile fetches a profile. Returns the profile, sources for the
 // profile mappings, a bool indicating if the profile was fetched
 // remotely, and an error.
-func grabProfile(s *source, source string, scale float64, fetcher plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (p *profile.Profile, msrc plugin.MappingSources, remote bool, err error) {
+func grabProfile(s *source, source string, fetcher plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (p *profile.Profile, msrc plugin.MappingSources, remote bool, err error) {
 	var src string
 	duration, timeout := time.Duration(s.Seconds)*time.Second, time.Duration(s.Timeout)*time.Second
 	if fetcher != nil {
@@ -267,9 +317,6 @@ func grabProfile(s *source, source string, scale float64, fetcher plugin.Fetcher
 	if err = p.CheckValid(); err != nil {
 		return
 	}
-
-	// Apply local changes to the profile.
-	p.Scale(scale)
 
 	// Update the binary locations from command line and paths.
 	locateBinaries(p, s, obj, ui)

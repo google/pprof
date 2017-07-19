@@ -269,11 +269,12 @@ func addString(name []string, f *testFlags, components []string) []string {
 
 // testFlags implements the plugin.FlagSet interface.
 type testFlags struct {
-	bools   map[string]bool
-	ints    map[string]int
-	floats  map[string]float64
-	strings map[string]string
-	args    []string
+	bools       map[string]bool
+	ints        map[string]int
+	floats      map[string]float64
+	strings     map[string]string
+	args        []string
+	stringLists map[string][]*string
 }
 
 func (testFlags) ExtraUsage() string { return "" }
@@ -339,6 +340,9 @@ func (f testFlags) StringVar(p *string, s, d, c string) {
 }
 
 func (f testFlags) StringList(s, d, c string) *[]*string {
+	if t, ok := f.stringLists[s]; ok {
+		return &t
+	}
 	return &[]*string{}
 }
 

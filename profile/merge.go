@@ -85,6 +85,41 @@ func Merge(srcs []*Profile) (*Profile, error) {
 	return p, nil
 }
 
+// Normalize normalizes the source profile by multiplying each value in profile by the
+// ratio of the sum of the base profile's values of that sample type to the sum of the
+// source profile's value of that sample type.
+func (p *Profile) Normalize(pb *Profile) error {
+
+	if err := p.compatible(pb); err != nil {
+		return err
+	}
+
+	baseVals := make([]int64, len(p.SampleType))
+	for _, s := range pb.Sample {
+		for i, v := range s.Value {
+			baseVals[i] += v
+		}
+	}
+
+	srcVals := make([]int64, len(p.SampleType))
+	for _, s := range p.Sample {
+		for i, v := range s.Value {
+			srcVals[i] += v
+		}
+	}
+
+	normScale := make([]float64, len(baseVals))
+	for i := range baseVals {
+		if srcVals[i] == 0 {
+			normScale[i] = 0.0
+		} else {
+			normScale[i] = float64(baseVals[i]) / float64(srcVals[i])
+		}
+	}
+	p.ScaleN(normScale)
+	return nil
+}
+
 func isZeroSample(s *Sample) bool {
 	for _, v := range s.Value {
 		if v != 0 {
@@ -432,7 +467,6 @@ func (p *Profile) compatible(pb *Profile) error {
 			return fmt.Errorf("incompatible sample types %v and %v", p.SampleType, pb.SampleType)
 		}
 	}
-
 	return nil
 }
 

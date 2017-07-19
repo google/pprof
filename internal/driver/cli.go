@@ -24,10 +24,11 @@ import (
 )
 
 type source struct {
-	Sources  []string
-	ExecName string
-	BuildID  string
-	Base     []string
+	Sources   []string
+	ExecName  string
+	BuildID   string
+	Base      []string
+	Normalize bool
 
 	Seconds   int
 	Timeout   int
@@ -141,6 +142,12 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 			source.Base = append(source.Base, *s)
 		}
 	}
+
+	normalize := pprofVariables["normalize"].boolValue()
+	if normalize && len(source.Base) == 0 {
+		return nil, nil, fmt.Errorf("Must have base profile to normalize by")
+	}
+	source.Normalize = normalize
 
 	if bu, ok := o.Obj.(*binutils.Binutils); ok {
 		bu.SetTools(*flagTools)

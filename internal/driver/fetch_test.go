@@ -188,7 +188,7 @@ func TestFetch(t *testing.T) {
 		{path + "go.nomappings.crash", "/bin/gotest.exe"},
 		{"http://localhost/profile?file=cppbench.cpu", ""},
 	} {
-		p, _, _, err := grabProfile(&source{ExecName: tc.execName}, tc.source, 0, nil, testObj{}, &proftest.TestUI{T: t})
+		p, _, _, err := grabProfile(&source{ExecName: tc.execName}, tc.source, nil, testObj{}, &proftest.TestUI{T: t})
 		if err != nil {
 			t.Fatalf("%s: %s", tc.source, err)
 		}
@@ -203,6 +203,117 @@ func TestFetch(t *testing.T) {
 				t.Errorf("%s: want mapping[0].execName == %s, got %s", tc.source, e, p.Mapping[0].File)
 			}
 		}
+	}
+}
+
+func TestFetchWithBase(t *testing.T) {
+	baseVars := pprofVariables
+	defer func() { pprofVariables = baseVars }()
+
+	const path = "testdata/"
+	type testcase struct {
+		desc            string
+		sources         []string
+		bases           []string
+		normalize       bool
+		expectedSamples [][]int64
+	}
+
+	testcases := []testcase{
+		{
+			"not normalized base is same as source",
+			[]string{path + "cppbench.contention"},
+			[]string{path + "cppbench.contention"},
+			false,
+			[][]int64{},
+		},
+		{
+			"not normalized single source, multiple base (all profiles same)",
+			[]string{path + "cppbench.contention"},
+			[]string{path + "cppbench.contention", path + "cppbench.contention"},
+			false,
+			[][]int64{{-2700, -608881724}, {-100, -23992}, {-200, -179943}, {-100, -17778444}, {-100, -75976}, {-300, -63568134}},
+		},
+		{
+			"not normalized, different base and source",
+			[]string{path + "cppbench.contention"},
+			[]string{path + "cppbench.small.contention"},
+			false,
+			[][]int64{{1700, 608878600}, {100, 23992}, {200, 179943}, {100, 17778444}, {100, 75976}, {300, 63568134}},
+		},
+		{
+			"normalized base is same as source",
+			[]string{path + "cppbench.contention"},
+			[]string{path + "cppbench.contention"},
+			true,
+			[][]int64{},
+		},
+		{
+			"normalized single source, multiple base (all profiles same)",
+			[]string{path + "cppbench.contention"},
+			[]string{path + "cppbench.contention", path + "cppbench.contention"},
+			true,
+			[][]int64{},
+		},
+		{
+			"normalized different base and source",
+			[]string{path + "cppbench.contention"},
+			[]string{path + "cppbench.small.contention"},
+			true,
+			[][]int64{{-229, -370}, {28, 0}, {57, 0}, {28, 80}, {28, 0}, {85, 287}},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.desc, func(t *testing.T) {
+			pprofVariables = baseVars.makeCopy()
+
+			base := make([]*string, len(tc.bases))
+			for i, s := range tc.bases {
+				base[i] = &s
+			}
+
+			f := testFlags{
+				stringLists: map[string][]*string{
+					"base": base,
+				},
+				bools: map[string]bool{
+					"normalize": tc.normalize,
+				},
+			}
+			f.args = tc.sources
+
+			o := setDefaults(nil)
+			o.Flagset = f
+			src, _, err := parseFlags(o)
+
+			if err != nil {
+				t.Fatalf("%s: %v", tc.desc, err)
+			}
+
+			p, err := fetchProfiles(src, o)
+			pprofVariables = baseVars
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if want, got := len(tc.expectedSamples), len(p.Sample); want != got {
+				t.Fatalf("want %d samples got %d", want, got)
+			}
+
+			if len(p.Sample) > 0 {
+				for i, sample := range p.Sample {
+					if want, got := len(tc.expectedSamples[i]), len(sample.Value); want != got {
+						t.Errorf("want %d values for sample %d, got %d", want, i, got)
+					}
+					for j, value := range sample.Value {
+						if want, got := tc.expectedSamples[i][j], value; want != got {
+							t.Errorf("want value of %d for value %d of sample %d, got %d", want, j, i, got)
+						}
+					}
+				}
+			}
+		})
 	}
 }
 
