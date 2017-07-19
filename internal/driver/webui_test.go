@@ -237,6 +237,14 @@ func TestServeWebInterface(t *testing.T) {
 			if !tt.wantURLRe.MatchString(url) {
 				t.Errorf("%v: serveWebInterface() opened %v; want URL matching %v", tt.hostport, url, tt.wantURLRe)
 			}
+			resp, err := http.Get(url)
+			if err != nil {
+				t.Errorf("%v: cannot GET %v: %v", tt.hostport, url, err)
+			}
+			defer resp.Body.Close()
+			if got, want := resp.StatusCode, http.StatusOK; got != want {
+				t.Errorf("%v: got status code = %v; want %v", tt.hostport, got, want)
+			}
 		})
 	}
 }
