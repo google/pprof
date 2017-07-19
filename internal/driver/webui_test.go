@@ -192,19 +192,19 @@ func TestNewListenerAndURL(t *testing.T) {
 	}{
 		{
 			hostport:  ":",
-			wantURLRe: regexp.MustCompile("http://localhost:\\d+"),
+			wantURLRe: regexp.MustCompile(`http://localhost:\d+`),
 		},
 		{
 			hostport:  "localhost:",
-			wantURLRe: regexp.MustCompile("http://localhost:\\d+"),
+			wantURLRe: regexp.MustCompile(`http://localhost:\d+`),
 		},
 		{
 			hostport:  "127.0.0.1:",
-			wantURLRe: regexp.MustCompile("http://127\\.0\\.0\\.1:\\d+"),
+			wantURLRe: regexp.MustCompile(`http://127\.0\.0\.1:\d+`),
 		},
 		{
 			hostport:  "localhost:12344",
-			wantURLRe: regexp.MustCompile("http://localhost:12344"),
+			wantURLRe: regexp.MustCompile(`http://localhost:12344`),
 		},
 		{
 			hostport: "http://localhost:12345",
