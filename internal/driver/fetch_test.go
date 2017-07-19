@@ -212,10 +212,10 @@ func TestFetchWithBase(t *testing.T) {
 
 	const path = "testdata/"
 	type testcase struct {
-		desc          string
-		sources       []string
-		bases         []string
-		normalize     bool
+		desc            string
+		sources         []string
+		bases           []string
+		normalize       bool
 		expectedSamples [][]int64
 	}
 
