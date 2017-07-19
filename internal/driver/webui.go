@@ -57,10 +57,16 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) e
 		prof:    p,
 		options: o,
 	}
+
+	ln, url, isLocal, err := newListenerAndURL(hostport)
+	if err != nil {
+		return err
+	}
+
 	// authorization wrapper
 	wrap := o.HTTPWrapper
-	if wrap == nil {
-		// only allow requests from local host
+	if wrap == nil && isLocal {
+		// Only allow requests from local host.
 		wrap = checkLocalHost
 	}
 
@@ -70,28 +76,32 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) e
 	mux.Handle("/weblist", wrap(http.HandlerFunc(ui.weblist)))
 
 	s := &http.Server{Handler: mux}
-	ln, url, err := newListenerAndURL(hostport)
-	if err != nil {
-		return err
-	}
 	go openBrowser(url, o)
 	return s.Serve(ln)
 }
 
-func newListenerAndURL(hostport string) (ln net.Listener, url string, err error) {
+func newListenerAndURL(hostport string) (ln net.Listener, url string, isLocal bool, err error) {
 	host, _, err := net.SplitHostPort(hostport)
 	if err != nil {
-		return nil, "", err
+		return nil, "", false, err
 	}
 	if host == "" {
 		host = "localhost"
 	}
-	ln, err = net.Listen("tcp", hostport)
-	if err != nil {
-		return nil, "", err
+	if ln, err = net.Listen("tcp", hostport); err != nil {
+		return nil, "", false, err
 	}
 	url = fmt.Sprint("http://", host, ":", ln.Addr().(*net.TCPAddr).Port)
-	return ln, url, nil
+	return ln, url, isLocalhost(host), nil
+}
+
+func isLocalhost(host string) bool {
+	for _, v := range []string{"localhost", "127.0.0.1", "[::1]"} {
+		if host == v {
+			return true
+		}
+	}
+	return false
 }
 
 func openBrowser(url string, o *plugin.Options) {
@@ -131,7 +141,7 @@ func openBrowser(url string, o *plugin.Options) {
 func checkLocalHost(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		host, _, err := net.SplitHostPort(req.RemoteAddr)
-		if err != nil || ((host != "127.0.0.1") && (host != "::1")) {
+		if err != nil || !isLocalhost(host) {
 			http.Error(w, "permission denied", http.StatusForbidden)
 			return
 		}
