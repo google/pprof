@@ -32,7 +32,7 @@ type source struct {
 	Seconds      int
 	Timeout      int
 	Symbolize    string
-	HTTPHostPort string
+	HTTPHostport string
 }
 
 // Parse parses the command lines through the specified flags package
@@ -133,7 +133,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		Seconds:      *flagSeconds,
 		Timeout:      *flagTimeout,
 		Symbolize:    *flagSymbolize,
-		HTTPHostPort: *flagHTTP,
+		HTTPHostport: *flagHTTP,
 	}
 
 	for _, s := range *flagBase {
