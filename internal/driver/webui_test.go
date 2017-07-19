@@ -239,7 +239,7 @@ func TestServeWebInterface(t *testing.T) {
 			}
 			resp, err := http.Get(url)
 			if err != nil {
-				t.Errorf("%v: cannot GET %v: %v", tt.hostport, url, err)
+				t.Fatalf("%v: cannot GET %v: %v", tt.hostport, url, err)
 			}
 			defer resp.Body.Close()
 			if got, want := resp.StatusCode, http.StatusOK; got != want {
