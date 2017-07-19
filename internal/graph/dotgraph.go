@@ -46,8 +46,8 @@ type DotConfig struct {
 	LegendURL string   // The URL to link to from the legend.
 	Labels    []string // The labels for the DOT's legend
 
-	FormatValue func(int64) string         // A formatting function for values
-	Total       int64                      // The total weight of the graph, used to compute percentages
+	FormatValue func(int64) string // A formatting function for values
+	Total       int64              // The total weight of the graph, used to compute percentages
 }
 
 const maxNodelets = 4 // Number of nodelets for labels (both numeric and non)
@@ -475,7 +475,7 @@ func (b *builder) tagGroupLabel(g []*Tag) (label string, flat, cum int64) {
 	if dc != 0 {
 		c = c / dc
 	}
-	return min.Name+ ".." + max.Name, f, c
+	return min.Name + ".." + max.Name, f, c
 }
 
 func min64(a, b int64) int64 {
