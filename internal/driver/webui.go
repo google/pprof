@@ -86,7 +86,7 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) e
 	return s.Serve(ln)
 }
 
-func openBrowser(url string, o *plugin.Options) {
+var openBrowser = func(url string, o *plugin.Options) {
 	// Construct URL.
 	u, _ := gourl.Parse(url)
 	q := u.Query()

@@ -183,3 +183,60 @@ func makeFakeProfile() *profile.Profile {
 		Mapping:  mapping,
 	}
 }
+
+func TestServeWebInterface(t *testing.T) {
+	tests := []struct {
+		hostport  string
+		wantErr   bool
+		wantURLRe *regexp.Regexp
+	}{
+		{
+			hostport:  ":",
+			wantURLRe: regexp.MustCompile("http://localhost:\\d+"),
+		},
+		{
+			hostport:  "localhost:",
+			wantURLRe: regexp.MustCompile("http://localhost:\\d+"),
+		},
+		{
+			hostport:  "localhost:12344",
+			wantURLRe: regexp.MustCompile("http://localhost:12344"),
+		},
+		{
+			hostport: "http://localhost:12345",
+			wantErr:  true,
+		},
+	}
+
+	oldOpenBrownser := openBrowser
+	defer func() {
+		openBrowser = oldOpenBrownser
+	}()
+
+	urlCh := make(chan string)
+	openBrowser = func(url string, o *plugin.Options) {
+		urlCh <- url
+	}
+
+	profile := makeFakeProfile()
+	for _, tt := range tests {
+		t.Run(tt.hostport, func(t *testing.T) {
+			tt := tt
+			go func() {
+				err := serveWebInterface(tt.hostport, profile, &plugin.Options{Obj: fakeObjTool{}})
+				// TODO(jbd): Close the server once test case is executed.
+				urlCh <- "errored" // do not block the channel if server fails.
+				if !tt.wantErr {
+					t.Errorf("%v: serveWebInterface() failed: %v", tt.hostport, err)
+				}
+			}()
+			url := <-urlCh
+			if tt.wantErr {
+				return
+			}
+			if !tt.wantURLRe.MatchString(url) {
+				t.Errorf("%v: serveWebInterface() opened %v; want URL matching %v", tt.hostport, url, tt.wantURLRe)
+			}
+		})
+	}
+}
