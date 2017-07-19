@@ -207,105 +207,113 @@ func TestFetch(t *testing.T) {
 }
 
 func TestFetchWithBase(t *testing.T) {
+	baseVars := pprofVariables
+	defer func() { pprofVariables = baseVars }()
+
 	const path = "testdata/"
 	type testcase struct {
 		desc          string
 		sources       []string
 		bases         []string
 		normalize     bool
-		expectSamples bool
+		expectedSamples [][]int64
 	}
 
 	testcases := []testcase{
 		{
-			"not normalized, base is same as source",
-			[]string{path + "cppbench.cpu"},
-			[]string{path + "cppbench.cpu"},
+			"not normalized base is same as source",
+			[]string{path + "cppbench.contention"},
+			[]string{path + "cppbench.contention"},
 			false,
-			false,
+			[][]int64{},
 		},
 		{
-			"not normalized, single source, multiple base (all profiles same)",
-			[]string{path + "cppbench.cpu"},
-			[]string{path + "cppbench.cpu", path + "cppbench.cpu"},
+			"not normalized single source, multiple base (all profiles same)",
+			[]string{path + "cppbench.contention"},
+			[]string{path + "cppbench.contention", path + "cppbench.contention"},
 			false,
-			true,
+			[][]int64{{-2700, -608881724}, {-100, -23992}, {-200, -179943}, {-100, -17778444}, {-100, -75976}, {-300, -63568134}},
 		},
 		{
 			"not normalized, different base and source",
-			[]string{path + "cppbench.cpu"},
-			[]string{path + "go.crc32.cpu"},
+			[]string{path + "cppbench.contention"},
+			[]string{path + "cppbench.small.contention"},
 			false,
-			true,
+			[][]int64{{1700, 608878600}, {100, 23992}, {200, 179943}, {100, 17778444}, {100, 75976}, {300, 63568134}},
 		},
 		{
-			"normalized, base is same as source",
-			[]string{path + "cppbench.cpu"},
-			[]string{path + "cppbench.cpu"},
+			"normalized base is same as source",
+			[]string{path + "cppbench.contention"},
+			[]string{path + "cppbench.contention"},
 			true,
-			false,
+			[][]int64{},
 		},
 		{
-			"normalized, single source, multiple base (all profiles same)",
-			[]string{path + "cppbench.cpu"},
-			[]string{path + "cppbench.cpu", path + "cppbench.cpu"},
+			"normalized single source, multiple base (all profiles same)",
+			[]string{path + "cppbench.contention"},
+			[]string{path + "cppbench.contention", path + "cppbench.contention"},
 			true,
-			false,
+			[][]int64{},
 		},
 		{
-			"normalized, different base and source",
-			[]string{path + "cppbench.cpu"},
-			[]string{path + "go.crc32.cpu"},
+			"normalized different base and source",
+			[]string{path + "cppbench.contention"},
+			[]string{path + "cppbench.small.contention"},
 			true,
-			true,
+			[][]int64{{-229, -370}, {28, 0}, {57, 0}, {28, 80}, {28, 0}, {85, 287}},
 		},
 	}
 
 	for _, tc := range testcases {
-		baseVars := pprofVariables
-		pprofVariables = baseVars.makeCopy()
-		defer func() { pprofVariables = baseVars }()
+		t.Run(tc.desc, func(t *testing.T) {
+			pprofVariables = baseVars.makeCopy()
 
-		base := make([]*string, len(tc.bases))
-		for i, s := range tc.bases {
-			base[i] = &s
-		}
-
-		f := testFlags{
-			stringLists: map[string][]*string{
-				"base": base,
-			},
-			bools: map[string]bool{
-				"normalize": tc.normalize,
-			},
-		}
-		f.args = tc.sources
-
-		o := setDefaults(nil)
-		o.Flagset = f
-		src, _, err := parseFlags(o)
-
-		if err != nil {
-			t.Errorf("%s: %v", tc.desc, err)
-			continue
-		}
-
-		p, err := fetchProfiles(src, o)
-		pprofVariables = baseVars
-		if err != nil {
-			t.Errorf("%s: %v", tc.desc, err)
-			continue
-		}
-
-		if tc.expectSamples {
-			if len(p.Sample) == 0 {
-				t.Errorf("%s: want non-zero number of samples", tc.desc)
+			base := make([]*string, len(tc.bases))
+			for i, s := range tc.bases {
+				base[i] = &s
 			}
-		} else {
-			if len(p.Sample) != 0 {
-				t.Errorf("%s: want no samples\n %v", tc.desc, p)
+
+			f := testFlags{
+				stringLists: map[string][]*string{
+					"base": base,
+				},
+				bools: map[string]bool{
+					"normalize": tc.normalize,
+				},
 			}
-		}
+			f.args = tc.sources
+
+			o := setDefaults(nil)
+			o.Flagset = f
+			src, _, err := parseFlags(o)
+
+			if err != nil {
+				t.Fatalf("%s: %v", tc.desc, err)
+			}
+
+			p, err := fetchProfiles(src, o)
+			pprofVariables = baseVars
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if want, got := len(tc.expectedSamples), len(p.Sample); want != got {
+				t.Fatalf("want %d samples got %d", want, got)
+			}
+
+			if len(p.Sample) > 0 {
+				for i, sample := range p.Sample {
+					if want, got := len(tc.expectedSamples[i]), len(sample.Value); want != got {
+						t.Errorf("want %d values for sample %d, got %d", want, i, got)
+					}
+					for j, value := range sample.Value {
+						if want, got := tc.expectedSamples[i][j], value; want != got {
+							t.Errorf("want value of %d for value %d of sample %d, got %d", want, j, i, got)
+						}
+					}
+				}
+			}
+		})
 	}
 }
 
