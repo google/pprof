@@ -252,21 +252,23 @@ func dotToSvg(dot []byte) ([]byte, error) {
 
 // disasm generates a web page containing disassembly.
 func (ui *webInterface) disasm(w http.ResponseWriter, req *http.Request) {
-	ui.output(w, req, "disasm", "text/plain")
+	ui.output(w, req, "disasm", "text/plain", pprofVariables.makeCopy())
 }
 
 // weblist generates a web page containing disassembly.
 func (ui *webInterface) weblist(w http.ResponseWriter, req *http.Request) {
-	ui.output(w, req, "weblist", "text/html")
+	ui.output(w, req, "weblist", "text/html", pprofVariables.makeCopy())
 }
 
 // peek generates a web page listing callers/callers.
 func (ui *webInterface) peek(w http.ResponseWriter, req *http.Request) {
-	ui.output(w, req, "peek", "text/plain")
+	vars := pprofVariables.makeCopy()
+	vars.set("lines", "t") // Switch to line granularity
+	ui.output(w, req, "peek", "text/plain", vars)
 }
 
 // output generates a webpage that contains the output of the specified pprof cmd.
-func (ui *webInterface) output(w http.ResponseWriter, req *http.Request, cmd, ctype string) {
+func (ui *webInterface) output(w http.ResponseWriter, req *http.Request, cmd, ctype string, vars variables) {
 	focus := req.URL.Query().Get("f")
 	if focus == "" {
 		fmt.Fprintln(w, "no argument supplied for "+cmd)
@@ -279,7 +281,6 @@ func (ui *webInterface) output(w http.ResponseWriter, req *http.Request, cmd, ct
 	options.UI = catcher
 
 	args := []string{cmd, focus}
-	vars := pprofVariables.makeCopy()
 	_, rpt, err := generateRawReport(ui.prof, args, vars, &options)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
