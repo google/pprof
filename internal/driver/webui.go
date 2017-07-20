@@ -38,6 +38,7 @@ import (
 type webInterface struct {
 	prof    *profile.Profile
 	options *plugin.Options
+	help    map[string]string
 }
 
 // errorCatcher is a UI that captures errors for reporting to the browser.
@@ -56,6 +57,13 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) e
 	ui := &webInterface{
 		prof:    p,
 		options: o,
+		help:    make(map[string]string),
+	}
+	for n, c := range pprofCommands {
+		ui.help[n] = c.description
+	}
+	for n, v := range pprofVariables {
+		ui.help[n] = v.help
 	}
 
 	ln, url, isLocal, err := newListenerAndURL(hostport)
@@ -74,6 +82,7 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) e
 	mux.Handle("/", wrap(http.HandlerFunc(ui.dot)))
 	mux.Handle("/disasm", wrap(http.HandlerFunc(ui.disasm)))
 	mux.Handle("/weblist", wrap(http.HandlerFunc(ui.weblist)))
+	mux.Handle("/peek", wrap(http.HandlerFunc(ui.peek)))
 
 	s := &http.Server{Handler: mux}
 	go openBrowser(url, o)
@@ -204,12 +213,14 @@ func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 		Svg    template.HTML
 		Legend []string
 		Nodes  []string
+		Help   map[string]string
 	}{
 		Title:  file + " " + profile,
 		Errors: catcher.errors,
 		Svg:    template.HTML(string(svg)),
 		Legend: legend,
 		Nodes:  nodes,
+		Help:   ui.help,
 	}
 	html := &bytes.Buffer{}
 	if err := graphTemplate.Execute(html, data); err != nil {
@@ -241,16 +252,23 @@ func dotToSvg(dot []byte) ([]byte, error) {
 
 // disasm generates a web page containing disassembly.
 func (ui *webInterface) disasm(w http.ResponseWriter, req *http.Request) {
-	ui.output(w, req, "disasm", "text/plain")
+	ui.output(w, req, "disasm", "text/plain", pprofVariables.makeCopy())
 }
 
 // weblist generates a web page containing disassembly.
 func (ui *webInterface) weblist(w http.ResponseWriter, req *http.Request) {
-	ui.output(w, req, "weblist", "text/html")
+	ui.output(w, req, "weblist", "text/html", pprofVariables.makeCopy())
+}
+
+// peek generates a web page listing callers/callers.
+func (ui *webInterface) peek(w http.ResponseWriter, req *http.Request) {
+	vars := pprofVariables.makeCopy()
+	vars.set("lines", "t") // Switch to line granularity
+	ui.output(w, req, "peek", "text/plain", vars)
 }
 
 // output generates a webpage that contains the output of the specified pprof cmd.
-func (ui *webInterface) output(w http.ResponseWriter, req *http.Request, cmd, ctype string) {
+func (ui *webInterface) output(w http.ResponseWriter, req *http.Request, cmd, ctype string, vars variables) {
 	focus := req.URL.Query().Get("f")
 	if focus == "" {
 		fmt.Fprintln(w, "no argument supplied for "+cmd)
@@ -263,7 +281,6 @@ func (ui *webInterface) output(w http.ResponseWriter, req *http.Request, cmd, ct
 	options.UI = catcher
 
 	args := []string{cmd, focus}
-	vars := pprofVariables.makeCopy()
 	_, rpt, err := generateRawReport(ui.prof, args, vars, &options)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

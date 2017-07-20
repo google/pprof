@@ -22,7 +22,6 @@ import (
 	"net/url"
 	"os/exec"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/google/pprof/internal/plugin"
@@ -31,7 +30,11 @@ import (
 
 func TestWebInterface(t *testing.T) {
 	prof := makeFakeProfile()
-	ui := &webInterface{prof, &plugin.Options{Obj: fakeObjTool{}}}
+	ui := &webInterface{
+		prof:    prof,
+		options: &plugin.Options{Obj: fakeObjTool{}},
+		help:    make(map[string]string),
+	}
 
 	// Start test server.
 	server := httptest.NewServer(http.HandlerFunc(
@@ -41,6 +44,8 @@ func TestWebInterface(t *testing.T) {
 				ui.dot(w, r)
 			case "/disasm":
 				ui.disasm(w, r)
+			case "/peek":
+				ui.peek(w, r)
 			case "/weblist":
 				ui.weblist(w, r)
 			}
@@ -61,6 +66,8 @@ func TestWebInterface(t *testing.T) {
 		{"/", []string{"F1", "F2", "F3", "testbin", "cpu"}, true},
 		{"/weblist?f=" + url.QueryEscape("F[12]"),
 			[]string{"F1", "F2", "300ms line1"}, false},
+		{"/peek?f=" + url.QueryEscape("F[12]"),
+			[]string{"300ms.*F1", "200ms.*300ms.*F2"}, false},
 		{"/disasm?f=" + url.QueryEscape("F[12]"),
 			[]string{"f1:asm", "f2:asm"}, false},
 	}
@@ -82,9 +89,9 @@ func TestWebInterface(t *testing.T) {
 		}
 		result := string(data)
 		for _, w := range c.want {
-			if !strings.Contains(result, w) {
-				t.Errorf("response for %s does not contain "+
-					"expected string '%s'; "+
+			if match, _ := regexp.MatchString(w, result); !match {
+				t.Errorf("response for %s does not match "+
+					"expected pattern '%s'; "+
 					"actual result:\n%s", c.path, w, result)
 			}
 		}
