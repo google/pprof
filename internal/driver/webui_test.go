@@ -183,3 +183,58 @@ func makeFakeProfile() *profile.Profile {
 		Mapping:  mapping,
 	}
 }
+
+func TestNewListenerAndURL(t *testing.T) {
+	tests := []struct {
+		hostport  string
+		wantErr   bool
+		wantURLRe *regexp.Regexp
+		wantLocal bool
+	}{
+		{
+			hostport:  ":",
+			wantURLRe: regexp.MustCompile(`http://localhost:\d+`),
+			wantLocal: true,
+		},
+		{
+			hostport:  "localhost:",
+			wantURLRe: regexp.MustCompile(`http://localhost:\d+`),
+			wantLocal: true,
+		},
+		{
+			hostport:  "127.0.0.1:",
+			wantURLRe: regexp.MustCompile(`http://127\.0\.0\.1:\d+`),
+			wantLocal: true,
+		},
+		{
+			hostport:  "localhost:12344",
+			wantURLRe: regexp.MustCompile(`http://localhost:12344`),
+			wantLocal: true,
+		},
+		{
+			hostport: "http://localhost:12345",
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.hostport, func(t *testing.T) {
+			_, url, isLocal, err := newListenerAndURL(tt.hostport)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("newListenerAndURL(%v) want error; got none", tt.hostport)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("newListenerAndURL(%v) = %v", tt.hostport, err)
+			}
+			if !tt.wantURLRe.MatchString(url) {
+				t.Errorf("newListenerAndURL(%v) URL = %v; want URL matching %v", tt.hostport, url, tt.wantURLRe)
+			}
+			if got, want := isLocal, tt.wantLocal; got != want {
+				t.Errorf("newListenerAndURL(%v) isLocal = %v; want %v", tt.hostport, got, want)
+			}
+		})
+	}
+}

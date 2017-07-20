@@ -21,7 +21,7 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/url"
+	gourl "net/url"
 	"os"
 	"os/exec"
 	"regexp"
@@ -51,28 +51,62 @@ func (ec *errorCatcher) PrintErr(args ...interface{}) {
 	ec.UI.PrintErr(args...)
 }
 
-func serveWebInterface(port int, p *profile.Profile, o *plugin.Options) error {
+func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) error {
 	interactiveMode = true
 	ui := &webInterface{
 		prof:    p,
 		options: o,
 	}
+
+	ln, url, isLocal, err := newListenerAndURL(hostport)
+	if err != nil {
+		return err
+	}
+
 	// authorization wrapper
 	wrap := o.HTTPWrapper
-	if wrap == nil {
-		// only allow requests from local host
+	if wrap == nil && isLocal {
+		// Only allow requests from local host.
 		wrap = checkLocalHost
 	}
-	http.Handle("/", wrap(http.HandlerFunc(ui.dot)))
-	http.Handle("/disasm", wrap(http.HandlerFunc(ui.disasm)))
-	http.Handle("/weblist", wrap(http.HandlerFunc(ui.weblist)))
-	go openBrowser(port, o)
-	return http.ListenAndServe(fmt.Sprint(":", port), nil)
+
+	mux := http.NewServeMux()
+	mux.Handle("/", wrap(http.HandlerFunc(ui.dot)))
+	mux.Handle("/disasm", wrap(http.HandlerFunc(ui.disasm)))
+	mux.Handle("/weblist", wrap(http.HandlerFunc(ui.weblist)))
+
+	s := &http.Server{Handler: mux}
+	go openBrowser(url, o)
+	return s.Serve(ln)
 }
 
-func openBrowser(port int, o *plugin.Options) {
+func newListenerAndURL(hostport string) (ln net.Listener, url string, isLocal bool, err error) {
+	host, _, err := net.SplitHostPort(hostport)
+	if err != nil {
+		return nil, "", false, err
+	}
+	if host == "" {
+		host = "localhost"
+	}
+	if ln, err = net.Listen("tcp", hostport); err != nil {
+		return nil, "", false, err
+	}
+	url = fmt.Sprint("http://", host, ":", ln.Addr().(*net.TCPAddr).Port)
+	return ln, url, isLocalhost(host), nil
+}
+
+func isLocalhost(host string) bool {
+	for _, v := range []string{"localhost", "127.0.0.1", "[::1]"} {
+		if host == v {
+			return true
+		}
+	}
+	return false
+}
+
+func openBrowser(url string, o *plugin.Options) {
 	// Construct URL.
-	u, _ := url.Parse(fmt.Sprint("http://localhost:", port))
+	u, _ := gourl.Parse(url)
 	q := u.Query()
 	for _, p := range []struct{ param, key string }{
 		{"f", "focus"},
@@ -107,7 +141,7 @@ func openBrowser(port int, o *plugin.Options) {
 func checkLocalHost(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		host, _, err := net.SplitHostPort(req.RemoteAddr)
-		if err != nil || ((host != "127.0.0.1") && (host != "::1")) {
+		if err != nil || !isLocalhost(host) {
 			http.Error(w, "permission denied", http.StatusForbidden)
 			return
 		}
