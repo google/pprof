@@ -70,6 +70,7 @@ func TestParse(t *testing.T) {
 		{"dot,functions,flat", "cpu"},
 		{"dot,functions,flat,call_tree", "cpu"},
 		{"dot,lines,flat,focus=[12]00", "heap"},
+		{"dot,unit=minimum", "heap_medium"},
 		{"dot,addresses,flat,ignore=[X3]002,focus=[X1]000", "contention"},
 		{"dot,files,cum", "contention"},
 		{"comments", "cpu"},
@@ -391,6 +392,8 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 			{Type: "alloc_objects", Unit: "count"},
 			{Type: "alloc_space", Unit: "bytes"},
 		}
+	case "heap_medium":
+		p = heapProfileMedium()
 	case "contention":
 		p = contentionProfile()
 	case "symbolz":
@@ -786,6 +789,166 @@ func heapProfile() *profile.Profile {
 				Value:    []int64{80, 32768000},
 				NumLabel: map[string][]int64{
 					"bytes": {409600},
+				},
+			},
+		},
+		DropFrames: ".*operator new.*|malloc",
+		Location:   heapL,
+		Function:   heapF,
+		Mapping:    heapM,
+	}
+}
+
+func heapProfileMedium() *profile.Profile {
+	var heapM = []*profile.Mapping{
+		{
+			ID:              1,
+			BuildID:         "buildid",
+			Start:           0x1000,
+			Limit:           0x4000,
+			HasFunctions:    true,
+			HasFilenames:    true,
+			HasLineNumbers:  true,
+			HasInlineFrames: true,
+		},
+	}
+
+	var heapF = []*profile.Function{
+		{ID: 1, Name: "pruneme", SystemName: "pruneme", Filename: "prune.h"},
+		{ID: 2, Name: "mangled1000", SystemName: "mangled1000", Filename: "testdata/file1000.src"},
+		{ID: 3, Name: "mangled2000", SystemName: "mangled2000", Filename: "testdata/file2000.src"},
+		{ID: 4, Name: "mangled2001", SystemName: "mangled2001", Filename: "testdata/file2000.src"},
+		{ID: 5, Name: "mangled3000", SystemName: "mangled3000", Filename: "testdata/file3000.src"},
+		{ID: 6, Name: "mangled3001", SystemName: "mangled3001", Filename: "testdata/file3000.src"},
+		{ID: 7, Name: "mangled3002", SystemName: "mangled3002", Filename: "testdata/file3000.src"},
+		{ID: 8, Name: "mangledMALLOC", SystemName: "mangledMALLOC", Filename: "malloc.h"},
+		{ID: 9, Name: "mangledNEW", SystemName: "mangledNEW", Filename: "new.h"},
+	}
+
+	var heapL = []*profile.Location{
+		{
+			ID:      1000,
+			Mapping: heapM[0],
+			Address: 0x1000,
+			Line: []profile.Line{
+				{Function: heapF[0], Line: 100},
+				{Function: heapF[7], Line: 100},
+				{Function: heapF[1], Line: 1},
+			},
+		},
+		{
+			ID:      2000,
+			Mapping: heapM[0],
+			Address: 0x2000,
+			Line: []profile.Line{
+				{Function: heapF[8], Line: 100},
+				{Function: heapF[3], Line: 2},
+				{Function: heapF[2], Line: 3},
+			},
+		},
+		{
+			ID:      3000,
+			Mapping: heapM[0],
+			Address: 0x3000,
+			Line: []profile.Line{
+				{Function: heapF[8], Line: 100},
+				{Function: heapF[6], Line: 3},
+				{Function: heapF[5], Line: 2},
+				{Function: heapF[4], Line: 4},
+			},
+		},
+		{
+			ID:      3001,
+			Mapping: heapM[0],
+			Address: 0x3001,
+			Line: []profile.Line{
+				{Function: heapF[0], Line: 100},
+				{Function: heapF[8], Line: 100},
+				{Function: heapF[5], Line: 2},
+				{Function: heapF[4], Line: 4},
+			},
+		},
+		{
+			ID:      3002,
+			Mapping: heapM[0],
+			Address: 0x3002,
+			Line: []profile.Line{
+				{Function: heapF[6], Line: 3},
+				{Function: heapF[4], Line: 4},
+			},
+		},
+	}
+
+	return &profile.Profile{
+		Comments:   []string{"comment", "#hidden comment"},
+		PeriodType: &profile.ValueType{Type: "allocations", Unit: "bytes"},
+		Period:     524288,
+		SampleType: []*profile.ValueType{
+			{Type: "inuse_objects", Unit: "count"},
+			{Type: "inuse_space", Unit: "bytes"},
+		},
+		Sample: []*profile.Sample{
+			{
+				Location: []*profile.Location{heapL[0], heapL[1], heapL[2]},
+				Value:    []int64{10, 1024000},
+				NumLabel: map[string][]int64{
+					"bytes": {102400},
+				},
+			},
+			{
+				Location: []*profile.Location{heapL[0], heapL[1], heapL[2]},
+				Value:    []int64{10, 1024000},
+				NumLabel: map[string][]int64{
+					"bytes": {102400},
+				},
+			},
+			{
+				Location: []*profile.Location{heapL[0], heapL[3]},
+				Value:    []int64{20, 4096000},
+				NumLabel: map[string][]int64{
+					"bytes": {204800},
+				},
+			},
+			{
+				Location: []*profile.Location{heapL[1], heapL[4]},
+				Value:    []int64{40, 65536000},
+				NumLabel: map[string][]int64{
+					"bytes": {1638400},
+				},
+			},
+			{
+				Location: []*profile.Location{heapL[2]},
+				Value:    []int64{80, 32768000},
+				NumLabel: map[string][]int64{
+					"bytes": {409600},
+				},
+			},
+			{
+				Location: []*profile.Location{heapL[2]},
+				Value:    []int64{80, 32768000},
+				NumLabel: map[string][]int64{
+					"bytes": {20},
+				},
+			},
+			{
+				Location: []*profile.Location{heapL[2]},
+				Value:    []int64{80, 32768000},
+				NumLabel: map[string][]int64{
+					"bytes": {10},
+				},
+			},
+			{
+				Location: []*profile.Location{heapL[2]},
+				Value:    []int64{80, 32768000},
+				NumLabel: map[string][]int64{
+					"bytes": {512},
+				},
+			},
+			{
+				Location: []*profile.Location{heapL[2]},
+				Value:    []int64{80, 32768000},
+				NumLabel: map[string][]int64{
+					"bytes": {256},
 				},
 			},
 		},

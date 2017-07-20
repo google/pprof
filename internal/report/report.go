@@ -982,9 +982,8 @@ func GetDOT(rpt *Report) (*graph.Graph, *graph.DotConfig) {
 	rpt.selectOutputUnit(g)
 	labels := reportLabels(rpt, g, origCount, droppedNodes, droppedEdges, true)
 
-	o := rpt.options
 	formatTag := func(v int64, key string) string {
-		return measurement.ScaledLabel(v, key, o.OutputUnit)
+		return measurement.Label(v, key)
 	}
 
 	c := &graph.DotConfig{
