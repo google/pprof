@@ -382,6 +382,9 @@ func TestHttpsInsecure(t *testing.T) {
 		deadline := time.Now().Add(5 * time.Second)
 		for time.Now().Before(deadline) {
 			// Simulate a hotspot function.
+			for i := 0; i < 1e8; i++ {
+			}
+			runtime.Gosched()
 		}
 	}()
 
@@ -409,11 +412,22 @@ func TestHttpsInsecure(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(p.SampleType) == 0 {
-		t.Fatalf("grabProfile(%s) got empty profile: len(p.SampleType)==0", address)
+		t.Fatalf("fetchProfiles(%s) got empty profile: len(p.SampleType)==0", address)
 	}
-	if err := checkProfileHasFunction(p, "TestHttpsInsecure"); err != nil {
-		t.Fatalf("grabProfile(%s) %v", address, err)
+	if len(p.Function) == 0 {
+		t.Fatalf("fetchProfiles(%s) got non-symbolized profile: len(p.Function)==0", address)
 	}
+	if err := checkProfileHasFunction(p, "TestHttpsInsecure"); !badSigprofOS[runtime.GOOS] && err != nil {
+		t.Fatalf("fetchProfiles(%s) %v", address, err)
+	}
+}
+
+// Some operating systems don't trigger the profiling signal right.
+// See https://github.com/golang/go/issues/13841.
+var badSigprofOS = map[string]bool{
+	"darwin": true,
+	"netbsd": true,
+	"plan9":  true,
 }
 
 func checkProfileHasFunction(p *profile.Profile, fname string) error {
