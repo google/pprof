@@ -1,8 +1,8 @@
 clone_folder: c:\go\src\github.com\google\pprof
 
-services:
- - graphviz
-
+install:
+ - cinst graphviz
+ 
 before_build:
  - go get github.com/ianlancetaylor/demangle
 
