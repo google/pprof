@@ -70,6 +70,7 @@ func TestParse(t *testing.T) {
 		{"dot,functions,flat", "cpu"},
 		{"dot,functions,flat,call_tree", "cpu"},
 		{"dot,lines,flat,focus=[12]00", "heap"},
+		{"dot,unit=minimum", "heap_sizetags"},
 		{"dot,addresses,flat,ignore=[X3]002,focus=[X1]000", "contention"},
 		{"dot,files,cum", "contention"},
 		{"comments", "cpu"},
@@ -391,6 +392,13 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 			{Type: "alloc_objects", Unit: "count"},
 			{Type: "alloc_space", Unit: "bytes"},
 		}
+	case "heap_sizetags":
+		p = heapProfile()
+		tags := []int64{2, 4, 8, 16, 32, 64, 128, 256}
+		for _, s := range p.Sample {
+			s.NumLabel["bytes"] = append(s.NumLabel["bytes"], tags...)
+		}
+
 	case "contention":
 		p = contentionProfile()
 	case "symbolz":
