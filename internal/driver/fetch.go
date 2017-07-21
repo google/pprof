@@ -277,12 +277,18 @@ func homeEnv() string {
 }
 
 // setTmpDir prepares the directory to use to save profiles retrieved
-// remotely. It is selected from PPROF_TMPDIR, defaults to $HOME/pprof.
+// remotely. It is selected from PPROF_TMPDIR, defaults to $HOME/pprof, and, if
+// $HOME is not set, falls back to os.TempDir().
 func setTmpDir(ui plugin.UI) (string, error) {
+	var dirs []string
 	if profileDir := os.Getenv("PPROF_TMPDIR"); profileDir != "" {
-		return profileDir, nil
+		dirs = append(dirs, profileDir)
 	}
-	for _, tmpDir := range []string{os.Getenv(homeEnv()) + "/pprof", os.TempDir()} {
+	if homeDir := os.Getenv(homeEnv()); homeDir != "" {
+		dirs = append(dirs, filepath.Join(homeDir, "pprof"))
+	}
+	dirs = append(dirs, os.TempDir())
+	for _, tmpDir := range dirs {
 		if err := os.MkdirAll(tmpDir, 0755); err != nil {
 			ui.PrintErr("Could not use temp dir ", tmpDir, ": ", err.Error())
 			continue
