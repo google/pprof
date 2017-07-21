@@ -46,8 +46,8 @@ type DotConfig struct {
 	LegendURL string   // The URL to link to from the legend.
 	Labels    []string // The labels for the DOT's legend
 
-	FormatValue func(int64) string         // A formatting function for values
-	Total       int64                      // The total weight of the graph, used to compute percentages
+	FormatValue func(int64) string // A formatting function for values
+	Total       int64              // The total weight of the graph, used to compute percentages
 }
 
 const maxNodelets = 4 // Number of nodelets for labels (both numeric and non)
@@ -477,8 +477,8 @@ func (b *builder) tagGroupLabel(g []*Tag) (label string, flat, cum int64) {
 	}
 
 	// tags are not scaled with the selected output unit because tags are often much smaller
-	// than other values which appear, so the range of tag sizes sometimes appeared to be "0..0" when
-	// scaled to the selected output unit.
+	// than other values which appear, so the range of tag sizes sometimes would appear to be
+	// "0..0" when scaled to the selected output unit.
 	return measurement.Label(min.Value, min.Unit) + ".." + measurement.Label(max.Value, max.Unit), f, c
 }
 

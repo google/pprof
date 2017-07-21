@@ -394,7 +394,7 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 		}
 	case "heap_sizetags":
 		p = heapProfile()
-		tags := []int64{2,4,8,16,32,64,128,256}
+		tags := []int64{2, 4, 8, 16, 32, 64, 128, 256}
 		for _, s := range p.Sample {
 			s.NumLabel["bytes"] = append(s.NumLabel["bytes"], tags...)
 		}
