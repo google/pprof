@@ -475,6 +475,10 @@ func (b *builder) tagGroupLabel(g []*Tag) (label string, flat, cum int64) {
 	if dc != 0 {
 		c = c / dc
 	}
+
+	// tags are not scaled with the selected output unit because tags are often much smaller
+	// than other values which appear, so the range of tag sizes sometimes appeared to be "0..0" when
+	// scaled to the selected output unit.
 	return measurement.Label(min.Value, min.Unit) + ".." + measurement.Label(max.Value, max.Unit), f, c
 }
 
