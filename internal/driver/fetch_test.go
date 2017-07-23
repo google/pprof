@@ -381,7 +381,9 @@ func TestHttpsInsecure(t *testing.T) {
 	go func() {
 		deadline := time.Now().Add(5 * time.Second)
 		for time.Now().Before(deadline) {
-			// Simulate a hotspot function.
+			// Simulate a hotspot function. Spin in the inner loop for 100M iterations
+			// to ensure we get most of the samples landed here rather than in the
+			// library calls. We assume Go compiler won't elide the empty loop.
 			for i := 0; i < 1e8; i++ {
 			}
 			runtime.Gosched()
