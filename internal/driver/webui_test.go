@@ -73,7 +73,7 @@ func TestWebInterface(t *testing.T) {
 	}
 	for _, c := range testcases {
 		if c.needDot && !haveDot {
-			t.Log("skpping", c.path, "since dot (graphviz) does not seem to be installed")
+			t.Log("skipping", c.path, "since dot (graphviz) does not seem to be installed")
 			continue
 		}
 
