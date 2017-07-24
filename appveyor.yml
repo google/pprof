@@ -1,7 +1,7 @@
 clone_folder: c:\go\src\github.com\google\pprof
 
 install:
- - ps: choco install graphviz
+ - cinst graphviz.portable
  
 before_build:
  - go get github.com/ianlancetaylor/demangle
