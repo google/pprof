@@ -8,6 +8,8 @@ before_build:
 
 build_script:
  - go build github.com/google/pprof
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install graphviz; fi
 
 test_script:
   - go test -v ./...
