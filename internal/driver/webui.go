@@ -100,7 +100,7 @@ func newListenerAndURL(hostport string) (ln net.Listener, url string, isLocal bo
 	if ln, err = net.Listen("tcp", hostport); err != nil {
 		return nil, "", false, err
 	}
-	url = fmt.Sprint("http://", host, ":", ln.Addr().(*net.TCPAddr).Port)
+	url = fmt.Sprint("http://", net.JoinHostPort(host, fmt.Sprint(ln.Addr().(*net.TCPAddr).Port)))
 	return ln, url, isLocalhost(host), nil
 }
 
