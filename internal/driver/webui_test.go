@@ -17,6 +17,7 @@ package driver
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -233,5 +234,18 @@ func TestNewListenerAndURL(t *testing.T) {
 				t.Errorf("newListenerAndURL(%v) isLocal = %v; want %v", tt.hostport, got, want)
 			}
 		})
+	}
+}
+
+func TestIsLocalHost(t *testing.T) {
+	for _, s := range []string{"localhost:10000", "[::1]:10000", "127.0.0.1:10000"} {
+		host, _, err := net.SplitHostPort(s)
+		if err != nil {
+			t.Error("unexpected error when splitting", s)
+			continue
+		}
+		if !isLocalhost(host) {
+			t.Errorf("host %s from %s not considered local", host, s)
+		}
 	}
 }

@@ -105,7 +105,7 @@ func newListenerAndURL(hostport string) (ln net.Listener, url string, isLocal bo
 }
 
 func isLocalhost(host string) bool {
-	for _, v := range []string{"localhost", "127.0.0.1", "[::1]"} {
+	for _, v := range []string{"localhost", "127.0.0.1", "[::1]", "::1"} {
 		if host == v {
 			return true
 		}
