@@ -80,6 +80,7 @@ func TestParse(t *testing.T) {
 		{"tags", "heap"},
 		{"tags,unit=bytes", "heap"},
 		{"traces", "cpu"},
+		{"traces", "heap_tags"},
 		{"dot,alloc_space,flat,focus=[234]00", "heap_alloc"},
 		{"dot,alloc_space,flat,tagshow=[2]00", "heap_alloc"},
 		{"dot,alloc_space,flat,hide=line.*1?23?", "heap_alloc"},
@@ -397,6 +398,18 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 		tags := []int64{2, 4, 8, 16, 32, 64, 128, 256}
 		for _, s := range p.Sample {
 			s.NumLabel["bytes"] = append(s.NumLabel["bytes"], tags...)
+		}
+	case "heap_tags":
+		p = heapProfile()
+		sizeTags := []int64{2, 4, 8, 16, 32, 64, 128, 256}
+
+		for i := 0; i < len(p.Sample); i += 2 {
+			s := p.Sample[i]
+			if s.Label == nil {
+				s.Label = make(map[string][]string)
+			}
+			s.NumLabel["bytes"] = append(s.NumLabel["bytes"], sizeTags...)
+			s.Label["key1"] = []string{"tag"}
 		}
 
 	case "contention":
