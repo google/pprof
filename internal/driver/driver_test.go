@@ -401,14 +401,13 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 		}
 	case "heap_tags":
 		p = heapProfile()
-		sizeTags := []int64{2, 4, 8, 16, 32, 64, 128, 256}
 
 		for i := 0; i < len(p.Sample); i += 2 {
 			s := p.Sample[i]
 			if s.Label == nil {
 				s.Label = make(map[string][]string)
 			}
-			s.NumLabel["bytes"] = append(s.NumLabel["bytes"], sizeTags...)
+			s.NumLabel["request"] = (s.NumLabel["bytes"])
 			s.Label["key1"] = []string{"tag"}
 		}
 
