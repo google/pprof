@@ -407,7 +407,7 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 			if s.Label == nil {
 				s.Label = make(map[string][]string)
 			}
-			s.NumLabel["request"] = (s.NumLabel["bytes"])
+			s.NumLabel["request"] = s.NumLabel["bytes"]
 			s.Label["key1"] = []string{"tag"}
 		}
 
