@@ -759,7 +759,7 @@ func printTraces(w io.Writer, rpt *Report) error {
 		// Print any numeric labels for the sample
 		var numLabels []string
 		for k, v := range sample.NumLabel {
-			numLabels = append(numLabels, fmt.Sprintf("%10s:  %s\n", k, strings.Trim(fmt.Sprintf("%v", v), "[]")))
+			numLabels = append(numLabels, fmt.Sprintf("%10s:  %s\n", k, strings.Trim(fmt.Sprintf("%d", v), "[]")))
 		}
 		sort.Strings(numLabels)
 		fmt.Fprint(w, strings.Join(numLabels, ""))
