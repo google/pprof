@@ -755,6 +755,15 @@ func printTraces(w io.Writer, rpt *Report) error {
 		}
 		sort.Strings(labels)
 		fmt.Fprint(w, strings.Join(labels, ""))
+
+		// Print any numeric labels for the sample
+		var numLabels []string
+		for k, v := range sample.NumLabel {
+			numLabels = append(numLabels, fmt.Sprintf("%10s:  %s\n", k, strings.Trim(fmt.Sprintf("%d", v), "[]")))
+		}
+		sort.Strings(numLabels)
+		fmt.Fprint(w, strings.Join(numLabels, ""))
+
 		var d, v int64
 		v = o.SampleValue(sample.Value)
 		if o.SampleMeanDivisor != nil {
