@@ -265,10 +265,10 @@ to generate various views of a profile
    pprof [options] [binary] <source> ...
 
 Omit the format and provide the "-http" flag to get an interactive web
-interface at the specified port that can be used to navigate through
+interface at the specified host:port that can be used to navigate through
 various views of a profile.
 
-   pprof -http <port> [options] [binary] <source> ...
+   pprof -http <host:port> [options] [binary] <source> ...
 
 Details:
 `
