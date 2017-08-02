@@ -194,10 +194,10 @@ var pprofVariables = variables{
 		"Only show nodes matching regexp",
 		"If set, only show nodes that match this location.",
 		"Matching includes the function name, filename or object name.")},
-	"tagfocus": &variable{repeatableStringKind, []string{""}, "", helpText(
+	"tagfocus": &variable{repeatableStringKind, []string{}, "", helpText(
 		"Restrict to samples with tags in range or matched by regexp",
 		"Discard samples that do not include a node with a tag matching this regexp.")},
-	"tagignore": &variable{repeatableStringKind, []string{""}, "", helpText(
+	"tagignore": &variable{repeatableStringKind, []string{}, "", helpText(
 		"Discard samples with tags in range or matched by regexp",
 		"Discard samples that do include a node with a tag matching this regexp.")},
 	"tagshow": &variable{stringKind, []string{""}, "", helpText(
@@ -490,7 +490,9 @@ func (vars variables) set(name, value string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Name: %v, Value: %v\n", name, value)
+	if v.kind == repeatableStringKind {
+		vars[name].value = append(v.value, value)
+	}
 	vars[name].value = []string{value}
 	if group := vars[name].group; group != "" {
 		for vname, vvar := range vars {
@@ -547,11 +549,31 @@ func (v *variable) stringValue() string {
 		return fmt.Sprint(v.intValue())
 	case floatKind:
 		return fmt.Sprint(v.floatValue())
+	case repeatableStringKind:
+		if len(v.value) == 0 {
+			return ""
+		} else {
+			return  strings.Join(v.value, " | ")
+		}
 	}
 	if len(v.value) != 1 {
 		panic("expected exactly one value for string")
 	}
 	return v.value[0]
+}
+
+func (v *variable) repeatableStringValue() []string{
+	switch v.kind{
+	case boolKind:
+		return []string{fmt.Sprint(v.boolValue())}
+	case intKind:
+		return []string{fmt.Sprint(v.intValue())}
+	case floatKind:
+		return []string{fmt.Sprint(v.floatValue())}
+	case stringKind:
+		return []string{v.stringValue()}
+	}
+	return v.value
 }
 
 func stringToBool(s string) (bool, error) {
