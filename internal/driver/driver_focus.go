@@ -33,8 +33,8 @@ func applyFocus(prof *profile.Profile, v variables, ui plugin.UI) error {
 	ignore, err := compileRegexOption("ignore", v["ignore"].stringValue(), err)
 	hide, err := compileRegexOption("hide", v["hide"].stringValue(), err)
 	show, err := compileRegexOption("show", v["show"].stringValue(), err)
-	tagfocus, err := compileTagFilter("tagfocus", v["tagfocus"].stringValue(), ui, err)
-	tagignore, err := compileTagFilter("tagignore", v["tagignore"].stringValue(), ui, err)
+	tagfocus, err := compileTagFilters("tagfocus", v["tagfocus"].repeatableStringValue(), ui, err)
+	tagignore, err := compileTagFilters("tagignore", v["tagignore"].repeatableStringValue(), ui, err)
 	prunefrom, err := compileRegexOption("prune_from", v["prune_from"].stringValue(), err)
 	if err != nil {
 		return err
@@ -71,6 +71,35 @@ func compileRegexOption(name, value string, err error) (*regexp.Regexp, error) {
 		return nil, fmt.Errorf("parsing %s regexp: %v", name, err)
 	}
 	return rx, nil
+}
+
+func compileTagFilters(name string, values []string, ui plugin.UI, err error)  (func(*profile.Sample) bool, error) {
+	fmt.Printf("VALUES:%v\n",values)
+	if len(values) == 0{
+		return nil, err
+	}
+	filters := []func(*profile.Sample) bool {}
+
+	for _, value := range values {
+		filter, err := compileTagFilter(name, value, ui, err)
+		if err != nil {
+			return nil, err
+		}
+		if filter != nil {
+			filters = append(filters, filter)
+		}
+	}
+	if len(filters) > 0 {
+		return func(s *profile.Sample) bool {
+			for _, filter := range filters {
+				if filter(s) {
+					return true
+				}
+			}
+			return false
+		}, err
+	}
+	return nil, err
 }
 
 func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profile.Sample) bool, error) {

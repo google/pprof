@@ -492,8 +492,9 @@ func (vars variables) set(name, value string) error {
 	}
 	if v.kind == repeatableStringKind {
 		vars[name].value = append(v.value, value)
+	} else {
+		vars[name].value = []string{value}
 	}
-	vars[name].value = []string{value}
 	if group := vars[name].group; group != "" {
 		for vname, vvar := range vars {
 			if vvar.group == group && vname != name {
@@ -573,6 +574,7 @@ func (v *variable) repeatableStringValue() []string{
 	case stringKind:
 		return []string{v.stringValue()}
 	}
+	fmt.Printf("REPEATABLE VALUES: %v\n", v.value)
 	return v.value
 }
 
