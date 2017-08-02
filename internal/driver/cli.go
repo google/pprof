@@ -113,7 +113,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		return nil, nil, fmt.Errorf("--http is not compatible with an output format on the command line")
 	}
 
-	si := pprofVariables["sample_index"].value
+	si := pprofVariables["sample_index"].stringValue()
 	si = sampleIndex(flagTotalDelay, si, "delay", "-total_delay", o.UI)
 	si = sampleIndex(flagMeanDelay, si, "delay", "-mean_delay", o.UI)
 	si = sampleIndex(flagContentions, si, "contentions", "-contentions", o.UI)
@@ -177,7 +177,7 @@ func installFlags(flag plugin.FlagSet) flagsInstalled {
 		case floatKind:
 			f.floats[n] = flag.Float64(n, v.floatValue(), v.help)
 		case stringKind:
-			f.strings[n] = flag.String(n, v.value, v.help)
+			f.strings[n] = flag.String(n, v.stringValue(), v.help)
 		}
 	}
 	return f

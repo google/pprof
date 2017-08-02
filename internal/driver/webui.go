@@ -123,7 +123,7 @@ func openBrowser(url string, o *plugin.Options) {
 		{"i", "ignore"},
 		{"h", "hide"},
 	} {
-		if v := pprofVariables[p.key].value; v != "" {
+		if v := pprofVariables[p.key].stringValue(); v != "" {
 			q.Set(p.param, v)
 		}
 	}
@@ -173,10 +173,10 @@ func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 	// Generate dot graph.
 	args := []string{"svg"}
 	vars := pprofVariables.makeCopy()
-	vars["focus"].value = req.URL.Query().Get("f")
-	vars["show"].value = req.URL.Query().Get("s")
-	vars["ignore"].value = req.URL.Query().Get("i")
-	vars["hide"].value = req.URL.Query().Get("h")
+	vars["focus"].value = []string{req.URL.Query().Get("f")}
+	vars["show"].value = []string{req.URL.Query().Get("s")}
+	vars["ignore"].value =[]string{req.URL.Query().Get("i")}
+	vars["hide"].value = []string{req.URL.Query().Get("h")}
 	_, rpt, err := generateRawReport(ui.prof, args, vars, &options)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

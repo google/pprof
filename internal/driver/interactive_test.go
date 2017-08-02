@@ -86,18 +86,18 @@ var testCommands = commands{
 func testVariables(base variables) variables {
 	v := base.makeCopy()
 
-	v["b"] = &variable{boolKind, "f", "", ""}
-	v["bb"] = &variable{boolKind, "f", "", ""}
-	v["i"] = &variable{intKind, "0", "", ""}
-	v["ii"] = &variable{intKind, "0", "", ""}
-	v["f"] = &variable{floatKind, "0", "", ""}
-	v["ff"] = &variable{floatKind, "0", "", ""}
-	v["s"] = &variable{stringKind, "", "", ""}
-	v["ss"] = &variable{stringKind, "", "", ""}
+	v["b"] = &variable{boolKind, []string{"f"}, "", ""}
+	v["bb"] = &variable{boolKind, []string{"f"}, "", ""}
+	v["i"] = &variable{intKind, []string{"0"}, "", ""}
+	v["ii"] = &variable{intKind, []string{"0"}, "", ""}
+	v["f"] = &variable{floatKind, []string{"0"}, "", ""}
+	v["ff"] = &variable{floatKind, []string{"0"}, "", ""}
+	v["s"] = &variable{stringKind, []string{""}, "", ""}
+	v["ss"] = &variable{stringKind, []string{""}, "", ""}
 
-	v["ta"] = &variable{boolKind, "f", "radio", ""}
-	v["tb"] = &variable{boolKind, "f", "radio", ""}
-	v["tc"] = &variable{boolKind, "t", "radio", ""}
+	v["ta"] = &variable{boolKind, []string{"f"}, "radio", ""}
+	v["tb"] = &variable{boolKind, []string{"f"}, "radio", ""}
+	v["tc"] = &variable{boolKind, []string{"t"}, "radio", ""}
 
 	return v
 }
