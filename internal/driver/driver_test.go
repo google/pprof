@@ -51,7 +51,7 @@ func TestParse(t *testing.T) {
 	testcase := []struct {
 		flags, source string
 	}{
-	/*	{"text,functions,flat", "cpu"},
+		{"text,functions,flat", "cpu"},
 		{"tree,addresses,flat,nodecount=4", "cpusmall"},
 		{"text,functions,flat,nodecount=5,call_tree", "unknown"},
 		{"text,alloc_objects,flat", "heap_alloc"},
@@ -76,9 +76,10 @@ func TestParse(t *testing.T) {
 		{"comments", "cpu"},
 		{"comments", "heap"},
 		{"tags", "cpu"},
-		{"tags,tagignore=tag[13],tagfocus=key[12]", "cpu"},*/
-		{"tags,tagfocus=tag[12],tagfocus=tag[34]", "cpu"},
-	/*	{"tags", "heap"},
+		{"tags,tagignore=tag[13],tagfocus=key[12]", "cpu"},
+		{"tags,tagfocus=key2=tag2,tagfocus=key1=tag[34]", "cpu"},
+		{"tags,tagignore=key1=tag1", "cpu"},
+		{"tags", "heap"},
 		{"tags,unit=bytes", "heap"},
 		{"traces", "cpu"},
 		{"traces", "heap_tags"},
@@ -89,7 +90,7 @@ func TestParse(t *testing.T) {
 		{"dot,inuse_space,flat,tagfocus=30kb:,tagignore=1mb:2mb", "heap"},
 		{"disasm=line[13],addresses,flat", "cpu"},
 		{"peek=line.*01", "cpu"},
-		{"weblist=line[13],addresses,flat", "cpu"},*/
+		{"weblist=line[13],addresses,flat", "cpu"},
 	}
 
 	baseVars := pprofVariables
@@ -1003,15 +1004,16 @@ func TestAutoComplete(t *testing.T) {
 
 func TestTagFilter(t *testing.T) {
 	var tagFilterTests = []struct {
-		name, value string
+		name        string
+		value       []string
 		tags        map[string][]string
 		want        bool
 	}{
-		{"test1", "tag2", map[string][]string{"value1": {"tag1", "tag2"}}, true},
-		{"test2", "tag3", map[string][]string{"value1": {"tag1", "tag2"}}, false},
-		{"test3", "tag1,tag3", map[string][]string{"value1": {"tag1", "tag2"}, "value2": {"tag3"}}, true},
-		{"test4", "t..[12],t..3", map[string][]string{"value1": {"tag1", "tag2"}, "value2": {"tag3"}}, true},
-		{"test5", "tag2,tag3", map[string][]string{"value1": {"tag1", "tag2"}}, false},
+		{"test1", []string{"tag2"}, map[string][]string{"value1": {"tag1", "tag2"}}, true},
+		{"test2", []string{"tag3"}, map[string][]string{"value1": {"tag1", "tag2"}}, false},
+		{"test3", []string{"tag1,tag3"}, map[string][]string{"value1": {"tag1", "tag2"}, "value2": {"tag3"}}, true},
+		{"test4", []string{"t..[12],t..3"}, map[string][]string{"value1": {"tag1", "tag2"}, "value2": {"tag3"}}, true},
+		{"test5", []string{"tag2,tag3"}, map[string][]string{"value1": {"tag1", "tag2"}}, false},
 	}
 
 	for _, test := range tagFilterTests {

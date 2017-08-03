@@ -73,6 +73,7 @@ func AddCommand(cmd string, format int, post PostProcessor, desc, usage string) 
 func SetVariableDefault(variable, value string) {
 	if v := pprofVariables[variable]; v != nil {
 		v.value = []string{value}
+
 	}
 }
 
@@ -461,6 +462,8 @@ const (
 
 // set updates the value of a variable, checking that the value is
 // suitable for the variable Kind.
+// is value is empty string and variable is repeatableStringKind
+// the variable will be cleared
 func (vars variables) set(name, value string) error {
 	v := vars[name]
 	if v == nil {
@@ -491,7 +494,11 @@ func (vars variables) set(name, value string) error {
 		return err
 	}
 	if v.kind == repeatableStringKind {
-		vars[name].value = append(v.value, value)
+		if value == "" {
+			vars[name].value = []string{}
+		} else {
+			vars[name].value = append(v.value, value)
+		}
 	} else {
 		vars[name].value = []string{value}
 	}
@@ -574,7 +581,6 @@ func (v *variable) repeatableStringValue() []string{
 	case stringKind:
 		return []string{v.stringValue()}
 	}
-	fmt.Printf("REPEATABLE VALUES: %v\n", v.value)
 	return v.value
 }
 
