@@ -158,10 +158,10 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 // installFlags creates command line flags for pprof variables.
 func installFlags(flag plugin.FlagSet) flagsInstalled {
 	f := flagsInstalled{
-		ints:    make(map[string]*int),
-		bools:   make(map[string]*bool),
-		floats:  make(map[string]*float64),
-		strings: make(map[string]*string),
+		ints:        make(map[string]*int),
+		bools:       make(map[string]*bool),
+		floats:      make(map[string]*float64),
+		strings:     make(map[string]*string),
 		stringLists: make(map[string]*[]*string),
 	}
 	for n, v := range pprofVariables {
@@ -219,10 +219,10 @@ func updateFlags(f flagsInstalled) error {
 }
 
 type flagsInstalled struct {
-	ints    map[string]*int
-	bools   map[string]*bool
-	floats  map[string]*float64
-	strings map[string]*string
+	ints        map[string]*int
+	bools       map[string]*bool
+	floats      map[string]*float64
+	strings     map[string]*string
 	stringLists map[string]*[]*string
 }
 

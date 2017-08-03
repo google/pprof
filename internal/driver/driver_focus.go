@@ -73,9 +73,8 @@ func compileRegexOption(name, value string, err error) (*regexp.Regexp, error) {
 	return rx, nil
 }
 
-
-func compileTagFilter(name string, values []string, ui plugin.UI, err error)  (func(*profile.Sample) bool, error) {
-	if len(values) == 0{
+func compileTagFilter(name string, values []string, ui plugin.UI, err error) (func(*profile.Sample) bool, error) {
+	if len(values) == 0 {
 		return nil, err
 	}
 
@@ -88,7 +87,7 @@ func compileTagFilter(name string, values []string, ui plugin.UI, err error)  (f
 		}
 		valuePair := strings.SplitN(tagValue, "=", 2)
 		var key, value string
-		switch len(valuePair){
+		switch len(valuePair) {
 		case 1:
 			key = ""
 			value = valuePair[0]
@@ -111,13 +110,13 @@ func compileTagFilter(name string, values []string, ui plugin.UI, err error)  (f
 			labelFilters[key] = rfx
 		}
 	}
-	if len(numFilters) >0 || len(labelFilters) > 0 {
+	if len(numFilters) > 0 || len(labelFilters) > 0 {
 		return func(s *profile.Sample) bool {
 			// check if key-specific numeric filter matches
-			for key, filter := range  numFilters {
+			for key, filter := range numFilters {
 				if key != "" {
 					if vals, ok := s.NumLabel[key]; ok {
-						for _, val := range  vals {
+						for _, val := range vals {
 							if filter(val, key) {
 								return true
 							}
@@ -140,12 +139,12 @@ func compileTagFilter(name string, values []string, ui plugin.UI, err error)  (f
 			// check if key-specific label filter matches
 			for key, rfx := range labelFilters {
 				if key != "" {
-					if vals, ok := s.Label[key]; ok{
+					if vals, ok := s.Label[key]; ok {
 						matched := true
-						matchedrxkey:
+					matchedrxkey:
 						for _, rx := range rfx {
 							for _, val := range vals {
-								if rx.MatchString(val){
+								if rx.MatchString(val) {
 									continue matchedrxkey
 								}
 							}
@@ -161,7 +160,7 @@ func compileTagFilter(name string, values []string, ui plugin.UI, err error)  (f
 
 			// check if general label filter matches
 			if rfx, ok := labelFilters[""]; ok {
-				matchedrx:
+			matchedrx:
 				for _, rx := range rfx {
 					for key, vals := range s.Label {
 						for _, val := range vals {
@@ -172,7 +171,7 @@ func compileTagFilter(name string, values []string, ui plugin.UI, err error)  (f
 					}
 					return false
 				}
-				return  true
+				return true
 			}
 
 			return false
