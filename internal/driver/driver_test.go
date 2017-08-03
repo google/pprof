@@ -355,7 +355,7 @@ func (f testFlags) StringVar(p *string, s, d, c string) {
 	}
 }
 
-func (f testFlags) StringList(s, d, c string) *[]*string {
+func (f testFlags) StringList(s string, d []string, c string) *[]*string {
 	if t, ok := f.stringLists[s]; ok {
 		return &t
 	}
