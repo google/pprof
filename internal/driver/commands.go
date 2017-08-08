@@ -73,6 +73,7 @@ func AddCommand(cmd string, format int, post PostProcessor, desc, usage string) 
 func SetVariableDefault(variable, value string) {
 	if v := pprofVariables[variable]; v != nil {
 		v.value = []string{value}
+
 	}
 }
 
@@ -461,7 +462,7 @@ const (
 
 // set updates the value of a variable, checking that the value is
 // suitable for the variable Kind.
-// if value is empty string and variable is repeatableStringKind
+// is value is empty string and variable is repeatableStringKind
 // the variable will be cleared
 func (vars variables) set(name, value string) error {
 	v := vars[name]
