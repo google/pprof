@@ -37,6 +37,13 @@ var (
 func simplifyFunc(f string) string {
 	// Account for leading '.' on the PPC ELF v1 ABI.
 	funcName := strings.TrimPrefix(f, ".")
+
+	// Account for unsimplified names -- try to remove return type by trimming to
+	// first space if that space is before a '('
+	if idxSpace, idxParen := strings.Index(funcName, " "), strings.Index(funcName, "("); (idxSpace < idxParen) && idxSpace > 0 {
+		funcName = funcName[idxSpace+1:]
+	}
+
 	// Account for unsimplified names -- try  to remove the argument list by trimming
 	// starting from the first '(', but skipping reserved names that have '('.
 	for _, ind := range bracketRx.FindAllStringSubmatchIndex(funcName, -1) {
