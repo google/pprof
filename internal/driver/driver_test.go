@@ -1000,7 +1000,7 @@ func TestTagFilter(t *testing.T) {
 		{"test5", "tag2,tag3", map[string][]string{"value1": {"tag1", "tag2"}}, false},
 		{"test6", "key1=tag1,tag2", map[string][]string{"key1": {"tag1", "tag2"}}, true},
 		{"test7", "key1=tag1,tag2", map[string][]string{"key1": {"tag1"}}, true},
-		{"test8", "key1:tag1,tag2", map[string][]string{"key1": {"tag1","tag2"}}, true},
+		{"test8", "key1:tag1,tag2", map[string][]string{"key1": {"tag1", "tag2"}}, true},
 		{"test9", "key1:tag1,tag2", map[string][]string{"key1": {"tag2"}}, false},
 		{"test10", "key1:tag1,tag2", map[string][]string{"key1": {"tag1"}}, false},
 	}
@@ -1026,20 +1026,20 @@ func TestNumericTagFilter(t *testing.T) {
 		tags        map[string][]int64
 		want        bool
 	}{
-		{"test1", "128kb", map[string][]int64{"bytes": []int64{131072}, "kilobytes": []int64{128}}, true},
-		{"test2", "512kb", map[string][]int64{"bytes": []int64{512}, "kilobytes": []int64{128}}, false},
-		{"test3", "10b", map[string][]int64{"bytes": []int64{10, 20}, "kilobytes": []int64{128}}, true},
-		{"test4", ":10b", map[string][]int64{"bytes": []int64{8}}, true},
-		{"test5", ":10kb", map[string][]int64{"bytes": []int64{8}}, true},
-		{"test6", "10b:", map[string][]int64{"kilobytes": []int64{8}}, true},
-		{"test7", "10b:", map[string][]int64{"bytes": []int64{12}}, true},
-		{"test8", "10b:", map[string][]int64{"bytes": []int64{8}}, false},
-		{"test9", "10kb:", map[string][]int64{"bytes": []int64{8}}, false},
-		{"test10", ":10b", map[string][]int64{"kilobytes": []int64{8}}, false},
-		{"test11", ":10b", map[string][]int64{"bytes": []int64{12}}, false},
-		{"test12", "bytes=5b", map[string][]int64{"bytes": []int64{5, 10}}, true},
-		{"test13", "bytes=1024b", map[string][]int64{"kilobytes": []int64{1, 1024}}, false},
-		{"test14", "bytes=1024b", map[string][]int64{"kilobytes": []int64{5},"bytes": []int64{1024}}, true},
+		{"test1", "128kb", map[string][]int64{"bytes": {131072}, "kilobytes": {128}}, true},
+		{"test2", "512kb", map[string][]int64{"bytes": {512}, "kilobytes": {128}}, false},
+		{"test3", "10b", map[string][]int64{"bytes": {10, 20}, "kilobytes": {128}}, true},
+		{"test4", ":10b", map[string][]int64{"bytes": {8}}, true},
+		{"test5", ":10kb", map[string][]int64{"bytes": {8}}, true},
+		{"test6", "10b:", map[string][]int64{"kilobytes": {8}}, true},
+		{"test7", "10b:", map[string][]int64{"bytes": {12}}, true},
+		{"test8", "10b:", map[string][]int64{"bytes": {8}}, false},
+		{"test9", "10kb:", map[string][]int64{"bytes": {8}}, false},
+		{"test10", ":10b", map[string][]int64{"kilobytes": {8}}, false},
+		{"test11", ":10b", map[string][]int64{"bytes": {12}}, false},
+		{"test12", "bytes=5b", map[string][]int64{"bytes": {5, 10}}, true},
+		{"test13", "bytes=1024b", map[string][]int64{"kilobytes": {1, 1024}}, false},
+		{"test14", "bytes=1024b", map[string][]int64{"kilobytes": {5}, "bytes": {1024}}, true},
 	}
 	for _, test := range tagFilterTests {
 		expectedErrMsg := fmt.Sprint([]string{test.name, ":Interpreted '", test.value, "' as range, not regexp"})

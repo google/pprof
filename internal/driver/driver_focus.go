@@ -78,7 +78,7 @@ func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profil
 		return nil, err
 	}
 
-	tagValuePair :=  strings.SplitN(value, "=", 2)
+	tagValuePair := strings.SplitN(value, "=", 2)
 	var key string
 	if len(tagValuePair) == 2 {
 		key = tagValuePair[0]
@@ -89,7 +89,7 @@ func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profil
 
 	if numFilter := parseTagFilterRange(value); numFilter != nil {
 		ui.PrintErr(name, ":Interpreted '", value, "' as range, not regexp")
-		labelFilter := func(vals []int64,key string) bool {
+		labelFilter := func(vals []int64, key string) bool {
 			for _, val := range vals {
 				if numFilter(val, key) {
 					return true
@@ -125,7 +125,7 @@ func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profil
 	}
 	if key == "" {
 		return func(s *profile.Sample) bool {
-			matchedrx:
+		matchedrx:
 			for _, rx := range rfx {
 				for key, vals := range s.Label {
 					for _, val := range vals {
@@ -140,10 +140,10 @@ func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profil
 		}, nil
 	}
 	return func(s *profile.Sample) bool {
-		if vals, ok := s.Label[key]; ok	{
+		if vals, ok := s.Label[key]; ok {
 			for _, rx := range rfx {
 				for _, val := range vals {
-					if rx.MatchString(val){
+					if rx.MatchString(val) {
 						return true
 					}
 				}
