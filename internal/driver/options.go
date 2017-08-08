@@ -89,31 +89,8 @@ func (goFlags) StringVar(s *string, o, d, c string) {
 	flag.StringVar(s, o, d, c)
 }
 
-func (goFlags) StringList(o string, d []string, c string) *[]*string {
-	defs := make([]*string, len(d))
-	for i, def := range d{
-		defs[i] = &def
-	}
-	s := stringList{defs}
-	flag.Var(&s, o, c)
-	return &s.value
-}
-
-type stringList struct {
-	value []*string
-}
-
-func (s *stringList) String() string {
-	vals := make([]string, len(s.value))
-	for i, v := range s.value {
-		vals[i] = *v
-	}
-	return strings.Join(vals, ", ")
-}
-
-func (s *stringList) Set(value string) error {
-	s.value = append(s.value, &value)
-	return nil
+func (goFlags) StringList(o, d, c string) *[]*string {
+	return &[]*string{flag.String(o, d, c)}
 }
 
 func (goFlags) ExtraUsage() string {

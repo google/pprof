@@ -42,7 +42,7 @@ type source struct {
 func parseFlags(o *plugin.Options) (*source, []string, error) {
 	flag := o.Flagset
 	// Comparisons.
-	flagBase := flag.StringList("base", []string{}, "Source for base profile for comparison")
+	flagBase := flag.StringList("base", "", "Source for base profile for comparison")
 	// Internal options.
 	flagSymbolize := flag.String("symbolize", "", "Options for profile symbolization")
 	flagBuildID := flag.String("buildid", "", "Override build id for first mapping")
@@ -180,7 +180,7 @@ func installFlags(flag plugin.FlagSet) flagsInstalled {
 		case stringKind:
 			f.strings[n] = flag.String(n, v.stringValue(), v.help)
 		case repeatableStringKind:
-			f.stringLists[n] = flag.StringList(n, v.repeatableStringValue(), v.help)
+			f.stringLists[n] = flag.StringList(n, v.stringValue(), v.help)
 		}
 	}
 	return f
