@@ -297,12 +297,12 @@ func parseCommandLine(input []string) ([]string, variables, error) {
 func updateFocusIgnore(v variables, prefix, f, i string) {
 	if f != "" {
 		focus := prefix + "focus"
-		v.set(focus, catRegex(v[focus].stringValue(), f))
+		v.set(focus, catRegex(v[focus].value, f))
 	}
 
 	if i != "" {
 		ignore := prefix + "ignore"
-		v.set(ignore, catRegex(v[ignore].stringValue(), i))
+		v.set(ignore, catRegex(v[ignore].value, i))
 	}
 }
 

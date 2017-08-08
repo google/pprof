@@ -123,7 +123,7 @@ func generateReport(p *profile.Profile, cmd []string, vars variables, o *plugin.
 	}
 
 	// If no output is specified, use default visualizer.
-	output := vars["output"].stringValue()
+	output := vars["output"].value
 	if output == "" {
 		if c.visualizer != nil {
 			return c.visualizer(src, os.Stdout, o.UI)
@@ -222,7 +222,7 @@ func aggregate(prof *profile.Profile, v variables) error {
 }
 
 func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) {
-	si, mean := vars["sample_index"].stringValue(), vars["mean"].boolValue()
+	si, mean := vars["sample_index"].value, vars["mean"].boolValue()
 	value, meanDiv, sample, err := sampleFormat(p, si, mean)
 	if err != nil {
 		return nil, err
@@ -239,7 +239,7 @@ func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) 
 
 	var filters []string
 	for _, k := range []string{"focus", "ignore", "hide", "show", "tagfocus", "tagignore", "tagshow", "taghide"} {
-		v := vars[k].stringValue()
+		v := vars[k].value
 		if v != "" {
 			filters = append(filters, k+"="+v)
 		}
@@ -265,7 +265,7 @@ func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) 
 		SampleType:        stype,
 		SampleUnit:        sample.Unit,
 
-		OutputUnit: vars["unit"].stringValue(),
+		OutputUnit: vars["unit"].value,
 
 		SourcePath: vars["source_path"].stringValue(),
 	}

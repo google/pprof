@@ -29,13 +29,13 @@ var tagFilterRangeRx = regexp.MustCompile("([[:digit:]]+)([[:alpha:]]+)")
 
 // applyFocus filters samples based on the focus/ignore options
 func applyFocus(prof *profile.Profile, v variables, ui plugin.UI) error {
-	focus, err := compileRegexOption("focus", v["focus"].stringValue(), nil)
-	ignore, err := compileRegexOption("ignore", v["ignore"].stringValue(), err)
-	hide, err := compileRegexOption("hide", v["hide"].stringValue(), err)
-	show, err := compileRegexOption("show", v["show"].stringValue(), err)
-	tagfocus, err := compileTagFilter("tagfocus", v["tagfocus"].stringValue(), ui, err)
-	tagignore, err := compileTagFilter("tagignore", v["tagignore"].stringValue(), ui, err)
-	prunefrom, err := compileRegexOption("prune_from", v["prune_from"].stringValue(), err)
+	focus, err := compileRegexOption("focus", v["focus"].value, nil)
+	ignore, err := compileRegexOption("ignore", v["ignore"].value, err)
+	hide, err := compileRegexOption("hide", v["hide"].value, err)
+	show, err := compileRegexOption("show", v["show"].value, err)
+	tagfocus, err := compileTagFilter("tagfocus", v["tagfocus"].value, ui, err)
+	tagignore, err := compileTagFilter("tagignore", v["tagignore"].value, ui, err)
+	prunefrom, err := compileRegexOption("prune_from", v["prune_from"].value, err)
 	if err != nil {
 		return err
 	}
@@ -50,8 +50,8 @@ func applyFocus(prof *profile.Profile, v variables, ui plugin.UI) error {
 	warnNoMatches(tagfocus == nil || tfm, "TagFocus", ui)
 	warnNoMatches(tagignore == nil || tim, "TagIgnore", ui)
 
-	tagshow, err := compileRegexOption("tagshow", v["tagshow"].stringValue(), err)
-	taghide, err := compileRegexOption("taghide", v["taghide"].stringValue(), err)
+	tagshow, err := compileRegexOption("tagshow", v["tagshow"].value, err)
+	taghide, err := compileRegexOption("taghide", v["taghide"].value, err)
 	tns, tnh := prof.FilterTagsByName(tagshow, taghide)
 	warnNoMatches(tagshow == nil || tns, "TagShow", ui)
 	warnNoMatches(tagignore == nil || tnh, "TagHide", ui)
