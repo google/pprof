@@ -162,7 +162,6 @@ func installFlags(flag plugin.FlagSet) flagsInstalled {
 		bools:   make(map[string]*bool),
 		floats:  make(map[string]*float64),
 		strings: make(map[string]*string),
-		stringLists: make(map[string]*[]*string),
 	}
 	for n, v := range pprofVariables {
 		switch v.kind {
@@ -179,8 +178,6 @@ func installFlags(flag plugin.FlagSet) flagsInstalled {
 			f.floats[n] = flag.Float64(n, v.floatValue(), v.help)
 		case stringKind:
 			f.strings[n] = flag.String(n, v.stringValue(), v.help)
-		case repeatableStringKind:
-			f.stringLists[n] = flag.StringList(n, v.stringValue(), v.help)
 		}
 	}
 	return f
@@ -210,11 +207,6 @@ func updateFlags(f flagsInstalled) error {
 	for n, v := range f.strings {
 		vars.set(n, *v)
 	}
-	for n, v := range f.stringLists {
-		for _, vv := range *v {
-			vars.set(n, *vv)
-		}
-	}
 	return nil
 }
 
@@ -223,7 +215,6 @@ type flagsInstalled struct {
 	bools   map[string]*bool
 	floats  map[string]*float64
 	strings map[string]*string
-	stringLists map[string]*[]*string
 }
 
 // isBuildID determines if the profile may contain a build ID, by

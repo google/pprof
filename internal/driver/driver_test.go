@@ -224,21 +224,13 @@ func addFlags(f *testFlags, flags []string) {
 		case 1:
 			f.bools[fields[0]] = true
 		case 2:
-			if isRepeatableString(fields[0]) {
-				f.stringLists[fields[0]] = []*string{&fields[1]}
-			}	else {
-				if i, err := strconv.Atoi(fields[1]); err == nil {
-					f.ints[fields[0]] = i
-				} else {
-					f.strings[fields[0]] = fields[1]
-				}
+			if i, err := strconv.Atoi(fields[1]); err == nil {
+				f.ints[fields[0]] = i
+			} else {
+				f.strings[fields[0]] = fields[1]
 			}
 		}
 	}
-}
-
-func isRepeatableString(flag string) bool {
-	return flag == "tagfocus" || flag == "tagignore"
 }
 
 func testSourceURL(port int) string {
@@ -255,10 +247,10 @@ func solutionFilename(source string, f *testFlags) string {
 	name = addString(name, f, []string{"seconds"})
 	name = addString(name, f, []string{"call_tree"})
 	name = addString(name, f, []string{"text", "tree", "callgrind", "dot", "svg", "tags", "dot", "traces", "disasm", "peek", "weblist", "topproto", "comments"})
-	if f.strings["focus"] != "" || len(f.stringLists["tagfocus"]) > 0 {
+	if f.strings["focus"] != "" || f.strings["tagfocus"] != "" {
 		name = append(name, "focus")
 	}
-	if f.strings["ignore"] != "" || len(f.stringLists["tagignore"]) > 0 {
+	if f.strings["ignore"] != "" || f.strings["tagignore"] != "" {
 		name = append(name, "ignore")
 	}
 	name = addString(name, f, []string{"hide", "show"})
@@ -378,7 +370,6 @@ func baseFlags() testFlags {
 		strings: map[string]string{
 			"unit": "minimum",
 		},
-		stringLists: make(map[string][]*string),
 	}
 }
 
