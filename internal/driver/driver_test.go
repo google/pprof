@@ -89,6 +89,7 @@ func TestParse(t *testing.T) {
 		{"disasm=line[13],addresses,flat", "cpu"},
 		{"peek=line.*01", "cpu"},
 		{"weblist=line[13],addresses,flat", "cpu"},
+		{"tags,tagfocus=400kb:", "heap_request"},
 	}
 
 	baseVars := pprofVariables
@@ -387,6 +388,11 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 		p = cpuProfileSmall()
 	case "heap":
 		p = heapProfile()
+	case "heap_request":
+		p = heapProfile()
+		for _, s := range p.Sample {
+			s.NumLabel["request"] = s.NumLabel["bytes"]
+		}
 	case "heap_alloc":
 		p = heapProfile()
 		p.SampleType = []*profile.ValueType{

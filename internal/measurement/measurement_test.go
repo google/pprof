@@ -34,6 +34,7 @@ func TestScale(t *testing.T) {
 		{1024, "gb", "tb", 1, "TB"},
 		{1024, "tb", "pb", 1, "PB"},
 		{2048, "mb", "auto", 2, "GB"},
+		{100, "request", "mb", 100, "request"},
 	} {
 		if gotValue, gotUnit := Scale(tc.value, tc.fromUnit, tc.toUnit); gotValue != tc.wantValue || gotUnit != tc.wantUnit {
 			t.Errorf("Scale(%d, %q, %q) = (%f, %q), want (%f, %q)",

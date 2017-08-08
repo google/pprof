@@ -134,7 +134,7 @@ func Scale(value int64, fromUnit, toUnit string) (float64, string) {
 	case "count", "sample", "unit", "minimum", "auto":
 		return float64(value), ""
 	default:
-		return float64(value), toUnit
+		return float64(value), fromUnit
 	}
 }
 
