@@ -33,8 +33,8 @@ func applyFocus(prof *profile.Profile, v variables, ui plugin.UI) error {
 	ignore, err := compileRegexOption("ignore", v["ignore"].stringValue(), err)
 	hide, err := compileRegexOption("hide", v["hide"].stringValue(), err)
 	show, err := compileRegexOption("show", v["show"].stringValue(), err)
-	tagfocus, err := compileTagFilter("tagfocus", v["tagfocus"].repeatableStringValue(), ui, err)
-	tagignore, err := compileTagFilter("tagignore", v["tagignore"].repeatableStringValue(), ui, err)
+	tagfocus, err := compileTagFilters("tagfocus", v["tagfocus"].repeatableStringValue(), ui, err)
+	tagignore, err := compileTagFilters("tagignore", v["tagignore"].repeatableStringValue(), ui, err)
 	prunefrom, err := compileRegexOption("prune_from", v["prune_from"].stringValue(), err)
 	if err != nil {
 		return err
@@ -73,32 +73,20 @@ func compileRegexOption(name, value string, err error) (*regexp.Regexp, error) {
 	return rx, nil
 }
 
-
-func compileTagFilter(name string, values []string, ui plugin.UI, err error)  (func(*profile.Sample) bool, error) {
+func compileTagFilters(name string, values []string, ui plugin.UI, err error)  (func(*profile.Sample) bool, error) {
 	if len(values) == 0{
 		return nil, err
 	}
 
-	numFilters := make(map[string]func(int64, string) bool)
-	labelFilters := make(map[string][]*regexp.Regexp)
+	numFilters := []func(int64, string) bool {}
+	labelFilters := [][]*regexp.Regexp{}
 
-	for _, tagValue := range values {
-		if tagValue == "" {
+	for _, value := range values {
+		if value == "" {
 			continue
 		}
-		valuePair := strings.SplitN(tagValue, "=", 2)
-		var key, value string
-		switch len(valuePair){
-		case 1:
-			key = ""
-			value = valuePair[0]
-		case 2:
-			key = valuePair[0]
-			value = valuePair[1]
-		}
-
 		if numFilter := parseTagFilterRange(value); numFilter != nil {
-			numFilters[key] = numFilter
+			numFilters = append(numFilters, numFilter)
 		} else {
 			var rfx []*regexp.Regexp
 			for _, tagf := range strings.Split(value, ",") {
@@ -108,78 +96,81 @@ func compileTagFilter(name string, values []string, ui plugin.UI, err error)  (f
 				}
 				rfx = append(rfx, fx)
 			}
-			labelFilters[key] = rfx
+			labelFilters
 		}
-	}
-	if len(numFilters) >0 || len(labelFilters) > 0 {
-		return func(s *profile.Sample) bool {
-			// check if key-specific numeric filter matches
-			for key, filter := range  numFilters {
-				if key != "" {
-					if vals, ok := s.NumLabel[key]; ok {
-						for _, val := range  vals {
-							if filter(val, key) {
-								return true
-							}
-						}
-					}
-				}
-			}
-
-			// check if general numeric filter matches
-			if filter, ok := numFilters[""]; ok {
-				for key, vals := range s.NumLabel {
-					for _, val := range vals {
-						if filter(val, key) {
-							return true
-						}
-					}
-				}
-			}
-
-			// check if key-specific label filter matches
-			for key, rfx := range labelFilters {
-				if key != "" {
-					if vals, ok := s.Label[key]; ok{
-						matched := true
-						matchedrxkey:
-						for _, rx := range rfx {
-							for _, val := range vals {
-								if rx.MatchString(val){
-									continue matchedrxkey
-								}
-							}
-							matched = false
-							break matchedrxkey
-						}
-						if matched {
-							return true
-						}
-					}
-				}
-			}
-
-			// check if general label filter matches
-			if rfx, ok := labelFilters[""]; ok {
-				matchedrx:
-				for _, rx := range rfx {
-					for key, vals := range s.Label {
-						for _, val := range vals {
-							if rx.MatchString(key + ":" + val) {
-								continue matchedrx
-							}
-						}
-					}
-					return false
-				}
-				return  true
-			}
-
-			return false
-		}, nil
 	}
 
 	return nil, err
+}
+
+/*func compileTagFilters(name string, values []string, ui plugin.UI, err error)  (func(*profile.Sample) bool, error) {
+	fmt.Printf("VALUES:%v\n",values)
+	if len(values) == 0{
+		return nil, err
+	}
+	filters := []func(*profile.Sample) bool {}
+
+	for _, value := range values {
+		filter, err := compileTagFilter(name, value, ui, err)
+		if err != nil {
+			return nil, err
+		}
+		if filter != nil {
+			filters = append(filters, filter)
+		}
+	}
+	if len(filters) > 0 {
+		return func(s *profile.Sample) bool {
+			for _, filter := range filters {
+				if filter(s) {
+					return true
+				}
+			}
+			return false
+		}, err
+	}
+	return nil, err
+}*/
+
+func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profile.Sample) bool, error) {
+	if value == "" || err != nil {
+		return nil, err
+	}
+	if numFilter := parseTagFilterRange(value); numFilter != nil {
+		ui.PrintErr(name, ":Interpreted '", value, "' as range, not regexp")
+		return func(s *profile.Sample) bool {
+			for key, vals := range s.NumLabel {
+				for _, val := range vals {
+					if numFilter(val, key) {
+						return true
+					}
+				}
+			}
+			return false
+		}, nil
+	}
+	var rfx []*regexp.Regexp
+	for _, tagf := range strings.Split(value, ",") {
+		fx, err := regexp.Compile(tagf)
+		if err != nil {
+			return nil, fmt.Errorf("parsing %s regexp: %v", name, err)
+		}
+		rfx = append(rfx, fx)
+	}
+	return func(s *profile.Sample) bool {
+	matchedrx:
+		for _, rx := range rfx {
+			for key, vals := range s.Label {
+				for _, val := range vals {
+					if rx.MatchString(key + ":" + val) {
+						continue matchedrx
+					}
+				}
+			}
+			return false
+		}
+		return true
+	}, nil
 }
 
 // parseTagFilterRange returns a function to checks if a value is
