@@ -74,36 +74,6 @@ func compileRegexOption(name, value string, err error) (*regexp.Regexp, error) {
 }
 
 func compileTagFilters(name string, values []string, ui plugin.UI, err error)  (func(*profile.Sample) bool, error) {
-	if len(values) == 0{
-		return nil, err
-	}
-
-	numFilters := []func(int64, string) bool {}
-	labelFilters := [][]*regexp.Regexp{}
-
-	for _, value := range values {
-		if value == "" {
-			continue
-		}
-		if numFilter := parseTagFilterRange(value); numFilter != nil {
-			numFilters = append(numFilters, numFilter)
-		} else {
-			var rfx []*regexp.Regexp
-			for _, tagf := range strings.Split(value, ",") {
-				fx, err := regexp.Compile(tagf)
-				if err != nil {
-					return nil, fmt.Errorf("parsing %s regexp: %v", name, err)
-				}
-				rfx = append(rfx, fx)
-			}
-			labelFilters
-		}
-	}
-
-	return nil, err
-}
-
-/*func compileTagFilters(name string, values []string, ui plugin.UI, err error)  (func(*profile.Sample) bool, error) {
 	fmt.Printf("VALUES:%v\n",values)
 	if len(values) == 0{
 		return nil, err
@@ -130,7 +100,7 @@ func compileTagFilters(name string, values []string, ui plugin.UI, err error)  (
 		}, err
 	}
 	return nil, err
-}*/
+}
 
 func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profile.Sample) bool, error) {
 	if value == "" || err != nil {
