@@ -175,7 +175,7 @@ func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 	vars := pprofVariables.makeCopy()
 	vars["focus"].value = []string{req.URL.Query().Get("f")}
 	vars["show"].value = []string{req.URL.Query().Get("s")}
-	vars["ignore"].value = []string{req.URL.Query().Get("i")}
+	vars["ignore"].value =[]string{req.URL.Query().Get("i")}
 	vars["hide"].value = []string{req.URL.Query().Get("h")}
 	_, rpt, err := generateRawReport(ui.prof, args, vars, &options)
 	if err != nil {

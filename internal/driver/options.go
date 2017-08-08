@@ -91,7 +91,7 @@ func (goFlags) StringVar(s *string, o, d, c string) {
 
 func (goFlags) StringList(o string, d []string, c string) *[]*string {
 	defs := make([]*string, len(d))
-	for i, def := range d {
+	for i, def := range d{
 		defs[i] = &def
 	}
 	s := stringList{defs}

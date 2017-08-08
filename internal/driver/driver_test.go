@@ -228,11 +228,11 @@ func addFlags(f *testFlags, flags []string) {
 		case 2:
 			if isRepeatableString(fields[0]) {
 				if list, ok := f.stringLists[fields[0]]; ok {
-					f.stringLists[fields[0]] = append(list, &fields[1])
+					f.stringLists[fields[0]] =append(list,&fields[1])
 				} else {
 					f.stringLists[fields[0]] = []*string{&fields[1]}
 				}
-			} else {
+			}	else {
 				if i, err := strconv.Atoi(fields[1]); err == nil {
 					f.ints[fields[0]] = i
 				} else {
@@ -1004,24 +1004,16 @@ func TestAutoComplete(t *testing.T) {
 
 func TestTagFilter(t *testing.T) {
 	var tagFilterTests = []struct {
-		name  string
-		value []string
-		tags  map[string][]string
-		want  bool
+		name        string
+		value       []string
+		tags        map[string][]string
+		want        bool
 	}{
 		{"test1", []string{"tag2"}, map[string][]string{"value1": {"tag1", "tag2"}}, true},
 		{"test2", []string{"tag3"}, map[string][]string{"value1": {"tag1", "tag2"}}, false},
 		{"test3", []string{"tag1,tag3"}, map[string][]string{"value1": {"tag1", "tag2"}, "value2": {"tag3"}}, true},
 		{"test4", []string{"t..[12],t..3"}, map[string][]string{"value1": {"tag1", "tag2"}, "value2": {"tag3"}}, true},
 		{"test5", []string{"tag2,tag3"}, map[string][]string{"value1": {"tag1", "tag2"}}, false},
-		{"test6", []string{"tag1", "tag2"}, map[string][]string{"value1": {"tag2"}}, true},
-		{"test7", []string{"key1=val1", "key2=val2"}, map[string][]string{"key1": {"val1"}, "key2": {"val2"}}, true},
-		{"test8", []string{"key1=val1", "key2=val2"}, map[string][]string{"key1": {"val2"}, "key2": {"val1"}}, false},
-		{"test9", []string{"key1=val1", "key2=val2"}, map[string][]string{"key1": {"val1"}, "key3": {"val3"}}, true},
-		{"test10", []string{"key1=val1"}, map[string][]string{"key1": {"val3"}}, false},
-		{"test11", []string{"key1=val1"}, map[string][]string{"key2": {"val1"}, "key1": {"val2"}}, false},
-		{"test12", []string{"bytes=50kb:"}, map[string][]string{"key1": {"50kb"}}, false},
-		{"test13", []string{"bytes=50kb:"}, map[string][]string{}, false},
 	}
 
 	for _, test := range tagFilterTests {
@@ -1032,46 +1024,6 @@ func TestTagFilter(t *testing.T) {
 		}
 		s := profile.Sample{
 			Label: test.tags,
-		}
-
-		if got := filter(&s); got != test.want {
-			t.Errorf("tagFilter %s: got %v, want %v", test.name, got, test.want)
-		}
-	}
-}
-
-func TestTagNumFilter(t *testing.T) {
-	var tagFilterTests = []struct {
-		name  string
-		value []string
-		tags  map[string][]int64
-		want  bool
-	}{
-		{"test1", []string{"bytes=1kb:"}, map[string][]int64{"bytes": {1024}}, true},
-		{"test2", []string{"bytes=:1kb"}, map[string][]int64{"bytes": {1024}}, true},
-		{"test3", []string{"bytes=1kb"}, map[string][]int64{"bytes": {1024}}, true},
-		{"test4", []string{"bytes=1kb:"}, map[string][]int64{"bytes": {2048}}, true},
-		{"test5", []string{"bytes=:1kb"}, map[string][]int64{"bytes": {2048}}, false},
-		{"test6", []string{"bytes=1kb"}, map[string][]int64{"bytes": {2048}}, false},
-		{"test7", []string{"bytes=1kb:"}, map[string][]int64{"bytes": {512}}, false},
-		{"test8", []string{":1kb"}, map[string][]int64{"bytes": {512}}, true},
-		{"test9", []string{"1kb"}, map[string][]int64{"bytes": {512}}, false},
-		{"test10", []string{"1kb:"}, map[string][]int64{"bytes": {1024}}, true},
-		{"test12", []string{"bytes=1024b"}, map[string][]int64{"bytes": {512}, "request": {1024}}, false},
-		{"test13", []string{"bytes=512b", "request=1024"}, map[string][]int64{"bytes": {512}, "request": {1024}}, true},
-		{"test14", []string{"bytes=512b", "request=1024"}, map[string][]int64{"bytes": {512}, "request": {118}}, true},
-		{"test15", []string{"bytes=512b", "request=1024"}, map[string][]int64{"bytes": {1024}, "request": {512}}, false},
-		{"test16", []string{"bytes=512b", "request=1024"}, map[string][]int64{}, false},
-	}
-
-	for _, test := range tagFilterTests {
-		filter, err := compileTagFilter(test.name, test.value, &proftest.TestUI{T: t}, nil)
-		if err != nil {
-			t.Errorf("tagFilter %s:%v", test.name, err)
-			continue
-		}
-		s := profile.Sample{
-			NumLabel: test.tags,
 		}
 
 		if got := filter(&s); got != test.want {

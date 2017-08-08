@@ -445,10 +445,10 @@ type variables map[string]*variable
 
 // variable is a single configuration parameter.
 type variable struct {
-	kind  int      // How to interpret the value, must be one of the enums below.
+	kind  int    // How to interpret the value, must be one of the enums below.
 	value []string // Effective value. Only values appropriate for the Kind should be set.
-	group string   // boolKind variables with the same Group != "" cannot be set simultaneously.
-	help  string   // Text describing the variable, in multiple lines separated by newline.
+	group string // boolKind variables with the same Group != "" cannot be set simultaneously.
+	help  string // Text describing the variable, in multiple lines separated by newline.
 }
 
 const (
@@ -561,7 +561,7 @@ func (v *variable) stringValue() string {
 		if len(v.value) == 0 {
 			return ""
 		} else {
-			return strings.Join(v.value, " | ")
+			return  strings.Join(v.value, " | ")
 		}
 	}
 	if len(v.value) != 1 {
@@ -570,8 +570,8 @@ func (v *variable) stringValue() string {
 	return v.value[0]
 }
 
-func (v *variable) repeatableStringValue() []string {
-	switch v.kind {
+func (v *variable) repeatableStringValue() []string{
+	switch v.kind{
 	case boolKind:
 		return []string{fmt.Sprint(v.boolValue())}
 	case intKind:
