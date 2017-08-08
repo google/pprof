@@ -56,7 +56,7 @@ var funs = []*Function{
 	{ID: 8, Name: "Foo::(anonymous namespace)::Test::Bar", SystemName: "Foo::(anonymous namespace)::Test::Bar", Filename: "fun.c"},
 	{ID: 9, Name: "Hello::(anonymous namespace)::World(const Foo::(anonymous namespace)::Test::Bar)", SystemName: "Hello::(anonymous namespace)::World(const Foo::(anonymous namespace)::Test::Bar)", Filename: "fun.c"},
 	{ID: 10, Name: "Foo::operator()(::Bar)", SystemName: "Foo::operator()(::Bar)", Filename: "fun.c"},
-	{ID: 11, Name: "void* Foo1::Foo2(unsigned long)::Foo3", SystemName: "void* Foo1::Foo2(unsigned long)::Foo3", Filename:"fun.c"},
+	{ID: 11, Name: "void* Foo1::Foo2(unsigned long)::Foo3", SystemName: "void* Foo1::Foo2(unsigned long)::Foo3", Filename: "fun.c"},
 }
 
 var locs1 = []*Location{
@@ -144,6 +144,7 @@ Locations
      4: 0x0 fun5 fun.c:2 s=0
 Mappings
 `
+
 var locs2 = []*Location{
 	{
 		ID: 1,
@@ -229,7 +230,6 @@ Locations
      5: 0x0 Foo::operator()(::Bar) fun.c:1 s=0
 Mappings
 `
-
 
 var locs3 = []*Location{
 	{
