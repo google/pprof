@@ -559,8 +559,9 @@ func (v *variable) stringValue() string {
 	case repeatableStringKind:
 		if len(v.value) == 0 {
 			return ""
+		} else {
+			return strings.Join(v.value, " | ")
 		}
-		return strings.Join(v.value, " | ")
 	}
 	if len(v.value) != 1 {
 		panic("expected exactly one value for string")
