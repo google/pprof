@@ -83,6 +83,7 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) e
 	mux.Handle("/disasm", wrap(http.HandlerFunc(ui.disasm)))
 	mux.Handle("/weblist", wrap(http.HandlerFunc(ui.weblist)))
 	mux.Handle("/peek", wrap(http.HandlerFunc(ui.peek)))
+	mux.Handle("/flamegraph", wrap(http.HandlerFunc(ui.flamegraph)))
 
 	s := &http.Server{Handler: mux}
 	go openBrowser(url, o)
