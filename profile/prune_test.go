@@ -19,6 +19,20 @@ import (
 	"testing"
 )
 
+func TestSimplifyFunc(t *testing.T) {
+	for input, expectedFuncName := range map[string]string{
+		"Foo::(anonymous namespace)::Test::Bar": "Foo::(anonymous namespace)::Test::Bar",
+		"unsimplified_fun(int)":                 "unsimplified_fun",
+		"Foo::operator()(::Bar)":                "Foo::operator()",
+		"void* unsimplified_fun(int)":           "unsimplified_fun",
+	} {
+		funcName := simplifyFunc(input)
+		if funcName != expectedFuncName {
+			t.Errorf("For function %s, want %s got %s", input, expectedFuncName, funcName)
+		}
+	}
+}
+
 func TestPrune(t *testing.T) {
 	for _, test := range []struct {
 		in   *Profile
@@ -26,6 +40,7 @@ func TestPrune(t *testing.T) {
 	}{
 		{in1, out1},
 		{in2, out2},
+		{in3, out3},
 	} {
 		in := test.in.Copy()
 		in.RemoveUninteresting()
@@ -55,6 +70,7 @@ var funs = []*Function{
 	{ID: 8, Name: "Foo::(anonymous namespace)::Test::Bar", SystemName: "Foo::(anonymous namespace)::Test::Bar", Filename: "fun.c"},
 	{ID: 9, Name: "Hello::(anonymous namespace)::World(const Foo::(anonymous namespace)::Test::Bar)", SystemName: "Hello::(anonymous namespace)::World(const Foo::(anonymous namespace)::Test::Bar)", Filename: "fun.c"},
 	{ID: 10, Name: "Foo::operator()(::Bar)", SystemName: "Foo::operator()(::Bar)", Filename: "fun.c"},
+	{ID: 11, Name: "void* Foo1::Foo2(unsigned long)::Foo3", SystemName: "void* Foo1::Foo2(unsigned long)::Foo3", Filename: "fun.c"},
 }
 
 var locs1 = []*Location{
@@ -226,5 +242,52 @@ Locations
      3: 0x0 Foo::(anonymous namespace)::Test::Bar fun.c:1 s=0
      4: 0x0 Hello::(anonymous namespace)::World(const Foo::(anonymous namespace)::Test::Bar) fun.c:1 s=0
      5: 0x0 Foo::operator()(::Bar) fun.c:1 s=0
+Mappings
+`
+
+var locs3 = []*Location{
+	{
+		ID: 1,
+		Line: []Line{
+			{Function: funs[0], Line: 1},
+		},
+	},
+	{
+		ID: 2,
+		Line: []Line{
+			{Function: funs[10], Line: 1},
+		},
+	},
+}
+
+var in3 = &Profile{
+	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
+	Period:        1,
+	DurationNanos: 10e9,
+	SampleType: []*ValueType{
+		{Type: "samples", Unit: "count"},
+		{Type: "cpu", Unit: "milliseconds"},
+	},
+	Sample: []*Sample{
+		// tcmalloc will be dropped, regardless of return type
+		{
+			Location: []*Location{locs3[1], locs3[0]},
+			Value:    []int64{1, 1},
+		},
+	},
+	Location:   locs3,
+	Function:   funs,
+	DropFrames: `Foo1::.*`,
+}
+
+const out3 = `PeriodType: cpu milliseconds
+Period: 1
+Duration: 10s
+Samples:
+samples/count cpu/milliseconds
+          1          1: 1
+Locations
+     1: 0x0 main main.c:1 s=0
+     2: 0x0 void* Foo1::Foo2(unsigned long)::Foo3 fun.c:1 s=0
 Mappings
 `
