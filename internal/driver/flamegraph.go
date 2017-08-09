@@ -241,6 +241,9 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 	options := *ui.options
 	options.UI = catcher
 
+	// Get sample_index from variables
+	si := pprofVariables["sample_index"].value
+
 	// Get query parameters
 	t := req.URL.Query().Get("t")
 
@@ -248,11 +251,9 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 	index := 0
 
 	if t != "" {
-		for i, st := range ui.prof.SampleType {
-			if st.Type == t {
-				index = i
-			}
-		}
+		index, _ = ui.prof.SampleIndexByName(t)
+	} else if si != "" {
+		index, _ = ui.prof.SampleIndexByName(si)
 	}
 
 	rootNode := flameGraphNode{"root", 0, make(map[string]*flameGraphNode)}
@@ -275,7 +276,7 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Looking for file, profile type and unit
+	// Looking for profile metadata
 	const layout = "Jan 2, 2006 at 3:04pm (MST)"
 	file := "unknown"
 	if ui.prof.Mapping[0].File != "" {
