@@ -17,9 +17,11 @@ package driver
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 	"path/filepath"
+	"time"
 )
 
 var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE html>
@@ -29,37 +31,41 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-	<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.1/dist/d3.flameGraph.min.css">
-	<style>
-    /* Space out content a bit */
-    body {
-      padding-top: 20px;
-      padding-bottom: 20px;
-    }
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.1/dist/d3.flameGraph.min.css">
+		<style>
+			/* Space out content a bit */
+			body {
+				padding-top: 20px;
+				padding-bottom: 20px;
+			}
 
-    /* Custom page header */
-    .header {
-      padding-bottom: 20px;
-      padding-right: 15px;
-      padding-left: 15px;
-      border-bottom: 1px solid #e5e5e5;
-    }
+			/* Custom page header */
+			.header {
+				padding-bottom: 15px;
+				padding-right: 15px;
+				padding-left: 15px;
+				border-bottom: 1px solid #e5e5e5;
+			}
 
-    /* Make the masthead heading the same height as the navigation */
-    .header h3 {
-      margin-top: 0;
-      margin-bottom: 0;
-      line-height: 40px;
-    }
+			/* Make the masthead heading the same height as the navigation */
+			.header h3 {
+				margin-top: 0;
+				margin-bottom: 0;
+			}
 
-    /* Customize container */
-    .container {
-      max-width: 990px;
-    }
+			/* Customize container */
+			.container {
+				max-width: 990px;
+			}
+
+			/* Sample details */
+			.details {
+				height: 1.428em;
+			}
     </style>
 
-    <title>{{.Title}}</title>
+    <title>{{.Title}} {{.Type}}</title>
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -88,19 +94,35 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
               <a class="btn btn-primary" href="javascript: search();">Search</a>
             </form>
           </div>
-        </nav>
-        <h3 class="text-muted">{{.Title}}</h3>
+				</nav>
+				<h3 class="text-muted">{{.Title}}</h3>
       </div>
       <div id="chart">
       </div>
       <hr>
-      <div id="details">
-      </div>
+      <div id="details" class="details">
+			</div>
+			<hr>
+			<div id="profile" class="profile">
+				<h4 class="text-muted">profile details:</h4>
+				<dl class="row">
+					<dt class="col-md-2">File</dt>
+					<dd class="col-md-10">{{.Title}}</dd>
+					<dt class="col-md-2">Type</dt>
+					<dd class="col-md-10">{{.Type}}</dd>
+					<dt class="col-md-2">Unit</dt>
+					<dd class="col-md-10">{{.Unit}}</dd>
+					<dt class="col-md-2">Time</dt>
+					<dd class="col-md-10">{{.Time}}</dd>
+					<dt class="col-md-2">Duration</dt>
+					<dd class="col-md-10">{{.Duration}}</dd>
+				</dl>
+			</div>
     </div>
 
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
 	  <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.1/dist/d3.flameGraph.min.js"></script>
 	  <script type="text/javascript">
 		  var data = {{.Data}};
@@ -151,7 +173,7 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
       function onClick(d) {
         console.info("Clicked on " + d.data.name);
       }
-    </script>
+		</script>
   </body>
 </html>`))
 
@@ -238,12 +260,16 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Looking for file, profile type and unit
+	const layout = "Jan 2, 2006 at 3:04pm (MST)"
 	file := "unknown"
 	if ui.prof.Mapping[0].File != "" {
 		file = filepath.Base(ui.prof.Mapping[0].File)
 	}
 	profileType := ui.prof.SampleType[index].Type
 	profileUnit := ui.prof.SampleType[index].Unit
+
+	profileTime := time.Unix(0, ui.prof.TimeNanos).Format(layout)
+	profileDuration := fmt.Sprintf("%d ns", ui.prof.DurationNanos)
 
 	// Creating list of profile types
 	profileTypes := []string{}
@@ -253,21 +279,25 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 
 	// Embed in html.
 	data := struct {
-		Title  string
-		Type   string
-		Unit   string
-		Types  []string
-		Errors []string
-		Data   template.JS
-		Help   map[string]string
+		Title    string
+		Type     string
+		Unit     string
+		Time     string
+		Duration string
+		Types    []string
+		Errors   []string
+		Data     template.JS
+		Help     map[string]string
 	}{
-		Title:  file,
-		Type:   profileType,
-		Unit:   profileUnit,
-		Types:  profileTypes,
-		Errors: catcher.errors,
-		Data:   template.JS(b),
-		Help:   ui.help,
+		Title:    file,
+		Type:     profileType,
+		Unit:     profileUnit,
+		Time:     profileTime,
+		Duration: profileDuration,
+		Types:    profileTypes,
+		Errors:   catcher.errors,
+		Data:     template.JS(b),
+		Help:     ui.help,
 	}
 	html := &bytes.Buffer{}
 	if err := flameGraphTemplate.Execute(html, data); err != nil {
