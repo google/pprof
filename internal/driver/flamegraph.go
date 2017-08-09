@@ -127,7 +127,11 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 	  <script type="text/javascript">
 		  var data = {{.Data}};
 	  </script>
-    <script type="text/javascript">
+		<script type="text/javascript">
+			var label = function(d) {
+				return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d.data.value + " {{.Unit}})";
+			};
+
       var flameGraph = d3.flameGraph()
         .height(540)
         .width(960)
@@ -135,7 +139,8 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
         .transitionDuration(750)
         .transitionEase(d3.easeCubic)
         .sort(true)
-        .title("")
+				.title("")
+				.label(label)
         .onClick(onClick);
 
       // Example on how to use custom tooltips using d3-tip.
