@@ -111,7 +111,11 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 					<dt class="col-md-2">Type</dt>
 					<dd class="col-md-10">{{.Type}}</dd>
 					<dt class="col-md-2">Unit</dt>
+					{{if eq .Unit "nanoseconds"}}
+					<dd class="col-md-10">seconds</dd>
+					{{else}}
 					<dd class="col-md-10">{{.Unit}}</dd>
+					{{end}}
 					<dt class="col-md-2">Time</dt>
 					<dd class="col-md-10">{{.Time}}</dd>
 					<dt class="col-md-2">Duration</dt>
@@ -129,7 +133,11 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 	  </script>
 		<script type="text/javascript">
 			var label = function(d) {
+				{{if eq .Unit "nanoseconds"}}
+				return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + (d.data.value / 1000000000) + " seconds)";
+				{{else}}
 				return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d.data.value + " {{.Unit}})";
+				{{end}}
 			};
 
       var flameGraph = d3.flameGraph()
@@ -146,8 +154,12 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
       var tip = d3.tip()
         .direction("s")
         .offset([8, 0])
-        .attr('class', 'd3-flame-graph-tip')
-        .html(function(d) { return "name: " + d.data.name + ", value: " + d.data.value; });
+				.attr('class', 'd3-flame-graph-tip')
+				{{if eq .Unit "nanoseconds"}}
+				.html(function(d) { return "name: " + d.data.name + ", value: " + (d.data.value / 1000000000) + " seconds"; });
+				{{else}}
+				.html(function(d) { return "name: " + d.data.name + ", value: " + d.data.value; });
+				{{end}}
 
       flameGraph.tooltip(tip);
 
