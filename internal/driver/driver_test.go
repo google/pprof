@@ -1040,6 +1040,9 @@ func TestNumericTagFilter(t *testing.T) {
 		{"test12", "bytes=5b", map[string][]int64{"bytes": {5, 10}}, true},
 		{"test13", "bytes=1024b", map[string][]int64{"kilobytes": {1, 1024}}, false},
 		{"test14", "bytes=1024b", map[string][]int64{"kilobytes": {5}, "bytes": {1024}}, true},
+		{"test15", "bytes=512b:1024b", map[string][]int64{"bytes": {780}}, true},
+		{"test16", "bytes=1kb:2kb", map[string][]int64{"bytes": {4096}}, false},
+		{"test17", "bytes=512b:1024b", map[string][]int64{"bytes": {256}}, false},
 	}
 	for _, test := range tagFilterTests {
 		expectedErrMsg := fmt.Sprint([]string{test.name, ":Interpreted '", test.value, "' as range, not regexp"})
