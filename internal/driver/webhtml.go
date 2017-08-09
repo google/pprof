@@ -111,6 +111,8 @@ button {
 
 <button id="reset">Reset</button>
 
+<button id="flamegraph">Flame Graph</button>
+
 <span id="home">{{.Title}}</span>
 
 <input id="searchbox" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
@@ -358,6 +360,7 @@ function dotviewer(nodes) {
   const listButton = document.getElementById("list")
   const disasmButton = document.getElementById("disasm")
   const resetButton = document.getElementById("reset")
+  const flameGraphButton = document.getElementById("flamegraph")
   const peekButton = document.getElementById("peek")
   const focusButton = document.getElementById("focus")
   const showButton = document.getElementById("show")
@@ -384,6 +387,7 @@ function dotviewer(nodes) {
   }
 
   function handleReset() { window.location.href = "/" }
+  function handleFlameGraph() { window.location.href = "/flamegraph" }
   function handleList() { navigate("/weblist", "f", true) }
   function handleDisasm() { navigate("/disasm", "f", true) }
   function handlePeek() { navigate("/peek", "f", true) }
@@ -557,6 +561,7 @@ function dotviewer(nodes) {
   function bindButtons(evt) {
     detailsButton.addEventListener(evt, handleDetails)
     resetButton.addEventListener(evt, handleReset)
+    flameGraphButton.addEventListener(evt, handleFlameGraph)
     listButton.addEventListener(evt, handleList)
     disasmButton.addEventListener(evt, handleDisasm)
     peekButton.addEventListener(evt, handlePeek)
