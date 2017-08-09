@@ -32,7 +32,7 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-		<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.1/dist/d3.flameGraph.min.css">
+		<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.3/dist/d3.flameGraph.min.css">
 		<style>
 			/* Space out content a bit */
 			body {
@@ -123,7 +123,7 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js"></script>
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
-	  <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.1/dist/d3.flameGraph.min.js"></script>
+	  <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.3/dist/d3.flameGraph.min.js"></script>
 	  <script type="text/javascript">
 		  var data = {{.Data}};
 	  </script>
@@ -133,8 +133,7 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 			};
 
       var flameGraph = d3.flameGraph()
-        .height(540)
-        .width(960)
+				.width(960)
         .cellHeight(18)
         .transitionDuration(750)
         .transitionEase(d3.easeCubic)
