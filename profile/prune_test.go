@@ -19,14 +19,12 @@ import (
 	"testing"
 )
 
-
 func TestSimplifyFunc(t *testing.T) {
-	for input, expectedFuncName := range map[string]string {
+	for input, expectedFuncName := range map[string]string{
 		"Foo::(anonymous namespace)::Test::Bar": "Foo::(anonymous namespace)::Test::Bar",
-		"unsimplified_fun(int)": "unsimplified_fun",
-		"Foo::operator()(::Bar)": "Foo::operator()",
-		"void* unsimplified_fun(int)": "unsimplified_fun",
-
+		"unsimplified_fun(int)":                 "unsimplified_fun",
+		"Foo::operator()(::Bar)":                "Foo::operator()",
+		"void* unsimplified_fun(int)":           "unsimplified_fun",
 	} {
 		funcName := simplifyFunc(input)
 		if funcName != expectedFuncName {
