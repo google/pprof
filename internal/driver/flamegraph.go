@@ -71,8 +71,15 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
     <div class="container">
       <div class="header clearfix">
         <nav>
-          <div class="pull-right">
+          <div class="pull-right">  
             <form class="form-inline" id="form">
+              <div class="form-group">
+                <select class="form-control" id="type" onchange="location = this.value;">
+                {{range .Types}}
+                  <option value="?t={{.}}"{{if eq . $.Type}} selected{{end}}>{{.}}</option>
+                {{end}}
+                </select>
+              </div>
               <a class="btn" href="javascript: resetZoom();">Reset zoom</a>
               <a class="btn" href="javascript: clear();">Clear</a>
               <div class="form-group">
@@ -94,57 +101,56 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
-	<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.1/dist/d3.flameGraph.min.js"></script>
-	<script type="text/javascript">
-		var data = {{.Data}};
-	</script>
-	<script type="text/javascript">
-    var flameGraph = d3.flameGraph()
-      .height(540)
-      .width(960)
-      .cellHeight(18)
-      .transitionDuration(750)
-      .transitionEase(d3.easeCubic)
-      .sort(true)
-      .title("")
-      .onClick(onClick);
+	  <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.1/dist/d3.flameGraph.min.js"></script>
+	  <script type="text/javascript">
+		  var data = {{.Data}};
+	  </script>
+    <script type="text/javascript">
+      var flameGraph = d3.flameGraph()
+        .height(540)
+        .width(960)
+        .cellHeight(18)
+        .transitionDuration(750)
+        .transitionEase(d3.easeCubic)
+        .sort(true)
+        .title("")
+        .onClick(onClick);
 
+      // Example on how to use custom tooltips using d3-tip.
+      var tip = d3.tip()
+        .direction("s")
+        .offset([8, 0])
+        .attr('class', 'd3-flame-graph-tip')
+        .html(function(d) { return "name: " + d.data.name + ", value: " + d.data.value; });
 
-    // Example on how to use custom tooltips using d3-tip.
-    var tip = d3.tip()
-      .direction("s")
-      .offset([8, 0])
-      .attr('class', 'd3-flame-graph-tip')
-      .html(function(d) { return "name: " + d.data.name + ", value: " + d.data.value; });
+      flameGraph.tooltip(tip);
 
-    flameGraph.tooltip(tip);
+      d3.select("#chart")
+        .datum(data)
+        .call(flameGraph);
 
-    d3.select("#chart")
-      .datum(data)
-      .call(flameGraph);
+      document.getElementById("form").addEventListener("submit", function(event){
+        event.preventDefault();
+        search();
+      });
 
-    document.getElementById("form").addEventListener("submit", function(event){
-      event.preventDefault();
-      search();
-    });
+      function search() {
+        var term = document.getElementById("term").value;
+        flameGraph.search(term);
+      }
 
-    function search() {
-      var term = document.getElementById("term").value;
-      flameGraph.search(term);
-    }
+      function clear() {
+        document.getElementById('term').value = '';
+        flameGraph.clear();
+      }
 
-    function clear() {
-      document.getElementById('term').value = '';
-      flameGraph.clear();
-    }
+      function resetZoom() {
+        flameGraph.resetZoom();
+      }
 
-    function resetZoom() {
-      flameGraph.resetZoom();
-    }
-
-    function onClick(d) {
-      console.info("Clicked on " + d.data.name);
-    }
+      function onClick(d) {
+        console.info("Clicked on " + d.data.name);
+      }
     </script>
   </body>
 </html>`))
@@ -197,10 +203,19 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 	options := *ui.options
 	options.UI = catcher
 
-	// Defaulting to last SampleType in profile
-	// index := len(ui.prof.SampleType) - 1
+	// Get query parameters
+	t := req.URL.Query().Get("t")
+
 	// Defaulting to first SampleType in profile
 	index := 0
+
+	if t != "" {
+		for i, st := range ui.prof.SampleType {
+			if st.Type == t {
+				index = i
+			}
+		}
+	}
 
 	rootNode := flameGraphNode{"root", 0, make(map[string]*flameGraphNode)}
 
@@ -222,23 +237,34 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Looking for file and profile type
+	// Looking for file, profile type and unit
 	file := "unknown"
 	if ui.prof.Mapping[0].File != "" {
 		file = filepath.Base(ui.prof.Mapping[0].File)
 	}
-	profile := ui.prof.SampleType[index].Type
+	profileType := ui.prof.SampleType[index].Type
+	profileUnit := ui.prof.SampleType[index].Unit
+
+	// Creating list of profile types
+	profileTypes := []string{}
+	for _, s := range ui.prof.SampleType {
+		profileTypes = append(profileTypes, s.Type)
+	}
 
 	// Embed in html.
 	data := struct {
 		Title  string
 		Type   string
+		Unit   string
+		Types  []string
 		Errors []string
 		Data   template.JS
 		Help   map[string]string
 	}{
-		Title:  file + " " + profile,
-		Type:   profile,
+		Title:  file,
+		Type:   profileType,
+		Unit:   profileUnit,
+		Types:  profileTypes,
 		Errors: catcher.errors,
 		Data:   template.JS(b),
 		Help:   ui.help,
