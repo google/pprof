@@ -196,10 +196,14 @@ var pprofVariables = variables{
 		"Matching includes the function name, filename or object name.")},
 	"tagfocus": &variable{stringKind, "", "", helpText(
 		"Restrict to samples with tags in range or matched by regexp",
-		"Discard samples that do not include a node with a tag matching this regexp.")},
+		"Discard samples that do not include a node with a tag matching this regexp.",
+		"Can specify both the name and value of the tag which should be matched",
+		"using notation like name=value")},
 	"tagignore": &variable{stringKind, "", "", helpText(
 		"Discard samples with tags in range or matched by regexp",
-		"Discard samples that do include a node with a tag matching this regexp.")},
+		"Discard samples that do include a node with a tag matching this regexp.",
+		"Can specify both the name and value of the tag which should be matched",
+		"using notation like name=value")},
 	"tagshow": &variable{stringKind, "", "", helpText(
 		"Only consider tags matching this regexp",
 		"Discard tags that do not match this regexp")},
