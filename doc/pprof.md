@@ -115,22 +115,22 @@ value can be either numeric or a string. pprof can select samples from a profile
 based on these tags using the `-tagfocus` and `-tagignore` options.
 
 Generally, these options work as follows:
-* **-tagfocus= _regex_** and **-tagfocus= _range_:** Restrict to samples with tags
-  in range or matched by regexp
-* **-tagignore= _regex_** and **-tagignore= _range_:** Discard samples with tags in
-  range or matched by regexp
+* **-tagfocus= _regex_** or **-tagfocus= _range_:** Restrict to samples with tags
+  matched by regexp or in range
+* **-tagignore= _regex_** or **-tagignore= _range_:** Discard samples with tags 
+  matched by regexp or in range
 
-When using `-tagfocus= _regex_` and `-tagignore= _regex_`, the regex will be compared
+When using `-tagfocus= regex` and `-tagignore= regex`, the regex will be compared
 to `tagName:tagValue` for each value associated with the tag. If one specifies a regex
-like `_regex1_,_regex2_`, then only samples with a tag value pair matching `_regex1_` and a
-tag value pair matching `_regex2_` will be kept.
+like `regex1,regex2`, then only samples with a tag value pair matching `regex1` and a
+tag value pair matching `regex2` will be kept.
 
 In addition to being able to filter on tag values, one can specify the name of the
-tag which a certain value must be associated with, using the notation
+tag which a certain value must be associated with using the notation
 `-tagfocus=tagName=value1`. Here, the `tagName` must match the tag's name exactly,
 and the value can be either a regex or a range. If one specifies a regex
-like `_regex1_,_regex2_`, then only samples with a value matching either `_regex1_` or
-a value matching `_regex2_` will be kept.
+like `regex1,regex2`, then samples with a value matching either `regex1` or
+a value matching `regex2` will match.
 
 Here are examples explaining how `tagfocus` can be used:
 
