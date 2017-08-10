@@ -134,7 +134,7 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 		<script type="text/javascript">
 			var label = function(d) {
 				{{if eq .Unit "nanoseconds"}}
-				return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + (d.data.value / 1000000000) + " seconds)";
+				return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d3.format(".5f")(d.data.value / 1000000000) + " seconds)";
 				{{else}}
 				return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d.data.value + " {{.Unit}})";
 				{{end}}
@@ -156,7 +156,7 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
         .offset([8, 0])
 				.attr('class', 'd3-flame-graph-tip')
 				{{if eq .Unit "nanoseconds"}}
-				.html(function(d) { return "name: " + d.data.name + ", value: " + (d.data.value / 1000000000) + " seconds"; });
+				.html(function(d) { return "name: " + d.data.name + ", value: " + d3.format(".5f")(d.data.value / 1000000000) + " seconds"; });
 				{{else}}
 				.html(function(d) { return "name: " + d.data.name + ", value: " + d.data.value; });
 				{{end}}
@@ -287,6 +287,9 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 
 	profileTime := time.Unix(0, ui.prof.TimeNanos).Format(layout)
 	profileDuration := fmt.Sprintf("%d ns", ui.prof.DurationNanos)
+	if ui.prof.DurationNanos > 1000000000 {
+		profileDuration = fmt.Sprintf("%f s", float64(ui.prof.DurationNanos)/1000000000)
+	}
 
 	// Creating list of profile types
 	profileTypes := []string{}
