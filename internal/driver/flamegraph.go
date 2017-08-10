@@ -31,8 +31,16 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha256-916EbMg70RQy9LHiGkXzG8hSg9EdNy97GazNG/aiY1w=" crossorigin="anonymous" />
-		<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.3/dist/d3.flameGraph.min.css" integrity="sha256-w762vSe6WGrkVZ7gEOpnn2Y+FSmAGlX77jYj7nhuCyY=" crossorigin="anonymous" />
+		<link rel="stylesheet" type="text/css" 
+			href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" 
+			integrity="sha256-916EbMg70RQy9LHiGkXzG8hSg9EdNy97GazNG/aiY1w=" 
+			crossorigin="anonymous" 
+		/>
+		<link rel="stylesheet" type="text/css" 
+      href="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.4/dist/d3.flameGraph.min.css" 
+      integrity="sha256-w762vSe6WGrkVZ7gEOpnn2Y+FSmAGlX77jYj7nhuCyY=" 
+      crossorigin="anonymous" 
+    />
 		<style>
 			/* Space out content a bit */
 			body {
@@ -124,10 +132,21 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 			</div>
     </div>
 
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js" integrity="sha256-r7j1FXNTvPzHR41+V71Jvej6fIq4v4Kzu5ee7J/RitM=" crossorigin="anonymous"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js" integrity="sha256-z0A2CQF8xxCKuOJsn4sJ5HBjxiHHRAfTX8hDF4RSN5s=" crossorigin="anonymous"></script>
-		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js" integrity="sha256-8E6QUcFg1KTnpEU8TFGhpTGHw5fJqB9vCms3OhAYLqw=" crossorigin="anonymous"></script>
-	  <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.3/dist/d3.flameGraph.min.js" integrity="sha256-3c40PGrNBJBr+Mr5z6dXfq+tSqjJ00aa16FA2vWPNLE=" crossorigin="anonymous"></script>
+    <script type="text/javascript" 
+      src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js" 
+      integrity="sha256-r7j1FXNTvPzHR41+V71Jvej6fIq4v4Kzu5ee7J/RitM=" 
+      crossorigin="anonymous">
+    </script>
+    <script type="text/javascript" 
+      src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js" 
+      integrity="sha256-z0A2CQF8xxCKuOJsn4sJ5HBjxiHHRAfTX8hDF4RSN5s=" 
+      crossorigin="anonymous">
+    </script>
+    <script type="text/javascript" 
+      src="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.4/dist/d3.flameGraph.min.js" 
+      integrity="sha256-I1CkrWbmjv+GWjgbulJ4i0vbzdrDGfxqdye2qNlhG3Q=" 
+      crossorigin="anonymous">
+    </script>
 	  <script type="text/javascript">
 		  var data = {{.Data}};
 	  </script>
