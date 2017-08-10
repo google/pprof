@@ -35,11 +35,13 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 			href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" 
 			integrity="sha256-916EbMg70RQy9LHiGkXzG8hSg9EdNy97GazNG/aiY1w=" 
 			crossorigin="anonymous" 
+			onerror="resourceError(this)"
 		/>
 		<link rel="stylesheet" type="text/css" 
       href="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.4/dist/d3.flameGraph.min.css" 
       integrity="sha256-w762vSe6WGrkVZ7gEOpnn2Y+FSmAGlX77jYj7nhuCyY=" 
-      crossorigin="anonymous" 
+			crossorigin="anonymous" 
+			onerror="resourceError(this)"
     />
 		<style>
 			/* Space out content a bit */
@@ -149,65 +151,78 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
     </script>
 	  <script type="text/javascript">
 		  var data = {{.Data}};
-	  </script>
+		</script>
 		<script type="text/javascript">
-			var label = function(d) {
-				{{if eq .Unit "nanoseconds"}}
-				return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d3.format(".5f")(d.data.value / 1000000000) + " seconds)";
-				{{else}}
-				return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d.data.value + " {{.Unit}})";
-				{{end}}
-			};
+			function resourceError(el) {
+				document.documentElement.innerHTML = "failed loading external resource " + el.href;
+			}
+		</script>
+		<script type="text/javascript">
+			if (typeof window.d3 === 'undefined') {
+				document.documentElement.innerHTML = "failed loading external resource d3.min.js"
+			} else if (typeof window.d3.tip === 'undefined') {
+				document.documentElement.innerHTML = "failed loading external resource d3-tip.min.js"
+			} if (typeof window.d3.flameGraph === 'undefined') {
+				document.documentElement.innerHTML = "failed loading external resource d3.flameGraph.min.js"
+			} else {
+					var label = function(d) {
+					{{if eq .Unit "nanoseconds"}}
+					return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d3.format(".5f")(d.data.value / 1000000000) + " seconds)";
+					{{else}}
+					return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d.data.value + " {{.Unit}})";
+					{{end}}
+				};
 
-      var flameGraph = d3.flameGraph()
-				.width(960)
-        .cellHeight(18)
-        .transitionDuration(750)
-        .transitionEase(d3.easeCubic)
-        .sort(true)
-				.title("")
-				.label(label)
-        .onClick(onClick);
+				var flameGraph = d3.flameGraph()
+					.width(960)
+					.cellHeight(18)
+					.transitionDuration(750)
+					.transitionEase(d3.easeCubic)
+					.sort(true)
+					.title("")
+					.label(label)
+					.onClick(onClick);
 
-      // Example on how to use custom tooltips using d3-tip.
-      var tip = d3.tip()
-        .direction("s")
-        .offset([8, 0])
-				.attr('class', 'd3-flame-graph-tip')
-				{{if eq .Unit "nanoseconds"}}
-				.html(function(d) { return "name: " + d.data.name + ", value: " + d3.format(".5f")(d.data.value / 1000000000) + " seconds"; });
-				{{else}}
-				.html(function(d) { return "name: " + d.data.name + ", value: " + d.data.value; });
-				{{end}}
+				// Example on how to use custom tooltips using d3-tip.
+				var tip = d3.tip()
+					.direction("s")
+					.offset([8, 0])
+					.attr('class', 'd3-flame-graph-tip')
+					{{if eq .Unit "nanoseconds"}}
+					.html(function(d) { return "name: " + d.data.name + ", value: " + d3.format(".5f")(d.data.value / 1000000000) + " seconds"; });
+					{{else}}
+					.html(function(d) { return "name: " + d.data.name + ", value: " + d.data.value; });
+					{{end}}
 
-      flameGraph.tooltip(tip);
+				flameGraph.tooltip(tip);
 
-      d3.select("#chart")
-        .datum(data)
-        .call(flameGraph);
+				d3.select("#chart")
+					.datum(data)
+					.call(flameGraph);
 
-      document.getElementById("form").addEventListener("submit", function(event){
-        event.preventDefault();
-        search();
-      });
+				document.getElementById("form").addEventListener("submit", function(event){
+					event.preventDefault();
+					search();
+				});
 
-      function search() {
-        var term = document.getElementById("term").value;
-        flameGraph.search(term);
-      }
+				function search() {
+					var term = document.getElementById("term").value;
+					flameGraph.search(term);
+				}
 
-      function clear() {
-        document.getElementById('term').value = '';
-        flameGraph.clear();
-      }
+				function clear() {
+					document.getElementById('term').value = '';
+					flameGraph.clear();
+				}
 
-      function resetZoom() {
-        flameGraph.resetZoom();
-      }
+				function resetZoom() {
+					flameGraph.resetZoom();
+				}
 
-      function onClick(d) {
-        console.info("Clicked on " + d.data.name);
-      }
+				function onClick(d) {
+					console.info("Clicked on " + d.data.name);
+				}
+			}
 		</script>
   </body>
 </html>`))
