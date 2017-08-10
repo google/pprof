@@ -109,7 +109,7 @@ visualization. The `unit=` option will force the use of a specific unit. For
 example, `sample_index=sec` will force any time values to be reported in
 seconds. pprof recognizes most common time and memory size units.
 
-### Tag Filtering and Tag Selection
+### Tag Filtering
 Samples in a profile may have tags. These tags have a name and a value; this
 value can be either numeric or a string. pprof can select samples from a profile
 based on these tags using the `-tagfocus` and `-tagignore` options.
