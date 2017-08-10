@@ -105,9 +105,49 @@ number of values - 1) or the name of the sample value.
 
 Sample values are numeric values associated to a unit. If pprof can recognize
 these units, it will attempt to scale the values to a suitable unit for
-visualization. The `unite=` option will force the use of a specific unit. For
+visualization. The `unit=` option will force the use of a specific unit. For
 example, `sample_index=sec` will force any time values to be reported in
 seconds. pprof recognizes most common time and memory size units.
+
+### Tag Filtering and Tag Selection
+Samples in a profile may have tags. These tags have a name and a value; this
+value can be either numeric or a string. pprof can select samples from a profile
+based on these tags using the `-tagfocus` and `-tagignore` options.
+
+Generally, these options work as follows:
+* **-tagfocus= _regex_** and **-tagfocus= _range_:** Restrict to samples with tags
+  in range or matched by regexp
+* **-tagignore= _regex_** and **-tagignore= _range_:** Discard samples with tags in
+  range or matched by regexp
+
+When using `-tagfocus= _regex_` and `-tagignore= _regex_`, the regex will be compared
+to `tagName:tagValue` for each value associated with the tag. If one specifies a regex
+like `_regex1_,_regex2_`, then only samples with a tag value pair matching `_regex1_` and a
+tag value pair matching `_regex2_` will be kept.
+
+In addition to being able to filter on tag values, one can specify the name of the
+tag which a certain value must be associated with, using the notation
+`-tagfocus=tagName=value1`. Here, the `tagName` must match the tag's name exactly,
+and the value can be either a regex or a range. If one specifies a regex
+like `_regex1_,_regex2_`, then only samples with a value matching either `_regex1_` or
+a value matching `_regex2_` will be kept.
+
+Here are examples explaining how `tagfocus` can be used:
+
+* `-tagfocus 128kb:512kb` accepts a sample iff it has any numeric tag with memory
+  value in the specified range.
+* `-tagfocus mytag=128kb:512kb` accepts a sample iff it has a numeric tag `mytag` with
+  memory value in the specified range.
+  There isn't a way to say `-tagfocus mytag=128kb:512kb,16kb:32kb`
+  or `-tagfocus mytag=128kb:512kb,mytag2=128kb:512kb`. Just single value for numeric tags.
+* `-tagfocus somecoolregex` accepts a sample iff it has any string tag with `tagkey:tagvalue`
+  string matching the specified regexp.
+* `-tagfocus mytag:myvalue` accepts a sample iff it has a string tag named `mytag`
+  with value `myvalue` (omitting the fact that anchors need to be added here for full accuracy).
+* `-tagfocus mytag=myvalue1,myvalue2` match two tag values.
+
+`-tagignore` works similarly.
+
 
 ## Text reports
 
