@@ -122,14 +122,14 @@ Generally, these options work as follows:
   matched by regexp or in range
 
 When using `-tagfocus=regex` and `-tagignore=regex`, the regex will be compared
-to each value associated with each tag. If one specifies a regex
+to each value associated with each tag. If one specifies a value
 like `regex1,regex2`, then only samples with a tag value matching `regex1` and a
 tag value matching `regex2` will be kept.
 
 In addition to being able to filter on tag values, one can specify the name of the
 tag which a certain value must be associated with using the notation
-`-tagfocus=tagName=value1`. Here, the `tagName` must match the tag's name exactly,
-and the value can be either a regex or a range. If one specifies a regex
+`-tagfocus=tagName=value`. Here, the `tagName` must match the tag's name exactly,
+and the value can be either a regex or a range. If one specifies a value
 like `regex1,regex2`, then samples with a value associated with the given tag name
 matching either `regex1` or matching `regex2` will match.
 
@@ -144,10 +144,10 @@ Here are examples explaining how `tagfocus` can be used:
    for numeric tags.
 * `-tagfocus somecoolregex` accepts a sample iff it has any string tag with
   `tagkey:tagvalue` string matching the specified regexp.
-* `-tagfocus somecoolregex` accepts a sample iff it has any string tag with
-  `tagkey:tagvalue`. In the future, pprof will just match against `tagvalue`;
-  backward compatibility of matching against `tagkey:tagvalue` will be
-  going away.
+* `-tagfocus tagkey:tagvalue` accepts a sample iff it has a string tag named 
+   `tagkey` with value `tagvalue` (omitting the fact that anchors need to be added
+   here for full accuracy). In the future, backward compatibility of 
+   matching against `tagkey:tagvalue` will be going away.
 * `-tagfocus mytag=myvalue1,myvalue2` matches if either of the two tag values
   are present.
 
