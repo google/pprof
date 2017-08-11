@@ -135,23 +135,27 @@ matching either `regex1` or matching `regex2` will match.
 
 Here are examples explaining how `tagfocus` can be used:
 
-* `-tagfocus 128kb:512kb` accepts a sample iff it has any numeric tag with memory
-  value in the specified range.
-* `-tagfocus mytag=128kb:512kb` accepts a sample iff it has a numeric tag `mytag` with
+* `-tagfocus 128kb:512kb` accepts a sample iff it has any numeric tag with
   memory value in the specified range.
-  There isn't a way to say `-tagfocus mytag=128kb:512kb,16kb:32kb`
-  or `-tagfocus mytag=128kb:512kb,mytag2=128kb:512kb`. Just single value for numeric tags.
-* `-tagfocus somecoolregex` accepts a sample iff it has any string tag with `tagkey:tagvalue`
-  string matching the specified regexp.
-* `-tagfocus somecoolregex` accepts a sample iff it has any string tag with `tagkey:tagvalue`.
-  In the future, pprof will just match against `tagvalue`; backward compatibility of matching
-  against `tagkey:tagvalue` will be going away.
-* `-tagfocus mytag=myvalue1,myvalue2` matches if either of the two tag values are present.
+* `-tagfocus mytag=128kb:512kb` accepts a sample iff it has a numeric tag
+  `mytag` with memory value in the specified range. There isn't a way to say
+   `-tagfocus mytag=128kb:512kb,16kb:32kb`
+   or `-tagfocus mytag=128kb:512kb,mytag2=128kb:512kb`. Just single value
+   for numeric tags.
+* `-tagfocus somecoolregex` accepts a sample iff it has any string tag with
+  `tagkey:tagvalue` string matching the specified regexp.
+* `-tagfocus somecoolregex` accepts a sample iff it has any string tag with
+  `tagkey:tagvalue`. In the future, pprof will just match against `tagvalue`;
+  backward compatibility of matching against `tagkey:tagvalue` will be
+  going away.
+* `-tagfocus mytag=myvalue1,myvalue2` matches if either of the two tag values
+  are present.
 
-`-tagignore` works similarly, except that it discards matching samples, instead of keeping them.
+`-tagignore` works similarly, except that it discards matching samples, instead
+of keeping them.
 
-If both the `-tagignore` and `-tagfocus` expressions (either a regexp or a range) match a given
-sample, then the sample will be discarded.
+If both the `-tagignore` and `-tagfocus` expressions (either a regexp or a range)
+match a given sample, then the sample will be discarded.
 
 ## Text reports
 
