@@ -109,7 +109,7 @@ visualization. The `unit=` option will force the use of a specific unit. For
 example, `sample_index=sec` will force any time values to be reported in
 seconds. pprof recognizes most common time and memory size units.
 
-## Tag Filtering
+## Tag filtering
 
 Samples in a profile may have tags. These tags have a name and a value; this
 value can be either numeric or a string. pprof can select samples from a profile
@@ -130,7 +130,7 @@ In addition to being able to filter on tag values, one can specify the name of t
 tag which a certain value must be associated with using the notation
 `-tagfocus=tagName=value`. Here, the `tagName` must match the tag's name exactly,
 and the value can be either a regex or a range. If one specifies a value
-like `regex1,regex2`, then samples with a value associated with the given tag name
+like `regex1,regex2`, then samples with a tag value (paired with the specified tag name)
 matching either `regex1` or matching `regex2` will match.
 
 Here are examples explaining how `tagfocus` can be used:
@@ -142,12 +142,12 @@ Here are examples explaining how `tagfocus` can be used:
    `-tagfocus mytag=128kb:512kb,16kb:32kb`
    or `-tagfocus mytag=128kb:512kb,mytag2=128kb:512kb`. Just single value
    for numeric tags.
-* `-tagfocus somecoolregex` accepts a sample iff it has any string tag with
-  `tagkey:tagvalue` string matching the specified regexp.
-* `-tagfocus tagkey:tagvalue` accepts a sample iff it has a string tag named 
-   `tagkey` with value `tagvalue` (omitting the fact that anchors need to be added
+* `-tagfocus someregex` accepts a sample iff it has any string tag with
+  `tagName:tagValue` string matching the specified regexp.
+* `-tagfocus tagName:tagValue` accepts a sample iff it has a string tag named
+   `tagName` with value `tagValue` (omitting the fact that anchors need to be added
    here for full accuracy). In the future, backward compatibility of 
-   matching against `tagkey:tagvalue` will be going away.
+   matching against `tagName:tagValue` will be going away.
 * `-tagfocus mytag=myvalue1,myvalue2` matches if either of the two tag values
   are present.
 
