@@ -196,16 +196,16 @@ var pprofVariables = variables{
 		"Matching includes the function name, filename or object name.")},
 	"tagfocus": &variable{stringKind, "", "", helpText(
 		"Restrict to samples with tags in range or matched by regexp",
-		"Discard samples that do not include a node with a tag matching the regexp (or within range).",
-		"Can specify both the name and value of the tag which should be matched with notation like -tagignore name=value",
+		"Discard samples that do not include a node with tag matching regexp or range.",
+		"Can specify the name and value of the tag to match with -tagignore name=value",
 		"Can also specify a range a numeric tag must be within to match.",
-		"For example, -tagfocus=1kb:10kb will keep tags with numeric values between 1kb and 10kb (inclusive)")},
+		"For example, -tagfocus=1kb:10kb matches values between 1kb and 10kb (inclusive)")},
 	"tagignore": &variable{stringKind, "", "", helpText(
 		"Discard samples with tags in range or matched by regexp",
-		"Discard samples that do include a node with a tag matching the regexp (or within range).",
-		"Can specify both the name and value of the tag which should be matched with notation like -tagignore name=value",
+		"Discard samples that do include a node with tag matching regexp or range.",
+		"Can specify name and value of the tag to match with -tagignore name=value",
 		"Can also specify a range for numeric tags must be within to match.",
-		"For example -tagfocus=1kb:10kb will discard tags with numeric values between 1kb and 10kb (inclusive)")},
+		"For example -tagfocus=1kb:10kb matches values between 1kb and 10kb (inclusive)")},
 	"tagshow": &variable{stringKind, "", "", helpText(
 		"Only consider tags matching this regexp",
 		"Discard tags that do not match this regexp")},
