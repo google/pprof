@@ -43,13 +43,9 @@ CPPFLAGS += -Icompat -I${CWP}/mybase \
 		-I. -I.. $(PC_CFLAGS) $(PROTOBUF_CFLAGS) $(GTEST_INCLUDES)
 LDLIBS += -lelf -lpthread $(PC_LIBS) $(PROTOBUF_LIBS)
 
-QUIPPER_PROGRAMS = quipper perf_converter
-CONVERTER_PROGRAMS = perf_to_profile
-QUIPPER_MAIN_SOURCES = $(QUIPPER_PROGRAMS:%=${CWP}/%.cc)
-CONVERTER_MAIN_SOURCES = $(CONVERTER_PROGRAMS:%=%.cc)
-MAIN_SOURCES = $(QUIPPER_MAIN_SOURCES) $(CONVERTER_MAIN_SOURCES)
+PROGRAMS = perf_to_profile
+MAIN_SOURCES = $(PROGRAMS:%=%.cc)
 MAIN_OBJECTS = $(MAIN_SOURCES:%.cc=%.o)
-PROGRAMS = $(QUIPPER_PROGRAMS) $(CONVERTER_PROGRAMS)
 
 QUIPPER_LIBRARY_SOURCES = \
 	address_mapper.cc binary_data_utils.cc buffer_reader.cc buffer_writer.cc \
@@ -76,42 +72,13 @@ GENERATED_SOURCES = $(CONVERTER_PROTOS:.proto=.pb.cc) \
 GENERATED_HEADERS = $(CONVERTER_PROTOS:.proto=.pb.h) \
 	$(QUIPPER_GENERATED_HEADERS)
 
-QUIPPER_COMMON_SOURCES = $(QUIPPER_LIBRARY_SOURCES) \
-												 $(QUIPPER_GENERATED_SOURCES)
-QUIPPER_COMMON_OBJECTS = $(QUIPPER_COMMON_SOURCES:.cc=.o)
-
 COMMON_SOURCES = $(GENERATED_SOURCES) $(LIBRARY_SOURCES)
 COMMON_OBJECTS = $(COMMON_SOURCES:.cc=.o)
 
-TEST_COMMON_SOURCES = \
-	${CWP}/perf_test_files.cc \
-  ${CWP}/test_perf_data.cc \
-  ${CWP}/test_utils.cc
-TEST_COMMON_OBJECTS = $(TEST_COMMON_SOURCES:.cc=.o)
-
-INTEGRATION_TEST_SOURCES = ${CWP}/conversion_utils_test.cc
-PERF_RECORDER_TEST_SOURCES = ${CWP}/perf_recorder_test.cc
-QUIPPER_UNIT_TEST_SOURCES = \
-	address_mapper_test.cc binary_data_utils_test.cc buffer_reader_test.cc \
-	buffer_writer_test.cc file_reader_test.cc \
-	huge_pages_mapping_deducer_test.cc perf_data_utils_test.cc \
-	perf_option_parser_test.cc perf_parser_test.cc perf_reader_test.cc \
-	perf_serializer_test.cc perf_stat_parser_test.cc run_command_test.cc \
-	sample_info_reader_test.cc scoped_temp_path_test.cc
-QUIPPER_UNIT_TEST_SOURCES := \
-	$(QUIPPER_UNIT_TEST_SOURCES:%=${CWP}/%)
-
-CONVERTER_UNIT_TESTS = intervalmap_test.cc perf_data_converter_test.cc \
+TEST_SOURCES = intervalmap_test.cc perf_data_converter_test.cc \
 	perf_data_handler_test.cc chrome_huge_pages_mapping_deducer_test.cc
-CONVERTER_UNIT_TEST_BINARIES = $(CONVERTER_UNIT_TESTS:.cc=)
-
-TEST_SOURCES = $(INTEGRATION_TEST_SOURCES) $(PERF_RECORDER_TEST_SOURCES) \
-	       $(QUIPPER_UNIT_TEST_SOURCES) $(TEST_COMMON_SOURCES) \
-				 ${CWP}/test_runner.cc $(CONVERTER_UNIT_TESTS)
+TEST_BINARIES = $(TEST_SOURCES:.cc=)
 TEST_OBJECTS = $(TEST_SOURCES:.cc=.o)
-TEST_INTERMEDIATES = $(TEST_SOURCES:.cc=.d*)
-TEST_BINARIES = unit_tests $(CONVERTER_UNIT_TEST_BINARIES) perf_recorder_test \
-								integration_tests
 
 ALL_SOURCES = $(MAIN_SOURCES) $(COMMON_SOURCES) $(TEST_SOURCES)
 
@@ -176,41 +143,26 @@ endif
 # modules.
 .SECONDARY: $(GENERATED_HEADERS)
 
-$(QUIPPER_PROGRAMS): %: ${CWP}/%.o $(QUIPPER_COMMON_OBJECTS)
+$(PROGRAMS): %: %.o $(COMMON_OBJECTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
-$(CONVERTER_PROGRAMS): %: %.o $(COMMON_OBJECTS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
-
-INTEGRATION_TEST_OBJECTS = $(INTEGRATION_TEST_SOURCES:.cc=.o) ${CWP}/test_runner.o
-integration_tests: %: $(COMMON_OBJECTS) $(TEST_COMMON_OBJECTS) $(INTEGRATION_TEST_OBJECTS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS) $(GTEST_LIBS)
-
-PERF_RECORDER_TEST_OBJECTS = $(PERF_RECORDER_TEST_SOURCES:.cc=.o)
-perf_recorder_test: %: $(COMMON_OBJECTS) $(TEST_COMMON_OBJECTS) $(PERF_RECORDER_TEST_OBJECTS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS) $(GTEST_LIBS)
-
-QUIPPER_UNIT_TEST_OBJECTS = $(QUIPPER_UNIT_TEST_SOURCES:.cc=.o) ${CWP}/test_runner.o
-unit_tests: %: $(COMMON_OBJECTS) $(TEST_COMMON_OBJECTS) $(QUIPPER_UNIT_TEST_OBJECTS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS) $(GTEST_LIBS)
-
-$(CONVERTER_UNIT_TEST_BINARIES): %: %.o $(COMMON_OBJECTS) $(TEST_COMMON_OBJECTS)
+$(TEST_BINARIES): %: %.o $(COMMON_OBJECTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS) $(GTEST_LIBS)
 
 # build all unit tests
-tests: $(CONVERTER_UNIT_TEST_BINARIES)
+tests: $(TEST_BINARIES)
 
 # make run_(test binary name) runs the unit test.
-CONVERTER_UNIT_TEST_RUN_BINARIES = $(CONVERTER_UNIT_TEST_BINARIES:%=run_%)
-$(CONVERTER_UNIT_TEST_RUN_BINARIES): run_%: %
+UNIT_TEST_RUN_BINARIES = $(TEST_BINARIES:%=run_%)
+$(UNIT_TEST_RUN_BINARIES): run_%: %
 	./$^
 
 # run all unit tests
-check: $(CONVERTER_UNIT_TEST_RUN_BINARIES)
+check: $(UNIT_TEST_RUN_BINARIES)
 
 clean:
 	rm -f *.d $(TESTS) $(GENERATED_SOURCES)  $(GENERATED_HEADERS) \
-		$(TEST_COMMON_OBJECTS) $(TEST_OBJECTS) $(COMMON_OBJECTS) $(INTERMEDIATES) \
+		$(TEST_OBJECTS) $(COMMON_OBJECTS) $(INTERMEDIATES) \
 		$(MAIN_OBJECTS) $(PROGRAMS) $(TEST_BINARIES)
 
 print-%:
