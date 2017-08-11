@@ -109,28 +109,29 @@ visualization. The `unit=` option will force the use of a specific unit. For
 example, `sample_index=sec` will force any time values to be reported in
 seconds. pprof recognizes most common time and memory size units.
 
-### Tag Filtering
+## Tag Filtering
+
 Samples in a profile may have tags. These tags have a name and a value; this
 value can be either numeric or a string. pprof can select samples from a profile
 based on these tags using the `-tagfocus` and `-tagignore` options.
 
 Generally, these options work as follows:
-* **-tagfocus= _regex_** or **-tagfocus= _range_:** Restrict to samples with tags
+* **-tagfocus=_regex_** or **-tagfocus=_range_:** Restrict to samples with tags
   matched by regexp or in range
-* **-tagignore= _regex_** or **-tagignore= _range_:** Discard samples with tags 
+* **-tagignore=_regex_** or **-tagignore=_range_:** Discard samples with tags
   matched by regexp or in range
 
-When using `-tagfocus= regex` and `-tagignore= regex`, the regex will be compared
-to `tagName:tagValue` for each value associated with the tag. If one specifies a regex
-like `regex1,regex2`, then only samples with a tag value pair matching `regex1` and a
-tag value pair matching `regex2` will be kept.
+When using `-tagfocus=regex` and `-tagignore=regex`, the regex will be compared
+to each value associated with each tag. If one specifies a regex
+like `regex1,regex2`, then only samples with a tag value matching `regex1` and a
+tag value matching `regex2` will be kept.
 
 In addition to being able to filter on tag values, one can specify the name of the
 tag which a certain value must be associated with using the notation
 `-tagfocus=tagName=value1`. Here, the `tagName` must match the tag's name exactly,
 and the value can be either a regex or a range. If one specifies a regex
-like `regex1,regex2`, then samples with a value matching either `regex1` or
-a value matching `regex2` will match.
+like `regex1,regex2`, then samples with a value associated with the given tag name
+matching either `regex1` or matching `regex2` will match.
 
 Here are examples explaining how `tagfocus` can be used:
 
@@ -142,12 +143,15 @@ Here are examples explaining how `tagfocus` can be used:
   or `-tagfocus mytag=128kb:512kb,mytag2=128kb:512kb`. Just single value for numeric tags.
 * `-tagfocus somecoolregex` accepts a sample iff it has any string tag with `tagkey:tagvalue`
   string matching the specified regexp.
-* `-tagfocus mytag:myvalue` accepts a sample iff it has a string tag named `mytag`
-  with value `myvalue` (omitting the fact that anchors need to be added here for full accuracy).
-* `-tagfocus mytag=myvalue1,myvalue2` match two tag values.
+* `-tagfocus somecoolregex` accepts a sample iff it has any string tag with `tagkey:tagvalue`.
+  In the future, pprof will just match against `tagvalue`; backward compatibility of matching
+  against `tagkey:tagvalue` will be going away.
+* `-tagfocus mytag=myvalue1,myvalue2` matches if either of the two tag values are present.
 
-`-tagignore` works similarly.
+`-tagignore` works similarly, except that it discards matching samples, instead of keeping them.
 
+If both the `-tagignore` and `-tagfocus` expressions (either a regexp or a range) match a given
+sample, then the sample will be discarded.
 
 ## Text reports
 
