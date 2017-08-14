@@ -143,13 +143,9 @@ Here are examples explaining how `tagfocus` can be used:
    or `-tagfocus mytag=128kb:512kb,mytag2=128kb:512kb`. Just single value
    for numeric tags.
 * `-tagfocus someregex` accepts a sample iff it has any string tag with
-  `tagName:tagValue` string matching the specified regexp. In the future, this
-  will to accept sample iff it has any string tag with `tagValue` string
-  matching specified regexp
-* `-tagfocus tagName:tagValue` accepts a sample iff it has a string tag named
-   `tagName` with value `tagValue` (omitting the fact that anchors need to be
-    added here for full accuracy). In the future, backward compatibility of
-    matching against `tagName:tagValue` will be going away.
+  `tagName:tagValue` string matching specified regexp. In the future, this
+  will change to accept sample iff it has any string tag with `tagValue` string
+  matching specified regexp.
 * `-tagfocus mytag=myvalue1,myvalue2` matches if either of the two tag values
   are present.
 
