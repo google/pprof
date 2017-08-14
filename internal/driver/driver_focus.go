@@ -129,6 +129,7 @@ func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profil
 			for _, rx := range rfx {
 				for key, vals := range s.Label {
 					for _, val := range vals {
+						// TODO: Match against val, not key:val in future
 						if rx.MatchString(key + ":" + val) {
 							continue matchedrx
 						}

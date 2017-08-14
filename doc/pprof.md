@@ -106,7 +106,7 @@ number of values - 1) or the name of the sample value.
 Sample values are numeric values associated to a unit. If pprof can recognize
 these units, it will attempt to scale the values to a suitable unit for
 visualization. The `unit=` option will force the use of a specific unit. For
-example, `sample_index=sec` will force any time values to be reported in
+example, `unit=sec` will force any time values to be reported in
 seconds. pprof recognizes most common time and memory size units.
 
 ## Tag filtering
@@ -117,9 +117,9 @@ profile based on these tags using the `-tagfocus` and `-tagignore` options.
 
 Generally, these options work as follows:
 * **-tagfocus=_regex_** or **-tagfocus=_range_:** Restrict to samples with tags
-  matched by regexp or in range
+  matched by regexp or in range.
 * **-tagignore=_regex_** or **-tagignore=_range_:** Discard samples with tags
-  matched by regexp or in range
+  matched by regexp or in range.
 
 When using `-tagfocus=regex` and `-tagignore=regex`, the regex will be compared
 to each value associated with each tag. If one specifies a value
@@ -143,7 +143,9 @@ Here are examples explaining how `tagfocus` can be used:
    or `-tagfocus mytag=128kb:512kb,mytag2=128kb:512kb`. Just single value
    for numeric tags.
 * `-tagfocus someregex` accepts a sample iff it has any string tag with
-  `tagName:tagValue` string matching the specified regexp.
+  `tagName:tagValue` string matching the specified regexp. In the future, this
+  will to accept sample iff it has any string tag with `tagValue` string
+  matching specified regexp
 * `-tagfocus tagName:tagValue` accepts a sample iff it has a string tag named
    `tagName` with value `tagValue` (omitting the fact that anchors need to be
     added here for full accuracy). In the future, backward compatibility of
