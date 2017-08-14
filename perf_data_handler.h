@@ -12,7 +12,7 @@
 
 #include "int_compat.h"
 #include "string_compat.h"
-#include "chromiumos-wide-profiling/perf_data.pb.h"
+#include "quipper/perf_data.pb.h"
 
 namespace perftools {
 

@@ -33,7 +33,7 @@ PC_DEPS = openssl
 PC_CFLAGS := $(shell $(PKG_CONFIG) --cflags $(PC_DEPS))
 PC_LIBS := $(shell $(PKG_CONFIG) --libs $(PC_DEPS))
 
-CWP = third_party/chromiumos-wide-profiling
+CWP = quipper
 
 CXXFLAGS += -std=c++11 -g -Wall -Werror -Wall -Wno-error
 CPPFLAGS += -Icompat -I${CWP}/mybase \
@@ -51,11 +51,11 @@ QUIPPER_LIBRARY_SOURCES = \
 	address_mapper.cc binary_data_utils.cc buffer_reader.cc buffer_writer.cc \
 	conversion_utils.cc compat/ext/detail/log_level.cc data_reader.cc \
 	data_writer.cc dso.cc file_reader.cc file_utils.cc \
-	huge_pages_mapping_deducer.cc \
 	mybase/base/logging.cc perf_option_parser.cc perf_data_utils.cc \
 	perf_parser.cc perf_protobuf_io.cc perf_reader.cc perf_recorder.cc \
 	perf_serializer.cc perf_stat_parser.cc run_command.cc \
-	sample_info_reader.cc scoped_temp_path.cc string_utils.cc
+	sample_info_reader.cc scoped_temp_path.cc string_utils.cc \
+  huge_page_deducer.cc
 QUIPPER_LIBRARY_SOURCES := \
 	$(QUIPPER_LIBRARY_SOURCES:%=${CWP}/%)
 CONVERTER_LIBRARY_SOURCES = perf_data_converter.cc perf_data_handler.cc \

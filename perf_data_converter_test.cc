@@ -24,8 +24,8 @@
 #include "intervalmap.h"
 #include "string_compat.h"
 #include "test_compat.h"
-#include "chromiumos-wide-profiling/perf_parser.h"
-#include "chromiumos-wide-profiling/perf_reader.h"
+#include "quipper/perf_parser.h"
+#include "quipper/perf_reader.h"
 
 using perftools::ProcessProfiles;
 using perftools::profiles::Location;

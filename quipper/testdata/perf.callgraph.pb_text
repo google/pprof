@@ -1,0 +1,91 @@
+file_attrs {
+  attr {
+    type: 0
+    size: 80
+    config: 0
+    sample_period: 1000
+    sample_type: 423
+    read_format: 7
+    disabled: false
+    inherit: true
+    pinned: false
+    exclusive: false
+    exclude_user: false
+    exclude_kernel: false
+    exclude_hv: false
+    exclude_idle: false
+    mmap: true
+    comm: true
+    freq: true
+    inherit_stat: false
+    enable_on_exec: false
+    task: false
+    watermark: false
+    precise_ip: 0
+    mmap_data: false
+    sample_id_all: true
+    exclude_host: false
+    exclude_guest: true
+    wakeup_events: 0
+    bp_type: 0
+    bp_len: 0
+    branch_sample_type: 0
+  }
+  ids: 207
+  ids: 208
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 88
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 0
+    len: 18446744072098938879
+    pgoff: 18446744071578845584
+    filename: "[kernel.kallsyms]_stext"
+    filename_md5_prefix: 11896564614450778392
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      cpu: 0
+    }
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 72
+  }
+  sample_event {
+    ip: 18446744071579193279
+    pid: 0
+    tid: 0
+    sample_time_ns: 14424495396615
+    period: 1393123
+    cpu: 0
+    callchain: 18446744073709551488
+    callchain: 18446744071579193279
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 64
+  }
+  sample_event {
+    ip: 18446744071579193279
+    pid: 0
+    tid: 0
+    sample_time_ns: 14424495396615
+    period: 1393123
+    cpu: 0
+    callchain: 18446744073709551488
+  }
+}

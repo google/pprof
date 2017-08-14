@@ -1,0 +1,2532 @@
+file_attrs {
+  attr {
+    type: 0
+    size: 96
+    config: 0
+    sample_period: 4000
+    sample_type: 263
+    read_format: 7
+    disabled: true
+    inherit: true
+    pinned: false
+    exclusive: false
+    exclude_user: false
+    exclude_kernel: false
+    exclude_hv: false
+    exclude_idle: false
+    mmap: true
+    comm: true
+    freq: true
+    inherit_stat: false
+    enable_on_exec: true
+    task: false
+    watermark: false
+    precise_ip: 0
+    mmap_data: false
+    sample_id_all: true
+    exclude_host: false
+    exclude_guest: true
+    wakeup_events: 0
+    bp_type: 0
+    bp_addr: 0
+    bp_len: 0
+    branch_sample_type: 0
+    exclude_callchain_kernel: false
+    exclude_callchain_user: false
+    mmap2: false
+    comm_exec: false
+    sample_regs_user: 0
+    sample_stack_user: 0
+  }
+  ids: 37
+  ids: 38
+  ids: 39
+  ids: 40
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 80
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 408
+    len: 698351207
+    pgoff: 0
+    filename: "[kernel.kallsyms]_stext"
+    filename_md5_prefix: 11896564614450778392
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 698351616
+    len: 24575
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/input/joydev.ko"
+    filename_md5_prefix: 6931799557834235780
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 698376192
+    len: 28671
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/media/v4l2-core/videobuf2-memops.ko"
+    filename_md5_prefix: 14226312247520434582
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 698404864
+    len: 28671
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/media/v4l2-core/videobuf2-vmalloc.ko"
+    filename_md5_prefix: 9196826273736977576
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 698433536
+    len: 110591
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/media/v4l2-core/videodev.ko"
+    filename_md5_prefix: 1784280071221411106
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 698544128
+    len: 45055
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/media/v4l2-core/videobuf2-core.ko"
+    filename_md5_prefix: 11576858561369388514
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 698589184
+    len: 90111
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/media/usb/uvc/uvcvideo.ko"
+    filename_md5_prefix: 15960920128003489690
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 698679296
+    len: 45055
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/net/usb/usbnet.ko"
+    filename_md5_prefix: 9921877538036051707
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 698724352
+    len: 49151
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/net/usb/asix.ko"
+    filename_md5_prefix: 16915226595411930253
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 698773504
+    len: 151551
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/net/wireless-3.4/cfg80211.ko"
+    filename_md5_prefix: 10709488612672245003
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 698925056
+    len: 28671
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/net/netfilter/xt_mark.ko"
+    filename_md5_prefix: 3803529027928364707
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 698953728
+    len: 28671
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/net/wireless-3.4/ath/ath.ko"
+    filename_md5_prefix: 12420233176729412332
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 136
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 698982400
+    len: 364543
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/net/wireless-3.4/ath/ath9k/ath9k_hw.ko"
+    filename_md5_prefix: 7946437894324139521
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 136
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 699346944
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/net/wireless-3.4/ath/ath9k/ath9k_common.ko"
+    filename_md5_prefix: 5713977624235105683
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 699367424
+    len: 335871
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/net/mac80211-3.4/mac80211.ko"
+    filename_md5_prefix: 6584451746239774258
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 699703296
+    len: 40959
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/net/ipv6/netfilter/ip6_tables.ko"
+    filename_md5_prefix: 1779095066770981425
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 699744256
+    len: 126975
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/net/wireless-3.4/ath/ath9k/ath9k.ko"
+    filename_md5_prefix: 18371226554056288563
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 699871232
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/net/ipv6/netfilter/ip6table_filter.ko"
+    filename_md5_prefix: 11047231244666597623
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 699891712
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/net/ipv6/netfilter/nf_defrag_ipv6.ko"
+    filename_md5_prefix: 12631393479771069874
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 699912192
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/net/ipv6/netfilter/nf_conntrack_ipv6.ko"
+    filename_md5_prefix: 4650329937719179328
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 104
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 699932672
+    len: 69631
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/fs/fuse/fuse.ko"
+    filename_md5_prefix: 16786721907635744704
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700002304
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/lib/lzo/lzo_decompress.ko"
+    filename_md5_prefix: 11363663600514285141
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700022784
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/lib/lzo/lzo_compress.ko"
+    filename_md5_prefix: 15634710326343569900
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700043264
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/staging/zsmalloc/zsmalloc.ko"
+    filename_md5_prefix: 2001734217228615342
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700063744
+    len: 24575
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/staging/zram/zram.ko"
+    filename_md5_prefix: 14201768135037593031
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700088320
+    len: 28671
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/iio/industrialio.ko"
+    filename_md5_prefix: 13109086055040605101
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700116992
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/gpio/nm10_gpio.ko"
+    filename_md5_prefix: 7372536130574491279
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700137472
+    len: 73727
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/net/ethernet/realtek/r8169.ko"
+    filename_md5_prefix: 18046138465070376504
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700211200
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/staging/iio/light/isl29018.ko"
+    filename_md5_prefix: 10828967519266660466
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700231680
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/sound/core/snd-page-alloc.ko"
+    filename_md5_prefix: 5318018698446775731
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700252160
+    len: 36863
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/firmware/google/memconsole.ko"
+    filename_md5_prefix: 495851329904417798
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 104
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700289024
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/crypto/gf128mul.ko"
+    filename_md5_prefix: 7489867467289478507
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700309504
+    len: 81919
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/sound/core/snd-pcm.ko"
+    filename_md5_prefix: 11886721018967843511
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 104
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700391424
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/crypto/xts.ko"
+    filename_md5_prefix: 1188058915371663160
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700411904
+    len: 28671
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/sound/core/snd-timer.ko"
+    filename_md5_prefix: 10088144783403732214
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700440576
+    len: 24575
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/arch/x86/crypto/aes-x86_64.ko"
+    filename_md5_prefix: 6699312421546878786
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 104
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700465152
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/crypto/lrw.ko"
+    filename_md5_prefix: 2594107783734889142
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700485632
+    len: 53247
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/net/usb/gobi/gobi.ko"
+    filename_md5_prefix: 13289305122664442648
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700538880
+    len: 40959
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/sound/pci/hda/snd-hda-codec-hdmi.ko"
+    filename_md5_prefix: 4449184222273159984
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700579840
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/usb/serial/qcserial.ko"
+    filename_md5_prefix: 17833727452432948478
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700600320
+    len: 61439
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/i2c/i2c-dev.ko"
+    filename_md5_prefix: 4749515020007770924
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700661760
+    len: 69631
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/input/misc/uinput.ko"
+    filename_md5_prefix: 7395727818765432127
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700731392
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/arch/x86/crypto/ablk_helper.ko"
+    filename_md5_prefix: 7746034471767173133
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700751872
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/sound/pci/hda/snd-hda-codec-cirrus.ko"
+    filename_md5_prefix: 16130228127687244290
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700772352
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/drivers/usb/serial/usb_wwan.ko"
+    filename_md5_prefix: 12799297696819591468
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 104
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700792832
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/crypto/cryptd.ko"
+    filename_md5_prefix: 8690695956190337317
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700813312
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/sound/core/snd-hwdep.ko"
+    filename_md5_prefix: 18168283586561600192
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700833792
+    len: 53247
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/arch/x86/crypto/aesni-intel.ko"
+    filename_md5_prefix: 2345065127206088577
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 700887040
+    len: 118783
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/sound/pci/hda/snd-hda-codec.ko"
+    filename_md5_prefix: 14114989899732024529
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 701005824
+    len: 40959
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/sound/pci/hda/snd-hda-intel.ko"
+    filename_md5_prefix: 3685048946398126497
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 701046784
+    len: 1071046655
+    pgoff: 0
+    filename: "/lib/modules/3.8.11/kernel/net/bluetooth/bluetooth.ko"
+    filename_md5_prefix: 6735399322180482207
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 3
+    misc: 0
+    size: 40
+  }
+  comm_event {
+    pid: 14170
+    tid: 14170
+    comm: "perf"
+    comm_md5_prefix: 4182440778745474060
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1772093440
+    len: 20480
+    pgoff: 0
+    filename: "/usr/lib64/libXdmcp.so.6.0.0"
+    filename_md5_prefix: 10932602607596085623
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1772113920
+    len: 8192
+    pgoff: 0
+    filename: "/usr/lib64/libXau.so.6.0.0"
+    filename_md5_prefix: 15906627865031780243
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1772122112
+    len: 159744
+    pgoff: 0
+    filename: "/usr/lib64/libexpat.so.1.6.0"
+    filename_md5_prefix: 15033414377227985893
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1772281856
+    len: 368640
+    pgoff: 0
+    filename: "/usr/lib64/libharfbuzz.so.0.918.0"
+    filename_md5_prefix: 10475771789313541500
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1772650496
+    len: 77824
+    pgoff: 0
+    filename: "/lib64/libresolv-2.15.so"
+    filename_md5_prefix: 17275114043955474208
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1772728320
+    len: 155648
+    pgoff: 0
+    filename: "/usr/lib64/libpng12.so.0.49.0"
+    filename_md5_prefix: 7199106247185602918
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1772883968
+    len: 544768
+    pgoff: 0
+    filename: "/usr/lib64/libpixman-1.so.0.28.2"
+    filename_md5_prefix: 12631604816113189896
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1773428736
+    len: 131072
+    pgoff: 0
+    filename: "/usr/lib64/libxcb.so.1.1.0"
+    filename_md5_prefix: 5008061137156085690
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1773559808
+    len: 655360
+    pgoff: 0
+    filename: "/usr/lib64/libfreetype.so.6.10.1"
+    filename_md5_prefix: 14833278262541227624
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1774215168
+    len: 28672
+    pgoff: 0
+    filename: "/usr/lib64/libffi.so.5.0.10"
+    filename_md5_prefix: 5295595666246585362
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1774243840
+    len: 69632
+    pgoff: 0
+    filename: "/usr/lib64/libXext.so.6.4.0"
+    filename_md5_prefix: 10270024168532367956
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1774313472
+    len: 8192
+    pgoff: 0
+    filename: "/usr/lib64/libXdamage.so.1.1.0"
+    filename_md5_prefix: 4222626884136212184
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1774321664
+    len: 8192
+    pgoff: 0
+    filename: "/usr/lib64/libXcomposite.so.1.0.0"
+    filename_md5_prefix: 10693752597698595485
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1774329856
+    len: 40960
+    pgoff: 0
+    filename: "/usr/lib64/libXcursor.so.1.0.2"
+    filename_md5_prefix: 4819607871033074936
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1774370816
+    len: 36864
+    pgoff: 0
+    filename: "/usr/lib64/libXrandr.so.2.2.0"
+    filename_md5_prefix: 13643191648108459786
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1774407680
+    len: 61440
+    pgoff: 0
+    filename: "/usr/lib64/libXi.so.6.1.0"
+    filename_md5_prefix: 7735348231858354360
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1774469120
+    len: 36864
+    pgoff: 0
+    filename: "/usr/lib64/libXrender.so.1.3.0"
+    filename_md5_prefix: 14537336717303689307
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1774505984
+    len: 1183744
+    pgoff: 0
+    filename: "/usr/lib64/libglib-2.0.so.0.3400.3"
+    filename_md5_prefix: 4022419813072961542
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1775689728
+    len: 212992
+    pgoff: 0
+    filename: "/usr/lib64/libfontconfig.so.1.4.1"
+    filename_md5_prefix: 14788890231199162156
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1775902720
+    len: 294912
+    pgoff: 0
+    filename: "/usr/lib64/libpango-1.0.so.0.3200.5"
+    filename_md5_prefix: 6777492537819647707
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1776197632
+    len: 1380352
+    pgoff: 0
+    filename: "/usr/lib64/libgio-2.0.so.0.3400.3"
+    filename_md5_prefix: 16317083614859952353
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1777577984
+    len: 983040
+    pgoff: 0
+    filename: "/usr/lib64/libcairo.so.2.11200.12"
+    filename_md5_prefix: 2518285228447773884
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1778561024
+    len: 1273856
+    pgoff: 0
+    filename: "/usr/lib64/libX11.so.6.3.0"
+    filename_md5_prefix: 17263637942781601756
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 80
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1779834880
+    len: 8192
+    pgoff: 0
+    filename: "/lib64/libdl-2.15.so"
+    filename_md5_prefix: 13941542112215174244
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 80
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1779843072
+    len: 1691648
+    pgoff: 0
+    filename: "/lib64/libc-2.15.so"
+    filename_md5_prefix: 9148960704138262540
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1781534720
+    len: 4362240
+    pgoff: 0
+    filename: "/usr/lib64/libgtk-x11-2.0.so.0.2000.1"
+    filename_md5_prefix: 6473193683995614036
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 80
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1785896960
+    len: 1032192
+    pgoff: 0
+    filename: "/lib64/libm-2.15.so"
+    filename_md5_prefix: 2530586259063768697
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 80
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1786929152
+    len: 28672
+    pgoff: 0
+    filename: "/lib64/librt-2.15.so"
+    filename_md5_prefix: 9529828695019891150
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1786957824
+    len: 94208
+    pgoff: 0
+    filename: "/lib64/libpthread-2.15.so"
+    filename_md5_prefix: 2407915065680834835
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 80
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1787052032
+    len: 139264
+    pgoff: 0
+    filename: "/lib64/ld-2.15.so"
+    filename_md5_prefix: 1323517811832655594
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1787191296
+    len: 77824
+    pgoff: 0
+    filename: "/usr/lib64/libpangoft2-1.0.so.0.3200.5"
+    filename_md5_prefix: 15389877960781563725
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1787269120
+    len: 126976
+    pgoff: 0
+    filename: "/usr/lib64/libatk-1.0.so.0.3209.1"
+    filename_md5_prefix: 15126570361666179474
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1787396096
+    len: 20480
+    pgoff: 0
+    filename: "/usr/lib64/libXfixes.so.3.1.0"
+    filename_md5_prefix: 7518677306700643500
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 104
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1787416576
+    len: 49152
+    pgoff: 0
+    filename: "/usr/lib64/libpangocairo-1.0.so.0.3200.5"
+    filename_md5_prefix: 16908023691496829088
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1787465728
+    len: 12288
+    pgoff: 0
+    filename: "/usr/lib64/libgmodule-2.0.so.0.3400.3"
+    filename_md5_prefix: 11635377342202009609
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 104
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1787478016
+    len: 110592
+    pgoff: 0
+    filename: "/usr/lib64/libgdk_pixbuf-2.0.so.0.2000.1"
+    filename_md5_prefix: 14761640710250679431
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 80
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1787588608
+    len: 86016
+    pgoff: 0
+    filename: "/lib64/libz.so.1.2.7"
+    filename_md5_prefix: 9111223941208028341
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 80
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1787674624
+    len: 61440
+    pgoff: 0
+    filename: "/lib64/libbz2.so.1.0.6"
+    filename_md5_prefix: 4945161886087087872
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1787736064
+    len: 311296
+    pgoff: 0
+    filename: "/usr/lib64/libgobject-2.0.so.0.3400.3"
+    filename_md5_prefix: 9923491221455080695
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1788047360
+    len: 696320
+    pgoff: 0
+    filename: "/usr/lib64/libgdk-x11-2.0.so.0.2000.1"
+    filename_md5_prefix: 17109287807189710261
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1788743680
+    len: 217088
+    pgoff: 0
+    filename: "/usr/lib64/libdw-0.154.so"
+    filename_md5_prefix: 4399158796810423752
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1788960768
+    len: 94208
+    pgoff: 0
+    filename: "/usr/lib64/libelf-0.154.so"
+    filename_md5_prefix: 5749722073051915059
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 72
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1789054976
+    len: 741376
+    pgoff: 0
+    filename: "/usr/sbin/perf"
+    filename_md5_prefix: 8922525626614715891
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 64
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1789796352
+    len: 8192
+    pgoff: 0
+    filename: "[vdso]"
+    filename_md5_prefix: 2667416218816914640
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 72
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1761607680
+    len: 4096
+    pgoff: 0
+    filename: "[vsyscall]"
+    filename_md5_prefix: 5829508011031081448
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+    }
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 40
+  }
+  sample_event {
+    ip: 80575
+    pid: 14170
+    tid: 14170
+    sample_time_ns: 346637627965545
+    period: 1
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 40
+  }
+  sample_event {
+    ip: 80575
+    pid: 14170
+    tid: 14170
+    sample_time_ns: 346637627973963
+    period: 1
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 40
+  }
+  sample_event {
+    ip: 80575
+    pid: 14170
+    tid: 14170
+    sample_time_ns: 346637627978565
+    period: 5
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 40
+  }
+  sample_event {
+    ip: 80575
+    pid: 14170
+    tid: 14170
+    sample_time_ns: 346637627983162
+    period: 35
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 40
+  }
+  sample_event {
+    ip: 80575
+    pid: 14170
+    tid: 14170
+    sample_time_ns: 346637627987734
+    period: 269
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 40
+  }
+  sample_event {
+    ip: 80575
+    pid: 14170
+    tid: 14170
+    sample_time_ns: 346637627992406
+    period: 2072
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 40
+  }
+  sample_event {
+    ip: 721307
+    pid: 14170
+    tid: 14170
+    sample_time_ns: 346637627997815
+    period: 15777
+  }
+}
+events {
+  header {
+    type: 3
+    misc: 0
+    size: 40
+  }
+  comm_event {
+    pid: 14170
+    tid: 14170
+    comm: "echo"
+    comm_md5_prefix: 14677546575749228893
+    sample_info {
+      pid: 14170
+      tid: 14170
+      sample_time_ns: 346637628001185
+    }
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 40
+  }
+  sample_event {
+    ip: 4886825
+    pid: 14170
+    tid: 14170
+    sample_time_ns: 346637628020816
+    period: 104469
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 72
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1789804544
+    len: 24576
+    pgoff: 0
+    filename: "/bin/echo"
+    filename_md5_prefix: 14090494933488598532
+    sample_info {
+      pid: 14170
+      tid: 14170
+      sample_time_ns: 346637628039655
+    }
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 40
+  }
+  sample_event {
+    ip: 841907
+    pid: 14170
+    tid: 14170
+    sample_time_ns: 346637628962730
+    period: 207017
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 80
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1789829120
+    len: 2244608
+    pgoff: 0
+    filename: "/lib64/ld-2.15.so"
+    filename_md5_prefix: 1323517811832655594
+    sample_info {
+      pid: 14170
+      tid: 14170
+      sample_time_ns: 346637628971038
+    }
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 64
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1792073728
+    len: 8192
+    pgoff: 140736072769536
+    filename: "[vdso]"
+    filename_md5_prefix: 2667416218816914640
+    sample_info {
+      pid: 14170
+      tid: 14170
+      sample_time_ns: 346637629008316
+    }
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 40
+  }
+  sample_event {
+    ip: 1016897
+    pid: 14170
+    tid: 14170
+    sample_time_ns: 346637629234840
+    period: 169037
+  }
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 80
+  }
+  mmap_event {
+    pid: 14170
+    tid: 14170
+    start: 1792081920
+    len: 3829760
+    pgoff: 0
+    filename: "/lib64/libc-2.15.so"
+    filename_md5_prefix: 9148960704138262540
+    sample_info {
+      pid: 14170
+      tid: 14170
+      sample_time_ns: 346637629328551
+    }
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 40
+  }
+  sample_event {
+    ip: 735588
+    pid: 14170
+    tid: 14170
+    sample_time_ns: 346637629451182
+    period: 167307
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 40
+  }
+  sample_event {
+    ip: 324049
+    pid: 14170
+    tid: 14170
+    sample_time_ns: 346637629664680
+    period: 170547
+  }
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 40
+  }
+  sample_event {
+    ip: 1986035
+    pid: 14170
+    tid: 14170
+    sample_time_ns: 346637629882826
+    period: 174203
+  }
+}
+events {
+  header {
+    type: 4
+    misc: 0
+    size: 48
+  }
+  exit_event {
+    pid: 14170
+    ppid: 14170
+    tid: 14170
+    ptid: 14170
+    fork_time_ns: 346637629930119
+    sample_info {
+      pid: 14170
+      tid: 14170
+      sample_time_ns: 346637629931266
+    }
+  }
+}
+events {
+  header {
+    type: 4
+    misc: 0
+    size: 48
+  }
+  exit_event {
+    pid: 14170
+    ppid: 14170
+    tid: 14170
+    ptid: 14170
+    fork_time_ns: 346637629930119
+    sample_info {
+      pid: 14170
+      tid: 14170
+      sample_time_ns: 346637629932764
+    }
+  }
+}
+events {
+  header {
+    type: 4
+    misc: 0
+    size: 48
+  }
+  exit_event {
+    pid: 14170
+    ppid: 14170
+    tid: 14170
+    ptid: 14170
+    fork_time_ns: 346637629930119
+    sample_info {
+      pid: 14170
+      tid: 14170
+      sample_time_ns: 346637629933960
+    }
+  }
+}
+events {
+  header {
+    type: 4
+    misc: 0
+    size: 48
+  }
+  exit_event {
+    pid: 14170
+    ppid: 14170
+    tid: 14170
+    ptid: 14170
+    fork_time_ns: 346637629930119
+    sample_info {
+      pid: 14170
+      tid: 14170
+      sample_time_ns: 346637629935338
+    }
+  }
+}
+timestamp_sec: 0
+stats {
+  num_sample_events: 13
+  num_mmap_events: 100
+  num_fork_events: 0
+  num_exit_events: 4
+  num_sample_events_mapped: 13
+  did_remap: false
+}
+metadata_mask: 16380
+build_ids {
+  misc: 1
+  pid: 4294967295
+  build_id_hash: "c]\236Ohk\363\265\255\360\215zsZR`\211\233\027\246"
+  filename: "[kernel.kallsyms]"
+  filename_md5_prefix: 280564236321828871
+}
+uint32_metadata {
+  type: 7
+  data: 4
+  data: 4
+}
+uint64_metadata {
+  type: 10
+  data: 3989076
+}
+event_types {
+  id: 0
+  name: "cycles"
+  name_md5_prefix: 12436270580932095263
+}
+cpu_topology {
+  core_siblings: "0-3"
+  core_siblings_md5_prefix: 6955206273986717419
+  thread_siblings: "0-1"
+  thread_siblings: "2-3"
+  thread_siblings_md5_prefix: 14045363986529205085
+  thread_siblings_md5_prefix: 13991663921307637384
+}
+string_metadata {
+  hostname {
+    value: "localhost"
+    value_md5_prefix: 4763305433620259622
+  }
+  kernel_version {
+    value: "3.8.11"
+    value_md5_prefix: 6269914851068073295
+  }
+  perf_version {
+    value: "3.8.11.g047ea3"
+    value_md5_prefix: 5145335191364386038
+  }
+  architecture {
+    value: "x86_64"
+    value_md5_prefix: 11246003006864564
+  }
+  cpu_description {
+    value: "Intel(R) Core(TM) i5-2467M CPU @ 1.60GHz"
+    value_md5_prefix: 11610793089366470376
+  }
+  cpu_id {
+    value: "GenuineIntel,6,42,7"
+    value_md5_prefix: 17799137988201876362
+  }
+  perf_command_line_token {
+    value: "/usr/sbin/perf"
+    value_md5_prefix: 8922525626614715891
+  }
+  perf_command_line_token {
+    value: "record"
+    value_md5_prefix: 16003524724320237622
+  }
+  perf_command_line_token {
+    value: "-o"
+    value_md5_prefix: 12893035396610391846
+  }
+  perf_command_line_token {
+    value: "perf.data.singleprocess.next"
+    value_md5_prefix: 14066306073220417805
+  }
+  perf_command_line_token {
+    value: "--"
+    value_md5_prefix: 14964084598567107715
+  }
+  perf_command_line_token {
+    value: "echo"
+    value_md5_prefix: 14677546575749228893
+  }
+  perf_command_line_whole {
+    value: "/usr/sbin/perf record -o perf.data.singleprocess.next -- echo"
+    value_md5_prefix: 5824131809857580979
+  }
+}

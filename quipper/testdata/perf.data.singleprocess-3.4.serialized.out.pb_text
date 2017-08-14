@@ -1,0 +1,2881 @@
+file_attrs {
+  attr {
+    type: 0
+    size: 96
+    config: 0
+    sample_period: 1000
+    sample_type: 327
+    read_format: 7
+    disabled: true
+    inherit: true
+    pinned: false
+    exclusive: false
+    exclude_user: false
+    exclude_kernel: false
+    exclude_hv: false
+    exclude_idle: false
+    mmap: true
+    comm: true
+    freq: true
+    inherit_stat: false
+    enable_on_exec: true
+    task: false
+    watermark: false
+    precise_ip: 0
+    mmap_data: false
+    sample_id_all: true
+    exclude_host: false
+    exclude_guest: true
+    wakeup_events: 0
+    bp_type: 0
+    bp_addr: 0
+    bp_len: 0
+    branch_sample_type: 0
+    exclude_callchain_kernel: false
+    exclude_callchain_user: false
+    mmap2: false
+    comm_exec: false
+    sample_regs_user: 0
+    sample_stack_user: 0
+  }
+  ids: 11
+  ids: 12
+}
+file_attrs {
+  attr {
+    type: 0
+    size: 96
+    config: 1
+    sample_period: 1000
+    sample_type: 327
+    read_format: 7
+    disabled: true
+    inherit: true
+    pinned: false
+    exclusive: false
+    exclude_user: false
+    exclude_kernel: false
+    exclude_hv: false
+    exclude_idle: false
+    mmap: false
+    comm: false
+    freq: true
+    inherit_stat: false
+    enable_on_exec: true
+    task: false
+    watermark: false
+    precise_ip: 0
+    mmap_data: false
+    sample_id_all: true
+    exclude_host: false
+    exclude_guest: true
+    wakeup_events: 0
+    bp_type: 0
+    bp_addr: 0
+    bp_len: 0
+    branch_sample_type: 0
+    exclude_callchain_kernel: false
+    exclude_callchain_user: false
+    mmap2: false
+    comm_exec: false
+    sample_regs_user: 0
+    sample_stack_user: 0
+  }
+  ids: 13
+  ids: 14
+}
+file_attrs {
+  attr {
+    type: 0
+    size: 96
+    config: 2
+    sample_period: 1000
+    sample_type: 327
+    read_format: 7
+    disabled: true
+    inherit: true
+    pinned: false
+    exclusive: false
+    exclude_user: false
+    exclude_kernel: false
+    exclude_hv: false
+    exclude_idle: false
+    mmap: false
+    comm: false
+    freq: true
+    inherit_stat: false
+    enable_on_exec: true
+    task: false
+    watermark: false
+    precise_ip: 0
+    mmap_data: false
+    sample_id_all: true
+    exclude_host: false
+    exclude_guest: true
+    wakeup_events: 0
+    bp_type: 0
+    bp_addr: 0
+    bp_len: 0
+    branch_sample_type: 0
+    exclude_callchain_kernel: false
+    exclude_callchain_user: false
+    mmap2: false
+    comm_exec: false
+    sample_regs_user: 0
+    sample_stack_user: 0
+  }
+  ids: 15
+  ids: 16
+}
+file_attrs {
+  attr {
+    type: 0
+    size: 96
+    config: 3
+    sample_period: 1000
+    sample_type: 327
+    read_format: 7
+    disabled: true
+    inherit: true
+    pinned: false
+    exclusive: false
+    exclude_user: false
+    exclude_kernel: false
+    exclude_hv: false
+    exclude_idle: false
+    mmap: false
+    comm: false
+    freq: true
+    inherit_stat: false
+    enable_on_exec: true
+    task: false
+    watermark: false
+    precise_ip: 0
+    mmap_data: false
+    sample_id_all: true
+    exclude_host: false
+    exclude_guest: true
+    wakeup_events: 0
+    bp_type: 0
+    bp_addr: 0
+    bp_len: 0
+    branch_sample_type: 0
+    exclude_callchain_kernel: false
+    exclude_callchain_user: false
+    mmap2: false
+    comm_exec: false
+    sample_regs_user: 0
+    sample_stack_user: 0
+  }
+  ids: 17
+  ids: 18
+}
+file_attrs {
+  attr {
+    type: 0
+    size: 96
+    config: 4
+    sample_period: 1000
+    sample_type: 327
+    read_format: 7
+    disabled: true
+    inherit: true
+    pinned: false
+    exclusive: false
+    exclude_user: false
+    exclude_kernel: false
+    exclude_hv: false
+    exclude_idle: false
+    mmap: false
+    comm: false
+    freq: true
+    inherit_stat: false
+    enable_on_exec: true
+    task: false
+    watermark: false
+    precise_ip: 0
+    mmap_data: false
+    sample_id_all: true
+    exclude_host: false
+    exclude_guest: true
+    wakeup_events: 0
+    bp_type: 0
+    bp_addr: 0
+    bp_len: 0
+    branch_sample_type: 0
+    exclude_callchain_kernel: false
+    exclude_callchain_user: false
+    mmap2: false
+    comm_exec: false
+    sample_regs_user: 0
+    sample_stack_user: 0
+  }
+  ids: 19
+  ids: 20
+}
+file_attrs {
+  attr {
+    type: 0
+    size: 96
+    config: 5
+    sample_period: 1000
+    sample_type: 327
+    read_format: 7
+    disabled: true
+    inherit: true
+    pinned: false
+    exclusive: false
+    exclude_user: false
+    exclude_kernel: false
+    exclude_hv: false
+    exclude_idle: false
+    mmap: false
+    comm: false
+    freq: true
+    inherit_stat: false
+    enable_on_exec: true
+    task: false
+    watermark: false
+    precise_ip: 0
+    mmap_data: false
+    sample_id_all: true
+    exclude_host: false
+    exclude_guest: true
+    wakeup_events: 0
+    bp_type: 0
+    bp_addr: 0
+    bp_len: 0
+    branch_sample_type: 0
+    exclude_callchain_kernel: false
+    exclude_callchain_user: false
+    mmap2: false
+    comm_exec: false
+    sample_regs_user: 0
+    sample_stack_user: 0
+  }
+  ids: 21
+  ids: 22
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 88
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 0
+    len: 18446744072098938879
+    pgoff: 18446744071578845584
+    filename: "[kernel.kallsyms]_stext"
+    filename_md5_prefix: 11896564614450778392
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072098938880
+    len: 24575
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/input/joydev.ko"
+    filename_md5_prefix: 7195338500304060396
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 136
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072098963456
+    len: 28671
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/media/video/videobuf2-memops.ko"
+    filename_md5_prefix: 10840361650716828983
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 136
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072098992128
+    len: 28671
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/media/video/videobuf2-vmalloc.ko"
+    filename_md5_prefix: 8901867005670926122
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099020800
+    len: 106495
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/media/video/videodev.ko"
+    filename_md5_prefix: 15276955151721470240
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099127296
+    len: 40959
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/media/video/videobuf2-core.ko"
+    filename_md5_prefix: 11711649566467692236
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099168256
+    len: 65535
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/media/video/uvc/uvcvideo.ko"
+    filename_md5_prefix: 13389683428907189190
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099233792
+    len: 28671
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/net/ipv6/netfilter/ip6_tables.ko"
+    filename_md5_prefix: 1538562370439569050
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099262464
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/net/netfilter/xt_mark.ko"
+    filename_md5_prefix: 16241902875972942084
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099282944
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/net/ipv6/netfilter/nf_defrag_ipv6.ko"
+    filename_md5_prefix: 98350274564279190
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099303424
+    len: 24575
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/gpio/nm10_gpio.ko"
+    filename_md5_prefix: 11841312854055830261
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099328000
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/net/ipv6/netfilter/ip6table_filter.ko"
+    filename_md5_prefix: 4240470103440067670
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 136
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099348480
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/net/ipv6/netfilter/nf_conntrack_ipv6.ko"
+    filename_md5_prefix: 11967827572596474721
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099368960
+    len: 28671
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/lib/lzo/lzo_compress.ko"
+    filename_md5_prefix: 5975738724931728502
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099397632
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/lib/lzo/lzo_decompress.ko"
+    filename_md5_prefix: 9640279581378573228
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099418112
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/sound/core/snd-page-alloc.ko"
+    filename_md5_prefix: 9663645426637797412
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099438592
+    len: 65535
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/fs/fuse/fuse.ko"
+    filename_md5_prefix: 11701617365143648730
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099504128
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/firmware/google/memconsole.ko"
+    filename_md5_prefix: 7233965441154810907
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099524608
+    len: 167935
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/net/bluetooth/bluetooth.ko"
+    filename_md5_prefix: 4555516659970533240
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099692544
+    len: 28671
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/staging/zsmalloc/zsmalloc.ko"
+    filename_md5_prefix: 15296553283572488953
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099721216
+    len: 28671
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/sound/core/snd-timer.ko"
+    filename_md5_prefix: 540508960213680673
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099749888
+    len: 147455
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/net/wireless/cfg80211.ko"
+    filename_md5_prefix: 5706785494849822639
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099897344
+    len: 28671
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/net/wireless/ath/ath.ko"
+    filename_md5_prefix: 8534608939433390298
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099926016
+    len: 24575
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/staging/iio/industrialio.ko"
+    filename_md5_prefix: 572270781679702252
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072099950592
+    len: 53247
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/net/ethernet/realtek/r8169.ko"
+    filename_md5_prefix: 8611671136533882087
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 112
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072100003840
+    len: 65535
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/sound/core/snd-pcm.ko"
+    filename_md5_prefix: 5987647281897999670
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 144
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072100069376
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/net/wireless/ath/ath9k/ath9k_common.ko"
+    filename_md5_prefix: 6226666273711770213
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072100089856
+    len: 20479
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/sound/core/snd-hwdep.ko"
+    filename_md5_prefix: 12507676138649642709
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 136
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072100110336
+    len: 360447
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/net/wireless/ath/ath9k/ath9k_hw.ko"
+    filename_md5_prefix: 4887389473820429359
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072100470784
+    len: 94207
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/sound/pci/hda/snd-hda-codec.ko"
+    filename_md5_prefix: 15097657030420495028
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072100564992
+    len: 323583
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/net/mac80211/mac80211.ko"
+    filename_md5_prefix: 2764528391655237394
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072100888576
+    len: 40959
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/sound/pci/hda/snd-hda-codec-hdmi.ko"
+    filename_md5_prefix: 7625463793310969791
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072100929536
+    len: 24575
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/staging/zram/zram.ko"
+    filename_md5_prefix: 7063952930661407093
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072100954112
+    len: 32767
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/staging/iio/light/isl29018.ko"
+    filename_md5_prefix: 10190093682014118898
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072100986880
+    len: 49151
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/sound/pci/hda/snd-hda-intel.ko"
+    filename_md5_prefix: 7527537925436471429
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 128
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072101036032
+    len: 28671
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/sound/pci/hda/snd-hda-codec-cirrus.ko"
+    filename_md5_prefix: 3772360932095315388
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 136
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072101064704
+    len: 122879
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/net/wireless/ath/ath9k/ath9k.ko"
+    filename_md5_prefix: 13836923631678303965
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072101187584
+    len: 24575
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/i2c/i2c-dev.ko"
+    filename_md5_prefix: 4842499935471725005
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 1
+    size: 120
+  }
+  mmap_event {
+    pid: 4294967295
+    tid: 0
+    start: 18446744072101212160
+    len: 1608339455
+    pgoff: 0
+    filename: "/lib/modules/3.4.0/kernel/drivers/input/misc/uinput.ko"
+    filename_md5_prefix: 15344455095948589951
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 3
+    misc: 0
+    size: 48
+  }
+  comm_event {
+    pid: 4337
+    tid: 4337
+    comm: "perf"
+    comm_md5_prefix: 4182440778745474060
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 4337
+    tid: 4337
+    start: 140326612496384
+    len: 1683456
+    pgoff: 0
+    filename: "/lib64/libc-2.15.so"
+    filename_md5_prefix: 9148960704138262540
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 4337
+    tid: 4337
+    start: 140326616317952
+    len: 1032192
+    pgoff: 0
+    filename: "/lib64/libm-2.15.so"
+    filename_md5_prefix: 2530586259063768697
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 4337
+    tid: 4337
+    start: 140326619451392
+    len: 94208
+    pgoff: 0
+    filename: "/usr/lib64/libelf-0.154.so"
+    filename_md5_prefix: 5749722073051915059
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 4337
+    tid: 4337
+    start: 140326619557888
+    len: 28672
+    pgoff: 0
+    filename: "/lib64/librt-2.15.so"
+    filename_md5_prefix: 9529828695019891150
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 96
+  }
+  mmap_event {
+    pid: 4337
+    tid: 4337
+    start: 140326621691904
+    len: 94208
+    pgoff: 0
+    filename: "/lib64/libpthread-2.15.so"
+    filename_md5_prefix: 2407915065680834835
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 4337
+    tid: 4337
+    start: 140326623903744
+    len: 139264
+    pgoff: 0
+    filename: "/lib64/ld-2.15.so"
+    filename_md5_prefix: 1323517811832655594
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 80
+  }
+  mmap_event {
+    pid: 4337
+    tid: 4337
+    start: 140326626148352
+    len: 507904
+    pgoff: 0
+    filename: "/usr/sbin/perf"
+    filename_md5_prefix: 8922525626614715891
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 72
+  }
+  mmap_event {
+    pid: 4337
+    tid: 4337
+    start: 140735321989120
+    len: 8192
+    pgoff: 0
+    filename: "[vdso]"
+    filename_md5_prefix: 2667416218816914640
+    sample_info {
+      pid: 0
+      tid: 0
+      sample_time_ns: 0
+      id: 0
+    }
+  }
+  timestamp: 0
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188914080
+    id: 15
+    period: 1
+  }
+  timestamp: 171188914080
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188918096
+    id: 17
+    period: 1
+  }
+  timestamp: 171188918096
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188920039
+    id: 19
+    period: 1
+  }
+  timestamp: 171188920039
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188922173
+    id: 21
+    period: 1
+  }
+  timestamp: 171188922173
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188924347
+    id: 11
+    period: 1
+  }
+  timestamp: 171188924347
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188926415
+    id: 13
+    period: 1
+  }
+  timestamp: 171188926415
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188932435
+    id: 15
+    period: 1
+  }
+  timestamp: 171188932435
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188934634
+    id: 17
+    period: 1
+  }
+  timestamp: 171188934634
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188936652
+    id: 19
+    period: 1
+  }
+  timestamp: 171188936652
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188938656
+    id: 21
+    period: 1
+  }
+  timestamp: 171188938656
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188940679
+    id: 11
+    period: 1
+  }
+  timestamp: 171188940679
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188942772
+    id: 13
+    period: 1
+  }
+  timestamp: 171188942772
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188947435
+    id: 15
+    period: 8
+  }
+  timestamp: 171188947435
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188949494
+    id: 17
+    period: 9
+  }
+  timestamp: 171188949494
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188951527
+    id: 19
+    period: 9
+  }
+  timestamp: 171188951527
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188953575
+    id: 11
+    period: 9
+  }
+  timestamp: 171188953575
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188955588
+    id: 13
+    period: 9
+  }
+  timestamp: 171188955588
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188960171
+    id: 19
+    period: 84
+  }
+  timestamp: 171188960171
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188962205
+    id: 11
+    period: 95
+  }
+  timestamp: 171188962205
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188964213
+    id: 13
+    period: 96
+  }
+  timestamp: 171188964213
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188968810
+    id: 19
+    period: 1289
+  }
+  timestamp: 171188968810
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188970889
+    id: 11
+    period: 1460
+  }
+  timestamp: 171188970889
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188972942
+    id: 13
+    period: 1474
+  }
+  timestamp: 171188972942
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071583496506
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188977811
+    id: 11
+    period: 22257
+  }
+  timestamp: 171188977811
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071583496506
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188982483
+    id: 21
+    period: 9
+  }
+  timestamp: 171188982483
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579489281
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188987507
+    id: 15
+    period: 72
+  }
+  timestamp: 171188987507
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579741629
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188992850
+    id: 17
+    period: 84
+  }
+  timestamp: 171188992850
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579741629
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188994974
+    id: 13
+    period: 22396
+  }
+  timestamp: 171188994974
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579741629
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171188999627
+    id: 21
+    period: 34
+  }
+  timestamp: 171188999627
+}
+events {
+  header {
+    type: 9
+    misc: 2
+    size: 48
+  }
+  sample_event {
+    ip: 140326621752552
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189006628
+    id: 15
+    period: 288
+  }
+  timestamp: 171189006628
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579619057
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189019660
+    id: 21
+    period: 278
+  }
+  timestamp: 171189019660
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578853214
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189030338
+    id: 17
+    period: 316
+  }
+  timestamp: 171189030338
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578853214
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189032471
+    id: 11
+    period: 421982
+  }
+  timestamp: 171189032471
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579507352
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189044992
+    id: 19
+    period: 19779
+  }
+  timestamp: 171189044992
+}
+events {
+  header {
+    type: 9
+    misc: 2
+    size: 48
+  }
+  sample_event {
+    ip: 140326612721600
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189051567
+    id: 15
+    period: 2135
+  }
+  timestamp: 171189051567
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579746812
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189101089
+    id: 13
+    period: 146697
+  }
+  timestamp: 171189101089
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579777188
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189115429
+    id: 17
+    period: 1331
+  }
+  timestamp: 171189115429
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071580825628
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189129652
+    id: 21
+    period: 1980
+  }
+  timestamp: 171189129652
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189278694
+    id: 16
+    period: 1
+  }
+  timestamp: 171189278694
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189282095
+    id: 18
+    period: 1
+  }
+  timestamp: 171189282095
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189284228
+    id: 20
+    period: 1
+  }
+  timestamp: 171189284228
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189286397
+    id: 22
+    period: 1
+  }
+  timestamp: 171189286397
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189288445
+    id: 12
+    period: 1
+  }
+  timestamp: 171189288445
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189290659
+    id: 14
+    period: 1
+  }
+  timestamp: 171189290659
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189303218
+    id: 16
+    period: 1
+  }
+  timestamp: 171189303218
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189304525
+    id: 20
+    period: 1
+  }
+  timestamp: 171189304525
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189305758
+    id: 22
+    period: 1
+  }
+  timestamp: 171189305758
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189307031
+    id: 12
+    period: 1
+  }
+  timestamp: 171189307031
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189308307
+    id: 14
+    period: 1
+  }
+  timestamp: 171189308307
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189311151
+    id: 20
+    period: 7
+  }
+  timestamp: 171189311151
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189312443
+    id: 12
+    period: 8
+  }
+  timestamp: 171189312443
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189313673
+    id: 14
+    period: 8
+  }
+  timestamp: 171189313673
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189316557
+    id: 20
+    period: 139
+  }
+  timestamp: 171189316557
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189317812
+    id: 12
+    period: 192
+  }
+  timestamp: 171189317812
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189319054
+    id: 14
+    period: 194
+  }
+  timestamp: 171189319054
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189321902
+    id: 12
+    period: 4636
+  }
+  timestamp: 171189321902
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578921713
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189323187
+    id: 14
+    period: 4677
+  }
+  timestamp: 171189323187
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071583496507
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189326090
+    id: 20
+    period: 3334
+  }
+  timestamp: 171189326090
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071583496507
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189328959
+    id: 22
+    period: 8
+  }
+  timestamp: 171189328959
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579473226
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189331894
+    id: 16
+    period: 6
+  }
+  timestamp: 171189331894
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579473226
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189334741
+    id: 12
+    period: 145744
+  }
+  timestamp: 171189334741
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579489521
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189337725
+    id: 16
+    period: 32
+  }
+  timestamp: 171189337725
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071583493273
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189340711
+    id: 22
+    period: 50
+  }
+  timestamp: 171189340711
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579176086
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189343963
+    id: 16
+    period: 714
+  }
+  timestamp: 171189343963
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579734827
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189346992
+    id: 18
+    period: 1
+  }
+  timestamp: 171189346992
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579010395
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189349942
+    id: 18
+    period: 3
+  }
+  timestamp: 171189349942
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579695209
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189353110
+    id: 18
+    period: 130
+  }
+  timestamp: 171189353110
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071580589954
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189360254
+    id: 18
+    period: 5239
+  }
+  timestamp: 171189360254
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071580589954
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189361546
+    id: 14
+    period: 145443
+  }
+  timestamp: 171189361546
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071580803088
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189366052
+    id: 22
+    period: 576
+  }
+  timestamp: 171189366052
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579533427
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189379714
+    id: 16
+    period: 14933
+  }
+  timestamp: 171189379714
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579169209
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189391491
+    id: 20
+    period: 46653
+  }
+  timestamp: 171189391491
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579616754
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189436461
+    id: 22
+    period: 3347
+  }
+  timestamp: 171189436461
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071578994804
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189473534
+    id: 12
+    period: 1547148
+  }
+  timestamp: 171189473534
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071583476750
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189516291
+    id: 14
+    period: 601216
+  }
+  timestamp: 171189516291
+}
+events {
+  header {
+    type: 3
+    misc: 0
+    size: 48
+  }
+  comm_event {
+    pid: 4337
+    tid: 4337
+    comm: "echo"
+    comm_md5_prefix: 14677546575749228893
+    sample_info {
+      pid: 4337
+      tid: 4337
+      sample_time_ns: 171189537554
+      id: 12
+    }
+  }
+  timestamp: 171189537554
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 80
+  }
+  mmap_event {
+    pid: 4337
+    tid: 4337
+    start: 140650246836224
+    len: 24576
+    pgoff: 0
+    filename: "/bin/echo"
+    filename_md5_prefix: 14090494933488598532
+    sample_info {
+      pid: 4337
+      tid: 4337
+      sample_time_ns: 171189561012
+      id: 12
+    }
+  }
+  timestamp: 171189561012
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 4337
+    tid: 4337
+    start: 140650244591616
+    len: 2244608
+    pgoff: 0
+    filename: "/lib64/ld-2.15.so"
+    filename_md5_prefix: 1323517811832655594
+    sample_info {
+      pid: 4337
+      tid: 4337
+      sample_time_ns: 171189579794
+      id: 12
+    }
+  }
+  timestamp: 171189579794
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 72
+  }
+  mmap_event {
+    pid: 4337
+    tid: 4337
+    start: 140733273071616
+    len: 8192
+    pgoff: 140733273071616
+    filename: "[vdso]"
+    filename_md5_prefix: 2667416218816914640
+    sample_info {
+      pid: 4337
+      tid: 4337
+      sample_time_ns: 171189598631
+      id: 12
+    }
+  }
+  timestamp: 171189598631
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071580807234
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189616254
+    id: 20
+    period: 130086
+  }
+  timestamp: 171189616254
+}
+events {
+  header {
+    type: 1
+    misc: 2
+    size: 88
+  }
+  mmap_event {
+    pid: 4337
+    tid: 4337
+    start: 140650240770048
+    len: 3821568
+    pgoff: 0
+    filename: "/lib64/libc-2.15.so"
+    filename_md5_prefix: 9148960704138262540
+    sample_info {
+      pid: 4337
+      tid: 4337
+      sample_time_ns: 171189775946
+      id: 12
+    }
+  }
+  timestamp: 171189775946
+}
+events {
+  header {
+    type: 9
+    misc: 1
+    size: 48
+  }
+  sample_event {
+    ip: 18446744071579620091
+    pid: 4337
+    tid: 4337
+    sample_time_ns: 171189938668
+    id: 22
+    period: 8875
+  }
+  timestamp: 171189938668
+}
+events {
+  header {
+    type: 4
+    misc: 0
+    size: 56
+  }
+  exit_event {
+    pid: 4337
+    ppid: 4337
+    tid: 4337
+    ptid: 4337
+    fork_time_ns: 171190180744
+    sample_info {
+      pid: 4337
+      tid: 4337
+      sample_time_ns: 171190181656
+      id: 12
+    }
+  }
+  timestamp: 171190181656
+}
+events {
+  header {
+    type: 4
+    misc: 0
+    size: 56
+  }
+  exit_event {
+    pid: 4337
+    ppid: 4337
+    tid: 4337
+    ptid: 4337
+    fork_time_ns: 171190180744
+    sample_info {
+      pid: 4337
+      tid: 4337
+      sample_time_ns: 171190182932
+      id: 12
+    }
+  }
+  timestamp: 171190182932
+}
+timestamp_sec: 0
+stats {
+  num_sample_events: 77
+  num_mmap_events: 51
+  num_fork_events: 0
+  num_exit_events: 2
+  num_sample_events_mapped: 77
+  did_remap: false
+}
+metadata_mask: 15868
+build_ids {
+  misc: 1
+  pid: 4294967295
+  build_id_hash: "\317\364Xo2.\261\023\325\237T\366\3401\'g\306te$"
+  filename: "[kernel.kallsyms]"
+  filename_md5_prefix: 280564236321828871
+}
+build_ids {
+  misc: 2
+  pid: 4294967295
+  build_id_hash: "\300\231\221Ff\"?\366@8\202`L\226\200?\030\006\210\365"
+  filename: "/lib64/libc-2.15.so"
+  filename_md5_prefix: 9148960704138262540
+}
+build_ids {
+  misc: 2
+  pid: 4294967295
+  build_id_hash: "z\302\321\237\210\021\212Ip\255\264\212\204\355\211{\226>?\267"
+  filename: "/lib64/libpthread-2.15.so"
+  filename_md5_prefix: 2407915065680834835
+}
+uint32_metadata {
+  type: 7
+  data: 2
+  data: 2
+}
+uint64_metadata {
+  type: 10
+  data: 3990204
+}
+event_types {
+  id: 0
+  name: "cycles"
+  name_md5_prefix: 12436270580932095263
+}
+event_types {
+  id: 1
+  name: "instructions"
+  name_md5_prefix: 14690229571929281392
+}
+event_types {
+  id: 2
+  name: "cache-references"
+  name_md5_prefix: 7906894427944577237
+}
+event_types {
+  id: 3
+  name: "cache-misses"
+  name_md5_prefix: 17583416325898946980
+}
+event_types {
+  id: 4
+  name: "branches"
+  name_md5_prefix: 10586865410773475671
+}
+event_types {
+  id: 5
+  name: "branch-misses"
+  name_md5_prefix: 6745291748923996766
+}
+cpu_topology {
+  core_siblings: "0-1"
+  core_siblings_md5_prefix: 14045363986529205085
+  thread_siblings: "0"
+  thread_siblings: "1"
+  thread_siblings_md5_prefix: 14973660089898329583
+  thread_siblings_md5_prefix: 14180219187711517570
+}
+string_metadata {
+  hostname {
+    value: "localhost"
+    value_md5_prefix: 4763305433620259622
+  }
+  kernel_version {
+    value: "3.4.0"
+    value_md5_prefix: 1378581565045883552
+  }
+  perf_version {
+    value: "3.4.2642.g0aa604"
+    value_md5_prefix: 13729462509207888280
+  }
+  architecture {
+    value: "x86_64"
+    value_md5_prefix: 11246003006864564
+  }
+  cpu_description {
+    value: "Intel(R) Celeron(R) CPU 867 @ 1.30GHz"
+    value_md5_prefix: 13108472169441880820
+  }
+  perf_command_line_token {
+    value: "/usr/sbin/perf"
+    value_md5_prefix: 8922525626614715891
+  }
+  perf_command_line_token {
+    value: "record"
+    value_md5_prefix: 16003524724320237622
+  }
+  perf_command_line_token {
+    value: "-e"
+    value_md5_prefix: 5793861197931060347
+  }
+  perf_command_line_token {
+    value: "cycles,instructions,cache-references,cache-misses,branches,branch-misses"
+    value_md5_prefix: 13890035070735797227
+  }
+  perf_command_line_token {
+    value: "-o"
+    value_md5_prefix: 12893035396610391846
+  }
+  perf_command_line_token {
+    value: "perf.data.singleprocess"
+    value_md5_prefix: 11694011001486962234
+  }
+  perf_command_line_token {
+    value: "--"
+    value_md5_prefix: 14964084598567107715
+  }
+  perf_command_line_token {
+    value: "echo"
+    value_md5_prefix: 14677546575749228893
+  }
+  perf_command_line_whole {
+    value: "/usr/sbin/perf record -e cycles,instructions,cache-references,cache-misses,branches,branch-misses -o perf.data.singleprocess -- echo"
+    value_md5_prefix: 18192056328934933217
+  }
+}

@@ -17,9 +17,9 @@
 #include "perf_data_handler.h"
 #include "string_compat.h"
 #include "builder.h"
-#include "chromiumos-wide-profiling/perf_data.pb.h"
-#include "chromiumos-wide-profiling/perf_parser.h"
-#include "chromiumos-wide-profiling/perf_reader.h"
+#include "quipper/perf_data.pb.h"
+#include "quipper/perf_parser.h"
+#include "quipper/perf_reader.h"
 
 namespace perftools {
 namespace {

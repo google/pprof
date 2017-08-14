@@ -19,7 +19,7 @@
 #include "path_matching.h"
 #include "perf_data_handler.h"
 #include "string_compat.h"
-#include "chromiumos-wide-profiling/perf_reader.h"
+#include "quipper/perf_reader.h"
 
 using quipper::PerfDataProto;
 using quipper::PerfDataProto_MMapEvent;

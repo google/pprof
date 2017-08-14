@@ -20,4 +20,5 @@ compiler:
   - gcc
 
 script:
-  - make perf_to_profile check
+  - make perf_to_profile check clean
+  - make quipper perf_converter check clean --directory quipper/ -f Makefile.external
