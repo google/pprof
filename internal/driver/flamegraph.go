@@ -34,101 +34,82 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-		<link rel="stylesheet" type="text/css" 
-			href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" 
-			integrity="sha256-916EbMg70RQy9LHiGkXzG8hSg9EdNy97GazNG/aiY1w=" 
-			crossorigin="anonymous" 
-		/>
-		<style>
-			// d3.flameGraph.css
-			{{ .D3FlameGraphCSS }}
-		</style>
-		<style>
-			/* Space out content a bit */
-			body {
-				padding-top: 20px;
-				padding-bottom: 20px;
-			}
-
-			/* Custom page header */
-			.header {
-				padding-bottom: 15px;
-				padding-right: 15px;
-				padding-left: 15px;
-				border-bottom: 1px solid #e5e5e5;
-			}
-
-			/* Make the masthead heading the same height as the navigation */
-			.header h3 {
-				margin-top: 0;
-				margin-bottom: 0;
-			}
-
-			/* Customize container */
-			.container {
-				max-width: 990px;
-			}
-
-			/* Sample details */
-			.details {
-				height: 1.428em;
-			}
+	<style>
+		// d3.flameGraph.css
+		{{ .D3FlameGraphCSS }}
+	</style>
+	<style>
+		form {
+     		display:inline;
+		}
+		.page {
+			display: flex;
+			flex-direction: column;
+			height: 100%;
+			min-height: 100%;
+			width: 100%;
+			min-width: 100%;
+			margin: 0px;
+		}
+		button {
+			margin-top: 5px;
+			margin-bottom: 5px;
+		}
+		.detailtext {
+			display: none;
+			position: absolute;
+			background-color: #ffffff;
+			min-width: 160px;
+			border-top: 1px solid black;
+			box-shadow: 2px 2px 2px 0px #aaa;
+			z-index: 1;
+		}
+		.title {
+			font-size: 16pt;
+			padding-left: 0.5em;
+			padding-right: 0.5em;
+		}
     </style>
-
     <title>{{.Title}} {{.Type}}</title>
   </head>
   <body>
-    <div class="container">
-      <div class="header clearfix">
-        <nav>
-          <div class="pull-right">  
-            <form class="form-inline" id="form">
-              <div class="form-group">
-                <select class="form-control" id="type" onchange="location = this.value;">
-                {{range .Types}}
-                  <option value="?t={{.}}"{{if eq . $.Type}} selected{{end}}>{{.}}</option>
-                {{end}}
-                </select>
-              </div>
-              <a class="btn" href="javascript: resetZoom();">Reset zoom</a>
-              <a class="btn" href="javascript: clear();">Clear</a>
-              <div class="form-group">
-                <input type="text" class="form-control" id="term">
-              </div>
-              <a class="btn btn-primary" href="javascript: search();">Search</a>
-            </form>
-          </div>
-				</nav>
-				<h3 class="text-muted">{{.Title}}</h3>
-      </div>
-      <div id="chart">
-      </div>
-      <hr>
-      <div id="details" class="details">
-			</div>
-			<hr>
-			<div id="profile" class="profile">
-				<h4 class="text-muted">profile details:</h4>
-				<dl class="row">
-					<dt class="col-md-2">File</dt>
-					<dd class="col-md-10">{{.Title}}</dd>
-					<dt class="col-md-2">Type</dt>
-					<dd class="col-md-10">{{.Type}}</dd>
-					<dt class="col-md-2">Unit</dt>
-					{{if eq .Unit "nanoseconds"}}
-					<dd class="col-md-10">seconds</dd>
-					{{else}}
-					<dd class="col-md-10">{{.Unit}}</dd>
-					{{end}}
-					<dt class="col-md-2">Time</dt>
-					<dd class="col-md-10">{{.Time}}</dd>
-					<dt class="col-md-2">Duration</dt>
-					<dd class="col-md-10">{{.Duration}}</dd>
-				</dl>
-			</div>
-    </div>
-
+	<div>
+		<button id="details-button">&#x25b7; Details</button>
+		<div id="detail-text" class="detailtext">
+		{{range .Legend}}<div>{{.}}</div>{{end}}
+		</div>
+		<select id="type" onchange="location = this.value;">
+		{{range .Types}}
+			<option value="?t={{.}}"{{if eq . $.Type}} selected{{end}}>{{.}}</option>
+		{{end}}
+		</select>
+		<button id="reset">Reset zoom</button>
+		<button id="clear">Clear</button>
+		<span class="title">{{.Title}}</span>
+		<form id="form">
+			<input id="term" type="text" placeholder="Search" autocomplete="off" autocapitalize="none" size=40>
+			<button id="search">Search</button>
+		</form>
+		<div class="page">
+			<div id="errors">{{range .Errors}}<div>{{.}}</div>{{end}}</div>
+			<div id="chart"></div>
+		</div>
+		<div id="details"></div>
+	</div>
+	<script type="text/javascript">
+		var detailsButton = document.getElementById("details-button");
+		var detailsText = document.getElementById("detail-text");
+		function handleDetails() {
+			if (detailsText.style.display == "block") {
+				detailsText.style.display = "none"
+				detailsButton.innerText = "\u25b7 Details"
+			} else {
+				detailsText.style.display = "block"
+				detailsButton.innerText = "\u25bd Details"
+			}
+		}
+		detailsButton.addEventListener("click", handleDetails)
+	</script>
 	<script type="text/javascript">
 		// d3.js
 		{{ .D3JS }}
@@ -153,8 +134,10 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 			{{end}}
 		};
 
+		var width = document.getElementById("chart").clientWidth;
+
 		var flameGraph = d3.flameGraph()
-			.width(960)
+			.width(width)
 			.cellHeight(18)
 			.transitionDuration(750)
 			.transitionEase(d3.easeCubic)
@@ -187,15 +170,28 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 			var term = document.getElementById("term").value;
 			flameGraph.search(term);
 		}
+		document.getElementById("search").addEventListener("click", search);
 
 		function clear() {
 			document.getElementById('term').value = '';
 			flameGraph.clear();
 		}
+		document.getElementById("clear").addEventListener("click", clear);
 
 		function resetZoom() {
 			flameGraph.resetZoom();
 		}
+		document.getElementById("reset").addEventListener("click", resetZoom);
+		
+		window.addEventListener("resize", function() {
+			var width = document.getElementById("chart").clientWidth;
+			var graphs = document.getElementsByClassName("d3-flame-graph");
+			if (graphs.length > 0) {
+				graphs[0].setAttribute("width", width);
+			}
+			flameGraph.width(width);
+			flameGraph.resetZoom();
+		}, true);
 	</script>
   </body>
 </html>`))
@@ -304,13 +300,25 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 		profileTypes = append(profileTypes, s.Type)
 	}
 
+	legendUnit := profileUnit
+	if legendUnit == "nanoseconds" {
+		legendUnit = "seconds"
+	}
+
+	legend := []string{
+		"File: " + file,
+		"Type: " + profileType,
+		"Unit: " + legendUnit,
+		"Time: " + profileTime,
+		"Duration: " + profileDuration,
+	}
+
 	// Embed in html.
 	data := struct {
 		Title           string
+		Legend          []string
 		Type            string
 		Unit            string
-		Time            string
-		Duration        string
 		Types           []string
 		Errors          []string
 		Data            template.JS
@@ -321,10 +329,9 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 		Help            map[string]string
 	}{
 		Title:           file,
+		Legend:          legend,
 		Type:            profileType,
 		Unit:            profileUnit,
-		Time:            profileTime,
-		Duration:        profileDuration,
 		Types:           profileTypes,
 		Errors:          catcher.errors,
 		D3JS:            template.JS(d3.D3JS),
