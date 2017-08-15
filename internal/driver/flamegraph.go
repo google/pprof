@@ -22,6 +22,10 @@ import (
 	"net/http"
 	"path/filepath"
 	"time"
+
+	"github.com/google/pprof/third_party/d3"
+	"github.com/google/pprof/third_party/d3flamegraph"
+	"github.com/google/pprof/third_party/d3tip"
 )
 
 var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE html>
@@ -35,14 +39,11 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 			href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" 
 			integrity="sha256-916EbMg70RQy9LHiGkXzG8hSg9EdNy97GazNG/aiY1w=" 
 			crossorigin="anonymous" 
-			onerror="resourceError(this)"
 		/>
-		<link rel="stylesheet" type="text/css" 
-      href="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.4/dist/d3.flameGraph.min.css" 
-      integrity="sha256-w762vSe6WGrkVZ7gEOpnn2Y+FSmAGlX77jYj7nhuCyY=" 
-			crossorigin="anonymous" 
-			onerror="resourceError(this)"
-    />
+		<style>
+			// d3.flameGraph.css
+			{{ .D3FlameGraphCSS }}
+		</style>
 		<style>
 			/* Space out content a bit */
 			body {
@@ -76,12 +77,6 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
     </style>
 
     <title>{{.Title}} {{.Type}}</title>
-
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js" integrity="sha256-4OrICDjBYfKefEbVT7wETRLNFkuq4TJV5WLGvjqpGAk=" crossorigin="anonymous"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js" integrity="sha256-g6iAfvZp+nDQ2TdTR/VVKJf3bGro4ub5fvWSWVRi2NE=" crossorigin="anonymous"></script>
-    <![endif]-->
   </head>
   <body>
     <div class="container">
@@ -134,96 +129,74 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 			</div>
     </div>
 
-    <script type="text/javascript" 
-      src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js" 
-      integrity="sha256-r7j1FXNTvPzHR41+V71Jvej6fIq4v4Kzu5ee7J/RitM=" 
-      crossorigin="anonymous">
+	<script type="text/javascript">
+		// d3.js
+		{{ .D3JS }}
     </script>
-    <script type="text/javascript" 
-      src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js" 
-      integrity="sha256-z0A2CQF8xxCKuOJsn4sJ5HBjxiHHRAfTX8hDF4RSN5s=" 
-      crossorigin="anonymous">
+	<script type="text/javascript">
+		// d3-tip.js
+		{{ .D3TipJS }}
     </script>
-    <script type="text/javascript" 
-      src="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.4/dist/d3.flameGraph.min.js" 
-      integrity="sha256-I1CkrWbmjv+GWjgbulJ4i0vbzdrDGfxqdye2qNlhG3Q=" 
-      crossorigin="anonymous">
+	<script type="text/javascript">
+		// d3.flameGraph.js
+		{{ .D3FlameGraphJS }}
     </script>
-	  <script type="text/javascript">
-		  var data = {{.Data}};
-		</script>
-		<script type="text/javascript">
-			function resourceError(el) {
-				document.documentElement.innerHTML = "failed loading external resource " + el.href;
-			}
-		</script>
-		<script type="text/javascript">
-			if (typeof window.d3 === 'undefined') {
-				document.documentElement.innerHTML = "failed loading external resource d3.min.js"
-			} else if (typeof window.d3.tip === 'undefined') {
-				document.documentElement.innerHTML = "failed loading external resource d3-tip.min.js"
-			} if (typeof window.d3.flameGraph === 'undefined') {
-				document.documentElement.innerHTML = "failed loading external resource d3.flameGraph.min.js"
-			} else {
-					var label = function(d) {
-					{{if eq .Unit "nanoseconds"}}
-					return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d3.format(".5f")(d.data.value / 1000000000) + " seconds)";
-					{{else}}
-					return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d.data.value + " {{.Unit}})";
-					{{end}}
-				};
+	<script type="text/javascript">
+		var data = {{.Data}};
+	</script>
+	<script type="text/javascript">
+		var label = function(d) {
+			{{if eq .Unit "nanoseconds"}}
+			return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d3.format(".5f")(d.data.value / 1000000000) + " seconds)";
+			{{else}}
+			return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d.data.value + " {{.Unit}})";
+			{{end}}
+		};
 
-				var flameGraph = d3.flameGraph()
-					.width(960)
-					.cellHeight(18)
-					.transitionDuration(750)
-					.transitionEase(d3.easeCubic)
-					.sort(true)
-					.title("")
-					.label(label)
-					.onClick(onClick);
+		var flameGraph = d3.flameGraph()
+			.width(960)
+			.cellHeight(18)
+			.transitionDuration(750)
+			.transitionEase(d3.easeCubic)
+			.sort(true)
+			.title("")
+			.label(label);
 
-				// Example on how to use custom tooltips using d3-tip.
-				var tip = d3.tip()
-					.direction("s")
-					.offset([8, 0])
-					.attr('class', 'd3-flame-graph-tip')
-					{{if eq .Unit "nanoseconds"}}
-					.html(function(d) { return "name: " + d.data.name + ", value: " + d3.format(".5f")(d.data.value / 1000000000) + " seconds"; });
-					{{else}}
-					.html(function(d) { return "name: " + d.data.name + ", value: " + d.data.value; });
-					{{end}}
+		var tip = d3.tip()
+			.direction("s")
+			.offset([8, 0])
+			.attr('class', 'd3-flame-graph-tip')
+			{{if eq .Unit "nanoseconds"}}
+			.html(function(d) { return "name: " + d.data.name + ", value: " + d3.format(".5f")(d.data.value / 1000000000) + " seconds"; });
+			{{else}}
+			.html(function(d) { return "name: " + d.data.name + ", value: " + d.data.value; });
+			{{end}}
 
-				flameGraph.tooltip(tip);
+		flameGraph.tooltip(tip);
 
-				d3.select("#chart")
-					.datum(data)
-					.call(flameGraph);
+		d3.select("#chart")
+			.datum(data)
+			.call(flameGraph);
 
-				document.getElementById("form").addEventListener("submit", function(event){
-					event.preventDefault();
-					search();
-				});
+		document.getElementById("form").addEventListener("submit", function(event){
+			event.preventDefault();
+			search();
+		});
 
-				function search() {
-					var term = document.getElementById("term").value;
-					flameGraph.search(term);
-				}
+		function search() {
+			var term = document.getElementById("term").value;
+			flameGraph.search(term);
+		}
 
-				function clear() {
-					document.getElementById('term').value = '';
-					flameGraph.clear();
-				}
+		function clear() {
+			document.getElementById('term').value = '';
+			flameGraph.clear();
+		}
 
-				function resetZoom() {
-					flameGraph.resetZoom();
-				}
-
-				function onClick(d) {
-					console.info("Clicked on " + d.data.name);
-				}
-			}
-		</script>
+		function resetZoom() {
+			flameGraph.resetZoom();
+		}
+	</script>
   </body>
 </html>`))
 
@@ -333,25 +306,33 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 
 	// Embed in html.
 	data := struct {
-		Title    string
-		Type     string
-		Unit     string
-		Time     string
-		Duration string
-		Types    []string
-		Errors   []string
-		Data     template.JS
-		Help     map[string]string
+		Title           string
+		Type            string
+		Unit            string
+		Time            string
+		Duration        string
+		Types           []string
+		Errors          []string
+		Data            template.JS
+		D3JS            template.JS
+		D3TipJS         template.JS
+		D3FlameGraphJS  template.JS
+		D3FlameGraphCSS template.CSS
+		Help            map[string]string
 	}{
-		Title:    file,
-		Type:     profileType,
-		Unit:     profileUnit,
-		Time:     profileTime,
-		Duration: profileDuration,
-		Types:    profileTypes,
-		Errors:   catcher.errors,
-		Data:     template.JS(b),
-		Help:     ui.help,
+		Title:           file,
+		Type:            profileType,
+		Unit:            profileUnit,
+		Time:            profileTime,
+		Duration:        profileDuration,
+		Types:           profileTypes,
+		Errors:          catcher.errors,
+		D3JS:            template.JS(d3.D3JS),
+		D3TipJS:         template.JS(d3tip.D3TipJS),
+		D3FlameGraphJS:  template.JS(d3flamegraph.D3FlameGraphJS),
+		D3FlameGraphCSS: template.CSS(d3flamegraph.D3FlameGraphCSS),
+		Data:            template.JS(b),
+		Help:            ui.help,
 	}
 	html := &bytes.Buffer{}
 	if err := flameGraphTemplate.Execute(html, data); err != nil {
