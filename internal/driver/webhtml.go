@@ -257,6 +257,12 @@ function initPanAndZoom(svg, clickHandler) {
   }
 
   function handleScanMove(e) {
+    if (e.buttons == 0) {
+      // Missed an end event, perhaps because mouse moved outside window.
+      setMode(IDLE)
+      svg.removeEventListener("mousemove", handleScanMove)
+      return
+    }
     if (mode == MOUSEPAN) panMove(e.clientX, e.clientY)
   }
 
