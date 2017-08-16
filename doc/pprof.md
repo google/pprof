@@ -140,8 +140,8 @@ Here are examples explaining how `tagfocus` can be used:
 * `-tagfocus mytag=128kb:512kb` accepts a sample iff it has a numeric tag
   `mytag` with memory value in the specified range. There isn't a way to say
    `-tagfocus mytag=128kb:512kb,16kb:32kb`
-   or `-tagfocus mytag=128kb:512kb,mytag2=128kb:512kb`. Just single value
-   for numeric tags.
+   or `-tagfocus mytag=128kb:512kb,mytag2=128kb:512kb`. Just single value or
+   range for numeric tags.
 * `-tagfocus someregex` accepts a sample iff it has any string tag with
   `tagName:tagValue` string matching specified regexp. In the future, this
   will change to accept sample iff it has any string tag with `tagValue` string
