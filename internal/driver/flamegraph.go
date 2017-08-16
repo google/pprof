@@ -85,6 +85,7 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 		</select>
 		<button id="reset">Reset zoom</button>
 		<button id="clear">Clear</button>
+		<button id="graph">Graph</button>
 		<span class="title">{{.Title}}</span>
 		<form id="form">
 			<input id="term" type="text" placeholder="Search" autocomplete="off" autocapitalize="none" size=40>
@@ -108,7 +109,10 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 				detailsButton.innerText = "\u25bd Details"
 			}
 		}
-		detailsButton.addEventListener("click", handleDetails)
+		detailsButton.addEventListener("click", handleDetails);
+		document.getElementById("graph").addEventListener("click", function() {
+			window.location = "/";
+		});
 	</script>
 	<script type="text/javascript">
 		// d3.js
