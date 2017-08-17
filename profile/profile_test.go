@@ -591,10 +591,31 @@ func TestFilter(t *testing.T) {
 	}
 
 	for tx, tc := range []filterTestcase{
-		{nil, nil, nil, nil, true, false, false, false},
-		{regexp.MustCompile("notfound"), nil, nil, nil, false, false, false, false},
-		{nil, regexp.MustCompile("foo.c"), nil, nil, true, true, false, false},
-		{nil, nil, regexp.MustCompile("lib.so"), nil, true, false, true, false},
+		{
+			fm: true, // nil focus matches every sample
+		},
+		{
+			focus: regexp.MustCompile("notfound"),
+		},
+		{
+			ignore: regexp.MustCompile("foo.c"),
+			fm:     true,
+			im:     true,
+		},
+		{
+			hide: regexp.MustCompile("lib.so"),
+			fm:   true,
+			hm:   true,
+		},
+		{
+			show: regexp.MustCompile("foo.c"),
+			fm:   true,
+			hnm:  true,
+		},
+		{
+			show: regexp.MustCompile("notfound"),
+			fm:   true,
+		},
 	} {
 		prof := *testProfile1.Copy()
 		gf, gi, gh, gnh := prof.FilterSamplesByName(tc.focus, tc.ignore, tc.hide, tc.show)
