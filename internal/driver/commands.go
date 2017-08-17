@@ -195,11 +195,15 @@ var pprofVariables = variables{
 		"If set, only show nodes that match this location.",
 		"Matching includes the function name, filename or object name.")},
 	"tagfocus": &variable{stringKind, "", "", helpText(
-		"Restrict to samples with tags in range or matched by regexp",
-		"Discard samples that do not include a node with a tag matching this regexp.")},
+		"Restricts to samples with tags in range or matched by regexp",
+		"Use name=value syntax to limit the matching to a specific tag.",
+		"Numeric tag filter examples: 1kb, 1kb:10kb, memory=32mb:",
+		"String tag filter examples: foo, foo.*bar, mytag=foo.*bar")},
 	"tagignore": &variable{stringKind, "", "", helpText(
 		"Discard samples with tags in range or matched by regexp",
-		"Discard samples that do include a node with a tag matching this regexp.")},
+		"Use name=value syntax to limit the matching to a specific tag.",
+		"Numeric tag filter examples: 1kb, 1kb:10kb, memory=32mb:",
+		"String tag filter examples: foo, foo.*bar, mytag=foo.*bar")},
 	"tagshow": &variable{stringKind, "", "", helpText(
 		"Only consider tags matching this regexp",
 		"Discard tags that do not match this regexp")},
