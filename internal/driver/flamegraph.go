@@ -45,11 +45,11 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 		.page {
 			display: flex;
 			flex-direction: column;
-			height: 100%;
-			min-height: 100%;
-			width: 100%;
-			min-width: 100%;
-			margin: 0px;
+			height: 80%;
+			min-height: 80%;
+			width: 80%;
+			min-width: 80%;
+			margin-left: 10%;
 		}
 		button {
 			margin-top: 5px;
@@ -68,6 +68,12 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 			font-size: 16pt;
 			padding-left: 0.5em;
 			padding-right: 0.5em;
+		}
+		.details {
+			height: 1.2em;
+			width: 80%;
+			min-width: 80%;
+			margin-left: 10%;
 		}
     </style>
     <title>{{.Title}} {{.Type}}</title>
@@ -94,7 +100,7 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 			<div id="errors">{{range .Errors}}<div>{{.}}</div>{{end}}</div>
 			<div id="chart"></div>
 		</div>
-		<div id="details"></div>
+		<div id="details" class="details"></div>
 	</div>
 	<script type="text/javascript">
 		var detailsButton = document.getElementById("details-button");
@@ -128,9 +134,9 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 	<script type="text/javascript">
 		var label = function(d) {
 			{{if eq .Unit "nanoseconds"}}
-			return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d3.format(".5f")(d.data.value / 1000000000) + " seconds)";
+			return d.data.n + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d3.format(".5f")(d.data.v / 1000000000) + " seconds)";
 			{{else}}
-			return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d.data.value + " {{.Unit}})";
+			return d.data.n + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d.data.v + " {{.Unit}})";
 			{{end}}
 		};
 
@@ -139,6 +145,7 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 		var flameGraph = d3.flameGraph()
 			.width(width)
 			.cellHeight(18)
+			.minFrameSize(5)
 			.transitionDuration(750)
 			.transitionEase(d3.easeCubic)
 			.sort(true)
@@ -150,9 +157,9 @@ var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE ht
 			.offset([8, 0])
 			.attr('class', 'd3-flame-graph-tip')
 			{{if eq .Unit "nanoseconds"}}
-			.html(function(d) { return "name: " + d.data.name + ", value: " + d3.format(".5f")(d.data.value / 1000000000) + " seconds"; });
+			.html(function(d) { return "name: " + d.data.n + ", value: " + d3.format(".5f")(d.data.v / 1000000000) + " seconds"; });
 			{{else}}
-			.html(function(d) { return "name: " + d.data.name + ", value: " + d.data.value; });
+			.html(function(d) { return "name: " + d.data.n + ", value: " + d.data.v; });
 			{{end}}
 
 		flameGraph.tooltip(tip);
@@ -222,9 +229,9 @@ func (n *flameGraphNode) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(&struct {
-		Name     string           `json:"name"`
-		Value    int64            `json:"value"`
-		Children []flameGraphNode `json:"children"`
+		Name     string           `json:"n"`
+		Value    int64            `json:"v"`
+		Children []flameGraphNode `json:"c"`
 	}{
 		Name:     n.Name,
 		Value:    n.Value,
