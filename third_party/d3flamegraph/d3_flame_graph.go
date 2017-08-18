@@ -63,6 +63,31 @@ const D3FlameGraphJS = `
       }
     });
   }
+
+  if (!Array.prototype.filter)
+  Array.prototype.filter = function(func, thisArg) {
+    if ( ! ((typeof func === 'function') && this) )
+        throw new TypeError();
+    
+    var len = this.length >>> 0,
+        res = new Array(len), // preallocate array
+        c = 0, i = -1;
+    if (thisArg === undefined)
+      while (++i !== len)
+        // checks to see if the key was set
+        if (i in this)
+          if (func(t[i], i, t))
+            res[c++] = t[i];
+    else
+      while (++i !== len)
+        // checks to see if the key was set
+        if (i in this)
+          if (func.call(thisArg, t[i], i, t))
+            res[c++] = t[i];
+    
+    res.length = c; // shrink down array to proper size
+    return res;
+  };
   /*jshint eqnull:false */
 
   function flameGraph() {
@@ -75,9 +100,10 @@ const D3FlameGraphJS = `
       title = "", // graph title
       transitionDuration = 750,
       transitionEase = d3.easeCubic, // tooltip offset
-      sort = true,
+      sort = false,
       reversed = false, // reverse the graph direction
-      clickHandler = null;
+      clickHandler = null,
+      minFrameSize = 0;
 
     var tip = d3.tip()
       .direction("s")
@@ -87,8 +113,20 @@ const D3FlameGraphJS = `
 
     var svg;
 
+    function name(d) {
+      return d.data.n || d.data.name;
+    }
+
+    function children(d) {
+      return d.c || d.children;
+    }
+
+    function value(d) {
+      return d.v || d.value;
+    }
+
     var label = function(d) {
-      return d.data.name + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d.data.value + " samples)";
+      return name(d) + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + value(d) + " samples)";
     };
 
     function setDetails(t) {
@@ -97,12 +135,8 @@ const D3FlameGraphJS = `
         details.innerHTML = t;
     }
 
-    function name(d) {
-      return d.data.name;
-    }
-
     var colorMapper = function(d) {
-      return d.highlight ? "#E600E6" : colorHash(d.data.name);
+      return d.highlight ? "#E600E6" : colorHash(name(d));
     };
 
     function generateHash(name) {
@@ -143,21 +177,24 @@ const D3FlameGraphJS = `
 
     function hide(d) {
       if(!d.data.original) {
-        d.data.original = d.data.value;
+        d.data.original = value(d);
       }
-      d.data.value = 0;
-      if(d.children) {
-        d.children.forEach(hide);
+      d.data.v = 0;
+      if (d.data.value) {
+        delete d.data.value;
+      }
+      if(children(d)) {
+        children(d).forEach(hide);
       }
     }
 
     function show(d) {
       d.data.fade = false;
       if(d.data.original) {
-        d.data.value = d.data.original;
+        d.data.v = d.data.original;
       }
-      if(d.children) {
-        d.children.forEach(show);
+      if(children(d)) {
+        children(d).forEach(show);
       }
     }
 
@@ -211,10 +248,10 @@ const D3FlameGraphJS = `
           searchResults = [];
 
       function searchInner(d) {
-        var label = d.data.name;
+        var label = name(d);
 
-        if (d.children) {
-          d.children.forEach(function (child) {
+        if (children(d)) {
+          children(d).forEach(function (child) {
             searchInner(child);
           });
         }
@@ -233,8 +270,8 @@ const D3FlameGraphJS = `
 
     function clear(d) {
       d.highlight = false;
-      if(d.children) {
-        d.children.forEach(function(child) {
+      if(children(d)) {
+        children(d).forEach(function(child) {
           clear(child);
         });
       }
@@ -244,11 +281,22 @@ const D3FlameGraphJS = `
       if (typeof sort === 'function') {
         return sort(a, b);
       } else if (sort) {
-        return d3.ascending(a.data.name, b.data.name);
+        return d3.ascending(name(a), name(b));
       }
     }
 
     var partition = d3.partition();
+
+    function filterNodes(root) {
+      var nodeList = root.descendants();
+      if (minFrameSize > 0) {
+        var kx = w / (root.x1 - root.x0);
+        nodeList = nodeList.filter(function(el) {
+          return ((el.x1 - el.x0) * kx) > minFrameSize;
+        });
+      }
+      return nodeList;
+    }
 
     function update() {
 
@@ -262,10 +310,11 @@ const D3FlameGraphJS = `
             return 0;
           }
           // The node's self value is its total value minus all children.
-          var v = d.v || d.value || 0;
-          if (d.children) {
-            for (var i = 0; i < d.children.length; i++) {
-              v -= d.children[i].value;
+          var v = value(d) || 0;
+          if (children(d)) {
+            var c = children(d);
+            for (var i = 0; i < c.length; i++) {
+              v -= c[i].value;
             }
           }
           return v;
@@ -275,24 +324,26 @@ const D3FlameGraphJS = `
         var kx = w / (root.x1 - root.x0);
         function width(d) { return (d.x1 - d.x0) * kx; }
 
-        var g = d3.select(this).select("svg").selectAll("g").data(root.descendants());
+        var descendants = filterNodes(root);
+        var g = d3.select(this).select("svg").selectAll("g").data(descendants, function(d) { return d.id; });
 
         g.transition()
           .duration(transitionDuration)
           .ease(transitionEase)
           .attr("transform", function(d) { return "translate(" + x(d.x0) + "," + (reversed ? y(d.depth) : (h - y(d.depth) - c)) + ")"; });
 
-        g.select("rect").transition()
-          .duration(transitionDuration)
-          .ease(transitionEase)
+        g.select("rect")
           .attr("width", width);
 
         var node = g.enter()
           .append("svg:g")
           .attr("transform", function(d) { return "translate(" + x(d.x0) + "," + (reversed ? y(d.depth) : (h - y(d.depth) - c)) + ")"; });
-
-        node.append("svg:rect").attr("width", width);
-
+        
+        node.append("svg:rect")
+          .transition()
+          .delay(transitionDuration / 2)
+          .attr("width", width);
+        
         if (!tooltip)
           node.append("svg:title");
 
@@ -300,11 +351,11 @@ const D3FlameGraphJS = `
           .append("xhtml:div");
 
         // Now we have to re-select to see the new elements (why?).
-        g = d3.select(this).select("svg").selectAll("g").data(root.descendants());
+        g = d3.select(this).select("svg").selectAll("g").data(descendants, function(d) { return d.id; });
 
         g.attr("width", width)
           .attr("height", function(d) { return c; })
-          .attr("name", function(d) { return d.data.name; })
+          .attr("name", function(d) { return name(d); })
           .attr("class", function(d) { return d.data.fade ? "frame fade" : "frame"; });
 
         g.select("rect")
@@ -321,11 +372,14 @@ const D3FlameGraphJS = `
           .select("div")
           .attr("class", "label")
           .style("display", function(d) { return (width(d) < 35) ? "none" : "block";})
+          .transition()
+          .delay(transitionDuration)
           .text(name);
 
         g.on('click', zoom);
 
-        g.exit().remove();
+        g.exit()
+          .remove();
 
         g.on('mouseover', function(d) {
           if (tooltip) tip.show(d);
@@ -340,7 +394,7 @@ const D3FlameGraphJS = `
     function merge(data, samples) {
       samples.forEach(function (sample) {
         var node = data.find(function (element) {
-          return element.name === sample.name;
+          return (name(element) === name(sample));
         });
 
         if (node) {
@@ -361,8 +415,23 @@ const D3FlameGraphJS = `
       });
     }
 
+    function s4() {
+      return Math.floor((1 + Math.random()) * 0x10000)
+        .toString(16)
+        .substring(1);
+    }
+
+    function injectIds(node) {
+      node.id = s4();
+      var children = node.c || node.children || [];
+      for (var i = 0; i < children.length; i++) {
+        injectIds(children[i]);
+      }
+    }
+
     function chart(s) {
-      var root = d3.hierarchy(s.datum(), function(d) { return d.c || d.children; });
+      var root = d3.hierarchy(s.datum(), function(d) { return children(d); });
+      injectIds(root);
       selection = s.datum(root);
 
       if (!arguments.length) return chart;
@@ -496,7 +565,7 @@ const D3FlameGraphJS = `
       var newRoot; // Need to re-create hierarchy after data changes.
       selection.each(function (root) {
         merge([root.data], [samples]);
-        newRoot = d3.hierarchy(root.data, function(d) { return d.c || d.children; });
+        newRoot = d3.hierarchy(root.data, function(d) { return children(d); });
       });
       selection = selection.datum(newRoot);
       update();
@@ -505,6 +574,12 @@ const D3FlameGraphJS = `
     chart.color = function(_) {
       if (!arguments.length) { return colorMapper; }
       colorMapper = _;
+      return chart;
+    };
+
+    chart.minFrameSize = function (_) {
+      if (!arguments.length) { return minFrameSize; }
+      minFrameSize = _;
       return chart;
     };
 
