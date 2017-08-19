@@ -753,8 +753,15 @@ function viewer(nodes) {
 <div id="topcontainer">
 <table id="toptable">
 <tr><th>Flat<th>Flat%<th>Sum%<th>Cum<th>Cum%<th>Name</tr>
-{{range .Top}}
-<tr><td>{{.Flat}}<td>{{.FlatPercent}}<td>{{.SumPercent}}<td>{{.Cum}}<td>{{.CumPercent}}<td>{{.Name}}</tr>
+{{range $i,$e := .Top}}
+  <tr id="node{{$i}}">
+  <td>{{$e.Flat}}
+  <td>{{$e.FlatPercent}}
+  <td>{{$e.SumPercent}}
+  <td>{{$e.Cum}}
+  <td>{{$e.CumPercent}}
+  <td>{{$e.Name}}
+  </tr>
 {{end}}
 </table>
 </div>

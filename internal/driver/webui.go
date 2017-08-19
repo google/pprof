@@ -283,7 +283,7 @@ func (ui *webInterface) top(w http.ResponseWriter, req *http.Request) {
 	top, legend := report.TextItems(rpt)
 
 	// Get regular expression for each item.
-	nodes := []string{""}
+	var nodes []string
 	for _, item := range top {
 		nodes = append(nodes, item.Name)
 	}
