@@ -24,7 +24,6 @@ import (
 	gourl "net/url"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 	"time"
 
@@ -52,6 +51,7 @@ func (ec *errorCatcher) PrintErr(args ...interface{}) {
 	ec.UI.PrintErr(args...)
 }
 
+// webArgs contains arguments passed to templates in webhtml.go.
 type webArgs struct {
 	Type   string
 	Title  string
@@ -115,7 +115,7 @@ func newListenerAndURL(hostport string) (ln net.Listener, url string, isLocal bo
 	if ln, err = net.Listen("tcp", hostport); err != nil {
 		return nil, "", false, err
 	}
-	url = fmt.Sprint("http://", net.JoinHostPort(host, fmt.Sprint(ln.Addr().(*net.TCPAddr).Port)))
+	url = fmt.Sprint("http://", net.JoinHostPort(host, fmt.Sprint(ln.Addr().(*net.TCPAddr).Port)), "/top")
 	return ln, url, isLocalhost(host), nil
 }
 
@@ -216,7 +216,7 @@ func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 	// Get regular expression for each node.
 	nodes := []string{""}
 	for _, n := range g.Nodes {
-		nodes = append(nodes, regexp.QuoteMeta(n.Info.Name))
+		nodes = append(nodes, n.Info.Name)
 	}
 
 	// Embed in html.
@@ -285,7 +285,7 @@ func (ui *webInterface) top(w http.ResponseWriter, req *http.Request) {
 	// Get regular expression for each item.
 	nodes := []string{""}
 	for _, item := range top {
-		nodes = append(nodes, regexp.QuoteMeta(item.Name))
+		nodes = append(nodes, item.Name)
 	}
 
 	// Embed in html.

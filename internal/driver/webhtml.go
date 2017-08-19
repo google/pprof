@@ -136,6 +136,9 @@ button {
   max-height: 100%;
   overflow: scroll;
 }
+#toptable {
+  border-spacing: 0px;
+}
 #toptable tr th {
   border-bottom: 1px solid black;
   text-align: right;
@@ -192,6 +195,7 @@ Functions
 </div>
 </div>
 
+{{if (eq .Type "dot")}}
 <div class="menu-header">
 Refine
 <div class="menu">
@@ -201,6 +205,7 @@ Refine
 <button title="{{.Help.show}}" id="show">Show</button>
 </div>
 </div>
+{{end}}
 
 <input id="searchbox" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
 
@@ -459,6 +464,7 @@ function viewer(nodes) {
   const search = document.getElementById("searchbox")
   const graph0 = document.getElementById("graph0")
   const svg = (graph0 == null ? null : graph0.parentElement)
+  const toptable = document.getElementById("toptable")
 
   let regexpActive = false
   let selected = new Map()
@@ -537,7 +543,7 @@ function viewer(nodes) {
     updateButtons()
   }
 
-  function toggleSelect(elem) {
+  function toggleSvgSelect(elem) {
     // Walk up to immediate child of graph0
     while (elem != null && elem.parentElement != graph0) {
       elem = elem.parentElement
@@ -580,6 +586,17 @@ function viewer(nodes) {
   }
 
   function setBackground(elem, set) {
+    // Handle table row highlighting.
+    if (elem.nodeName == "TR") {
+      if (set) {
+        elem.classList.add("hilite")
+      } else {
+        elem.classList.remove("hilite")
+      }
+      return
+    }
+
+    // Handle svg element highlighting.
     const p = findPolygon(elem)
     if (p != null) {
       if (set) {
@@ -600,6 +617,11 @@ function viewer(nodes) {
     return null
   }
 
+  // convert a string to a regexp that matches that string.
+  function quotemeta(str) {
+    return str.replace(/([\\\.?+*\[\](){}])/g, '\\$1')
+  }
+
   // Navigate to specified path with current selection reflected
   // in the named parameter.
   function navigate(path, param, newWindow) {
@@ -609,7 +631,7 @@ function viewer(nodes) {
     if (!regexpActive) {
       selected.forEach(function(v, key) {
         if (re != "") re += "|"
-        re += nodes[key]
+        re += quotemeta(nodes[key])
       })
     }
 
@@ -636,6 +658,34 @@ function viewer(nodes) {
     }
   }
 
+  function handleTopClick(e) {
+    // Walk back until we find TR and then get the Name column (index 5)
+    let elem = e.target
+    while (elem != null && elem.nodeName != "TR") {
+      elem = elem.parentElement
+    }
+    if (elem == null) return
+    if (elem.children.length != 6) return
+
+    e.preventDefault()
+    const tr = elem
+    const td = elem.children[5]
+    if (td.nodeName != "TD") return
+    const name = td.innerText
+    const index = nodes.indexOf(name)
+    if (index < 0) return
+
+    // Disable regexp mode.
+    regexpActive = false
+
+    if (selected.has(index)) {
+      unselect(index, elem)
+    } else {
+      select(index, elem)
+    }
+    updateButtons()
+  }
+
   function updateButtons() {
     const enable = (search.value != "" || selected.size != 0)
     if (buttonsEnabled == enable) return
@@ -653,7 +703,11 @@ function viewer(nodes) {
 
   // Setup event handlers
   if (svg != null) {
-    initPanAndZoom(svg, toggleSelect)
+    initPanAndZoom(svg, toggleSvgSelect)
+  }
+  if (toptable != null) {
+    toptable.addEventListener("mousedown", handleTopClick)
+    toptable.addEventListener("touchstart", handleTopClick)
   }
 
   // Bind action to button with specified id.
