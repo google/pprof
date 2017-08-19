@@ -52,6 +52,17 @@ func (ec *errorCatcher) PrintErr(args ...interface{}) {
 	ec.UI.PrintErr(args...)
 }
 
+type webArgs struct {
+	Type   string
+	Title  string
+	Errors []string
+	Legend []string
+	Help   map[string]string
+	Nodes  []string
+	Svg    template.HTML
+	Top    []report.TextItem
+}
+
 func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) error {
 	interactiveMode = true
 	ui := &webInterface{
@@ -83,6 +94,7 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) e
 
 	mux := http.NewServeMux()
 	mux.Handle("/", wrap(http.HandlerFunc(ui.dot)))
+	mux.Handle("/top", wrap(http.HandlerFunc(ui.top)))
 	mux.Handle("/disasm", wrap(http.HandlerFunc(ui.disasm)))
 	mux.Handle("/weblist", wrap(http.HandlerFunc(ui.weblist)))
 	mux.Handle("/peek", wrap(http.HandlerFunc(ui.peek)))
@@ -210,14 +222,8 @@ func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 	// Embed in html.
 	file := getFromLegend(legend, "File: ", "unknown")
 	profile := getFromLegend(legend, "Type: ", "unknown")
-	data := struct {
-		Title  string
-		Errors []string
-		Svg    template.HTML
-		Legend []string
-		Nodes  []string
-		Help   map[string]string
-	}{
+	data := webArgs{
+		Type:   "dot",
 		Title:  file + " " + profile,
 		Errors: catcher.errors,
 		Svg:    template.HTML(string(svg)),
@@ -251,6 +257,57 @@ func dotToSvg(dot []byte) ([]byte, error) {
 		svg = svg[pos:]
 	}
 	return svg, nil
+}
+
+func (ui *webInterface) top(w http.ResponseWriter, req *http.Request) {
+	// Capture any error messages generated while generating a report.
+	catcher := &errorCatcher{UI: ui.options.UI}
+	options := *ui.options
+	options.UI = catcher
+
+	// Generate top report
+	args := []string{"top"}
+	vars := pprofVariables.makeCopy()
+	vars["nodecount"].value = "50"
+	vars["focus"].value = req.URL.Query().Get("f")
+	vars["show"].value = req.URL.Query().Get("s")
+	vars["ignore"].value = req.URL.Query().Get("i")
+	vars["hide"].value = req.URL.Query().Get("h")
+	_, rpt, err := generateRawReport(ui.prof, args, vars, &options)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ui.options.UI.PrintErr(err)
+		return
+	}
+
+	top, legend := report.TextItems(rpt)
+
+	// Get regular expression for each item.
+	nodes := []string{""}
+	for _, item := range top {
+		nodes = append(nodes, regexp.QuoteMeta(item.Name))
+	}
+
+	// Embed in html.
+	file := getFromLegend(legend, "File: ", "unknown")
+	profile := getFromLegend(legend, "Type: ", "unknown")
+	data := webArgs{
+		Type:   "top",
+		Title:  file + " " + profile,
+		Errors: catcher.errors,
+		Legend: legend,
+		Help:   ui.help,
+		Top:    top,
+		Nodes:  nodes,
+	}
+	html := &bytes.Buffer{}
+	if err := webTemplate.ExecuteTemplate(html, "top", data); err != nil {
+		http.Error(w, "internal template error", http.StatusInternalServerError)
+		ui.options.UI.PrintErr(err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html")
+	w.Write(html.Bytes())
 }
 
 // disasm generates a web page containing disassembly.

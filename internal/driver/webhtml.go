@@ -16,6 +16,12 @@ package driver
 
 import "html/template"
 
+// webTemplate defines a collection of related templates:
+//    css
+//    header
+//    script
+//    graph
+//    top
 var webTemplate = template.Must(template.New("web").Parse(`
 {{define "css"}}
 <style type="text/css">
@@ -26,9 +32,11 @@ html, body {
 }
 body {
   width: 100%;
+  height: 100%;
+  min-height: 100%;
   overflow: hidden;
 }
-#page {
+#graphcontainer {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -95,6 +103,11 @@ button {
   left: 0px;
   min-width: 5em;
 }
+.menu hr {
+  background-color: #fff;
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
 .menu button {
   display: block;
   width: 100%;
@@ -117,19 +130,37 @@ button {
 #searchbox {
   margin-left: 10pt;
 }
+#topcontainer {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  overflow: scroll;
+}
+#toptable tr th {
+  border-bottom: 1px solid black;
+  text-align: right;
+  padding-left: 1em;
+}
+#toptable tr th:nth-child(6) {
+  text-align: left;
+}
+#toptable tr td {
+  padding-left: 1em;
+  font: monospace;
+  text-align: right;
+  white-space: nowrap;
+  cursor: default;
+}
+#toptable tr td:nth-child(6) {
+  text-align: left;
+}
+.hilite {
+  background-color: #ccf;
+}
 </style>
 {{end}}
 
-{{define "graph" -}}
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
-{{template "css" .}}
-</head>
-<body>
-
+{{define "header"}}
 <div id="detailtext">
 <button id="closedetails">Close</button>
 {{range .Legend}}<div>{{.}}</div>{{end}}
@@ -140,6 +171,13 @@ button {
 <div class="menu-header">
 View
 <div class="menu">
+{{if (ne .Type "top")}}
+  <button title="{{.Help.top}}" id="topbtn">Top</button>
+{{end}}
+{{if (ne .Type "dot")}}
+  <button title="{{.Help.graph}}" id="graphbtn">Graph</button>
+{{end}}
+<hr>
 <button title="{{.Help.details}}" id="details">Details</button>
 <button title="{{.Help.reset}}" id="reset">Reset</button>
 </div>
@@ -168,24 +206,35 @@ Refine
 
 <span id="home">{{.Title}}</span>
 
-</div>
-
-<div id="page">
+</div> <!-- menubar -->
 
 <div id="errors">{{range .Errors}}<div>{{.}}</div>{{end}}</div>
+{{end}}
 
+{{define "graph" -}}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{.Title}}</title>
+{{template "css" .}}
+</head>
+<body>
+
+{{template "header" .}}
+<div id="graphcontainer">
 <div id="graph">
-
 {{.Svg}}
 </div>
 
 </div>
-{{template "graphjs" .}}
+{{template "script" .}}
+<script>viewer({{.Nodes}})</script>
 </body>
 </html>
 {{end}}
 
-{{define "graphjs"}}
+{{define "script"}}
 <script>
 // Make svg pannable and zoomable.
 // Call clickHandler(t) if a click event is caught by the pan event handlers.
@@ -403,13 +452,13 @@ function initPanAndZoom(svg, clickHandler) {
   svg.addEventListener("wheel", handleWheel, true)
 }
 
-function dotviewer(nodes) {
+function viewer(nodes) {
   'use strict';
 
   // Elements
   const search = document.getElementById("searchbox")
   const graph0 = document.getElementById("graph0")
-  const svg = graph0.parentElement
+  const svg = (graph0 == null ? null : graph0.parentElement)
 
   let regexpActive = false
   let selected = new Map()
@@ -428,6 +477,8 @@ function dotviewer(nodes) {
   }
 
   function handleReset() { window.location.href = "/" }
+  function handleTop() { navigate("/top", "f", false) }
+  function handleGraph() { navigate("/", "f", false) }
   function handleList() { navigate("/weblist", "f", true) }
   function handleDisasm() { navigate("/disasm", "f", true) }
   function handlePeek() { navigate("/peek", "f", true) }
@@ -601,7 +652,9 @@ function dotviewer(nodes) {
   updateButtons()
 
   // Setup event handlers
-  initPanAndZoom(svg, toggleSelect)
+  if (svg != null) {
+    initPanAndZoom(svg, toggleSelect)
+  }
 
   // Bind action to button with specified id.
   function addAction(id, action) {
@@ -614,6 +667,8 @@ function dotviewer(nodes) {
 
   addAction("details", handleDetails)
   addAction("closedetails", handleCloseDetails)
+  addAction("topbtn", handleTop)
+  addAction("graphbtn", handleGraph)
   addAction("reset", handleReset)
   addAction("peek", handlePeek)
   addAction("list", handleList)
@@ -626,8 +681,33 @@ function dotviewer(nodes) {
   search.addEventListener("input", handleSearch)
   search.addEventListener("keydown", handleKey)
 }
-
-dotviewer({{.Nodes}})
 </script>
+{{end}}
+
+{{define "top" -}}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{.Title}}</title>
+{{template "css" .}}
+</head>
+<body>
+
+{{template "header" .}}
+
+<div id="topcontainer">
+<table id="toptable">
+<tr><th>Flat<th>Flat%<th>Sum%<th>Cum<th>Cum%<th>Name</tr>
+{{range .Top}}
+<tr><td>{{.Flat}}<td>{{.FlatPercent}}<td>{{.SumPercent}}<td>{{.Cum}}<td>{{.CumPercent}}<td>{{.Name}}</tr>
+{{end}}
+</table>
+</div>
+
+{{template "script" .}}
+<script>viewer({{.Nodes}})</script>
+</body>
+</html>
 {{end}}
 `))
