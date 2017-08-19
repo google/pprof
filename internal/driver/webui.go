@@ -223,7 +223,7 @@ func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 		Help:   ui.help,
 	}
 	html := &bytes.Buffer{}
-	if err := graphTemplate.Execute(html, data); err != nil {
+	if err := webTemplate.ExecuteTemplate(html, "graph", data); err != nil {
 		http.Error(w, "internal template error", http.StatusInternalServerError)
 		ui.options.UI.PrintErr(err)
 		return

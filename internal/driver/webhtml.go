@@ -16,12 +16,8 @@ package driver
 
 import "html/template"
 
-var graphTemplate = template.Must(template.New("graph").Parse(
-	`<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
+var webTemplate = template.Must(template.New("web").Parse(`
+{{define "css"}}
 <style type="text/css">
 html, body {
   height: 100%;
@@ -101,6 +97,15 @@ button {
   padding-right: 0.5em;
 }
 </style>
+{{end}}
+
+{{define "graph" -}}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{.Title}}</title>
+{{template "css" .}}
 </head>
 <body>
 
@@ -137,6 +142,12 @@ button {
 </div>
 
 </div>
+{{template "graphjs" .}}
+</body>
+</html>
+{{end}}
+
+{{define "graphjs"}}
 <script>
 // Make svg pannable and zoomable.
 // Call clickHandler(t) if a click event is caught by the pan event handlers.
@@ -579,6 +590,5 @@ function dotviewer(nodes) {
 
 dotviewer({{.Nodes}})
 </script>
-</body>
-</html>
+{{end}}
 `))
