@@ -173,6 +173,15 @@ func checkLocalHost(h http.Handler) http.Handler {
 	})
 }
 
+func varsFromURL(u *gourl.URL) variables {
+	vars := pprofVariables.makeCopy()
+	vars["focus"].value = u.Query().Get("f")
+	vars["show"].value = u.Query().Get("s")
+	vars["ignore"].value = u.Query().Get("i")
+	vars["hide"].value = u.Query().Get("h")
+	return vars
+}
+
 // dot generates a web page containing an svg diagram.
 func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 	if req.URL.Path != "/" {
@@ -187,11 +196,7 @@ func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 
 	// Generate dot graph.
 	args := []string{"svg"}
-	vars := pprofVariables.makeCopy()
-	vars["focus"].value = req.URL.Query().Get("f")
-	vars["show"].value = req.URL.Query().Get("s")
-	vars["ignore"].value = req.URL.Query().Get("i")
-	vars["hide"].value = req.URL.Query().Get("h")
+	vars := varsFromURL(req.URL)
 	_, rpt, err := generateRawReport(ui.prof, args, vars, &options)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -213,8 +218,8 @@ func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Get regular expression for each node.
-	nodes := []string{""}
+	// Get all node names into an array.
+	nodes := []string{""} // dot starts with node numbered 1
 	for _, n := range g.Nodes {
 		nodes = append(nodes, n.Info.Name)
 	}
@@ -267,12 +272,8 @@ func (ui *webInterface) top(w http.ResponseWriter, req *http.Request) {
 
 	// Generate top report
 	args := []string{"top"}
-	vars := pprofVariables.makeCopy()
+	vars := varsFromURL(req.URL)
 	vars["nodecount"].value = "50"
-	vars["focus"].value = req.URL.Query().Get("f")
-	vars["show"].value = req.URL.Query().Get("s")
-	vars["ignore"].value = req.URL.Query().Get("i")
-	vars["hide"].value = req.URL.Query().Get("h")
 	_, rpt, err := generateRawReport(ui.prof, args, vars, &options)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -282,7 +283,7 @@ func (ui *webInterface) top(w http.ResponseWriter, req *http.Request) {
 
 	top, legend := report.TextItems(rpt)
 
-	// Get regular expression for each item.
+	// Get all node names into an array.
 	var nodes []string
 	for _, item := range top {
 		nodes = append(nodes, item.Name)
