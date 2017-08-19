@@ -65,6 +65,9 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) e
 	for n, v := range pprofVariables {
 		ui.help[n] = v.help
 	}
+	ui.help["details"] = "Show information about the profile and this view"
+	ui.help["graph"] = "Display profile as a directed graph"
+	ui.help["reset"] = "Show the entire profile"
 
 	ln, url, isLocal, err := newListenerAndURL(hostport)
 	if err != nil {
