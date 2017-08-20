@@ -103,7 +103,11 @@ func (ui *TestUI) PrintErr(args ...interface{}) {
 		ui.Ignore--
 		return
 	}
-	ui.T.Error(args)
+	// Stringify arguments with fmt.Sprint() to match what default UI
+	// implementation does. Without this Error() calls fmt.Sprintln() which
+	// _always_ adds spaces between arguments, unlike fmt.Sprint() which only
+	// adds them between arguments if neither is string.
+	ui.T.Error(fmt.Sprint(args...))
 }
 
 // IsTerminal indicates if the UI is an interactive terminal.

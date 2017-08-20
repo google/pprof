@@ -46,9 +46,8 @@ type DotConfig struct {
 	LegendURL string   // The URL to link to from the legend.
 	Labels    []string // The labels for the DOT's legend
 
-	FormatValue func(int64) string         // A formatting function for values
-	FormatTag   func(int64, string) string // A formatting function for numeric tags
-	Total       int64                      // The total weight of the graph, used to compute percentages
+	FormatValue func(int64) string // A formatting function for values
+	Total       int64              // The total weight of the graph, used to compute percentages
 }
 
 const maxNodelets = 4 // Number of nodelets for labels (both numeric and non)
@@ -123,10 +122,10 @@ func (b *builder) finish() {
 // addLegend generates a legend in DOT format.
 func (b *builder) addLegend() {
 	labels := b.config.Labels
-	var title string
-	if len(labels) > 0 {
-		title = labels[0]
+	if len(labels) == 0 {
+		return
 	}
+	title := labels[0]
 	fmt.Fprintf(b, `subgraph cluster_L { "%s" [shape=box fontsize=16`, title)
 	fmt.Fprintf(b, ` label="%s\l"`, strings.Join(labels, `\l`))
 	if b.config.LegendURL != "" {
@@ -450,14 +449,9 @@ func tagDistance(t, u *Tag) float64 {
 }
 
 func (b *builder) tagGroupLabel(g []*Tag) (label string, flat, cum int64) {
-	formatTag := b.config.FormatTag
-	if formatTag == nil {
-		formatTag = measurement.Label
-	}
-
 	if len(g) == 1 {
 		t := g[0]
-		return formatTag(t.Value, t.Unit), t.FlatValue(), t.CumValue()
+		return measurement.Label(t.Value, t.Unit), t.FlatValue(), t.CumValue()
 	}
 	min := g[0]
 	max := g[0]
@@ -481,7 +475,11 @@ func (b *builder) tagGroupLabel(g []*Tag) (label string, flat, cum int64) {
 	if dc != 0 {
 		c = c / dc
 	}
-	return formatTag(min.Value, min.Unit) + ".." + formatTag(max.Value, max.Unit), f, c
+
+	// Tags are not scaled with the selected output unit because tags are often
+	// much smaller than other values which appear, so the range of tag sizes
+	// sometimes would appear to be "0..0" when scaled to the selected output unit.
+	return measurement.Label(min.Value, min.Unit) + ".." + measurement.Label(max.Value, max.Unit), f, c
 }
 
 func min64(a, b int64) int64 {

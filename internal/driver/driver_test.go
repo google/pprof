@@ -56,9 +56,11 @@ func TestParse(t *testing.T) {
 		{"text,functions,flat,nodecount=5,call_tree", "unknown"},
 		{"text,alloc_objects,flat", "heap_alloc"},
 		{"text,files,flat", "heap"},
+		{"text,files,flat,focus=[12]00,taghide=[X3]00", "heap"},
 		{"text,inuse_objects,flat", "heap"},
 		{"text,lines,cum,hide=line[X3]0", "cpu"},
 		{"text,lines,cum,show=[12]00", "cpu"},
+		{"text,lines,cum,hide=line[X3]0,focus=[12]00", "cpu"},
 		{"topproto,lines,cum,hide=mangled[X3]0", "cpu"},
 		{"tree,lines,cum,focus=[24]00", "heap"},
 		{"tree,relative_percentages,cum,focus=[24]00", "heap"},
@@ -68,6 +70,7 @@ func TestParse(t *testing.T) {
 		{"dot,functions,flat", "cpu"},
 		{"dot,functions,flat,call_tree", "cpu"},
 		{"dot,lines,flat,focus=[12]00", "heap"},
+		{"dot,unit=minimum", "heap_sizetags"},
 		{"dot,addresses,flat,ignore=[X3]002,focus=[X1]000", "contention"},
 		{"dot,files,cum", "contention"},
 		{"comments", "cpu"},
@@ -77,7 +80,9 @@ func TestParse(t *testing.T) {
 		{"tags", "heap"},
 		{"tags,unit=bytes", "heap"},
 		{"traces", "cpu"},
+		{"traces", "heap_tags"},
 		{"dot,alloc_space,flat,focus=[234]00", "heap_alloc"},
+		{"dot,alloc_space,flat,tagshow=[2]00", "heap_alloc"},
 		{"dot,alloc_space,flat,hide=line.*1?23?", "heap_alloc"},
 		{"dot,inuse_space,flat,tagfocus=1mb:2gb", "heap"},
 		{"dot,inuse_space,flat,tagfocus=30kb:,tagignore=1mb:2mb", "heap"},
@@ -266,11 +271,12 @@ func addString(name []string, f *testFlags, components []string) []string {
 
 // testFlags implements the plugin.FlagSet interface.
 type testFlags struct {
-	bools   map[string]bool
-	ints    map[string]int
-	floats  map[string]float64
-	strings map[string]string
-	args    []string
+	bools       map[string]bool
+	ints        map[string]int
+	floats      map[string]float64
+	strings     map[string]string
+	args        []string
+	stringLists map[string][]*string
 }
 
 func (testFlags) ExtraUsage() string { return "" }
@@ -336,6 +342,9 @@ func (f testFlags) StringVar(p *string, s, d, c string) {
 }
 
 func (f testFlags) StringList(s, d, c string) *[]*string {
+	if t, ok := f.stringLists[s]; ok {
+		return &t
+	}
 	return &[]*string{}
 }
 
@@ -384,6 +393,24 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 			{Type: "alloc_objects", Unit: "count"},
 			{Type: "alloc_space", Unit: "bytes"},
 		}
+	case "heap_sizetags":
+		p = heapProfile()
+		tags := []int64{2, 4, 8, 16, 32, 64, 128, 256}
+		for _, s := range p.Sample {
+			s.NumLabel["bytes"] = append(s.NumLabel["bytes"], tags...)
+		}
+	case "heap_tags":
+		p = heapProfile()
+
+		for i := 0; i < len(p.Sample); i += 2 {
+			s := p.Sample[i]
+			if s.Label == nil {
+				s.Label = make(map[string][]string)
+			}
+			s.NumLabel["request"] = s.NumLabel["bytes"]
+			s.Label["key1"] = []string{"tag"}
+		}
+
 	case "contention":
 		p = contentionProfile()
 	case "symbolz":
@@ -971,8 +998,12 @@ func TestTagFilter(t *testing.T) {
 		{"test3", "tag1,tag3", map[string][]string{"value1": {"tag1", "tag2"}, "value2": {"tag3"}}, true},
 		{"test4", "t..[12],t..3", map[string][]string{"value1": {"tag1", "tag2"}, "value2": {"tag3"}}, true},
 		{"test5", "tag2,tag3", map[string][]string{"value1": {"tag1", "tag2"}}, false},
+		{"test6", "key1=tag1,tag2", map[string][]string{"key1": {"tag1", "tag2"}}, true},
+		{"test7", "key1=tag1,tag2", map[string][]string{"key1": {"tag1"}}, true},
+		{"test8", "key1:tag1,tag2", map[string][]string{"key1": {"tag1", "tag2"}}, true},
+		{"test9", "key1:tag1,tag2", map[string][]string{"key1": {"tag2"}}, false},
+		{"test10", "key1:tag1,tag2", map[string][]string{"key1": {"tag1"}}, false},
 	}
-
 	for _, test := range tagFilterTests {
 		filter, err := compileTagFilter(test.name, test.value, &proftest.TestUI{T: t}, nil)
 		if err != nil {
@@ -981,6 +1012,48 @@ func TestTagFilter(t *testing.T) {
 		}
 		s := profile.Sample{
 			Label: test.tags,
+		}
+
+		if got := filter(&s); got != test.want {
+			t.Errorf("tagFilter %s: got %v, want %v", test.name, got, test.want)
+		}
+	}
+}
+
+func TestNumericTagFilter(t *testing.T) {
+	var tagFilterTests = []struct {
+		name, value string
+		tags        map[string][]int64
+		want        bool
+	}{
+		{"test1", "128kb", map[string][]int64{"bytes": {131072}, "kilobytes": {128}}, true},
+		{"test2", "512kb", map[string][]int64{"bytes": {512}, "kilobytes": {128}}, false},
+		{"test3", "10b", map[string][]int64{"bytes": {10, 20}, "kilobytes": {128}}, true},
+		{"test4", ":10b", map[string][]int64{"bytes": {8}}, true},
+		{"test5", ":10kb", map[string][]int64{"bytes": {8}}, true},
+		{"test6", "10b:", map[string][]int64{"kilobytes": {8}}, true},
+		{"test7", "10b:", map[string][]int64{"bytes": {12}}, true},
+		{"test8", "10b:", map[string][]int64{"bytes": {8}}, false},
+		{"test9", "10kb:", map[string][]int64{"bytes": {8}}, false},
+		{"test10", ":10b", map[string][]int64{"kilobytes": {8}}, false},
+		{"test11", ":10b", map[string][]int64{"bytes": {12}}, false},
+		{"test12", "bytes=5b", map[string][]int64{"bytes": {5, 10}}, true},
+		{"test13", "bytes=1024b", map[string][]int64{"kilobytes": {1, 1024}}, false},
+		{"test14", "bytes=1024b", map[string][]int64{"kilobytes": {5}, "bytes": {1024}}, true},
+		{"test15", "bytes=512b:1024b", map[string][]int64{"bytes": {780}}, true},
+		{"test16", "bytes=1kb:2kb", map[string][]int64{"bytes": {4096}}, false},
+		{"test17", "bytes=512b:1024b", map[string][]int64{"bytes": {256}}, false},
+	}
+	for _, test := range tagFilterTests {
+		expectedErrMsg := fmt.Sprint([]string{test.name, ":Interpreted '", test.value, "' as range, not regexp"})
+		filter, err := compileTagFilter(test.name, test.value, &proftest.TestUI{T: t,
+			IgnoreRx: expectedErrMsg}, nil)
+		if err != nil {
+			t.Errorf("tagFilter %s:%v", test.name, err)
+			continue
+		}
+		s := profile.Sample{
+			NumLabel: test.tags,
 		}
 
 		if got := filter(&s); got != test.want {

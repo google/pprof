@@ -17,6 +17,7 @@ package plugin
 
 import (
 	"io"
+	"net/http"
 	"regexp"
 	"time"
 
@@ -31,6 +32,15 @@ type Options struct {
 	Sym     Symbolizer
 	Obj     ObjTool
 	UI      UI
+
+	// HTTPWrapper takes a pprof http handler as an argument and
+	// returns the actual handler that should be invoked by http.
+	// A typical use is to add authentication before calling the
+	// pprof handler.
+	//
+	// If HTTPWrapper is nil, a default wrapper will be used that
+	// disallows all requests except from the localhost.
+	HTTPWrapper func(http.Handler) http.Handler
 }
 
 // Writer provides a mechanism to write data under a certain name,

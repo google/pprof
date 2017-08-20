@@ -64,6 +64,7 @@ type Options struct {
 	Ratio               float64
 	Title               string
 	ProfileLabels       []string
+	ActiveFilters       []string
 
 	NodeCount    int
 	NodeFraction float64
@@ -754,6 +755,15 @@ func printTraces(w io.Writer, rpt *Report) error {
 		}
 		sort.Strings(labels)
 		fmt.Fprint(w, strings.Join(labels, ""))
+
+		// Print any numeric labels for the sample
+		var numLabels []string
+		for k, v := range sample.NumLabel {
+			numLabels = append(numLabels, fmt.Sprintf("%10s:  %s\n", k, strings.Trim(fmt.Sprintf("%d", v), "[]")))
+		}
+		sort.Strings(numLabels)
+		fmt.Fprint(w, strings.Join(numLabels, ""))
+
 		var d, v int64
 		v = o.SampleValue(sample.Value)
 		if o.SampleMeanDivisor != nil {
@@ -974,24 +984,25 @@ func printTree(w io.Writer, rpt *Report) error {
 	return nil
 }
 
-// printDOT prints an annotated callgraph in DOT format.
-func printDOT(w io.Writer, rpt *Report) error {
+// GetDOT returns a graph suitable for dot processing along with some
+// configuration information.
+func GetDOT(rpt *Report) (*graph.Graph, *graph.DotConfig) {
 	g, origCount, droppedNodes, droppedEdges := rpt.newTrimmedGraph()
 	rpt.selectOutputUnit(g)
 	labels := reportLabels(rpt, g, origCount, droppedNodes, droppedEdges, true)
-
-	o := rpt.options
-	formatTag := func(v int64, key string) string {
-		return measurement.ScaledLabel(v, key, o.OutputUnit)
-	}
 
 	c := &graph.DotConfig{
 		Title:       rpt.options.Title,
 		Labels:      labels,
 		FormatValue: rpt.formatValue,
-		FormatTag:   formatTag,
 		Total:       rpt.total,
 	}
+	return g, c
+}
+
+// printDOT prints an annotated callgraph in DOT format.
+func printDOT(w io.Writer, rpt *Report) error {
+	g, c := GetDOT(rpt)
 	graph.ComposeDot(w, g, &graph.DotAttributes{}, c)
 	return nil
 }
@@ -1070,6 +1081,11 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 		flatSum = flatSum + n.FlatValue()
 	}
 
+	if len(rpt.options.ActiveFilters) > 0 {
+		activeFilters := legendActiveFilters(rpt.options.ActiveFilters)
+		label = append(label, activeFilters...)
+	}
+
 	label = append(label, fmt.Sprintf("Showing nodes accounting for %s, %s of %s total", rpt.formatValue(flatSum), strings.TrimSpace(percentage(flatSum, rpt.total)), rpt.formatValue(rpt.total)))
 
 	if rpt.total != 0 {
@@ -1087,6 +1103,18 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 		}
 	}
 	return label
+}
+
+func legendActiveFilters(activeFilters []string) []string {
+	legendActiveFilters := make([]string, len(activeFilters)+1)
+	legendActiveFilters[0] = "Active filters:"
+	for i, s := range activeFilters {
+		if len(s) > 80 {
+			s = s[:80] + "…"
+		}
+		legendActiveFilters[i+1] = "   " + s
+	}
+	return legendActiveFilters
 }
 
 func genLabel(d int, n, l, f string) string {

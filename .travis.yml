@@ -1,16 +1,43 @@
 language: go
-go:
-  - 1.7.x
-  - 1.8.x
 
 go_import_path: github.com/google/pprof
 
-os:
-  - linux
-  - osx
+matrix:
+  include:
+    - os: linux
+      go: 1.7.x
+    - os: linux
+      go: 1.8.x
+    - os: linux
+      go: master
+    - os: osx
+      osx_image: xcode6.4
+      go: 1.8.x
+    - os: osx
+      osx_image: xcode6.4
+      go: master
+    - os: osx
+      osx_image: xcode7.3
+      go: 1.8.x
+    - os: osx
+      osx_image: xcode7.3
+      go: master
+    - os: osx
+      osx_image: xcode8.3
+      go: 1.8.x
+    - os: osx
+      osx_image: xcode8.3
+      go: master
 
+addons:
+  apt:
+    packages:
+      - graphviz
+      
 before_install:
-  - go get -u github.com/golang/lint/golint honnef.co/go/tools/cmd/...
+  - go get -u github.com/golang/lint/golint honnef.co/go/tools/cmd/...   
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install graphviz; fi
 
 script:
   - gofmtdiff=$(gofmt -s -d .) && if [ -n "$gofmtdiff" ]; then printf 'gofmt -s found:\n%s\n' "$gofmtdiff" && exit 1; fi

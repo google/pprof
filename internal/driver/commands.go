@@ -195,11 +195,15 @@ var pprofVariables = variables{
 		"If set, only show nodes that match this location.",
 		"Matching includes the function name, filename or object name.")},
 	"tagfocus": &variable{stringKind, "", "", helpText(
-		"Restrict to samples with tags in range or matched by regexp",
-		"Discard samples that do not include a node with a tag matching this regexp.")},
+		"Restricts to samples with tags in range or matched by regexp",
+		"Use name=value syntax to limit the matching to a specific tag.",
+		"Numeric tag filter examples: 1kb, 1kb:10kb, memory=32mb:",
+		"String tag filter examples: foo, foo.*bar, mytag=foo.*bar")},
 	"tagignore": &variable{stringKind, "", "", helpText(
 		"Discard samples with tags in range or matched by regexp",
-		"Discard samples that do include a node with a tag matching this regexp.")},
+		"Use name=value syntax to limit the matching to a specific tag.",
+		"Numeric tag filter examples: 1kb, 1kb:10kb, memory=32mb:",
+		"String tag filter examples: foo, foo.*bar, mytag=foo.*bar")},
 	"tagshow": &variable{stringKind, "", "", helpText(
 		"Only consider tags matching this regexp",
 		"Discard tags that do not match this regexp")},
@@ -218,6 +222,8 @@ var pprofVariables = variables{
 		"Sample value to report (0-based index or name)",
 		"Profiles contain multiple values per sample.",
 		"Use sample_index=i to select the ith value (starting at 0).")},
+	"normalize": &variable{boolKind, "f", "", helpText(
+		"Scales profile based on the base profile.")},
 
 	// Data sorting criteria
 	"flat": &variable{boolKind, "t", "cumulative", helpText("Sort entries based on own weight")},
@@ -263,7 +269,7 @@ func usage(commandLine bool) string {
 
 	var help string
 	if commandLine {
-		help = "  Output formats (select only one):\n"
+		help = "  Output formats (select at most one):\n"
 	} else {
 		help = "  Commands:\n"
 		commands = append(commands, fmtHelp("o/options", "List options and their current values"))
