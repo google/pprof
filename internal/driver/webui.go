@@ -53,14 +53,15 @@ func (ec *errorCatcher) PrintErr(args ...interface{}) {
 
 // webArgs contains arguments passed to templates in webhtml.go.
 type webArgs struct {
-	Type   string
-	Title  string
-	Errors []string
-	Legend []string
-	Help   map[string]string
-	Nodes  []string
-	Svg    template.HTML
-	Top    []report.TextItem
+	BaseURL string
+	Type    string
+	Title   string
+	Errors  []string
+	Legend  []string
+	Help    map[string]string
+	Nodes   []string
+	Svg     template.HTML
+	Top     []report.TextItem
 }
 
 func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) error {
@@ -228,13 +229,14 @@ func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 	file := getFromLegend(legend, "File: ", "unknown")
 	profile := getFromLegend(legend, "Type: ", "unknown")
 	data := webArgs{
-		Type:   "dot",
-		Title:  file + " " + profile,
-		Errors: catcher.errors,
-		Svg:    template.HTML(string(svg)),
-		Legend: legend,
-		Nodes:  nodes,
-		Help:   ui.help,
+		BaseURL: "/",
+		Type:    "dot",
+		Title:   file + " " + profile,
+		Errors:  catcher.errors,
+		Svg:     template.HTML(string(svg)),
+		Legend:  legend,
+		Nodes:   nodes,
+		Help:    ui.help,
 	}
 	html := &bytes.Buffer{}
 	if err := webTemplate.ExecuteTemplate(html, "graph", data); err != nil {
@@ -293,13 +295,14 @@ func (ui *webInterface) top(w http.ResponseWriter, req *http.Request) {
 	file := getFromLegend(legend, "File: ", "unknown")
 	profile := getFromLegend(legend, "Type: ", "unknown")
 	data := webArgs{
-		Type:   "top",
-		Title:  file + " " + profile,
-		Errors: catcher.errors,
-		Legend: legend,
-		Help:   ui.help,
-		Top:    top,
-		Nodes:  nodes,
+		BaseURL: "/top",
+		Type:    "top",
+		Title:   file + " " + profile,
+		Errors:  catcher.errors,
+		Legend:  legend,
+		Help:    ui.help,
+		Top:     top,
+		Nodes:   nodes,
 	}
 	html := &bytes.Buffer{}
 	if err := webTemplate.ExecuteTemplate(html, "top", data); err != nil {

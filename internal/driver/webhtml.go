@@ -195,7 +195,6 @@ Functions
 </div>
 </div>
 
-{{if (eq .Type "dot")}}
 <div class="menu-header">
 Refine
 <div class="menu">
@@ -205,7 +204,6 @@ Refine
 <button title="{{.Help.show}}" id="show">Show</button>
 </div>
 </div>
-{{end}}
 
 <input id="searchbox" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
 
@@ -234,7 +232,7 @@ Refine
 
 </div>
 {{template "script" .}}
-<script>viewer({{.Nodes}})</script>
+<script>viewer({{.BaseURL}}, {{.Nodes}})</script>
 </body>
 </html>
 {{end}}
@@ -457,7 +455,7 @@ function initPanAndZoom(svg, clickHandler) {
   svg.addEventListener("wheel", handleWheel, true)
 }
 
-function viewer(nodes) {
+function viewer(baseUrl, nodes) {
   'use strict';
 
   // Elements
@@ -482,16 +480,16 @@ function viewer(nodes) {
     if (detailsText != null) detailsText.style.display = "none"
   }
 
-  function handleReset() { window.location.href = "/" }
+  function handleReset() { window.location.href = baseUrl }
   function handleTop() { navigate("/top", "f", false) }
   function handleGraph() { navigate("/", "f", false) }
   function handleList() { navigate("/weblist", "f", true) }
   function handleDisasm() { navigate("/disasm", "f", true) }
   function handlePeek() { navigate("/peek", "f", true) }
-  function handleFocus() { navigate("/", "f", false) }
-  function handleShow() { navigate("/", "s", false) }
-  function handleIgnore() { navigate("/", "i", false) }
-  function handleHide() { navigate("/", "h", false) }
+  function handleFocus() { navigate(baseUrl, "f", false) }
+  function handleShow() { navigate(baseUrl, "s", false) }
+  function handleIgnore() { navigate(baseUrl, "i", false) }
+  function handleHide() { navigate(baseUrl, "h", false) }
 
   function handleKey(e) {
     if (e.keyCode != 13) return
@@ -760,7 +758,7 @@ function viewer(nodes) {
 </div>
 
 {{template "script" .}}
-<script>viewer({{.Nodes}})</script>
+<script>viewer({{.BaseURL}}, {{.Nodes}})</script>
 </body>
 </html>
 {{end}}
