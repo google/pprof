@@ -83,8 +83,6 @@ func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profil
 	if len(tagValuePair) == 2 {
 		wantKey = tagValuePair[0]
 		value = tagValuePair[1]
-	} else {
-		wantKey = ""
 	}
 
 	if numFilter := parseTagFilterRange(value); numFilter != nil {
