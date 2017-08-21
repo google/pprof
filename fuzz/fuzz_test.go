@@ -3,9 +3,9 @@ package pprof
 import (
 	"io/ioutil"
 	"testing"
+	"runtime"
 
 	"github.com/google/pprof/profile"
-	"runtime"
 )
 
 func TestParseData(t *testing.T) {
