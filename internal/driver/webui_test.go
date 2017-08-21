@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"testing"
 
 	"github.com/google/pprof/internal/plugin"
@@ -193,6 +194,10 @@ func makeFakeProfile() *profile.Profile {
 }
 
 func TestNewListenerAndURL(t *testing.T) {
+	if runtime.GOOS == "nacl" {
+		t.Skip("tcp Protocol not available on Nacl")
+	}
+
 	tests := []struct {
 		hostport  string
 		wantErr   bool
