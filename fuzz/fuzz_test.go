@@ -5,9 +5,14 @@ import (
 	"testing"
 
 	"github.com/google/pprof/profile"
+	"runtime"
 )
 
 func TestParseData(t *testing.T) {
+	if runtime.GOOS == "nacl" {
+		t.Skip("no direct filesystem access on Nacl")
+	}
+
 	const path = "testdata/"
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
