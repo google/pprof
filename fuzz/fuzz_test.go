@@ -2,12 +2,17 @@ package pprof
 
 import (
 	"io/ioutil"
+	"runtime"
 	"testing"
 
 	"github.com/google/pprof/profile"
 )
 
 func TestParseData(t *testing.T) {
+	if runtime.GOOS == "nacl" {
+		t.Skip("no direct filesystem access on Nacl")
+	}
+
 	const path = "testdata/"
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
