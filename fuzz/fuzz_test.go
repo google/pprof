@@ -2,8 +2,8 @@ package pprof
 
 import (
 	"io/ioutil"
-	"testing"
 	"runtime"
+	"testing"
 
 	"github.com/google/pprof/profile"
 )
