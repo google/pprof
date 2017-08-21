@@ -195,7 +195,7 @@ func makeFakeProfile() *profile.Profile {
 
 func TestNewListenerAndURL(t *testing.T) {
 	if runtime.GOOS == "nacl" {
-		t.Skip("tcp Protocol not available on Nacl")
+		t.Skip("test assumes tcp available")
 	}
 
 	tests := []struct {
