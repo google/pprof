@@ -270,8 +270,8 @@ func TestFlameGraph(t *testing.T) {
 		want []string
 	}
 	testcases := []testCase{
-		{"/flamegraph", []string{"File: testbin", "\"name\":\"root\"", "Unit: milliseconds", "\"name\":\"F1\"", "function tip", "function flameGraph", "function hierarchy"}},
-		{"/flamegraph?t=cpu", []string{"File: testbin", "\"name\":\"root\"", "Unit: milliseconds", "\"name\":\"F1\"", "function tip", "function flameGraph", "function hierarchy"}},
+		{"/flamegraph", []string{"File: testbin", "\"n\":\"root\"", "Unit: milliseconds", "\"n\":\"F1\"", "function tip", "function flameGraph", "function hierarchy"}},
+		{"/flamegraph?t=cpu", []string{"File: testbin", "\"n\":\"root\"", "Unit: milliseconds", "\"n\":\"F1\"", "function tip", "function flameGraph", "function hierarchy"}},
 	}
 	for _, c := range testcases {
 		res, err := http.Get(server.URL + c.path)
