@@ -73,9 +73,13 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) e
 
 	// authorization wrapper
 	wrap := o.HTTPWrapper
-	if wrap == nil && isLocal {
-		// Only allow requests from local host.
-		wrap = checkLocalHost
+	if wrap == nil {
+		if isLocal {
+			// Only allow requests from local host.
+			wrap = checkLocalHost
+		} else {
+			wrap = func(h http.Handler) http.Handler { return h }
+		}
 	}
 
 	mux := http.NewServeMux()
