@@ -84,7 +84,7 @@ func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profil
 		wantKey = tagValuePair[0]
 		value = tagValuePair[1]
 	}
-	
+
 	if numFilter := parseTagFilterRange(value); numFilter != nil {
 		ui.PrintErr(name, ":Interpreted '", value, "' as range, not regexp")
 		labelFilter := func(vals []int64, key string) bool {
