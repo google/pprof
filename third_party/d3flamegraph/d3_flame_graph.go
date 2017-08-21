@@ -1,6 +1,6 @@
 // A D3.js plugin that produces flame graphs from hierarchical data.
 // https://github.com/spiermar/d3-flame-graph
-// Version 1.0.4
+// Version 1.0.6
 // See LICENSE file for license details
 
 package d3flamegraph
@@ -422,7 +422,7 @@ const D3FlameGraphJS = `
     }
 
     function injectIds(node) {
-      node.id = s4();
+      node.id = s4() + "-" + s4() + "-" + "-" + s4() + "-" + s4();
       var children = node.c || node.children || [];
       for (var i = 0; i < children.length; i++) {
         injectIds(children[i]);
