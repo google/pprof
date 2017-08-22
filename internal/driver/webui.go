@@ -275,7 +275,7 @@ func (ui *webInterface) top(w http.ResponseWriter, req *http.Request) {
 	// Generate top report
 	args := []string{"top"}
 	vars := varsFromURL(req.URL)
-	vars["nodecount"].value = "50"
+	vars["nodecount"].value = "500"
 	_, rpt, err := generateRawReport(ui.prof, args, vars, &options)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

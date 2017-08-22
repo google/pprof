@@ -686,6 +686,7 @@ func printComments(w io.Writer, rpt *Report) error {
 // TextItem holds a single text report entry.
 type TextItem struct {
 	Name              string
+	InlineLabel       string // Not empty if inlined
 	Flat, FlatPercent string
 	SumPercent        string
 	Cum, CumPercent   string
@@ -712,17 +713,19 @@ func TextItems(rpt *Report) ([]TextItem, []string) {
 			}
 		}
 
+		var inl string
 		if inline {
 			if noinline {
-				name = name + " (partial-inline)"
+				inl = "(partial-inline)"
 			} else {
-				name = name + " (inline)"
+				inl = "(inline)"
 			}
 		}
 
 		flatSum += flat
 		items = append(items, TextItem{
 			Name:        name,
+			InlineLabel: inl,
 			Flat:        rpt.formatValue(flat),
 			FlatPercent: percentage(flat, rpt.total),
 			SumPercent:  percentage(flatSum, rpt.total),
@@ -740,11 +743,15 @@ func printText(w io.Writer, rpt *Report) error {
 	fmt.Fprintf(w, "%10s %5s%% %5s%% %10s %5s%%\n",
 		"flat", "flat", "sum", "cum", "cum")
 	for _, item := range items {
-		fmt.Fprintf(w, "%10s %s %s %10s %s  %s\n",
+		inl := item.InlineLabel
+		if inl != "" {
+			inl = " " + inl
+		}
+		fmt.Fprintf(w, "%10s %s %s %10s %s  %s%s\n",
 			item.Flat, item.FlatPercent,
 			item.SumPercent,
 			item.Cum, item.CumPercent,
-			item.Name)
+			item.Name, inl)
 	}
 	return nil
 }

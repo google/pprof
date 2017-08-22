@@ -144,9 +144,8 @@ button {
   text-align: right;
   padding-left: 1em;
 }
-#toptable tr th:nth-child(6) {
-  text-align: left;
-}
+#toptable tr th:nth-child(6) { text-align: left; }
+#toptable tr th:nth-child(7) { text-align: left; }
 #toptable tr td {
   padding-left: 1em;
   font: monospace;
@@ -154,9 +153,8 @@ button {
   white-space: nowrap;
   cursor: default;
 }
-#toptable tr td:nth-child(6) {
-  text-align: left;
-}
+#toptable tr td:nth-child(6) { text-align: left; }
+#toptable tr td:nth-child(7) { text-align: left; }
 .hilite {
   background-color: #ccf;
 }
@@ -182,7 +180,6 @@ View
 {{end}}
 <hr>
 <button title="{{.Help.details}}" id="details">Details</button>
-<button title="{{.Help.reset}}" id="reset">Reset</button>
 </div>
 </div>
 
@@ -202,6 +199,8 @@ Refine
 <button title="{{.Help.ignore}}" id="ignore">Ignore</button>
 <button title="{{.Help.hide}}" id="hide">Hide</button>
 <button title="{{.Help.show}}" id="show">Show</button>
+<hr>
+<button title="{{.Help.reset}}" id="reset">Reset</button>
 </div>
 </div>
 
@@ -586,11 +585,7 @@ function viewer(baseUrl, nodes) {
   function setBackground(elem, set) {
     // Handle table row highlighting.
     if (elem.nodeName == "TR") {
-      if (set) {
-        elem.classList.add("hilite")
-      } else {
-        elem.classList.remove("hilite")
-      }
+      elem.classList.toggle("hilite", set)
       return
     }
 
@@ -617,7 +612,7 @@ function viewer(baseUrl, nodes) {
 
   // convert a string to a regexp that matches that string.
   function quotemeta(str) {
-    return str.replace(/([\\\.?+*\[\](){}])/g, '\\$1')
+    return str.replace(/([\\\.?+*\[\](){}|^$])/g, '\\$1')
   }
 
   // Navigate to specified path with current selection reflected
@@ -662,8 +657,7 @@ function viewer(baseUrl, nodes) {
     while (elem != null && elem.nodeName != "TR") {
       elem = elem.parentElement
     }
-    if (elem == null) return
-    if (elem.children.length != 6) return
+    if (elem == null || elem.children.length < 6) return
 
     e.preventDefault()
     const tr = elem
@@ -750,9 +744,9 @@ function viewer(baseUrl, nodes) {
 
 <div id="topcontainer">
 <table id="toptable">
-<tr><th>Flat<th>Flat%<th>Sum%<th>Cum<th>Cum%<th>Name</tr>
+<tr><th>Flat<th>Flat%<th>Sum%<th>Cum<th>Cum%<th>Name<th>Inlined?</tr>
 {{range $i,$e := .Top}}
-  <tr id="node{{$i}}"><td>{{$e.Flat}}<td>{{$e.FlatPercent}}<td>{{$e.SumPercent}}<td>{{$e.Cum}}<td>{{$e.CumPercent}}<td>{{$e.Name}}</tr>
+  <tr id="node{{$i}}"><td>{{$e.Flat}}<td>{{$e.FlatPercent}}<td>{{$e.SumPercent}}<td>{{$e.Cum}}<td>{{$e.CumPercent}}<td>{{$e.Name}}<td>{{$e.InlineLabel}}</tr>
 {{end}}
 </table>
 </div>
