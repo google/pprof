@@ -295,6 +295,15 @@ var usageMsgVars = "\n\n" +
 	"   -http host:port        Provide web based interface at host:port\n" +
 	"   -tools                 Search path for object tools\n" +
 	"\n" +
+	"  Legacy convenience options:\n" +
+	"   -inuse_space           Same as -sample_index=inuse_space\n" +
+	"   -inuse_objects         Same as -sample_index=inuse_objects\n" +
+	"   -alloc_space           Same as -sample_index=alloc_space\n" +
+	"   -alloc_objects         Same as -sample_index=alloc_objects\n" +
+	"   -total_delay           Same as -sample_index=delay\n" +
+	"   -contentions           Same as -sample_index=contentions\n" +
+	"   -mean_delay            Same as -mean -sample_index=delay\n" +
+	"\n" +
 	"  Environment Variables:\n" +
 	"   PPROF_TMPDIR       Location for saved profiles (default $HOME/pprof)\n" +
 	"   PPROF_TOOLS        Search path for object-level tools\n" +
