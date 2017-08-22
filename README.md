@@ -79,11 +79,14 @@ Type 'help' for available commands/options.
 
 ## Run pprof via a web interface
 
-If the `-http="host:port"` option is specified, pprof starts a web server at
+If the `-http"` flag is specified, pprof starts a web server at
 the specified host:port that provides an interactive web-based interface to pprof.
+Host is optional, and is "localhost" by default. Port is optional, and is a
+random available port by default. `-http=":"` starts a server locally at
+a random port.
 
 ```
-pprof -http=[host:port] [main_binary] profile.pb.gz
+pprof -http=<hostport> [main_binary] profile.pb.gz
 ```
 
 The preceding command should automatically open your web browser at

@@ -54,12 +54,12 @@ commands.  Type `help` to get online help.
 
 ## Web interface
 
-If a port is specified on the command line:
+If a host:port is specified on the command line:
 
-    pprof -http=<port> [options] source
+    pprof -http=<hostport> [options] source
 
 pprof will start serving HTTP requests on the specified port.  Visit
-the HTTP url corresponding to the port (typically `http://localhost:<port>/`)
+the HTTP url corresponding to the port (typically `http://<host>:<port>/`)
 in a browser to see the interface.
 
 # Details
