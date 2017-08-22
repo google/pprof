@@ -69,7 +69,6 @@ button {
   z-index: 1;
 }
 #closedetails {
-  display: inline;
   float: right;
   margin: 2px;
 }
