@@ -56,7 +56,7 @@ commands.  Type `help` to get online help.
 
 If a host:port is specified on the command line:
 
-    pprof -http=<hostport> [options] source
+    pprof -http=[host]:[port] [options] source
 
 pprof will start serving HTTP requests on the specified port.  Visit
 the HTTP url corresponding to the port (typically `http://<host>:<port>/`)

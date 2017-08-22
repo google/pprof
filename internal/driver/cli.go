@@ -110,7 +110,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		return nil, nil, err
 	}
 	if cmd != nil && *flagHTTP != "" {
-		return nil, nil, fmt.Errorf("--http is not compatible with an output format on the command line")
+		return nil, nil, fmt.Errorf("-http is not compatible with an output format on the command line")
 	}
 
 	si := pprofVariables["sample_index"].value
@@ -268,7 +268,7 @@ Omit the format and provide the "-http" flag to get an interactive web
 interface at the specified host:port that can be used to navigate through
 various views of a profile.
 
-   pprof -http <hostport> [options] [binary] <source> ...
+   pprof -http [host]:[port] [options] [binary] <source> ...
 
 Details:
 `
@@ -292,10 +292,10 @@ var usageMsgSrc = "\n\n" +
 
 var usageMsgVars = "\n\n" +
 	"  Misc options:\n" +
-	"   -http host:port        Provide web based interface at host:port.\n" +
-	"                          Host is optional and 'localhost' by default.\n" +
-	"                          Port is optional and a randomly available port by default.\n" +
-	"   -tools                 Search path for object tools\n" +
+	"   -http              Provide web based interface at host:port.\n" +
+	"                      Host is optional and 'localhost' by default.\n" +
+	"                      Port is optional and a randomly available port by default.\n" +
+	"   -tools             Search path for object tools\n" +
 	"\n" +
 	"  Environment Variables:\n" +
 	"   PPROF_TMPDIR       Location for saved profiles (default $HOME/pprof)\n" +

@@ -86,7 +86,7 @@ random available port by default. `-http=":"` starts a server locally at
 a random port.
 
 ```
-pprof -http=<hostport> [main_binary] profile.pb.gz
+pprof -http=[host]:[port] [main_binary] profile.pb.gz
 ```
 
 The preceding command should automatically open your web browser at
