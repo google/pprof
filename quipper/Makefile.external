@@ -7,13 +7,19 @@ CXX ?= g++
 
 BASE_VER ?= 369476
 PKG_CONFIG ?= pkg-config
-PC_DEPS = openssl protobuf
+PC_DEPS = openssl
 PC_CFLAGS := $(shell $(PKG_CONFIG) --cflags $(PC_DEPS))
 PC_LIBS := $(shell $(PKG_CONFIG) --libs $(PC_DEPS))
 
+PROTOBUF = ../third_party/protobuf
+GOOGLETEST = ../third_party/googletest
+
 CXXFLAGS += -std=c++11 -g -Wall -Werror -Wall -Wno-error
-CPPFLAGS += -Imybase -Icompat/ext -I. -I.. $(PC_CFLAGS)
-LDLIBS += -lpthread -lgcov -lelf $(PC_LIBS)
+CPPFLAGS += -Imybase \
+            -Icompat/ext \
+            -I../third_party \
+            -I. -I.. $(PC_CFLAGS) $(PROTOBUF_CFLAGS) $(GTEST_INCLUDES)
+LDLIBS += -lpthread -lgcov -lelf $(PC_LIBS) $(PROTOBUF_LIBS)
 
 MAIN_SOURCES = quipper.cc perf_converter.cc
 PROGRAMS = $(MAIN_SOURCES:.cc=)
@@ -56,6 +62,45 @@ ALL_SOURCES = $(MAIN_SOURCES) $(COMMON_SOURCES) $(TEST_SOURCES)
 all: $(PROGRAMS) $(TESTS)
 	@echo Sources compiled!
 
+# Protobuf dependence configuration
+ifeq ($(wildcard ${PROTOBUF}/src/google/protobuf/descriptor.pb.h),)
+# Protobuf module hasn't been populated, attempt using local installation.
+PROTOC = protoc
+PROTOBUF_DEP =
+PROTOBUF_CFLAGS := $(shell $(PKG_CONFIG) --cflags protobuf)
+PROTOBUF_LIBS := $(shell $(PKG_CONFIG) --libs protobuf)
+else
+# Use protobuf compiler and libraries from submodule.
+PROTOC = ${PROTOBUF}/src/protoc
+PROTOBUF_CFLAGS := -I${PROTOBUF}/src
+PROTOBUF_LIBS := ${PROTOBUF}/src/.libs/libprotobuf.a  -lz
+PROTOBUF_DEP := ${PROTOBUF}/src/.libs/libprotobuf.a
+endif
+
+${PROTOBUF}/configure:
+	echo "[AUTOGEN] Preparing protobuf"
+	(cd ${PROTOBUF} ; autoreconf -f -i -Wall,no-obsolete)
+
+${PROTOBUF}/src/.libs/libprotobuf.a: ${PROTOBUF}/configure
+	echo "[MAKE]    Building protobuf"
+	(cd ${PROTOBUF} ; CC="$(CC)" CXX="$(CXX)" LDFLAGS="$(LDFLAGS_$(CONFIG)) -g \
+  $(PROTOBUF_LDFLAGS_EXTRA)" CPPFLAGS="$(PIC_CPPFLAGS) $(CPPFLAGS_$(CONFIG)) \
+  -g $(PROTOBUF_CPPFLAGS_EXTRA)" ./configure --disable-shared --enable-static \
+  $(PROTOBUF_CONFIG_OPTS))
+	$(MAKE) -C ${PROTOBUF} clean
+	$(MAKE) -C ${PROTOBUF}
+
+# Googletest dependence configuration
+ifeq ($(wildcard ${GOOGLETEST}/googletest/include/gtest/gtest.h),)
+# Use local gtest includes, already on the system path
+GTEST_INCLUDES =
+GTEST_LIBS = -lgtest
+else
+# Pick up gtest includes from submodule.
+GTEST_INCLUDES = -I${GOOGLETEST}/googletest/include
+GTEST_LIBS = -I${GOOGLETEST}/googletest ${GOOGLETEST}/googletest/src/gtest-all.cc
+endif
+
 ifneq ($(MAKECMDGOALS),clean)
   -include $(ALL_SOURCES:.cc=.d)
 endif
@@ -69,8 +114,12 @@ endif
 	rm -f $@.$$$$
 
 # Rule for compiling protobufs.
-%.pb.h %.pb.cc: %.proto
-	protoc --cpp_out=. $^
+%.pb.h %.pb.cc: %.proto $(PROTOBUF_DEP)
+ifeq (,$(findstring ../, $<))
+	$(PROTOC) --cpp_out=. $<
+else
+	$(PROTOC) --cpp_out=. `cd .. && pwd``echo $< | sed 's/\.\.//g'`
+endif
 
 # Do not remove protobuf headers that were generated as dependencies of other
 # modules.
@@ -80,19 +129,19 @@ $(PROGRAMS): %: %.o $(COMMON_OBJECTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 INTEGRATION_TEST_OBJECTS = $(INTEGRATION_TEST_SOURCES:.cc=.o) test_runner.o
-integration_tests: LDLIBS += -lgtest
+integration_tests: LDLIBS += $(GTEST_LIBS)
 integration_tests: %: $(COMMON_OBJECTS) $(TEST_COMMON_OBJECTS) \
 		      $(INTEGRATION_TEST_OBJECTS) | $(TESTDATA_DIR)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 PERF_RECORDER_TEST_OBJECTS = $(PERF_RECORDER_TEST_SOURCES:.cc=.o)
-perf_recorder_test: LDLIBS += -lgtest
+perf_recorder_test: LDLIBS += $(GTEST_LIBS)
 perf_recorder_test: %: $(COMMON_OBJECTS) $(TEST_COMMON_OBJECTS) \
 		       $(PERF_RECORDER_TEST_OBJECTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 UNIT_TEST_OBJECTS = $(UNIT_TEST_SOURCES:.cc=.o) test_runner.o
-unit_tests: LDLIBS += -lgtest -lcap
+unit_tests: LDLIBS += $(GTEST_LIBS) -lcap
 unit_tests: %: $(COMMON_OBJECTS) $(TEST_COMMON_OBJECTS) \
 		      $(UNIT_TEST_OBJECTS) | $(TESTDATA_DIR)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)

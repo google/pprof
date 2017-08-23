@@ -4,7 +4,7 @@ sudo: required
 
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get install -y libelf-dev libssl-dev
+  - sudo apt-get install -y libelf-dev libssl-dev libcap-dev linux-tools-`uname -r` linux-cloud-tools-`uname -r`
   - git submodule update --init --recursive
 
 install:
@@ -21,4 +21,4 @@ compiler:
 
 script:
   - make perf_to_profile check clean
-  - make quipper perf_converter check clean --directory quipper/ -f Makefile.external
+  - make quipper perf_converter check clean -C quipper/ -f Makefile.external
