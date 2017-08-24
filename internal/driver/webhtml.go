@@ -16,12 +16,14 @@ package driver
 
 import "html/template"
 
-var graphTemplate = template.Must(template.New("graph").Parse(
-	`<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
+// webTemplate defines a collection of related templates:
+//    css
+//    header
+//    script
+//    graph
+//    top
+var webTemplate = template.Must(template.New("web").Parse(`
+{{define "css"}}
 <style type="text/css">
 html, body {
   height: 100%;
@@ -30,9 +32,11 @@ html, body {
 }
 body {
   width: 100%;
+  height: 100%;
+  min-height: 100%;
   overflow: hidden;
 }
-#page {
+#graphcontainer {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -53,90 +57,185 @@ button {
   margin-top: 5px;
   margin-bottom: 5px;
 }
-#reset {
-  margin-left: 10px;
-}
 #detailtext {
   display: none;
-  position: absolute;
+  position: fixed;
+  top: 20px;
+  right: 10px;
   background-color: #ffffff;
   min-width: 160px;
-  border-top: 1px solid black;
-  box-shadow: 2px 2px 2px 0px #aaa;
+  border: 1px solid #888;
+  box-shadow: 4px 4px 4px 0px rgba(0,0,0,0.2);
   z-index: 1;
 }
-#actionbox {
-  display: none;
-  position: fixed;
-  background-color: #ffffff;
-  border: 1px solid black;
-  box-shadow: 2px 2px 2px 0px #aaa;
-  top: 20px;
-  right: 20px;
-  z-index: 1;
+#closedetails {
+  float: right;
+  margin: 2px;
 }
-.actionhdr {
-  background-color: #ddd;
+#home {
+  font-size: 14pt;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  float: right;
+}
+.menubar {
+  display: inline-block;
+  background-color: #f8f8f8;
+  border: 1px solid #ccc;
   width: 100%;
-  border-bottom: 1px solid black;
-  border-top: 1px solid black;
+}
+.menu-header {
+  position: relative;
+  display: inline-block;
+  padding: 2px 2px;
+  cursor: default;
   font-size: 14pt;
 }
-#actionbox > button {
+.menu {
+  display: none;
+  position: absolute;
+  background-color: #f8f8f8;
+  border: 1px solid #888;
+  box-shadow: 4px 4px 4px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+  margin-top: 2px;
+  left: 0px;
+  min-width: 5em;
+}
+.menu hr {
+  background-color: #fff;
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+.menu button {
   display: block;
   width: 100%;
   margin: 0px;
   text-align: left;
-  padding-left: 0.5em;
+  padding-left: 2px;
   background-color: #fff;
-  border: none;
   font-size: 12pt;
+  border: none;
 }
-#actionbox > button:hover {
-  background-color: #ddd;
+.menu-header:hover {
+  background-color: #ccc;
 }
-#home {
-  font-size: 20pt;
-  padding-left: 0.5em;
-  padding-right: 0.5em;
+.menu-header:hover .menu {
+  display: block;
+}
+.menu button:hover {
+  background-color: #ccc;
+}
+#searchbox {
+  margin-left: 10pt;
+}
+#topcontainer {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  overflow: scroll;
+}
+#toptable {
+  border-spacing: 0px;
+}
+#toptable tr th {
+  border-bottom: 1px solid black;
+  text-align: right;
+  padding-left: 1em;
+}
+#toptable tr th:nth-child(6) { text-align: left; }
+#toptable tr th:nth-child(7) { text-align: left; }
+#toptable tr td {
+  padding-left: 1em;
+  font: monospace;
+  text-align: right;
+  white-space: nowrap;
+  cursor: default;
+}
+#toptable tr td:nth-child(6) { text-align: left; }
+#toptable tr td:nth-child(7) { text-align: left; }
+.hilite {
+  background-color: #ccf;
 }
 </style>
-</head>
-<body>
+{{end}}
 
-<button id="details">&#x25b7; Details</button>
+{{define "header"}}
 <div id="detailtext">
+<button id="closedetails">Close</button>
 {{range .Legend}}<div>{{.}}</div>{{end}}
 </div>
 
-<button id="reset">Reset</button>
+<div class="menubar">
 
-<span id="home">{{.Title}}</span>
+<div class="menu-header">
+View
+<div class="menu">
+{{if (ne .Type "top")}}
+  <button title="{{.Help.top}}" id="topbtn">Top</button>
+{{end}}
+{{if (ne .Type "dot")}}
+  <button title="{{.Help.graph}}" id="graphbtn">Graph</button>
+{{end}}
+<hr>
+<button title="{{.Help.details}}" id="details">Details</button>
+</div>
+</div>
 
-<input id="searchbox" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
-
-<div id="page">
-
-<div id="errors">{{range .Errors}}<div>{{.}}</div>{{end}}</div>
-
-<div id="graph">
-
-<div id="actionbox">
-<div class="actionhdr">Refine graph</div>
-<button title="{{.Help.focus}}" id="focus">Focus</button>
-<button title="{{.Help.ignore}}" id="ignore">Ignore</button>
-<button title="{{.Help.hide}}" id="hide">Hide</button>
-<button title="{{.Help.show}}" id="show">Show</button>
-<div class="actionhdr">Show Functions</div>
+<div class="menu-header">
+Functions
+<div class="menu">
 <button title="{{.Help.peek}}" id="peek">Peek</button>
 <button title="{{.Help.list}}" id="list">List</button>
 <button title="{{.Help.disasm}}" id="disasm">Disassemble</button>
 </div>
+</div>
 
+<div class="menu-header">
+Refine
+<div class="menu">
+<button title="{{.Help.focus}}" id="focus">Focus</button>
+<button title="{{.Help.ignore}}" id="ignore">Ignore</button>
+<button title="{{.Help.hide}}" id="hide">Hide</button>
+<button title="{{.Help.show}}" id="show">Show</button>
+<hr>
+<button title="{{.Help.reset}}" id="reset">Reset</button>
+</div>
+</div>
+
+<input id="searchbox" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
+
+<span id="home">{{.Title}}</span>
+
+</div> <!-- menubar -->
+
+<div id="errors">{{range .Errors}}<div>{{.}}</div>{{end}}</div>
+{{end}}
+
+{{define "graph" -}}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{.Title}}</title>
+{{template "css" .}}
+</head>
+<body>
+
+{{template "header" .}}
+<div id="graphcontainer">
+<div id="graph">
 {{.Svg}}
 </div>
 
 </div>
+{{template "script" .}}
+<script>viewer({{.BaseURL}}, {{.Nodes}})</script>
+</body>
+</html>
+{{end}}
+
+{{define "script"}}
 <script>
 // Make svg pannable and zoomable.
 // Call clickHandler(t) if a click event is caught by the pan event handlers.
@@ -354,24 +453,14 @@ function initPanAndZoom(svg, clickHandler) {
   svg.addEventListener("wheel", handleWheel, true)
 }
 
-function dotviewer(nodes) {
+function viewer(baseUrl, nodes) {
   'use strict';
 
   // Elements
-  const detailsButton = document.getElementById("details")
-  const detailsText = document.getElementById("detailtext")
-  const actionBox = document.getElementById("actionbox")
-  const listButton = document.getElementById("list")
-  const disasmButton = document.getElementById("disasm")
-  const resetButton = document.getElementById("reset")
-  const peekButton = document.getElementById("peek")
-  const focusButton = document.getElementById("focus")
-  const showButton = document.getElementById("show")
-  const ignoreButton = document.getElementById("ignore")
-  const hideButton = document.getElementById("hide")
   const search = document.getElementById("searchbox")
   const graph0 = document.getElementById("graph0")
-  const svg = graph0.parentElement
+  const svg = (graph0 == null ? null : graph0.parentElement)
+  const toptable = document.getElementById("toptable")
 
   let regexpActive = false
   let selected = new Map()
@@ -380,23 +469,25 @@ function dotviewer(nodes) {
   let buttonsEnabled = true
 
   function handleDetails() {
-    if (detailtext.style.display == "block") {
-      detailtext.style.display = "none"
-      detailsButton.innerText = "\u25b7 Details"
-    } else {
-      detailtext.style.display = "block"
-      detailsButton.innerText = "\u25bd Details"
-    }
+    const detailsText = document.getElementById("detailtext")
+    if (detailsText != null) detailsText.style.display = "block"
   }
 
-  function handleReset() { window.location.href = "/" }
+  function handleCloseDetails() {
+    const detailsText = document.getElementById("detailtext")
+    if (detailsText != null) detailsText.style.display = "none"
+  }
+
+  function handleReset() { window.location.href = baseUrl }
+  function handleTop() { navigate("/top", "f", false) }
+  function handleGraph() { navigate("/", "f", false) }
   function handleList() { navigate("/weblist", "f", true) }
   function handleDisasm() { navigate("/disasm", "f", true) }
   function handlePeek() { navigate("/peek", "f", true) }
-  function handleFocus() { navigate("/", "f", false) }
-  function handleShow() { navigate("/", "s", false) }
-  function handleIgnore() { navigate("/", "i", false) }
-  function handleHide() { navigate("/", "h", false) }
+  function handleFocus() { navigate(baseUrl, "f", false) }
+  function handleShow() { navigate(baseUrl, "s", false) }
+  function handleIgnore() { navigate(baseUrl, "i", false) }
+  function handleHide() { navigate(baseUrl, "h", false) }
 
   function handleKey(e) {
     if (e.keyCode != 13) return
@@ -448,7 +539,7 @@ function dotviewer(nodes) {
     updateButtons()
   }
 
-  function toggleSelect(elem) {
+  function toggleSvgSelect(elem) {
     // Walk up to immediate child of graph0
     while (elem != null && elem.parentElement != graph0) {
       elem = elem.parentElement
@@ -491,6 +582,13 @@ function dotviewer(nodes) {
   }
 
   function setBackground(elem, set) {
+    // Handle table row highlighting.
+    if (elem.nodeName == "TR") {
+      elem.classList.toggle("hilite", set)
+      return
+    }
+
+    // Handle svg element highlighting.
     const p = findPolygon(elem)
     if (p != null) {
       if (set) {
@@ -511,6 +609,11 @@ function dotviewer(nodes) {
     return null
   }
 
+  // convert a string to a regexp that matches that string.
+  function quotemeta(str) {
+    return str.replace(/([\\\.?+*\[\](){}|^$])/g, '\\$1')
+  }
+
   // Navigate to specified path with current selection reflected
   // in the named parameter.
   function navigate(path, param, newWindow) {
@@ -520,7 +623,7 @@ function dotviewer(nodes) {
     if (!regexpActive) {
       selected.forEach(function(v, key) {
         if (re != "") re += "|"
-        re += nodes[key]
+        re += quotemeta(nodes[key])
       })
     }
 
@@ -547,38 +650,109 @@ function dotviewer(nodes) {
     }
   }
 
+  function handleTopClick(e) {
+    // Walk back until we find TR and then get the Name column (index 5)
+    let elem = e.target
+    while (elem != null && elem.nodeName != "TR") {
+      elem = elem.parentElement
+    }
+    if (elem == null || elem.children.length < 6) return
+
+    e.preventDefault()
+    const tr = elem
+    const td = elem.children[5]
+    if (td.nodeName != "TD") return
+    const name = td.innerText
+    const index = nodes.indexOf(name)
+    if (index < 0) return
+
+    // Disable regexp mode.
+    regexpActive = false
+
+    if (selected.has(index)) {
+      unselect(index, elem)
+    } else {
+      select(index, elem)
+    }
+    updateButtons()
+  }
+
   function updateButtons() {
     const enable = (search.value != "" || selected.size != 0)
     if (buttonsEnabled == enable) return
     buttonsEnabled = enable
-    actionBox.style.display = enable ? "block" : "none"
+    for (const id of ["peek", "list", "disasm", "focus", "ignore", "hide", "show"]) {
+      const btn = document.getElementById(id)
+      if (btn != null) {
+        btn.disabled = !enable
+      }
+    }
   }
 
   // Initialize button states
   updateButtons()
 
   // Setup event handlers
-  initPanAndZoom(svg, toggleSelect)
-  
-  function bindButtons(evt) {
-    detailsButton.addEventListener(evt, handleDetails)
-    resetButton.addEventListener(evt, handleReset)
-    listButton.addEventListener(evt, handleList)
-    disasmButton.addEventListener(evt, handleDisasm)
-    peekButton.addEventListener(evt, handlePeek)
-    focusButton.addEventListener(evt, handleFocus)
-    showButton.addEventListener(evt, handleShow)
-    ignoreButton.addEventListener(evt, handleIgnore)
-    hideButton.addEventListener(evt, handleHide)
+  if (svg != null) {
+    initPanAndZoom(svg, toggleSvgSelect)
   }
-  bindButtons("click")
-  bindButtons("touchstart")
+  if (toptable != null) {
+    toptable.addEventListener("mousedown", handleTopClick)
+    toptable.addEventListener("touchstart", handleTopClick)
+  }
+
+  // Bind action to button with specified id.
+  function addAction(id, action) {
+    const btn = document.getElementById(id)
+    if (btn != null) {
+      btn.addEventListener("click", action)
+      btn.addEventListener("touchstart", action)
+    }
+  }
+
+  addAction("details", handleDetails)
+  addAction("closedetails", handleCloseDetails)
+  addAction("topbtn", handleTop)
+  addAction("graphbtn", handleGraph)
+  addAction("reset", handleReset)
+  addAction("peek", handlePeek)
+  addAction("list", handleList)
+  addAction("disasm", handleDisasm)
+  addAction("focus", handleFocus)
+  addAction("ignore", handleIgnore)
+  addAction("hide", handleHide)
+  addAction("show", handleShow)
+
   search.addEventListener("input", handleSearch)
   search.addEventListener("keydown", handleKey)
 }
-
-dotviewer({{.Nodes}})
 </script>
+{{end}}
+
+{{define "top" -}}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{.Title}}</title>
+{{template "css" .}}
+</head>
+<body>
+
+{{template "header" .}}
+
+<div id="topcontainer">
+<table id="toptable">
+<tr><th>Flat<th>Flat%<th>Sum%<th>Cum<th>Cum%<th>Name<th>Inlined?</tr>
+{{range $i,$e := .Top}}
+  <tr id="node{{$i}}"><td>{{$e.Flat}}<td>{{$e.FlatPercent}}<td>{{$e.SumPercent}}<td>{{$e.Cum}}<td>{{$e.CumPercent}}<td>{{$e.Name}}<td>{{$e.InlineLabel}}</tr>
+{{end}}
+</table>
+</div>
+
+{{template "script" .}}
+<script>viewer({{.BaseURL}}, {{.Nodes}})</script>
 </body>
 </html>
+{{end}}
 `))

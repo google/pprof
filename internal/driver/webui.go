@@ -24,7 +24,6 @@ import (
 	gourl "net/url"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 	"time"
 
@@ -52,6 +51,19 @@ func (ec *errorCatcher) PrintErr(args ...interface{}) {
 	ec.UI.PrintErr(args...)
 }
 
+// webArgs contains arguments passed to templates in webhtml.go.
+type webArgs struct {
+	BaseURL string
+	Type    string
+	Title   string
+	Errors  []string
+	Legend  []string
+	Help    map[string]string
+	Nodes   []string
+	Svg     template.HTML
+	Top     []report.TextItem
+}
+
 func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) error {
 	interactiveMode = true
 	ui := &webInterface{
@@ -65,6 +77,9 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) e
 	for n, v := range pprofVariables {
 		ui.help[n] = v.help
 	}
+	ui.help["details"] = "Show information about the profile and this view"
+	ui.help["graph"] = "Display profile as a directed graph"
+	ui.help["reset"] = "Show the entire profile"
 
 	ln, url, isLocal, err := newListenerAndURL(hostport)
 	if err != nil {
@@ -84,6 +99,7 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) e
 
 	mux := http.NewServeMux()
 	mux.Handle("/", wrap(http.HandlerFunc(ui.dot)))
+	mux.Handle("/top", wrap(http.HandlerFunc(ui.top)))
 	mux.Handle("/disasm", wrap(http.HandlerFunc(ui.disasm)))
 	mux.Handle("/weblist", wrap(http.HandlerFunc(ui.weblist)))
 	mux.Handle("/peek", wrap(http.HandlerFunc(ui.peek)))
@@ -162,6 +178,15 @@ func checkLocalHost(h http.Handler) http.Handler {
 	})
 }
 
+func varsFromURL(u *gourl.URL) variables {
+	vars := pprofVariables.makeCopy()
+	vars["focus"].value = u.Query().Get("f")
+	vars["show"].value = u.Query().Get("s")
+	vars["ignore"].value = u.Query().Get("i")
+	vars["hide"].value = u.Query().Get("h")
+	return vars
+}
+
 // dot generates a web page containing an svg diagram.
 func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 	if req.URL.Path != "/" {
@@ -176,11 +201,7 @@ func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 
 	// Generate dot graph.
 	args := []string{"svg"}
-	vars := pprofVariables.makeCopy()
-	vars["focus"].value = req.URL.Query().Get("f")
-	vars["show"].value = req.URL.Query().Get("s")
-	vars["ignore"].value = req.URL.Query().Get("i")
-	vars["hide"].value = req.URL.Query().Get("h")
+	vars := varsFromURL(req.URL)
 	_, rpt, err := generateRawReport(ui.prof, args, vars, &options)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -202,32 +223,27 @@ func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Get regular expression for each node.
-	nodes := []string{""}
+	// Get all node names into an array.
+	nodes := []string{""} // dot starts with node numbered 1
 	for _, n := range g.Nodes {
-		nodes = append(nodes, regexp.QuoteMeta(n.Info.Name))
+		nodes = append(nodes, n.Info.Name)
 	}
 
 	// Embed in html.
 	file := getFromLegend(legend, "File: ", "unknown")
 	profile := getFromLegend(legend, "Type: ", "unknown")
-	data := struct {
-		Title  string
-		Errors []string
-		Svg    template.HTML
-		Legend []string
-		Nodes  []string
-		Help   map[string]string
-	}{
-		Title:  file + " " + profile,
-		Errors: catcher.errors,
-		Svg:    template.HTML(string(svg)),
-		Legend: legend,
-		Nodes:  nodes,
-		Help:   ui.help,
+	data := webArgs{
+		BaseURL: "/",
+		Type:    "dot",
+		Title:   file + " " + profile,
+		Errors:  catcher.errors,
+		Svg:     template.HTML(string(svg)),
+		Legend:  legend,
+		Nodes:   nodes,
+		Help:    ui.help,
 	}
 	html := &bytes.Buffer{}
-	if err := graphTemplate.Execute(html, data); err != nil {
+	if err := webTemplate.ExecuteTemplate(html, "graph", data); err != nil {
 		http.Error(w, "internal template error", http.StatusInternalServerError)
 		ui.options.UI.PrintErr(err)
 		return
@@ -252,6 +268,54 @@ func dotToSvg(dot []byte) ([]byte, error) {
 		svg = svg[pos:]
 	}
 	return svg, nil
+}
+
+func (ui *webInterface) top(w http.ResponseWriter, req *http.Request) {
+	// Capture any error messages generated while generating a report.
+	catcher := &errorCatcher{UI: ui.options.UI}
+	options := *ui.options
+	options.UI = catcher
+
+	// Generate top report
+	args := []string{"top"}
+	vars := varsFromURL(req.URL)
+	vars["nodecount"].value = "500"
+	_, rpt, err := generateRawReport(ui.prof, args, vars, &options)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ui.options.UI.PrintErr(err)
+		return
+	}
+
+	top, legend := report.TextItems(rpt)
+
+	// Get all node names into an array.
+	var nodes []string
+	for _, item := range top {
+		nodes = append(nodes, item.Name)
+	}
+
+	// Embed in html.
+	file := getFromLegend(legend, "File: ", "unknown")
+	profile := getFromLegend(legend, "Type: ", "unknown")
+	data := webArgs{
+		BaseURL: "/top",
+		Type:    "top",
+		Title:   file + " " + profile,
+		Errors:  catcher.errors,
+		Legend:  legend,
+		Help:    ui.help,
+		Top:     top,
+		Nodes:   nodes,
+	}
+	html := &bytes.Buffer{}
+	if err := webTemplate.ExecuteTemplate(html, "top", data); err != nil {
+		http.Error(w, "internal template error", http.StatusInternalServerError)
+		ui.options.UI.PrintErr(err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html")
+	w.Write(html.Bytes())
 }
 
 // disasm generates a web page containing disassembly.
