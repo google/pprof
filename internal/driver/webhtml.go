@@ -137,6 +137,7 @@ button {
 }
 #toptable {
   border-spacing: 0px;
+  width: 100%;
 }
 #toptable tr th {
   border-bottom: 1px solid black;
@@ -152,7 +153,11 @@ button {
   white-space: nowrap;
   cursor: default;
 }
-#toptable tr td:nth-child(6) { text-align: left; }
+#toptable tr td:nth-child(6) {
+  text-align: left;
+  max-width: 30em;  // Truncate very long names
+  overflow: hidden;
+}
 #toptable tr td:nth-child(7) { text-align: left; }
 .hilite {
   background-color: #ccf;
