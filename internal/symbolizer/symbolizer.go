@@ -50,13 +50,15 @@ func (s *Symbolizer) Symbolize(mode string, sources plugin.MappingSources, p *pr
 	remote, local, force, demanglerMode := true, true, false, ""
 	for _, o := range strings.Split(strings.ToLower(mode), ":") {
 		switch o {
+		case "":
+			continue
 		case "none", "no":
 			return nil
 		case "local", "fastlocal":
 			remote, local = false, true
 		case "remote":
 			remote, local = true, false
-		case "", "force":
+		case "force":
 			force = true
 		default:
 			switch d := strings.TrimPrefix(o, "demangle="); d {
