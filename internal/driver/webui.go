@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"io"
 	"net"
 	"net/http"
 	gourl "net/url"
@@ -66,14 +65,15 @@ func (ec *errorCatcher) PrintErr(args ...interface{}) {
 
 // webArgs contains arguments passed to templates in webhtml.go.
 type webArgs struct {
-	BaseURL string
-	Title   string
-	Errors  []string
-	Legend  []string
-	Help    map[string]string
-	Nodes   []string
-	Body    template.HTML
-	Top     []report.TextItem
+	BaseURL  string
+	Title    string
+	Errors   []string
+	Legend   []string
+	Help     map[string]string
+	Nodes    []string
+	HTMLBody template.HTML
+	TextBody string
+	Top      []report.TextItem
 }
 
 func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) error {
@@ -270,8 +270,8 @@ func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 	}
 
 	ui.render(w, "/", "graph", errList, legend, webArgs{
-		Body:  template.HTML(string(svg)),
-		Nodes: nodes,
+		HTMLBody: template.HTML(string(svg)),
+		Nodes:    nodes,
 	})
 }
 
@@ -312,7 +312,7 @@ func (ui *webInterface) top(w http.ResponseWriter, req *http.Request) {
 
 // disasm generates a web page containing disassembly.
 func (ui *webInterface) disasm(w http.ResponseWriter, req *http.Request) {
-	ui.output(w, req, "disasm", "text/plain", pprofVariables.makeCopy())
+	ui.plaintext(w, req, "/disasm", "disasm", "nodecount", "100")
 }
 
 // source generates a web page containing disassembly.
@@ -334,36 +334,24 @@ func (ui *webInterface) source(w http.ResponseWriter, req *http.Request) {
 
 	legend := report.ProfileLabels(rpt)
 	ui.render(w, "/source", "sourcelisting", errList, legend, webArgs{
-		Body: template.HTML(body.String()),
+		HTMLBody: template.HTML(body.String()),
 	})
 }
 
 // peek generates a web page listing callers/callers.
 func (ui *webInterface) peek(w http.ResponseWriter, req *http.Request) {
-	vars := pprofVariables.makeCopy()
-	vars.set("lines", "t") // Switch to line granularity
-	ui.output(w, req, "peek", "text/plain", vars)
+	// Use line granularity in report.
+	ui.plaintext(w, req, "/peek", "peek", "lines", "t")
 }
 
-// output generates a webpage that contains the output of the specified pprof cmd.
-func (ui *webInterface) output(w http.ResponseWriter, req *http.Request, cmd, ctype string, vars variables) {
-	focus := req.URL.Query().Get("f")
-	if focus == "" {
-		fmt.Fprintln(w, "no argument supplied for "+cmd)
-		return
-	}
-
-	// Capture any error messages generated while generating a report.
-	catcher := &errorCatcher{UI: ui.options.UI}
-	options := *ui.options
-	options.UI = catcher
-
-	args := []string{cmd, focus}
-	_, rpt, err := generateRawReport(ui.prof, args, vars, &options)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		ui.options.UI.PrintErr(err)
-		return
+// plaintext generates a plain-text webpage that contains the output
+// of the specified pprof cmd.
+func (ui *webInterface) plaintext(w http.ResponseWriter, req *http.Request,
+	baseURL, cmd string, vars ...string) {
+	args := []string{cmd, req.URL.Query().Get("f")}
+	rpt, errList := ui.makeReport(w, req, args, vars...)
+	if rpt == nil {
+		return // error already reported
 	}
 
 	out := &bytes.Buffer{}
@@ -373,16 +361,10 @@ func (ui *webInterface) output(w http.ResponseWriter, req *http.Request, cmd, ct
 		return
 	}
 
-	if len(catcher.errors) > 0 {
-		w.Header().Set("Content-Type", "text/plain")
-		for _, msg := range catcher.errors {
-			fmt.Println(w, msg)
-		}
-		return
-	}
-
-	w.Header().Set("Content-Type", ctype)
-	io.Copy(w, out)
+	legend := report.ProfileLabels(rpt)
+	ui.render(w, baseURL, "plaintext", errList, legend, webArgs{
+		TextBody: out.String(),
+	})
 }
 
 // getFromLegend returns the suffix of an entry in legend that starts

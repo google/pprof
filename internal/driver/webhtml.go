@@ -176,17 +176,11 @@ View
 <div class="menu">
 <button title="{{.Help.top}}" id="topbtn">Top</button>
 <button title="{{.Help.graph}}" id="graphbtn">Graph</button>
+<button title="{{.Help.peek}}" id="peek">Peek</button>
 <button title="{{.Help.list}}" id="list">Source</button>
+<button title="{{.Help.disasm}}" id="disasm">Disassemble</button>
 <hr>
 <button title="{{.Help.details}}" id="details">Details</button>
-</div>
-</div>
-
-<div class="menu-header">
-Functions
-<div class="menu">
-<button title="{{.Help.peek}}" id="peek">Peek</button>
-<button title="{{.Help.disasm}}" id="disasm">Disassemble</button>
 </div>
 </div>
 
@@ -224,7 +218,7 @@ Refine
 {{template "header" .}}
 <div id="graphcontainer">
 <div id="graph">
-{{.Body}}
+{{.HTMLBody}}
 </div>
 
 </div>
@@ -481,8 +475,8 @@ function viewer(baseUrl, nodes) {
   function handleTop() { navigate("/top", "f", false) }
   function handleGraph() { navigate("/", "f", false) }
   function handleList() { navigate("/source", "f", false) }
-  function handleDisasm() { navigate("/disasm", "f", true) }
-  function handlePeek() { navigate("/peek", "f", true) }
+  function handleDisasm() { navigate("/disasm", "f", false) }
+  function handlePeek() { navigate("/peek", "f", false) }
   function handleFocus() { navigate(baseUrl, "f", false) }
   function handleShow() { navigate(baseUrl, "s", false) }
   function handleIgnore() { navigate(baseUrl, "i", false) }
@@ -680,7 +674,7 @@ function viewer(baseUrl, nodes) {
     const enable = (search.value != "" || selected.size != 0)
     if (buttonsEnabled == enable) return
     buttonsEnabled = enable
-    for (const id of ["peek", "disasm", "focus", "ignore", "hide", "show"]) {
+    for (const id of ["focus", "ignore", "hide", "show"]) {
       const btn = document.getElementById(id)
       if (btn != null) {
         btn.disabled = !enable
@@ -770,7 +764,31 @@ function viewer(baseUrl, nodes) {
 {{template "header" .}}
 
 <div id="bodycontainer">
-{{.Body}}
+{{.HTMLBody}}
+</div>
+
+{{template "script" .}}
+<script>viewer({{.BaseURL}}, null)</script>
+</body>
+</html>
+{{end}}
+
+{{define "plaintext" -}}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{.Title}}</title>
+{{template "css" .}}
+</head>
+<body>
+
+{{template "header" .}}
+
+<div id="bodycontainer">
+<pre>
+{{.TextBody}}
+</pre>
 </div>
 
 {{template "script" .}}
