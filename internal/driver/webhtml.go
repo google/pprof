@@ -471,16 +471,16 @@ function viewer(baseUrl, nodes) {
     if (detailsText != null) detailsText.style.display = "none"
   }
 
-  function handleReset() { window.location.href = baseUrl }
-  function handleTop() { navigate("/top", "f", false) }
-  function handleGraph() { navigate("/", "f", false) }
-  function handleList() { navigate("/source", "f", false) }
-  function handleDisasm() { navigate("/disasm", "f", false) }
-  function handlePeek() { navigate("/peek", "f", false) }
-  function handleFocus() { navigate(baseUrl, "f", false) }
-  function handleShow() { navigate(baseUrl, "s", false) }
-  function handleIgnore() { navigate(baseUrl, "i", false) }
-  function handleHide() { navigate(baseUrl, "h", false) }
+  function handleReset(e) { window.location.href = baseUrl }
+  function handleTop(e) { navigate("/top", "f") }
+  function handleGraph(e) { navigate("/", "f") }
+  function handleList(e) { navigate("/source", "f") }
+  function handleDisasm(e) { navigate("/disasm", "f") }
+  function handlePeek(e) { navigate("/peek", "f") }
+  function handleFocus(e) { navigate(baseUrl, "f") }
+  function handleShow(e) { navigate(baseUrl, "s") }
+  function handleIgnore(e) { navigate(baseUrl, "i") }
+  function handleHide(e) { navigate(baseUrl, "h") }
 
   function handleKey(e) {
     if (e.keyCode != 13) return
@@ -609,7 +609,7 @@ function viewer(baseUrl, nodes) {
 
   // Navigate to specified path with current selection reflected
   // in the named parameter.
-  function navigate(path, param, newWindow) {
+  function navigate(path, param) {
     // The selection can be in one of two modes: regexp-based or
     // list-based.  Construct regular expression depending on mode.
     let re = regexpActive ? search.value : ""
@@ -636,11 +636,7 @@ function viewer(baseUrl, nodes) {
       params.set(param, re)
     }
 
-    if (newWindow) {
-      window.open(url.toString(), "_blank")
-    } else {
-      window.location.href = url.toString()
-    }
+    window.location.href = url.toString()
   }
 
   function handleTopClick(e) {
