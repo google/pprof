@@ -52,6 +52,9 @@ func makeWebInterface(p *profile.Profile, opt *plugin.Options) *webInterface {
 	}
 }
 
+// maxEntries is the maximum number of entries to print for text interfaces.
+const maxEntries = 50
+
 // errorCatcher is a UI that captures errors for reporting to the browser.
 type errorCatcher struct {
 	plugin.UI
@@ -312,7 +315,24 @@ func (ui *webInterface) top(w http.ResponseWriter, req *http.Request) {
 
 // disasm generates a web page containing disassembly.
 func (ui *webInterface) disasm(w http.ResponseWriter, req *http.Request) {
-	ui.plaintext(w, req, "/disasm", "disasm", "nodecount", "100")
+	args := []string{"disasm", req.URL.Query().Get("f")}
+	rpt, errList := ui.makeReport(w, req, args)
+	if rpt == nil {
+		return // error already reported
+	}
+
+	out := &bytes.Buffer{}
+	if err := report.PrintAssembly(out, rpt, ui.options.Obj, maxEntries); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ui.options.UI.PrintErr(err)
+		return
+	}
+
+	legend := report.ProfileLabels(rpt)
+	ui.render(w, "/disasm", "plaintext", errList, legend, webArgs{
+		TextBody: out.String(),
+	})
+
 }
 
 // source generates a web page containing disassembly.
@@ -325,8 +345,7 @@ func (ui *webInterface) source(w http.ResponseWriter, req *http.Request) {
 
 	// Generate source listing.
 	var body bytes.Buffer
-	const maxFiles = 50
-	if err := report.PrintWebList(&body, rpt, ui.options.Obj, maxFiles); err != nil {
+	if err := report.PrintWebList(&body, rpt, ui.options.Obj, maxEntries); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		ui.options.UI.PrintErr(err)
 		return
@@ -340,16 +359,8 @@ func (ui *webInterface) source(w http.ResponseWriter, req *http.Request) {
 
 // peek generates a web page listing callers/callers.
 func (ui *webInterface) peek(w http.ResponseWriter, req *http.Request) {
-	// Use line granularity in report.
-	ui.plaintext(w, req, "/peek", "peek", "lines", "t")
-}
-
-// plaintext generates a plain-text webpage that contains the output
-// of the specified pprof cmd.
-func (ui *webInterface) plaintext(w http.ResponseWriter, req *http.Request,
-	baseURL, cmd string, vars ...string) {
-	args := []string{cmd, req.URL.Query().Get("f")}
-	rpt, errList := ui.makeReport(w, req, args, vars...)
+	args := []string{"peek", req.URL.Query().Get("f")}
+	rpt, errList := ui.makeReport(w, req, args, "lines", "t")
 	if rpt == nil {
 		return // error already reported
 	}
@@ -362,7 +373,7 @@ func (ui *webInterface) plaintext(w http.ResponseWriter, req *http.Request,
 	}
 
 	legend := report.ProfileLabels(rpt)
-	ui.render(w, baseURL, "plaintext", errList, legend, webArgs{
+	ui.render(w, "/peek", "plaintext", errList, legend, webArgs{
 		TextBody: out.String(),
 	})
 }

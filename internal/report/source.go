@@ -188,12 +188,9 @@ func PrintWebList(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFiles int) er
 
 	// Limit number of files printed?
 	if maxFiles < 0 {
-		// TODO(reviewers): Is it worth-while using FileOrder for
-		// backwards compatibility, or should we sort by decreasing
-		// cumulative samples always?
 		sourceFiles.Sort(graph.FileOrder)
 	} else {
-		sourceFiles.Sort(graph.CumNameOrder)
+		sourceFiles.Sort(graph.FlatNameOrder)
 		if maxFiles < len(sourceFiles) {
 			sourceFiles = sourceFiles[:maxFiles]
 		}
