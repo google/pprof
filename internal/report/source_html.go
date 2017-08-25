@@ -14,13 +14,16 @@
 
 package report
 
-const weblistPageHeader = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Pprof listing</title>
-<style type="text/css">
+import (
+	"html/template"
+)
+
+func AddSourceTemplates(t *template.Template) {
+	template.Must(t.Parse(`{{define "weblistcss"}}` + weblistPageCss + `{{end}}`))
+	template.Must(t.Parse(`{{define "weblistjs"}}` + weblistPageScript + `{{end}}`))
+}
+
+const weblistPageCss = `<style type="text/css">
 body {
 font-family: sans-serif;
 }
@@ -60,8 +63,9 @@ background-color: #eeeeee;
 color: #008800;
 display: none;
 }
-</style>
-<script type="text/javascript">
+</style>`
+
+const weblistPageScript = `<script type="text/javascript">
 function pprof_toggle_asm(e) {
   var target;
   if (!e) e = window.event;
@@ -77,10 +81,7 @@ function pprof_toggle_asm(e) {
     }
   }
 }
-</script>
-</head>
-<body>
-`
+</script>`
 
 const weblistPageClosing = `
 </body>

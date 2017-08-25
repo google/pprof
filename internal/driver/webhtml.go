@@ -16,21 +16,18 @@ package driver
 
 import "html/template"
 
-// webTemplate defines a collection of related templates:
-//    css
-//    header
-//    script
-//    graph
-//    top
-var webTemplate = template.Must(template.New("web").Parse(`
+// addTemplates add a set of template defintions to templates.
+func addTemplates(templates *template.Template) {
+	template.Must(templates.Parse(`
 {{define "css"}}
 <style type="text/css">
-html, body {
+html {
   height: 100%;
   min-height: 100%;
   margin: 0px;
 }
 body {
+  margin: 0px;
   width: 100%;
   height: 100%;
   min-height: 100%;
@@ -129,11 +126,12 @@ button {
 #searchbox {
   margin-left: 10pt;
 }
-#topcontainer {
+#bodycontainer {
   width: 100%;
   height: 100%;
   max-height: 100%;
   overflow: scroll;
+  padding-top: 5px;
 }
 #toptable {
   border-spacing: 0px;
@@ -176,12 +174,9 @@ button {
 <div class="menu-header">
 View
 <div class="menu">
-{{if (ne .Type "top")}}
-  <button title="{{.Help.top}}" id="topbtn">Top</button>
-{{end}}
-{{if (ne .Type "dot")}}
-  <button title="{{.Help.graph}}" id="graphbtn">Graph</button>
-{{end}}
+<button title="{{.Help.top}}" id="topbtn">Top</button>
+<button title="{{.Help.graph}}" id="graphbtn">Graph</button>
+<button title="{{.Help.list}}" id="list">Source</button>
 <hr>
 <button title="{{.Help.details}}" id="details">Details</button>
 </div>
@@ -191,7 +186,6 @@ View
 Functions
 <div class="menu">
 <button title="{{.Help.peek}}" id="peek">Peek</button>
-<button title="{{.Help.list}}" id="list">List</button>
 <button title="{{.Help.disasm}}" id="disasm">Disassemble</button>
 </div>
 </div>
@@ -230,7 +224,7 @@ Refine
 {{template "header" .}}
 <div id="graphcontainer">
 <div id="graph">
-{{.Svg}}
+{{.Body}}
 </div>
 
 </div>
@@ -486,7 +480,7 @@ function viewer(baseUrl, nodes) {
   function handleReset() { window.location.href = baseUrl }
   function handleTop() { navigate("/top", "f", false) }
   function handleGraph() { navigate("/", "f", false) }
-  function handleList() { navigate("/weblist", "f", true) }
+  function handleList() { navigate("/source", "f", false) }
   function handleDisasm() { navigate("/disasm", "f", true) }
   function handlePeek() { navigate("/peek", "f", true) }
   function handleFocus() { navigate(baseUrl, "f", false) }
@@ -686,7 +680,7 @@ function viewer(baseUrl, nodes) {
     const enable = (search.value != "" || selected.size != 0)
     if (buttonsEnabled == enable) return
     buttonsEnabled = enable
-    for (const id of ["peek", "list", "disasm", "focus", "ignore", "hide", "show"]) {
+    for (const id of ["peek", "disasm", "focus", "ignore", "hide", "show"]) {
       const btn = document.getElementById(id)
       if (btn != null) {
         btn.disabled = !enable
@@ -746,7 +740,7 @@ function viewer(baseUrl, nodes) {
 
 {{template "header" .}}
 
-<div id="topcontainer">
+<div id="bodycontainer">
 <table id="toptable">
 <tr><th>Flat<th>Flat%<th>Sum%<th>Cum<th>Cum%<th>Name<th>Inlined?</tr>
 {{range $i,$e := .Top}}
@@ -760,4 +754,29 @@ function viewer(baseUrl, nodes) {
 </body>
 </html>
 {{end}}
+
+{{define "sourcelisting" -}}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{.Title}}</title>
+{{template "css" .}}
+{{template "weblistcss" .}}
+{{template "weblistjs" .}}
+</head>
+<body>
+
+{{template "header" .}}
+
+<div id="bodycontainer">
+{{.Body}}
+</div>
+
+{{template "script" .}}
+<script>viewer({{.BaseURL}}, null)</script>
+</body>
+</html>
+{{end}}
 `))
+}
