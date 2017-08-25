@@ -471,16 +471,16 @@ function viewer(baseUrl, nodes) {
     if (detailsText != null) detailsText.style.display = "none"
   }
 
-  function handleReset(e) { window.location.href = baseUrl }
-  function handleTop(e) { navigate("/top", "f") }
-  function handleGraph(e) { navigate("/", "f") }
-  function handleList(e) { navigate("/source", "f") }
-  function handleDisasm(e) { navigate("/disasm", "f") }
-  function handlePeek(e) { navigate("/peek", "f") }
-  function handleFocus(e) { navigate(baseUrl, "f") }
-  function handleShow(e) { navigate(baseUrl, "s") }
-  function handleIgnore(e) { navigate(baseUrl, "i") }
-  function handleHide(e) { navigate(baseUrl, "h") }
+  function handleReset() { window.location.href = baseUrl }
+  function handleTop() { navigate("/top", "f") }
+  function handleGraph() { navigate("/", "f") }
+  function handleList() { navigate("/source", "f") }
+  function handleDisasm() { navigate("/disasm", "f") }
+  function handlePeek() { navigate("/peek", "f") }
+  function handleFocus() { navigate(baseUrl, "f") }
+  function handleShow() { navigate(baseUrl, "s") }
+  function handleIgnore() { navigate(baseUrl, "i") }
+  function handleHide() { navigate(baseUrl, "h") }
 
   function handleKey(e) {
     if (e.keyCode != 13) return
@@ -714,6 +714,12 @@ function viewer(baseUrl, nodes) {
 
   search.addEventListener("input", handleSearch)
   search.addEventListener("keydown", handleKey)
+
+  // Give initial focus to main container so it can be scrolled using keys.
+  const main = document.getElementById("bodycontainer")
+  if (main) {
+    main.focus()
+  }
 }
 </script>
 {{end}}
