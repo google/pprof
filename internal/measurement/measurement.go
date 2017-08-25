@@ -301,7 +301,7 @@ func timeLabel(value int64, fromUnit, toUnit string) (v float64, u string, ok bo
 	case "week", "wk":
 		output, toUnit = dd/float64(7*24*time.Hour), "wks"
 	case "year", "yr":
-		output, toUnit = dd/float64(365*7*24*time.Hour), "yrs"
+		output, toUnit = dd/float64(365*24*time.Hour), "yrs"
 	default:
 		fallthrough
 	case "sec", "second", "s":
