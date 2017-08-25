@@ -40,7 +40,7 @@ CPPFLAGS += -Icompat -I${CWP}/mybase \
 		-I${CWP}/compat/ext \
 		-I${CWP} \
 		-Ithird_party \
-		-I. -I.. $(PC_CFLAGS) $(PROTOBUF_CFLAGS) $(GTEST_INCLUDES)
+		-I. $(PC_CFLAGS) $(PROTOBUF_CFLAGS) $(GTEST_INCLUDES)
 LDLIBS += -lelf -lpthread $(PC_LIBS) $(PROTOBUF_LIBS)
 
 PROGRAMS = perf_to_profile
