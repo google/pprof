@@ -457,21 +457,6 @@ function viewer(baseUrl, nodes) {
   'use strict';
 
   // Elements
-<<<<<<< HEAD
-  const detailsButton = document.getElementById("details")
-  const detailsText = document.getElementById("detailtext")
-  const actionBox = document.getElementById("actionbox")
-  const listButton = document.getElementById("list")
-  const disasmButton = document.getElementById("disasm")
-  const resetButton = document.getElementById("reset")
-  const flameGraphButton = document.getElementById("flamegraph")
-  const peekButton = document.getElementById("peek")
-  const focusButton = document.getElementById("focus")
-  const showButton = document.getElementById("show")
-  const ignoreButton = document.getElementById("ignore")
-  const hideButton = document.getElementById("hide")
-=======
->>>>>>> cc3455886fdc155f3c51ee3e6ab146e768e92b2a
   const search = document.getElementById("searchbox")
   const graph0 = document.getElementById("graph0")
   const svg = (graph0 == null ? null : graph0.parentElement)
@@ -493,14 +478,9 @@ function viewer(baseUrl, nodes) {
     if (detailsText != null) detailsText.style.display = "none"
   }
 
-<<<<<<< HEAD
-  function handleReset() { window.location.href = "/" }
-  function handleFlameGraph() { window.location.href = "/flamegraph" }
-=======
   function handleReset() { window.location.href = baseUrl }
   function handleTop() { navigate("/top", "f", false) }
   function handleGraph() { navigate("/", "f", false) }
->>>>>>> cc3455886fdc155f3c51ee3e6ab146e768e92b2a
   function handleList() { navigate("/weblist", "f", true) }
   function handleDisasm() { navigate("/disasm", "f", true) }
   function handlePeek() { navigate("/peek", "f", true) }
@@ -713,24 +693,6 @@ function viewer(baseUrl, nodes) {
   updateButtons()
 
   // Setup event handlers
-<<<<<<< HEAD
-  initPanAndZoom(svg, toggleSelect)
-  
-  function bindButtons(evt) {
-    detailsButton.addEventListener(evt, handleDetails)
-    resetButton.addEventListener(evt, handleReset)
-    flameGraphButton.addEventListener(evt, handleFlameGraph)
-    listButton.addEventListener(evt, handleList)
-    disasmButton.addEventListener(evt, handleDisasm)
-    peekButton.addEventListener(evt, handlePeek)
-    focusButton.addEventListener(evt, handleFocus)
-    showButton.addEventListener(evt, handleShow)
-    ignoreButton.addEventListener(evt, handleIgnore)
-    hideButton.addEventListener(evt, handleHide)
-  }
-  bindButtons("click")
-  bindButtons("touchstart")
-=======
   if (svg != null) {
     initPanAndZoom(svg, toggleSvgSelect)
   }
@@ -761,7 +723,6 @@ function viewer(baseUrl, nodes) {
   addAction("hide", handleHide)
   addAction("show", handleShow)
 
->>>>>>> cc3455886fdc155f3c51ee3e6ab146e768e92b2a
   search.addEventListener("input", handleSearch)
   search.addEventListener("keydown", handleKey)
 }
