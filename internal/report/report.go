@@ -683,16 +683,23 @@ func printComments(w io.Writer, rpt *Report) error {
 	return nil
 }
 
-// printText prints a flat text report for a profile.
-func printText(w io.Writer, rpt *Report) error {
+// TextItem holds a single text report entry.
+type TextItem struct {
+	Name              string
+	InlineLabel       string // Not empty if inlined
+	Flat, FlatPercent string
+	SumPercent        string
+	Cum, CumPercent   string
+}
+
+// TextItems returns a list of text items from the report and a list
+// of labels that describe the report.
+func TextItems(rpt *Report) ([]TextItem, []string) {
 	g, origCount, droppedNodes, _ := rpt.newTrimmedGraph()
 	rpt.selectOutputUnit(g)
+	labels := reportLabels(rpt, g, origCount, droppedNodes, 0, false)
 
-	fmt.Fprintln(w, strings.Join(reportLabels(rpt, g, origCount, droppedNodes, 0, false), "\n"))
-
-	fmt.Fprintf(w, "%10s %5s%% %5s%% %10s %5s%%\n",
-		"flat", "flat", "sum", "cum", "cum")
-
+	var items []TextItem
 	var flatSum int64
 	for _, n := range g.Nodes {
 		name, flat, cum := n.Info.PrintableName(), n.FlatValue(), n.CumValue()
@@ -706,22 +713,45 @@ func printText(w io.Writer, rpt *Report) error {
 			}
 		}
 
+		var inl string
 		if inline {
 			if noinline {
-				name = name + " (partial-inline)"
+				inl = "(partial-inline)"
 			} else {
-				name = name + " (inline)"
+				inl = "(inline)"
 			}
 		}
 
 		flatSum += flat
-		fmt.Fprintf(w, "%10s %s %s %10s %s  %s\n",
-			rpt.formatValue(flat),
-			percentage(flat, rpt.total),
-			percentage(flatSum, rpt.total),
-			rpt.formatValue(cum),
-			percentage(cum, rpt.total),
-			name)
+		items = append(items, TextItem{
+			Name:        name,
+			InlineLabel: inl,
+			Flat:        rpt.formatValue(flat),
+			FlatPercent: percentage(flat, rpt.total),
+			SumPercent:  percentage(flatSum, rpt.total),
+			Cum:         rpt.formatValue(cum),
+			CumPercent:  percentage(cum, rpt.total),
+		})
+	}
+	return items, labels
+}
+
+// printText prints a flat text report for a profile.
+func printText(w io.Writer, rpt *Report) error {
+	items, labels := TextItems(rpt)
+	fmt.Fprintln(w, strings.Join(labels, "\n"))
+	fmt.Fprintf(w, "%10s %5s%% %5s%% %10s %5s%%\n",
+		"flat", "flat", "sum", "cum", "cum")
+	for _, item := range items {
+		inl := item.InlineLabel
+		if inl != "" {
+			inl = " " + inl
+		}
+		fmt.Fprintf(w, "%10s %s %s %10s %s  %s%s\n",
+			item.Flat, item.FlatPercent,
+			item.SumPercent,
+			item.Cum, item.CumPercent,
+			item.Name, inl)
 	}
 	return nil
 }

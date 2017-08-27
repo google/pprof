@@ -998,8 +998,12 @@ func TestTagFilter(t *testing.T) {
 		{"test3", "tag1,tag3", map[string][]string{"value1": {"tag1", "tag2"}, "value2": {"tag3"}}, true},
 		{"test4", "t..[12],t..3", map[string][]string{"value1": {"tag1", "tag2"}, "value2": {"tag3"}}, true},
 		{"test5", "tag2,tag3", map[string][]string{"value1": {"tag1", "tag2"}}, false},
+		{"test6", "key1=tag1,tag2", map[string][]string{"key1": {"tag1", "tag2"}}, true},
+		{"test7", "key1=tag1,tag2", map[string][]string{"key1": {"tag1"}}, true},
+		{"test8", "key1:tag1,tag2", map[string][]string{"key1": {"tag1", "tag2"}}, true},
+		{"test9", "key1:tag1,tag2", map[string][]string{"key1": {"tag2"}}, false},
+		{"test10", "key1:tag1,tag2", map[string][]string{"key1": {"tag1"}}, false},
 	}
-
 	for _, test := range tagFilterTests {
 		filter, err := compileTagFilter(test.name, test.value, &proftest.TestUI{T: t}, nil)
 		if err != nil {
@@ -1008,6 +1012,48 @@ func TestTagFilter(t *testing.T) {
 		}
 		s := profile.Sample{
 			Label: test.tags,
+		}
+
+		if got := filter(&s); got != test.want {
+			t.Errorf("tagFilter %s: got %v, want %v", test.name, got, test.want)
+		}
+	}
+}
+
+func TestNumericTagFilter(t *testing.T) {
+	var tagFilterTests = []struct {
+		name, value string
+		tags        map[string][]int64
+		want        bool
+	}{
+		{"test1", "128kb", map[string][]int64{"bytes": {131072}, "kilobytes": {128}}, true},
+		{"test2", "512kb", map[string][]int64{"bytes": {512}, "kilobytes": {128}}, false},
+		{"test3", "10b", map[string][]int64{"bytes": {10, 20}, "kilobytes": {128}}, true},
+		{"test4", ":10b", map[string][]int64{"bytes": {8}}, true},
+		{"test5", ":10kb", map[string][]int64{"bytes": {8}}, true},
+		{"test6", "10b:", map[string][]int64{"kilobytes": {8}}, true},
+		{"test7", "10b:", map[string][]int64{"bytes": {12}}, true},
+		{"test8", "10b:", map[string][]int64{"bytes": {8}}, false},
+		{"test9", "10kb:", map[string][]int64{"bytes": {8}}, false},
+		{"test10", ":10b", map[string][]int64{"kilobytes": {8}}, false},
+		{"test11", ":10b", map[string][]int64{"bytes": {12}}, false},
+		{"test12", "bytes=5b", map[string][]int64{"bytes": {5, 10}}, true},
+		{"test13", "bytes=1024b", map[string][]int64{"kilobytes": {1, 1024}}, false},
+		{"test14", "bytes=1024b", map[string][]int64{"kilobytes": {5}, "bytes": {1024}}, true},
+		{"test15", "bytes=512b:1024b", map[string][]int64{"bytes": {780}}, true},
+		{"test16", "bytes=1kb:2kb", map[string][]int64{"bytes": {4096}}, false},
+		{"test17", "bytes=512b:1024b", map[string][]int64{"bytes": {256}}, false},
+	}
+	for _, test := range tagFilterTests {
+		expectedErrMsg := fmt.Sprint([]string{test.name, ":Interpreted '", test.value, "' as range, not regexp"})
+		filter, err := compileTagFilter(test.name, test.value, &proftest.TestUI{T: t,
+			IgnoreRx: expectedErrMsg}, nil)
+		if err != nil {
+			t.Errorf("tagFilter %s:%v", test.name, err)
+			continue
+		}
+		s := profile.Sample{
+			NumLabel: test.tags,
 		}
 
 		if got := filter(&s); got != test.want {

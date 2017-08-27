@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"testing"
 
 	"github.com/google/pprof/internal/plugin"
@@ -43,6 +44,8 @@ func TestWebInterface(t *testing.T) {
 			switch r.URL.Path {
 			case "/":
 				ui.dot(w, r)
+			case "/top":
+				ui.top(w, r)
 			case "/disasm":
 				ui.disasm(w, r)
 			case "/peek":
@@ -65,6 +68,7 @@ func TestWebInterface(t *testing.T) {
 	}
 	testcases := []testCase{
 		{"/", []string{"F1", "F2", "F3", "testbin", "cpu"}, true},
+		{"/top", []string{"Flat", "200ms.*100%.*F2"}, false},
 		{"/weblist?f=" + url.QueryEscape("F[12]"),
 			[]string{"F1", "F2", "300ms line1"}, false},
 		{"/peek?f=" + url.QueryEscape("F[12]"),
@@ -193,6 +197,10 @@ func makeFakeProfile() *profile.Profile {
 }
 
 func TestNewListenerAndURL(t *testing.T) {
+	if runtime.GOOS == "nacl" {
+		t.Skip("test assumes tcp available")
+	}
+
 	tests := []struct {
 		hostport  string
 		wantErr   bool

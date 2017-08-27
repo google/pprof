@@ -110,7 +110,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		return nil, nil, err
 	}
 	if cmd != nil && *flagHTTP != "" {
-		return nil, nil, fmt.Errorf("--http is not compatible with an output format on the command line")
+		return nil, nil, fmt.Errorf("-http is not compatible with an output format on the command line")
 	}
 
 	si := pprofVariables["sample_index"].value
@@ -268,7 +268,7 @@ Omit the format and provide the "-http" flag to get an interactive web
 interface at the specified host:port that can be used to navigate through
 various views of a profile.
 
-   pprof -http <host:port> [options] [binary] <source> ...
+   pprof -http [host]:[port] [options] [binary] <source> ...
 
 Details:
 `
@@ -292,8 +292,19 @@ var usageMsgSrc = "\n\n" +
 
 var usageMsgVars = "\n\n" +
 	"  Misc options:\n" +
-	"   -http host:port        Provide web based interface at host:port\n" +
-	"   -tools                 Search path for object tools\n" +
+	"   -http              Provide web based interface at host:port.\n" +
+	"                      Host is optional and 'localhost' by default.\n" +
+	"                      Port is optional and a randomly available port by default.\n" +
+	"   -tools             Search path for object tools\n" +
+	"\n" +
+	"  Legacy convenience options:\n" +
+	"   -inuse_space           Same as -sample_index=inuse_space\n" +
+	"   -inuse_objects         Same as -sample_index=inuse_objects\n" +
+	"   -alloc_space           Same as -sample_index=alloc_space\n" +
+	"   -alloc_objects         Same as -sample_index=alloc_objects\n" +
+	"   -total_delay           Same as -sample_index=delay\n" +
+	"   -contentions           Same as -sample_index=contentions\n" +
+	"   -mean_delay            Same as -mean -sample_index=delay\n" +
 	"\n" +
 	"  Environment Variables:\n" +
 	"   PPROF_TMPDIR       Location for saved profiles (default $HOME/pprof)\n" +
