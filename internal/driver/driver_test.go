@@ -399,7 +399,7 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 		p = heapProfile()
 		tags := []int64{2, 4, 8, 16, 32, 64, 128, 256}
 		for _, s := range p.Sample {
-			s.NumLabel["bytes"] = append(s.NumLabel["bytes"], tags...)
+			s.NumLabel["bytes"] = profile.NumValues{Unit: "bytes", Values: append(s.NumLabel["bytes"].Values, tags...)}
 		}
 	case "heap_tags":
 		p = heapProfile()
@@ -783,29 +783,29 @@ func heapProfile() *profile.Profile {
 			{
 				Location: []*profile.Location{heapL[0], heapL[1], heapL[2]},
 				Value:    []int64{10, 1024000},
-				NumLabel: map[string][]int64{
-					"bytes": {102400},
+				NumLabel: map[string]profile.NumValues{
+					"bytes": {Unit: "bytes", Values: []int64{102400}},
 				},
 			},
 			{
 				Location: []*profile.Location{heapL[0], heapL[3]},
 				Value:    []int64{20, 4096000},
-				NumLabel: map[string][]int64{
-					"bytes": {204800},
+				NumLabel: map[string]profile.NumValues{
+					"bytes": {Unit: "bytes", Values: []int64{204800}},
 				},
 			},
 			{
 				Location: []*profile.Location{heapL[1], heapL[4]},
 				Value:    []int64{40, 65536000},
-				NumLabel: map[string][]int64{
-					"bytes": {1638400},
+				NumLabel: map[string]profile.NumValues{
+					"bytes": {Unit: "bytes", Values: []int64{1638400}},
 				},
 			},
 			{
 				Location: []*profile.Location{heapL[2]},
 				Value:    []int64{80, 32768000},
-				NumLabel: map[string][]int64{
-					"bytes": {409600},
+				NumLabel: map[string]profile.NumValues{
+					"bytes": {Unit: "bytes", Values: []int64{409600}},
 				},
 			},
 		},
@@ -1023,26 +1023,27 @@ func TestTagFilter(t *testing.T) {
 func TestNumericTagFilter(t *testing.T) {
 	var tagFilterTests = []struct {
 		name, value string
-		tags        map[string][]int64
+		tags        map[string]profile.NumValues
 		want        bool
 	}{
-		{"test1", "128kb", map[string][]int64{"bytes": {131072}, "kilobytes": {128}}, true},
-		{"test2", "512kb", map[string][]int64{"bytes": {512}, "kilobytes": {128}}, false},
-		{"test3", "10b", map[string][]int64{"bytes": {10, 20}, "kilobytes": {128}}, true},
-		{"test4", ":10b", map[string][]int64{"bytes": {8}}, true},
-		{"test5", ":10kb", map[string][]int64{"bytes": {8}}, true},
-		{"test6", "10b:", map[string][]int64{"kilobytes": {8}}, true},
-		{"test7", "10b:", map[string][]int64{"bytes": {12}}, true},
-		{"test8", "10b:", map[string][]int64{"bytes": {8}}, false},
-		{"test9", "10kb:", map[string][]int64{"bytes": {8}}, false},
-		{"test10", ":10b", map[string][]int64{"kilobytes": {8}}, false},
-		{"test11", ":10b", map[string][]int64{"bytes": {12}}, false},
-		{"test12", "bytes=5b", map[string][]int64{"bytes": {5, 10}}, true},
-		{"test13", "bytes=1024b", map[string][]int64{"kilobytes": {1, 1024}}, false},
-		{"test14", "bytes=1024b", map[string][]int64{"kilobytes": {5}, "bytes": {1024}}, true},
-		{"test15", "bytes=512b:1024b", map[string][]int64{"bytes": {780}}, true},
-		{"test16", "bytes=1kb:2kb", map[string][]int64{"bytes": {4096}}, false},
-		{"test17", "bytes=512b:1024b", map[string][]int64{"bytes": {256}}, false},
+		{"test1", "128kb", map[string]profile.NumValues{"key1": {Unit: "bytes", Values: []int64{131072}}, "key2": {Unit: "kilobytes", Values: []int64{128}}}, true},
+		{"test2", "512kb", map[string]profile.NumValues{"key1": {Unit: "bytes", Values: []int64{512}}, "key2": {Unit: "kilobytes", Values: []int64{128}}}, false},
+		{"test3", "10b", map[string]profile.NumValues{"key1": {Unit: "bytes", Values: []int64{10, 20}}, "key2": {Unit: "kilobytes", Values: []int64{128}}}, true},
+		{"test4", ":10b", map[string]profile.NumValues{"key1": {Unit: "bytes", Values: []int64{8}}}, true},
+		{"test5", ":10kb", map[string]profile.NumValues{"key1": {Unit: "bytes", Values: []int64{8}}}, true},
+		{"test6", "10b:", map[string]profile.NumValues{"key1": {Unit: "kilobytes", Values: []int64{8}}}, true},
+		{"test7", "10b:", map[string]profile.NumValues{"key1": {Unit: "bytes", Values: []int64{12}}}, true},
+		{"test8", "10b:", map[string]profile.NumValues{"key1": {Unit: "bytes", Values: []int64{8}}}, false},
+		{"test9", "10kb:", map[string]profile.NumValues{"key1": {Unit: "bytes", Values: []int64{8}}}, false},
+		{"test10", ":10b:", map[string]profile.NumValues{"key1": {Unit: "kilobytes", Values: []int64{8}}}, false},
+		{"test11", ":10b", map[string]profile.NumValues{"key1": {Unit: "bytes", Values: []int64{12}}}, false},
+		{"test12", "bytes=5b", map[string]profile.NumValues{"bytes": {Unit: "bytes", Values: []int64{5, 10}}}, true},
+		{"test13", "bytes=1024b", map[string]profile.NumValues{"bytes": {Unit: "kilobytes", Values: []int64{1024}}}, false},
+		{"test14", "bytes=1024b", map[string]profile.NumValues{"bytes": {Unit: "bytes", Values: []int64{1024}}, "key2": {Unit: "bytes", Values: []int64{5}}}, true},
+		{"test15", "bytes=512b:1024b", map[string]profile.NumValues{"bytes": {Unit: "bytes", Values: []int64{780}}}, true},
+		{"test16", "key1=1kb:2kb", map[string]profile.NumValues{"key1": {Unit: "bytes", Values: []int64{4096}}}, false},
+		{"test17", "key1=512b:1024b", map[string]profile.NumValues{"key1": {Unit: "bytes", Values: []int64{256}}}, false},
+		{"test18", "bytes=1024b", map[string]profile.NumValues{"bytes": {Unit: "kilobytes", Values: []int64{1}}}, true},
 	}
 	for _, test := range tagFilterTests {
 		expectedErrMsg := fmt.Sprint([]string{test.name, ":Interpreted '", test.value, "' as range, not regexp"})

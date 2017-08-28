@@ -73,10 +73,15 @@ type Sample struct {
 	Location []*Location
 	Value    []int64
 	Label    map[string][]string
-	NumLabel map[string][]int64
+	NumLabel map[string]NumValues
 
 	locationIDX []uint64
 	labelX      []label
+}
+
+type NumValues struct {
+	Unit   string
+	Values []int64
 }
 
 // label corresponds to Profile.Label
@@ -85,6 +90,8 @@ type label struct {
 	// Exactly one of the two following values must be set
 	strX int64
 	numX int64 // Integer value for this label
+	// can be set if numX has value
+	unitX int64
 }
 
 // Mapping corresponds to Profile.Mapping

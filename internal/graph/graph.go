@@ -602,7 +602,7 @@ func (ns Nodes) Sum() (flat int64, cum int64) {
 	return
 }
 
-func (n *Node) addSample(dw, w int64, labels string, numLabel map[string][]int64, format func(int64, string) string, flat bool) {
+func (n *Node) addSample(dw, w int64, labels string, numLabel map[string]profile.NumValues, format func(int64, string) string, flat bool) {
 	// Update sample value
 	if flat {
 		n.FlatDiv += dw
@@ -634,7 +634,7 @@ func (n *Node) addSample(dw, w int64, labels string, numLabel map[string][]int64
 		format = defaultLabelFormat
 	}
 	for key, nvals := range numLabel {
-		for _, v := range nvals {
+		for _, v := range nvals.Values {
 			t := numericTags.findOrAddTag(format(v, key), key, v)
 			if flat {
 				t.FlatDiv += dw

@@ -215,7 +215,7 @@ func parseJavaSamples(pType string, b []byte, p *Profile) ([]byte, map[uint64]*L
 				if s.Value[0] == 0 {
 					return nil, nil, fmt.Errorf("parsing sample %s: second value must be non-zero", line)
 				}
-				s.NumLabel = map[string][]int64{"bytes": {s.Value[1] / s.Value[0]}}
+				s.NumLabel = map[string]NumValues{"bytes": {Unit: "bytes", Values: []int64{s.Value[1] / s.Value[0]}}}
 				s.Value[0], s.Value[1] = scaleHeapSample(s.Value[0], s.Value[1], javaHeapzSamplingRate)
 			case "contention":
 				if period := p.Period; period != 0 {

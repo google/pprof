@@ -243,10 +243,10 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	}
 	// Remove numeric tags not recognized by pprof.
 	for _, s := range prof.Sample {
-		numLabels := make(map[string][]int64, len(s.NumLabel))
+		numLabels := make(map[string]profile.NumValues, len(s.NumLabel))
 		for k, v := range s.NumLabel {
 			if k == "bytes" {
-				numLabels[k] = append(numLabels[k], v...)
+				numLabels[k] = profile.NumValues{Unit: v.Unit, Values: append(numLabels[k].Values, v.Values...)}
 			}
 		}
 		s.NumLabel = numLabels
@@ -651,8 +651,8 @@ func printTags(w io.Writer, rpt *Report) error {
 			}
 		}
 		for key, vals := range s.NumLabel {
-			for _, nval := range vals {
-				val := formatTag(nval, key)
+			for _, nval := range vals.Values {
+				val := formatTag(nval, vals.Unit)
 				valueMap, ok := tagMap[key]
 				if !ok {
 					valueMap = make(map[string]int64)
@@ -808,7 +808,14 @@ func printTraces(w io.Writer, rpt *Report) error {
 		// Print any numeric labels for the sample
 		var numLabels []string
 		for k, v := range sample.NumLabel {
-			numLabels = append(numLabels, fmt.Sprintf("%10s:  %s\n", k, strings.Trim(fmt.Sprintf("%d", v), "[]")))
+			formatTag := func(vv int64, key string) string {
+				return measurement.ScaledLabel(vv, key, o.OutputUnit)
+			}
+			numValues := make([]string, len(v.Values))
+			for i, vv := range v.Values {
+				numValues[i] = formatTag(vv, v.Unit)
+			}
+			numLabels = append(numLabels, fmt.Sprintf("%10s:  %s\n", k, strings.Join(numValues, " ")))
 		}
 		sort.Strings(numLabels)
 		fmt.Fprint(w, strings.Join(numLabels, ""))

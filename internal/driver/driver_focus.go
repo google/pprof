@@ -87,9 +87,9 @@ func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profil
 
 	if numFilter := parseTagFilterRange(value); numFilter != nil {
 		ui.PrintErr(name, ":Interpreted '", value, "' as range, not regexp")
-		labelFilter := func(vals []int64, key string) bool {
-			for _, val := range vals {
-				if numFilter(val, key) {
+		labelFilter := func(vals profile.NumValues, key string) bool {
+			for _, val := range vals.Values {
+				if numFilter(val, vals.Unit) {
 					return true
 				}
 			}

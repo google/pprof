@@ -16,6 +16,8 @@ package profile
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"sort"
 )
 
@@ -60,11 +62,13 @@ func (p *Profile) preEncode() {
 		sort.Strings(numKeys)
 		for _, k := range numKeys {
 			vs := s.NumLabel[k]
-			for _, v := range vs {
+			unitX := addString(strings, vs.Unit)
+			for _, v := range vs.Values {
 				s.labelX = append(s.labelX,
 					label{
-						keyX: addString(strings, k),
-						numX: v,
+						keyX:  addString(strings, k),
+						numX:  v,
+						unitX: unitX,
 					},
 				)
 			}
@@ -288,7 +292,7 @@ func (p *Profile) postDecode() error {
 
 	for _, s := range p.Sample {
 		labels := make(map[string][]string, len(s.labelX))
-		numLabels := make(map[string][]int64, len(s.labelX))
+		numLabels := make(map[string]NumValues, len(s.labelX))
 		for _, l := range s.labelX {
 			var key, value string
 			key, err = getString(p.stringTable, &l.keyX, err)
@@ -296,7 +300,23 @@ func (p *Profile) postDecode() error {
 				value, err = getString(p.stringTable, &l.strX, err)
 				labels[key] = append(labels[key], value)
 			} else if l.numX != 0 {
-				numLabels[key] = append(numLabels[key], l.numX)
+				var unit string
+				if l.unitX != 0 {
+					unit, err = getString(p.stringTable, &l.unitX, err)
+				} else if key == "bytes" || key == "requests" {
+					unit = "bytes"
+				} else {
+					unit = key
+				}
+				if v, ok := numLabels[key]; ok {
+					if unit != v.Unit {
+						fmt.Fprintf(os.Stderr, "for tag %s, found value with unit %s, but using first unit value encountered, %s", key, unit, v.Unit)
+					}
+					vv := append(v.Values, l.numX)
+					numLabels[key] = NumValues{Unit: v.Unit, Values: vv}
+				} else {
+					numLabels[key] = NumValues{Unit: unit, Values: []int64{l.numX}}
+				}
 			}
 		}
 		if len(labels) > 0 {
@@ -392,6 +412,7 @@ func (p label) encode(b *buffer) {
 	encodeInt64Opt(b, 1, p.keyX)
 	encodeInt64Opt(b, 2, p.strX)
 	encodeInt64Opt(b, 3, p.numX)
+	encodeInt64Opt(b, 4, p.unitX)
 }
 
 var labelDecoder = []decoder{
@@ -402,6 +423,8 @@ var labelDecoder = []decoder{
 	func(b *buffer, m message) error { return decodeInt64(b, &m.(*label).strX) },
 	// optional int64 num = 3
 	func(b *buffer, m message) error { return decodeInt64(b, &m.(*label).numX) },
+	// optional int64 num = 4
+	func(b *buffer, m message) error { return decodeInt64(b, &m.(*label).unitX) },
 }
 
 func (p *Mapping) decoder() []decoder {

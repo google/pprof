@@ -350,6 +350,50 @@ var testProfile3 = &Profile{
 	Mapping:  cpuM,
 }
 
+var testProfile4 = &Profile{
+	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
+	Period:        1,
+	DurationNanos: 10e9,
+	SampleType: []*ValueType{
+		{Type: "samples", Unit: "count"},
+	},
+	Sample: []*Sample{
+		{
+			Location: []*Location{cpuL[0]},
+			Value:    []int64{1000},
+			NumLabel: map[string]NumValues{
+				"key1": {Unit: "bytes", Values: []int64{10}},
+				"key2": {Unit: "bytes", Values: []int64{30}},
+			},
+		},
+	},
+	Location: cpuL,
+	Function: cpuF,
+	Mapping:  cpuM,
+}
+
+var testProfile5 = &Profile{
+	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
+	Period:        1,
+	DurationNanos: 10e9,
+	SampleType: []*ValueType{
+		{Type: "samples", Unit: "count"},
+	},
+	Sample: []*Sample{
+		{
+			Location: []*Location{cpuL[0]},
+			Value:    []int64{1000},
+			NumLabel: map[string]NumValues{
+				"key1": {Unit: "kilobytes", Values: []int64{10}},
+				"key2": {Unit: "kilobytes", Values: []int64{30}},
+			},
+		},
+	},
+	Location: cpuL,
+	Function: cpuF,
+	Mapping:  cpuM,
+}
+
 var aggTests = map[string]aggTest{
 	"precise":         {true, true, true, true, 5},
 	"fileline":        {false, true, true, true, 4},
@@ -503,6 +547,58 @@ func TestMergeAll(t *testing.T) {
 		if samples[tb] != s.Value[0]*10 {
 			t.Errorf("merge got wrong value at %s : %d instead of %d", tb, samples[tb], s.Value[0]*10)
 		}
+	}
+}
+
+func TestNumLabelMerge(t *testing.T) {
+	for _, tc := range []struct {
+		Name         string
+		Profs        []*Profile
+		ExpNumLabels []map[string]NumValues
+	}{
+		{
+			Name:  "different tag units not merged",
+			Profs: []*Profile{testProfile4.Copy(), testProfile5.Copy()},
+			ExpNumLabels: []map[string]NumValues{
+				map[string]NumValues{
+					"key1": {Unit: "bytes", Values: []int64{10}},
+					"key2": {Unit: "bytes", Values: []int64{30}},
+				},
+				map[string]NumValues{
+					"key1": {Unit: "kilobytes", Values: []int64{10}},
+					"key2": {Unit: "kilobytes", Values: []int64{30}},
+				},
+			},
+		},
+	} {
+		t.Run(tc.Name, func(t *testing.T) {
+			prof, err := Merge(tc.Profs)
+			if err != nil {
+				t.Errorf("merge error: %v", err)
+			}
+			for i, expLabels := range tc.ExpNumLabels {
+				numLabels := prof.Sample[i].NumLabel
+				if want, got := len(expLabels), len(numLabels); want != got {
+					t.Errorf("for sample %d, want %d numeric tags, got %d", i, want, got)
+					continue
+				}
+				for k, expVs := range expLabels {
+					if vs, ok := numLabels[k]; ok {
+						if len(vs.Values) != len(expVs.Values) {
+							t.Errorf("for sample %d, tag %s, want %v got %v", i, k, expVs.Values, vs.Values)
+							continue
+						}
+						for j, expV := range expVs.Values {
+							if want, got := expV, vs.Values[j]; want != got {
+								t.Errorf("for sample %d, tag %s, value %d, want %v got %v", i, k, j, want, got)
+							}
+						}
+					} else {
+						t.Errorf("for sample %d, want tag %v, but did not get tag", k)
+					}
+				}
+			}
+		})
 	}
 }
 
