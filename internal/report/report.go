@@ -245,7 +245,7 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	for _, s := range prof.Sample {
 		numLabels := make(map[string]profile.NumValues, len(s.NumLabel))
 		for k, v := range s.NumLabel {
-			if k == "bytes" && v.Unit == "bytes"{
+			if k == "bytes" && v.Unit == "bytes" {
 				numLabels[k] = profile.NumValues{Unit: v.Unit, Values: append(numLabels[k].Values, v.Values...)}
 			}
 		}

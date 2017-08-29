@@ -586,7 +586,6 @@ func TestNumLabelMerge(t *testing.T) {
 					if vs, ok := numLabels[k]; ok {
 						if len(vs.Values) != len(expVs.Values) {
 							t.Errorf("for sample %d, tag %s, want %v got %v", i, k, expVs.Values, vs.Values)
-							continue
 						}
 						for j, expV := range expVs.Values {
 							if want, got := expV, vs.Values[j]; want != got {
