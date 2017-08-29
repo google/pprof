@@ -593,7 +593,7 @@ func TestNumLabelMerge(t *testing.T) {
 							}
 						}
 					} else {
-						t.Errorf("for sample %d, want tag %v, but did not get tag", k)
+						t.Errorf("for sample %d, want tag %v, but did not get tag", i, k)
 					}
 				}
 			}
