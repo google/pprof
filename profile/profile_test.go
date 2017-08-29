@@ -560,11 +560,11 @@ func TestNumLabelMerge(t *testing.T) {
 			Name:  "different tag units not merged",
 			Profs: []*Profile{testProfile4.Copy(), testProfile5.Copy()},
 			ExpNumLabels: []map[string]NumValues{
-				map[string]NumValues{
+				{
 					"key1": {Unit: "bytes", Values: []int64{10}},
 					"key2": {Unit: "bytes", Values: []int64{30}},
 				},
-				map[string]NumValues{
+				{
 					"key1": {Unit: "kilobytes", Values: []int64{10}},
 					"key2": {Unit: "kilobytes", Values: []int64{30}},
 				},
