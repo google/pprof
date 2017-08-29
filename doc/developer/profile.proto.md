@@ -128,9 +128,11 @@ size of 6MB.
 
 Labels can be string-based or numeric. They are represented by the Label
 message, with a key identifying the label and either a string or numeric
-value. For numeric labels, by convention the key represents the measurement unit
-of the numeric value. So for the previous example, the samples would have labels
-{“bytes”, 2097152} and {“bytes”, 4194304}.
+value. For numeric labels, the measurement unit can be specified in the profile
+If no unit is specified, is specified and the key is "request" or "alignment",
+then the units are assumed to be "bytes". Otherwise the key will be used as the
+measurement unit of the numeric value. All tags with the same key should be
+associated with the same unit.
 
 ## Keep and drop expressions
 

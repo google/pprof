@@ -303,7 +303,7 @@ func (p *Profile) postDecode() error {
 				var unit string
 				if l.unitX != 0 {
 					unit, err = getString(p.stringTable, &l.unitX, err)
-				} else if key == "bytes" || key == "requests" {
+				} else if key == "bytes" || key == "requests" || key == "alignment" {
 					unit = "bytes"
 				} else {
 					unit = key
