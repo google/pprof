@@ -83,9 +83,6 @@ void PrintUsage() {
 }
 }  // namespace
 
-// Usage is:
-// <exe> -i <input filename> -f <input format> -o <output filename> -f
-// <output format>
 int main(int argc, char* argv[]) {
   FormatAndFile input, output;
   if (!ParseArguments(argc, argv, &input, &output)) {
