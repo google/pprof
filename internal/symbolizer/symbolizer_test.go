@@ -101,9 +101,11 @@ func TestSymbolization(t *testing.T) {
 	defer func() {
 		symbolzSymbolize = sSym
 		localSymbolize = lSym
+		demangleFunction = Demangle
 	}()
 	symbolzSymbolize = symbolzMock
 	localSymbolize = localMock
+	demangleFunction = demangleMock
 
 	type testcase struct {
 		mode        string
@@ -117,11 +119,11 @@ func TestSymbolization(t *testing.T) {
 	for i, tc := range []testcase{
 		{
 			"local",
-			"local=local",
+			"local=",
 		},
 		{
 			"fastlocal",
-			"local=fastlocal",
+			"local=fast",
 		},
 		{
 			"remote",
@@ -131,6 +133,22 @@ func TestSymbolization(t *testing.T) {
 			"",
 			"local=:symbolz",
 		},
+		{
+			"demangle=none",
+			"local=force:symbolz:force:demangle=none",
+		},
+		{
+			"remote:demangle=full",
+			"symbolz:force:demangle=full",
+		},
+		{
+			"local:demangle=templates",
+			"local=force:force:demangle=templates",
+		},
+		{
+			"force:remote",
+			"symbolz:force",
+		},
 	} {
 		prof := testProfile.Copy()
 		if err := s.Symbolize(tc.mode, nil, prof); err != nil {
@@ -138,7 +156,7 @@ func TestSymbolization(t *testing.T) {
 			continue
 		}
 		if got, want := strings.Join(prof.Comments, ":"), tc.wantComment; got != want {
-			t.Errorf("got %s, want %s", got, want)
+			t.Errorf("%s: got %s, want %s", tc.mode, got, want)
 			continue
 		}
 	}
@@ -149,9 +167,26 @@ func symbolzMock(sources plugin.MappingSources, syms func(string, string) ([]byt
 	return nil
 }
 
-func localMock(mode string, p *profile.Profile, obj plugin.ObjTool, ui plugin.UI) error {
-	p.Comments = append(p.Comments, "local="+mode)
+func localMock(p *profile.Profile, fast, force bool, obj plugin.ObjTool, ui plugin.UI) error {
+	var args []string
+	if fast {
+		args = append(args, "fast")
+	}
+	if force {
+		args = append(args, "force")
+	}
+	p.Comments = append(p.Comments,
+		"local="+strings.Join(args, ","))
 	return nil
+}
+
+func demangleMock(p *profile.Profile, force bool, mode string) {
+	if force {
+		p.Comments = append(p.Comments, "force")
+	}
+	if mode != "" {
+		p.Comments = append(p.Comments, "demangle="+mode)
+	}
 }
 
 func TestLocalSymbolization(t *testing.T) {
@@ -165,7 +200,7 @@ func TestLocalSymbolization(t *testing.T) {
 	}
 
 	b := mockObjTool{}
-	if err := localSymbolize("", prof, b, &proftest.TestUI{T: t}); err != nil {
+	if err := localSymbolize(prof, false, false, b, &proftest.TestUI{T: t}); err != nil {
 		t.Fatalf("localSymbolize(): %v", err)
 	}
 
