@@ -79,6 +79,8 @@ type Sample struct {
 	labelX      []label
 }
 
+// NumValues used to store numeric values and unit for numeric values
+// of Profile.Label
 type NumValues struct {
 	Unit   string
 	Values []int64
