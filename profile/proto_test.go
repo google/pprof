@@ -105,8 +105,10 @@ var profileIn = &Profile{
 				"key2": {"value2"},
 			},
 			NumLabel: map[string]NumValues{
-				"key1": {"", []int64{1, 2}},
-				"key2": {"", []int64{1, 2}},
+				"key1":      {"", []int64{1, 2}},
+				"key2":      {"", []int64{1, 2}},
+				"request":   {"count", []int64{1, 2}},
+				"alignment": {"second", []int64{1, 2}},
 			},
 		},
 		{
@@ -149,8 +151,10 @@ var profileOut = &Profile{
 				"key2": {"value2"},
 			},
 			NumLabel: map[string]NumValues{
-				"key1": {"key1", []int64{1, 2}},
-				"key2": {"key2", []int64{1, 2}},
+				"key1":      {"key1", []int64{1, 2}},
+				"key2":      {"key2", []int64{1, 2}},
+				"request":   {"count", []int64{1, 2}},
+				"alignment": {"second", []int64{1, 2}},
 			},
 		},
 		{
