@@ -115,11 +115,7 @@ endif
 
 # Rule for compiling protobufs.
 %.pb.h %.pb.cc: %.proto $(PROTOBUF_DEP)
-ifeq (,$(findstring ../, $<))
-	$(PROTOC) --cpp_out=. $<
-else
-	$(PROTOC) --cpp_out=. `cd .. && pwd``echo $< | sed 's/\.\.//g'`
-endif
+	$(PROTOC) --cpp_out=. -I`dirname $<` $<
 
 # Do not remove protobuf headers that were generated as dependencies of other
 # modules.
