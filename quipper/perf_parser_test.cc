@@ -1674,7 +1674,8 @@ TEST(PerfParserTest, HugePagesMappings) {
   EXPECT_TRUE(reader.ReadFromString(input.str()));
 
   PerfParserOptions options;
-  options.combine_huge_pages_mappings = true;
+  options.deduce_huge_page_mappings = true;
+  options.combine_mappings = true;
   PerfParser parser(&reader, options);
   EXPECT_TRUE(parser.ParseRawEvents());
 
@@ -1802,11 +1803,12 @@ TEST(PerfParserTest, Regression62446346) {
   EXPECT_TRUE(reader.ReadFromString(input.str()));
 
   PerfParserOptions options;
-  options.combine_huge_pages_mappings = true;
+  options.deduce_huge_page_mappings = true;
+  options.combine_mappings = true;
   PerfParser parser(&reader, options);
   EXPECT_TRUE(parser.ParseRawEvents());
 
-  EXPECT_EQ(2, parser.stats().num_mmap_events);
+  EXPECT_EQ(1, parser.stats().num_mmap_events);
   EXPECT_EQ(0, parser.stats().num_sample_events);
   EXPECT_EQ(0, parser.stats().num_sample_events_mapped);
 
@@ -1814,25 +1816,13 @@ TEST(PerfParserTest, Regression62446346) {
 
   {
     PerfDataProto expected;
-    // The first mapping is not at a hugepage boundary, so it should not be
-    // merged with the other mappings.
     {
       auto* ev = expected.add_events();
       ev->mutable_header()->set_type(PERF_RECORD_MMAP);
       ev->mutable_mmap_event()->set_filename("file");
       ev->mutable_mmap_event()->set_start(0x55a685bfb000);
-      ev->mutable_mmap_event()->set_len(0x200000);
+      ev->mutable_mmap_event()->set_len(0x234d0000);
       ev->mutable_mmap_event()->set_pgoff(0x0);
-    }
-    // The second and third mapping meet at a hugepage boundary.  The subsequent
-    // mappings can all be folded into the merged mapping.
-    {
-      auto* ev = expected.add_events();
-      ev->mutable_header()->set_type(PERF_RECORD_MMAP);
-      ev->mutable_mmap_event()->set_filename("file");
-      ev->mutable_mmap_event()->set_start(0x55a685dfb000);
-      ev->mutable_mmap_event()->set_len(0x232d0000);
-      ev->mutable_mmap_event()->set_pgoff(0x200000);
     }
 
     PerfDataProto actual;
@@ -1846,7 +1836,7 @@ TEST(PerfParserTest, Regression62446346) {
 
     EXPECT_TRUE(PartiallyEqualsProto(actual, expected));
   }
-  ASSERT_EQ(2, events.size());
+  ASSERT_EQ(1, events.size());
 
   // Verify the header().size() entry is large enough to deserialize/serialize.
   for (const auto& ev : events) {
@@ -1917,7 +1907,8 @@ TEST(PerfParserTest, Regression62446346_Perf3_12_0_11) {
   EXPECT_TRUE(reader.ReadFromString(input.str()));
 
   PerfParserOptions options;
-  options.combine_huge_pages_mappings = true;
+  options.deduce_huge_page_mappings = true;
+  options.combine_mappings = true;
   PerfParser parser(&reader, options);
   EXPECT_TRUE(parser.ParseRawEvents());
 
@@ -2005,7 +1996,8 @@ TEST(PerfParserTest, Regression62446346_Perf3_12_0_14) {
   EXPECT_TRUE(reader.ReadFromString(input.str()));
 
   PerfParserOptions options;
-  options.combine_huge_pages_mappings = true;
+  options.deduce_huge_page_mappings = true;
+  options.combine_mappings = true;
   PerfParser parser(&reader, options);
   EXPECT_TRUE(parser.ParseRawEvents());
 
@@ -2070,7 +2062,8 @@ TEST(PerfParserTest, DiscontiguousMappings) {
   EXPECT_TRUE(reader.ReadFromString(input.str()));
 
   PerfParserOptions options;
-  options.combine_huge_pages_mappings = true;
+  options.deduce_huge_page_mappings = true;
+  options.combine_mappings = true;
   PerfParser parser(&reader, options);
   EXPECT_TRUE(parser.ParseRawEvents());
 

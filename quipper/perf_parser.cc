@@ -70,9 +70,16 @@ bool PerfParser::ParseRawEvents() {
   // Just in case there was data from a previous call.
   process_mappers_.clear();
 
-  // Find and combine split huge pages mappings.
-  if (options_.combine_huge_pages_mappings) {
-    CombineHugePageMappings(reader_->mutable_events());
+  // Find huge page mappings.
+  if (options_.deduce_huge_page_mappings) {
+    DeduceHugePages(reader_->mutable_events());
+  }
+
+  // Combine split mappings.  Because the remapping process makes addresses
+  // contiguous, we cannot try to combine mappings in these situations (as we
+  // collapse maps that were non-contiguous).
+  if (options_.combine_mappings && !options_.do_remap) {
+    CombineMappings(reader_->mutable_events());
   }
 
   // Clear the parsed events to reset their fields. Otherwise, non-sample events

@@ -88,6 +88,8 @@ void SerializeAndDeserialize(const string& input,
   PerfDataProto perf_data_proto;
   PerfParserOptions options;
   options.do_remap = do_remap;
+  options.deduce_huge_page_mappings = false;
+  options.combine_mappings = false;
   options.discard_unused_events = discard_unused_events;
   options.sample_mapping_percentage_threshold = 100.0f;
 
@@ -128,6 +130,8 @@ void SerializeToFileAndBack(const string& input, const string& output) {
   // use just one.
   PerfParserOptions options;
   options.sort_events_by_time = true;
+  options.deduce_huge_page_mappings = false;
+  options.combine_mappings = false;
   EXPECT_TRUE(SerializeFromFileWithOptions(input, options,
                                            &input_perf_data_proto));
   CheckChronologicalOrderOfSerializedEvents(input_perf_data_proto);

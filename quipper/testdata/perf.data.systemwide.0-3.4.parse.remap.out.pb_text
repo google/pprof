@@ -15698,32 +15698,8 @@ events {
     pid: 1659
     tid: 1659
     start: 2135461888
-    len: 13000704
+    len: 13148160
     pgoff: 0
-    filename: "/opt/google/chrome/pepper/libnetflixidd.so"
-    filename_md5_prefix: 11615757436461169807
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      id: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 120
-  }
-  mmap_event {
-    pid: 1659
-    tid: 1659
-    start: 2148462592
-    len: 147456
-    pgoff: 13000704
     filename: "/opt/google/chrome/pepper/libnetflixidd.so"
     filename_md5_prefix: 11615757436461169807
     sample_info {
@@ -15890,32 +15866,8 @@ events {
     pid: 1659
     tid: 1659
     start: 2180481024
-    len: 2711552
+    len: 2723840
     pgoff: 0
-    filename: "/opt/google/chrome/libwidevinecdm.so"
-    filename_md5_prefix: 2025504198935205157
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      id: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 112
-  }
-  mmap_event {
-    pid: 1659
-    tid: 1659
-    start: 2183192576
-    len: 12288
-    pgoff: 2711552
     filename: "/opt/google/chrome/libwidevinecdm.so"
     filename_md5_prefix: 2025504198935205157
     sample_info {
@@ -18068,32 +18020,8 @@ events {
     pid: 1741
     tid: 1741
     start: 2135461888
-    len: 13000704
+    len: 13148160
     pgoff: 0
-    filename: "/opt/google/chrome/pepper/libnetflixidd.so"
-    filename_md5_prefix: 11615757436461169807
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      id: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 120
-  }
-  mmap_event {
-    pid: 1741
-    tid: 1741
-    start: 2148462592
-    len: 147456
-    pgoff: 13000704
     filename: "/opt/google/chrome/pepper/libnetflixidd.so"
     filename_md5_prefix: 11615757436461169807
     sample_info {
@@ -18260,32 +18188,8 @@ events {
     pid: 1741
     tid: 1741
     start: 2180481024
-    len: 2711552
+    len: 2723840
     pgoff: 0
-    filename: "/opt/google/chrome/libwidevinecdm.so"
-    filename_md5_prefix: 2025504198935205157
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      id: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 112
-  }
-  mmap_event {
-    pid: 1741
-    tid: 1741
-    start: 2183192576
-    len: 12288
-    pgoff: 2711552
     filename: "/opt/google/chrome/libwidevinecdm.so"
     filename_md5_prefix: 2025504198935205157
     sample_info {
@@ -23342,32 +23246,8 @@ events {
     pid: 2046
     tid: 2046
     start: 2137530368
-    len: 13000704
+    len: 13148160
     pgoff: 0
-    filename: "/opt/google/chrome/pepper/libnetflixidd.so"
-    filename_md5_prefix: 11615757436461169807
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      id: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 120
-  }
-  mmap_event {
-    pid: 2046
-    tid: 2046
-    start: 2150531072
-    len: 147456
-    pgoff: 13000704
     filename: "/opt/google/chrome/pepper/libnetflixidd.so"
     filename_md5_prefix: 11615757436461169807
     sample_info {
@@ -23534,32 +23414,8 @@ events {
     pid: 2046
     tid: 2046
     start: 2182549504
-    len: 2711552
+    len: 2723840
     pgoff: 0
-    filename: "/opt/google/chrome/libwidevinecdm.so"
-    filename_md5_prefix: 2025504198935205157
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      id: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 112
-  }
-  mmap_event {
-    pid: 2046
-    tid: 2046
-    start: 2185261056
-    len: 12288
-    pgoff: 2711552
     filename: "/opt/google/chrome/libwidevinecdm.so"
     filename_md5_prefix: 2025504198935205157
     sample_info {
@@ -51243,7 +51099,7 @@ events {
 timestamp_sec: 0
 stats {
   num_sample_events: 507
-  num_mmap_events: 1591
+  num_mmap_events: 1585
   num_fork_events: 0
   num_exit_events: 2
   num_sample_events_mapped: 507

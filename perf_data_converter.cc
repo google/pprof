@@ -665,7 +665,8 @@ ProcessProfiles RawPerfDataToProfiles(const void* raw, const int raw_size,
   // present.
   quipper::PerfParserOptions opts;
   opts.sort_events_by_time = true;
-  opts.combine_huge_pages_mappings = true;
+  opts.deduce_huge_page_mappings = true;
+  opts.combine_mappings = true;
   quipper::PerfParser parser(&reader, opts);
   if (!parser.ParseRawEvents()) {
     LOG(ERROR) << "Could not parse perf events.";

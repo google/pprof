@@ -154,11 +154,15 @@ struct PerfParserOptions {
   // If buildids are missing from the input data, they can be retrieved from
   // the filesystem.
   bool read_missing_buildids = false;
-  // Checks for a split binary mapping where part of it is mapped as huge pages.
-  // Combines the split mappings into a single mapping so future consumers of
-  // the perf data can see that it is actually a single mapping and not two or
-  // three distinct mappings.
-  bool combine_huge_pages_mappings = true;
+  // Deduces file names and offsets for hugepage-backed mappings, as
+  // hugepage_text replaces these with anonymous mappings without filename or
+  // offset information..
+  bool deduce_huge_page_mappings = true;
+  // Checks for split binary mappings and merges them when possible.  This
+  // combines the split mappings into a single mapping so future consumers of
+  // the perf data will see  a single mapping and not two or more distinct
+  // mappings.
+  bool combine_mappings = true;
 };
 
 class PerfParser {

@@ -176031,77 +176031,8 @@ events {
     pid: 8615
     tid: 8615
     start: 4194304
-    len: 958464
+    len: 1187840
     pgoff: 0
-    filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/notepad++.exe"
-    filename_md5_prefix: 9486060753923142652
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 144
-  }
-  mmap_event {
-    pid: 8615
-    tid: 8615
-    start: 5152768
-    len: 4096
-    pgoff: 958464
-    filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/notepad++.exe"
-    filename_md5_prefix: 9486060753923142652
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 144
-  }
-  mmap_event {
-    pid: 8615
-    tid: 8615
-    start: 5156864
-    len: 167936
-    pgoff: 962560
-    filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/notepad++.exe"
-    filename_md5_prefix: 9486060753923142652
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 144
-  }
-  mmap_event {
-    pid: 8615
-    tid: 8615
-    start: 5324800
-    len: 57344
-    pgoff: 1130496
     filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/notepad++.exe"
     filename_md5_prefix: 9486060753923142652
     sample_info {
@@ -176376,31 +176307,8 @@ events {
     pid: 8615
     tid: 8615
     start: 12779520
-    len: 86016
+    len: 94208
     pgoff: 0
-    filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/plugins/NppConverter.dll"
-    filename_md5_prefix: 7699525671490913311
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 160
-  }
-  mmap_event {
-    pid: 8615
-    tid: 8615
-    start: 12865536
-    len: 8192
-    pgoff: 86016
     filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/plugins/NppConverter.dll"
     filename_md5_prefix: 7699525671490913311
     sample_info {
@@ -176491,31 +176399,8 @@ events {
     pid: 8615
     tid: 8615
     start: 14024704
-    len: 495616
+    len: 503808
     pgoff: 0
-    filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/plugins/NppExec.dll"
-    filename_md5_prefix: 3545030003292261182
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 152
-  }
-  mmap_event {
-    pid: 8615
-    tid: 8615
-    start: 14520320
-    len: 8192
-    pgoff: 495616
     filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/plugins/NppExec.dll"
     filename_md5_prefix: 3545030003292261182
     sample_info {
@@ -176629,31 +176514,8 @@ events {
     pid: 8615
     tid: 8615
     start: 16842752
-    len: 172032
+    len: 212992
     pgoff: 0
-    filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/plugins/NppTextFX.dll"
-    filename_md5_prefix: 8097500642468052538
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 152
-  }
-  mmap_event {
-    pid: 8615
-    tid: 8615
-    start: 17014784
-    len: 40960
-    pgoff: 172032
     filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/plugins/NppTextFX.dll"
     filename_md5_prefix: 8097500642468052538
     sample_info {
@@ -176744,31 +176606,8 @@ events {
     pid: 8615
     tid: 8615
     start: 18219008
-    len: 61440
+    len: 65536
     pgoff: 0
-    filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/plugins/SpellChecker.dll"
-    filename_md5_prefix: 12429778596500927799
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 160
-  }
-  mmap_event {
-    pid: 8615
-    tid: 8615
-    start: 18280448
-    len: 4096
-    pgoff: 61440
     filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/plugins/SpellChecker.dll"
     filename_md5_prefix: 12429778596500927799
     sample_info {
@@ -177342,77 +177181,8 @@ events {
     pid: 8615
     tid: 8615
     start: 268435456
-    len: 770048
+    len: 880640
     pgoff: 0
-    filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/SciLexer.dll"
-    filename_md5_prefix: 18210676451027980037
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 144
-  }
-  mmap_event {
-    pid: 8615
-    tid: 8615
-    start: 269205504
-    len: 4096
-    pgoff: 770048
-    filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/SciLexer.dll"
-    filename_md5_prefix: 18210676451027980037
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 144
-  }
-  mmap_event {
-    pid: 8615
-    tid: 8615
-    start: 269209600
-    len: 90112
-    pgoff: 774144
-    filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/SciLexer.dll"
-    filename_md5_prefix: 18210676451027980037
-    sample_info {
-      pid: 0
-      tid: 0
-      sample_time_ns: 0
-      cpu: 0
-    }
-  }
-  timestamp: 0
-}
-events {
-  header {
-    type: 1
-    misc: 2
-    size: 144
-  }
-  mmap_event {
-    pid: 8615
-    tid: 8615
-    start: 269299712
-    len: 16384
-    pgoff: 864256
     filename: "/usr/local/google/home/sque/.wine/drive_c/Program Files/Notepad++/SciLexer.dll"
     filename_md5_prefix: 18210676451027980037
     sample_info {
@@ -236149,7 +235919,7 @@ events {
 timestamp_sec: 0
 stats {
   num_sample_events: 175
-  num_mmap_events: 8631
+  num_mmap_events: 8621
   num_fork_events: 0
   num_exit_events: 2
   num_sample_events_mapped: 175

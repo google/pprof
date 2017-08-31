@@ -59,7 +59,8 @@ TEST(HugePageDeducer, HugePagesMappings) {
     ev->set_filename("/opt/google/chrome/chrome");
   }
 
-  CombineHugePageMappings(&events);
+  DeduceHugePages(&events);
+  CombineMappings(&events);
 
   ASSERT_EQ(3, events.size());
 
@@ -169,25 +170,15 @@ TEST(HugePageDeducer, Regression62446346) {
     ev->set_filename("file");
   }
 
-  CombineHugePageMappings(&events);
+  DeduceHugePages(&events);
+  CombineMappings(&events);
 
-  ASSERT_GE(events.size(), 2);
+  ASSERT_EQ(1, events.size());
 
-  // The first mapping is not at a hugepage boundary, so it should not be
-  // merged with the other mappings.
   EXPECT_EQ("file", events[0].mmap_event().filename());
   EXPECT_EQ(0x55a685bfb000, events[0].mmap_event().start());
-  EXPECT_EQ(0x200000, events[0].mmap_event().len());
+  EXPECT_EQ(0x55a6a90cb000 - 0x55a685bfb000, events[0].mmap_event().len());
   EXPECT_EQ(0, events[0].mmap_event().pgoff());
-
-  // The second and third mapping meet at a hugepage boundary.  The subsequent
-  // mappings can all be folded into the merged mapping.
-  EXPECT_EQ("file", events[1].mmap_event().filename());
-  EXPECT_EQ(0x55a685dfb000, events[1].mmap_event().start());
-  EXPECT_EQ(0x232d0000, events[1].mmap_event().len());
-  EXPECT_EQ(0x200000, events[1].mmap_event().pgoff());
-
-  ASSERT_EQ(2, events.size());
 }
 
 }  // namespace
