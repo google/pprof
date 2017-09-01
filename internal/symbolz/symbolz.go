@@ -39,9 +39,9 @@ var (
 // separated by '+') and returns the symbolz output in a string. It
 // symbolizes all locations based on their addresses, regardless of
 // mapping.
-func Symbolize(sources plugin.MappingSources, syms func(string, string) ([]byte, error), p *profile.Profile, ui plugin.UI) error {
+func Symbolize(p *profile.Profile, force bool, sources plugin.MappingSources, syms func(string, string) ([]byte, error), ui plugin.UI) error {
 	for _, m := range p.Mapping {
-		if m.HasFunctions {
+		if m.HasFunctions && !force {
 			continue
 		}
 		mappingSources := sources[m.File]

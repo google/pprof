@@ -41,12 +41,49 @@ func TestSymbolzURL(t *testing.T) {
 }
 
 func TestSymbolize(t *testing.T) {
+	s := plugin.MappingSources{
+		"buildid": []struct {
+			Source string
+			Start  uint64
+		}{
+			{Source: "http://localhost:80/profilez"},
+		},
+	}
+
+	for _, hasFunctions := range []bool{false, true} {
+		for _, force := range []bool{false, true} {
+			p := testProfile(hasFunctions)
+
+			if err := Symbolize(p, force, s, fetchSymbols, &proftest.TestUI{T: t}); err != nil {
+				t.Errorf("symbolz: %v", err)
+				continue
+			}
+			var wantSym, wantNoSym []*profile.Location
+			if force || !hasFunctions {
+				wantNoSym = p.Location[1:1]
+				wantSym = p.Location[1:]
+			} else {
+				wantNoSym = p.Location
+			}
+
+			if err := checkSymbolized(wantSym, true); err != nil {
+				t.Errorf("symbolz hasFns=%v force=%v: %v", hasFunctions, force, err)
+			}
+			if err := checkSymbolized(wantNoSym, false); err != nil {
+				t.Errorf("symbolz hasFns=%v force=%v: %v", hasFunctions, force, err)
+			}
+		}
+	}
+}
+
+func testProfile(hasFunctions bool) *profile.Profile {
 	m := []*profile.Mapping{
 		{
-			ID:      1,
-			Start:   0x1000,
-			Limit:   0x5000,
-			BuildID: "buildid",
+			ID:           1,
+			Start:        0x1000,
+			Limit:        0x5000,
+			BuildID:      "buildid",
+			HasFunctions: hasFunctions,
 		},
 	}
 	p := &profile.Profile{
@@ -59,33 +96,25 @@ func TestSymbolize(t *testing.T) {
 		Mapping: m,
 	}
 
-	s := plugin.MappingSources{
-		"buildid": []struct {
-			Source string
-			Start  uint64
-		}{
-			{Source: "http://localhost:80/profilez"},
-		},
-	}
+	return p
+}
 
-	if err := Symbolize(s, fetchSymbols, p, &proftest.TestUI{T: t}); err != nil {
-		t.Errorf("symbolz: %v", err)
-	}
-
-	if l := p.Location[0]; len(l.Line) != 0 {
-		t.Errorf("unexpected symbolization for %#x: %v", l.Address, l.Line)
-	}
-
-	for _, l := range p.Location[1:] {
-		if len(l.Line) != 1 {
-			t.Errorf("failed to symbolize %#x", l.Address)
-			continue
+func checkSymbolized(locs []*profile.Location, hasSymbols bool) error {
+	for _, loc := range locs {
+		if !hasSymbols && len(loc.Line) != 0 {
+			return fmt.Errorf("unexpected symbolization for %#x: %v", loc.Address, loc.Line)
 		}
-		address := l.Address - l.Mapping.Start
-		if got, want := l.Line[0].Function.Name, fmt.Sprintf("%#x", address); got != want {
-			t.Errorf("symbolz %#x, got %s, want %s", address, got, want)
+		if hasSymbols {
+			if len(loc.Line) != 1 {
+				return fmt.Errorf("expected symbolization for %#x: %v", loc.Address, loc.Line)
+			}
+			address := loc.Address - loc.Mapping.Start
+			if got, want := loc.Line[0].Function.Name, fmt.Sprintf("%#x", address); got != want {
+				return fmt.Errorf("symbolz %#x, got %s, want %s", address, got, want)
+			}
 		}
 	}
+	return nil
 }
 
 func fetchSymbols(source, post string) ([]byte, error) {

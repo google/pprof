@@ -17,6 +17,7 @@ package symbolizer
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
 
@@ -119,35 +120,35 @@ func TestSymbolization(t *testing.T) {
 	for i, tc := range []testcase{
 		{
 			"local",
-			"local=",
+			"local=[]",
 		},
 		{
 			"fastlocal",
-			"local=fast",
+			"local=[fast]",
 		},
 		{
 			"remote",
-			"symbolz",
+			"symbolz=[]",
 		},
 		{
 			"",
-			"local=:symbolz",
+			"local=[]:symbolz=[]",
 		},
 		{
 			"demangle=none",
-			"local=force:symbolz:force:demangle=none",
+			"demangle=[none]:force:local=[force]:symbolz=[force]",
 		},
 		{
 			"remote:demangle=full",
-			"symbolz:force:demangle=full",
+			"demangle=[full]:force:symbolz=[force]",
 		},
 		{
 			"local:demangle=templates",
-			"local=force:force:demangle=templates",
+			"demangle=[templates]:force:local=[force]",
 		},
 		{
 			"force:remote",
-			"symbolz:force",
+			"force:symbolz=[force]",
 		},
 	} {
 		prof := testProfile.Copy()
@@ -155,15 +156,20 @@ func TestSymbolization(t *testing.T) {
 			t.Errorf("symbolize #%d: %v", i, err)
 			continue
 		}
+		sort.Strings(prof.Comments)
 		if got, want := strings.Join(prof.Comments, ":"), tc.wantComment; got != want {
-			t.Errorf("%s: got %s, want %s", tc.mode, got, want)
+			t.Errorf("%q: got %s, want %s", tc.mode, got, want)
 			continue
 		}
 	}
 }
 
-func symbolzMock(sources plugin.MappingSources, syms func(string, string) ([]byte, error), p *profile.Profile, ui plugin.UI) error {
-	p.Comments = append(p.Comments, "symbolz")
+func symbolzMock(p *profile.Profile, force bool, sources plugin.MappingSources, syms func(string, string) ([]byte, error), ui plugin.UI) error {
+	var args []string
+	if force {
+		args = append(args, "force")
+	}
+	p.Comments = append(p.Comments, "symbolz=["+strings.Join(args, ",")+"]")
 	return nil
 }
 
@@ -175,8 +181,7 @@ func localMock(p *profile.Profile, fast, force bool, obj plugin.ObjTool, ui plug
 	if force {
 		args = append(args, "force")
 	}
-	p.Comments = append(p.Comments,
-		"local="+strings.Join(args, ","))
+	p.Comments = append(p.Comments, "local=["+strings.Join(args, ",")+"]")
 	return nil
 }
 
@@ -185,7 +190,7 @@ func demangleMock(p *profile.Profile, force bool, mode string) {
 		p.Comments = append(p.Comments, "force")
 	}
 	if mode != "" {
-		p.Comments = append(p.Comments, "demangle="+mode)
+		p.Comments = append(p.Comments, "demangle=["+mode+"]")
 	}
 }
 

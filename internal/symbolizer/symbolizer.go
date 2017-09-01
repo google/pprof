@@ -85,7 +85,7 @@ func (s *Symbolizer) Symbolize(mode string, sources plugin.MappingSources, p *pr
 		}
 	}
 	if remote {
-		if err = symbolzSymbolize(sources, postURL, p, s.UI); err != nil {
+		if err = symbolzSymbolize(p, force, sources, postURL, s.UI); err != nil {
 			return err // Ran out of options.
 		}
 	}
