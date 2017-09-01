@@ -60,7 +60,7 @@ func TestSymbolize(t *testing.T) {
 			}
 			var wantSym, wantNoSym []*profile.Location
 			if force || !hasFunctions {
-				wantNoSym = p.Location[1:1]
+				wantNoSym = p.Location[:1]
 				wantSym = p.Location[1:]
 			} else {
 				wantNoSym = p.Location
@@ -99,12 +99,12 @@ func testProfile(hasFunctions bool) *profile.Profile {
 	return p
 }
 
-func checkSymbolized(locs []*profile.Location, hasSymbols bool) error {
+func checkSymbolized(locs []*profile.Location, wantSymbolized bool) error {
 	for _, loc := range locs {
-		if !hasSymbols && len(loc.Line) != 0 {
+		if !wantSymbolized && len(loc.Line) != 0 {
 			return fmt.Errorf("unexpected symbolization for %#x: %v", loc.Address, loc.Line)
 		}
-		if hasSymbols {
+		if wantSymbolized {
 			if len(loc.Line) != 1 {
 				return fmt.Errorf("expected symbolization for %#x: %v", loc.Address, loc.Line)
 			}

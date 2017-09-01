@@ -36,9 +36,9 @@ var (
 
 // Symbolize symbolizes profile p by parsing data returned by a
 // symbolz handler. syms receives the symbolz query (hex addresses
-// separated by '+') and returns the symbolz output in a string. It
-// symbolizes all locations based on their addresses, regardless of
-// mapping.
+// separated by '+') and returns the symbolz output in a string. If
+// force is false, it will only symbolize locations from mappings
+// not already marked as HasFunctions.
 func Symbolize(p *profile.Profile, force bool, sources plugin.MappingSources, syms func(string, string) ([]byte, error), ui plugin.UI) error {
 	for _, m := range p.Mapping {
 		if m.HasFunctions && !force {
