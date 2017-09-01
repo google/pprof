@@ -42,7 +42,7 @@ var (
 func Symbolize(p *profile.Profile, force bool, sources plugin.MappingSources, syms func(string, string) ([]byte, error), ui plugin.UI) error {
 	for _, m := range p.Mapping {
 		if !force && m.HasFunctions {
-			// symbolz only populates function names, so only check for HasFunctions to decide whether to resymbolize.
+			// Only check for HasFunctions as symbolz only populates function names.
 			continue
 		}
 		mappingSources := sources[m.File]
