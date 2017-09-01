@@ -202,7 +202,7 @@ struct sample_read_value {
 struct sample_read {
 	u64 time_enabled;
 	u64 time_running;
-	union {
+	struct {
 		struct {
 			u64 nr;
 			struct sample_read_value *values;
@@ -262,11 +262,14 @@ struct perf_sample {
 
 	perf_sample() : raw_data(NULL),
 			callchain(NULL),
-			branch_stack(NULL) {}
+			branch_stack(NULL) {
+	  read.group.values = NULL;
+	}
 	~perf_sample() {
 	  delete [] callchain;
 	  delete [] branch_stack;
 	  delete [] reinterpret_cast<char*>(raw_data);
+	  delete [] read.group.values;
 	}
 };
 

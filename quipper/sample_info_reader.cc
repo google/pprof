@@ -38,12 +38,10 @@ bool IsSupportedEventType(uint32_t type) {
 }
 
 // Read read info from perf data.  Corresponds to sample format type
-// PERF_SAMPLE_READ.
+// PERF_SAMPLE_READ in the !PERF_FORMAT_GROUP case.
 void ReadReadInfo(DataReader* reader,
                   uint64_t read_format,
                   struct perf_sample* sample) {
-  // Currently this only supports the !PERF_FORMAT_GROUP case (see description
-  // in perf_event.h).
   reader->ReadUint64(&sample->read.one.value);
   if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
     reader->ReadUint64(&sample->read.time_enabled);
@@ -51,6 +49,31 @@ void ReadReadInfo(DataReader* reader,
     reader->ReadUint64(&sample->read.time_running);
   if (read_format & PERF_FORMAT_ID)
     reader->ReadUint64(&sample->read.one.id);
+}
+
+// Read read info from perf data.  Corresponds to sample format type
+// PERF_SAMPLE_READ in the PERF_FORMAT_GROUP case.
+void ReadGroupReadInfo(DataReader* reader,
+                       uint64_t read_format,
+                       struct perf_sample* sample) {
+  uint64_t num = 0;
+  reader->ReadUint64(&num);
+  if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
+    reader->ReadUint64(&sample->read.time_enabled);
+  if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
+    reader->ReadUint64(&sample->read.time_running);
+
+  // Make sure there is no existing allocated memory in
+  // |sample->read.group.values|.
+  CHECK_EQ(static_cast<void*>(NULL), sample->read.group.values);
+  sample_read_value* values = new sample_read_value[num];
+  for (uint64_t i = 0; i < num; i++) {
+    reader->ReadUint64(&values[i].value);
+    if (read_format & PERF_FORMAT_ID)
+      reader->ReadUint64(&values[i].id);
+  }
+  sample->read.group.nr = num;
+  sample->read.group.values = values;
 }
 
 // Read call chain info from perf data.  Corresponds to sample format type
@@ -223,8 +246,9 @@ size_t ReadPerfSampleFromData(const event_t& event,
   // { struct read_format    values;   } && PERF_SAMPLE_READ
   if (sample_fields & PERF_SAMPLE_READ) {
     if (attr.read_format & PERF_FORMAT_GROUP)
-      return reader.Tell();
-    ReadReadInfo(&reader, attr.read_format, sample);
+      ReadGroupReadInfo(&reader, attr.read_format, sample);
+    else
+      ReadReadInfo(&reader, attr.read_format, sample);
   }
 
   // { u64                   nr,
@@ -382,15 +406,26 @@ size_t WritePerfSampleToData(const struct perf_sample& sample,
 
   // { struct read_format    values;   } && PERF_SAMPLE_READ
   if (sample_fields & PERF_SAMPLE_READ) {
-    if (attr.read_format & PERF_FORMAT_GROUP)
-      return 0;
-    *array++ = sample.read.one.value;
-    if (attr.read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
-      *array++ = sample.read.time_enabled;
-    if (attr.read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
-      *array++ = sample.read.time_running;
-    if (attr.read_format & PERF_FORMAT_ID)
-      *array++ = sample.read.one.id;
+    if (attr.read_format & PERF_FORMAT_GROUP) {
+      *array++ = sample.read.group.nr;
+      if (attr.read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
+        *array++ = sample.read.time_enabled;
+      if (attr.read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
+        *array++ = sample.read.time_running;
+      for (size_t i = 0; i < sample.read.group.nr; i++) {
+        *array++ = sample.read.group.values[i].value;
+        if (attr.read_format & PERF_FORMAT_ID)
+          *array++ = sample.read.one.id;
+      }
+    } else {
+      *array++ = sample.read.one.value;
+      if (attr.read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
+        *array++ = sample.read.time_enabled;
+      if (attr.read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
+        *array++ = sample.read.time_running;
+      if (attr.read_format & PERF_FORMAT_ID)
+        *array++ = sample.read.one.id;
+    }
   }
 
   // { u64                   nr,

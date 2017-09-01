@@ -338,4 +338,56 @@ TEST(SampleInfoReaderTest, ReadReadInfoValueFieldOnly) {
   EXPECT_EQ(1000000, sample.read.one.value);
 }
 
+TEST(SampleInfoReaderTest, ReadReadInfoWithGroups) {
+  struct perf_event_attr attr = {0};
+  attr.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_READ;
+  // Omit the PERF_FORMAT_TOTAL_TIME_* fields.
+  attr.read_format = PERF_FORMAT_ID | PERF_FORMAT_GROUP;
+
+  SampleInfoReader reader(attr, false /* read_cross_endian */);
+
+  // PERF_RECORD_SAMPLE
+  const u64 sample_event_array[] = {
+    0xffffffff01234567,                    // IP
+    PunU32U64{.v32 = {0x68d, 0x68e}}.v64,  // TID (u32 pid, tid)
+    3,                                     // READ: nr
+    1000000,                               // READ: values[0].value
+    0xabcdef,                              // READ: values[0].id
+    2000000,                               // READ: values[1].value
+    0xdecaf0,                              // READ: values[1].id
+    3000000,                               // READ: values[2].value
+    0xbeef00,                              // READ: values[2].id
+  };
+  sample_event sample_event_struct = {
+    .header = {
+      .type = PERF_RECORD_SAMPLE,
+      .misc = 0,
+      .size = sizeof(sample_event) + sizeof(sample_event_array),
+    }
+  };
+
+  std::stringstream input;
+  input.write(reinterpret_cast<const char*>(&sample_event_struct),
+              sizeof(sample_event_struct));
+  input.write(reinterpret_cast<const char*>(sample_event_array),
+              sizeof(sample_event_array));
+  string input_string = input.str();
+  const event_t& event = *reinterpret_cast<const event_t*>(input_string.data());
+
+  perf_sample sample;
+  ASSERT_TRUE(reader.ReadPerfSampleInfo(event, &sample));
+
+  EXPECT_EQ(0xffffffff01234567, sample.ip);
+  EXPECT_EQ(0x68d, sample.pid);
+  EXPECT_EQ(0x68e, sample.tid);
+  EXPECT_EQ(3, sample.read.group.nr);
+  ASSERT_NE(static_cast<void*>(NULL), sample.read.group.values);
+  EXPECT_EQ(0xabcdef, sample.read.group.values[0].id);
+  EXPECT_EQ(1000000, sample.read.group.values[0].value);
+  EXPECT_EQ(0xdecaf0, sample.read.group.values[1].id);
+  EXPECT_EQ(2000000, sample.read.group.values[1].value);
+  EXPECT_EQ(0xbeef00, sample.read.group.values[2].id);
+  EXPECT_EQ(3000000, sample.read.group.values[2].value);
+}
+
 }  // namespace quipper

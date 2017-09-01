@@ -358,11 +358,15 @@ bool PerfSerializer::SerializeSampleEvent(
     const SampleInfoReader* reader = GetSampleInfoReaderForEvent(event);
     if (reader) {
       PerfDataProto_ReadInfo* read_info = sample->mutable_read_info();
+      read_info->set_time_enabled(sample_info.read.time_enabled);
+      read_info->set_time_running(sample_info.read.time_running);
       if (reader->event_attr().read_format & PERF_FORMAT_GROUP) {
-        LOG(ERROR) << "Grouped read format not supported yet.";
+        for (size_t i = 0; i < sample_info.read.group.nr; i++) {
+          auto read_value = read_info->add_read_value();
+          read_value->set_value(sample_info.read.group.values[i].value);
+          read_value->set_id(sample_info.read.group.values[i].id);
+        }
       } else {
-        read_info->set_time_enabled(sample_info.read.time_enabled);
-        read_info->set_time_running(sample_info.read.time_running);
         auto read_value = read_info->add_read_value();
         read_value->set_value(sample_info.read.one.value);
         read_value->set_id(sample_info.read.one.id);
@@ -424,7 +428,14 @@ bool PerfSerializer::DeserializeSampleEvent(
       sample_info.read.time_enabled = read_info.time_enabled();
       sample_info.read.time_running = read_info.time_running();
       if (reader->event_attr().read_format & PERF_FORMAT_GROUP) {
-        LOG(ERROR) << "Grouped read format not supported yet.";
+        sample_info.read.group.nr = read_info.read_value_size();
+        sample_info.read.group.values =
+            new sample_read_value[read_info.read_value_size()];
+        for (size_t i = 0; i < sample_info.read.group.nr; i++) {
+          sample_info.read.group.values[i].value =
+              read_info.read_value(i).value();
+          sample_info.read.group.values[i].id = read_info.read_value(i).id();
+        }
       } else if (read_info.read_value_size() == 1) {
         sample_info.read.one.value = read_info.read_value(0).value();
         sample_info.read.one.id = read_info.read_value(0).id();
