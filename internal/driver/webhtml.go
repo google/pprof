@@ -142,6 +142,7 @@ button {
 #toptable {
   border-spacing: 0px;
   width: 100%;
+  padding-bottom: 1em;
 }
 #toptable tr th {
   border-bottom: 1px solid black;
@@ -850,6 +851,17 @@ function makeSortable() {
     function dcmp(a, b) { return -cmp(a, b) }
 
     list.sort(descending ? dcmp : cmp)
+
+    // Sum% column holds the running sum of rows and since we
+    // have re-ordered rows, recompute that.
+    let sumPercent = 0.0
+    for (const r of list) {
+      const row = r[2]
+      if (row.children.length < 3) continue
+      const flatPercent = parseFloat(row.children[1].innerText)
+      if (!isNaN(flatPercent)) sumPercent += flatPercent
+      row.children[2].innerText = sumPercent.toFixed(2) + "%"
+    }
 
     for (const r of list) {
       rows.appendChild(r[2])
