@@ -147,6 +147,8 @@ button {
   border-bottom: 1px solid black;
   text-align: right;
   padding-left: 1em;
+  padding-top: 0.2em;
+  padding-bottom: 0.2em;
 }
 #toptable tr th:nth-child(6) { text-align: left; }
 #toptable tr th:nth-child(7) { text-align: left; }
@@ -741,6 +743,11 @@ function viewer(baseUrl, nodes) {
 <meta charset="utf-8">
 <title>{{.Title}}</title>
 {{template "css" .}}
+<style type="text/css">
+#flathdr1, #flathdr2, #cumhdr1, #cumhdr2, #namehdr {
+  cursor: ns-resize;
+}
+</style>
 </head>
 <body>
 
@@ -748,15 +755,124 @@ function viewer(baseUrl, nodes) {
 
 <div id="bodycontainer">
 <table id="toptable">
-<tr><th>Flat<th>Flat%<th>Sum%<th>Cum<th>Cum%<th>Name<th>Inlined?</tr>
+<tr>
+<th id="flathdr1">Flat
+<th id="flathdr2">Flat%
+<th>Sum%
+<th id="cumhdr1">Cum
+<th id="cumhdr2">Cum%
+<th id="namehdr">Name
+<th>Inlined?</tr>
+<tbody id="rows">
 {{range $i,$e := .Top}}
   <tr id="node{{$i}}"><td>{{$e.Flat}}<td>{{$e.FlatPercent}}<td>{{$e.SumPercent}}<td>{{$e.Cum}}<td>{{$e.CumPercent}}<td>{{$e.Name}}<td>{{$e.InlineLabel}}</tr>
 {{end}}
+</tbody>
 </table>
 </div>
 
 {{template "script" .}}
-<script>viewer({{.BaseURL}}, {{.Nodes}})</script>
+<script>
+function makeSortable() {
+  // Regular expression to extract leading number and a suffix.
+  // E.g., "1.3s" => 1.3, "s"
+  let numParseRe = new RegExp("^([\\-+]?[0-9]+([.][0-9]+)?)(.*)$")
+
+  // Unit conversions (for toUnit values produced by measurement.go)
+  const units = new Map([
+    ["B", 1.0],
+    ["kB", 1024.0],
+    ["MB", 1024.0 * 1024.0],
+    ["GB", 1024.0 * 1024.0 * 1024.0],
+    ["TB", 1024.0 * 1024.0 * 1024.0 * 1024.0],
+    ["PB", 1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0],
+    ["ns", 1e-9],
+    ["us", 1e-6],
+    ["ms", 1e-3],
+    ["s", 1.0],
+    ["mins", 60.0],
+    ["hrs", 3600.0],
+    ["days", 3600.0 * 24.0],
+    ["wks", 3600.0 * 24.0 * 7.0],
+    ["yrs", 3600.0 * 24.0 * 7.0 * 365.0],  // Ignore leap years like measurement.go
+  ])
+
+  // Which column are we currently sorted by and in what order?
+  let currentColumn = 0
+  let descending = true
+
+  function sortBy(column, numeric) {
+    const rows = document.getElementById("rows")
+    if (rows == null) return
+
+    // Update sort criteria
+    if (column == currentColumn) {
+      descending = !descending  // Reverse order
+    } else {
+      currentColumn = column
+      descending = (column != 5)  // Name is ascending by default
+    }
+
+    // Get info for all rows we want to sort.
+    let list = []
+    for (const r of rows.children) {
+      if (r.children.length <= column) continue
+      const c = r.children[column]
+      const val = c.innerText
+
+      // Extract numeric and string portions from val.
+      let num = 0
+      let suffix = val
+      if (numeric) {
+        const match = val.match(numParseRe)
+	if (match != null) {
+          const n = parseFloat(match[1])
+          if (!isNaN(n)) {
+            num = n
+            suffix = match[3]
+            if (units.has(suffix)) {
+              num *= units.get(suffix)
+              suffix = ""
+            }
+          }
+        }
+      }
+      list.push([num, suffix, r])
+    }
+
+    function cmp(a, b) {
+      if (a[0] < b[0]) return -1
+      if (a[0] > b[0]) return +1
+      if (a[1] < b[1]) return -1
+      if (a[1] > b[1]) return +1
+      return 0
+    }
+    function dcmp(a, b) { return -cmp(a, b) }
+
+    list.sort(descending ? dcmp : cmp)
+
+    for (const r of list) {
+      rows.appendChild(r[2])
+    }
+  }
+
+  function bindSort(id, column, numeric) {
+    const hdr = document.getElementById(id)
+    if (hdr == null) return
+    const fn = function() { sortBy(column, numeric) }
+    hdr.addEventListener("click", fn)
+    hdr.addEventListener("touch", fn)
+  }
+
+  bindSort("flathdr1", 0, true)
+  bindSort("flathdr2", 0, true)
+  bindSort("cumhdr1", 3, true)
+  bindSort("cumhdr2", 3, true)
+  bindSort("namehdr", 5, false)
+}
+viewer({{.BaseURL}}, {{.Nodes}})
+makeSortable()
+</script>
 </body>
 </html>
 {{end}}
