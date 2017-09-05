@@ -472,7 +472,7 @@ func testFetchSymbols(source, post string) ([]byte, error) {
 type testSymbolzSymbolizer struct{}
 
 func (testSymbolzSymbolizer) Symbolize(variables string, sources plugin.MappingSources, p *profile.Profile) error {
-	return symbolz.Symbolize(sources, testFetchSymbols, p, nil)
+	return symbolz.Symbolize(p, false, sources, testFetchSymbols, nil)
 }
 
 func fakeDemangler(name string) string {

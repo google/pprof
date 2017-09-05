@@ -42,21 +42,26 @@ type Symbolizer struct {
 // test taps for dependency injection
 var symbolzSymbolize = symbolz.Symbolize
 var localSymbolize = doLocalSymbolize
+var demangleFunction = Demangle
 
 // Symbolize attempts to symbolize profile p. First uses binutils on
 // local binaries; if the source is a URL it attempts to get any
 // missed entries using symbolz.
 func (s *Symbolizer) Symbolize(mode string, sources plugin.MappingSources, p *profile.Profile) error {
-	remote, local, force, demanglerMode := true, true, false, ""
+	remote, local, fast, force, demanglerMode := true, true, false, false, ""
 	for _, o := range strings.Split(strings.ToLower(mode), ":") {
 		switch o {
+		case "":
+			continue
 		case "none", "no":
 			return nil
-		case "local", "fastlocal":
+		case "local":
 			remote, local = false, true
+		case "fastlocal":
+			remote, local, fast = false, true, true
 		case "remote":
 			remote, local = true, false
-		case "", "force":
+		case "force":
 			force = true
 		default:
 			switch d := strings.TrimPrefix(o, "demangle="); d {
@@ -75,17 +80,17 @@ func (s *Symbolizer) Symbolize(mode string, sources plugin.MappingSources, p *pr
 	var err error
 	if local {
 		// Symbolize locally using binutils.
-		if err = localSymbolize(mode, p, s.Obj, s.UI); err != nil {
+		if err = localSymbolize(p, fast, force, s.Obj, s.UI); err != nil {
 			s.UI.PrintErr("local symbolization: " + err.Error())
 		}
 	}
 	if remote {
-		if err = symbolzSymbolize(sources, postURL, p, s.UI); err != nil {
+		if err = symbolzSymbolize(p, force, sources, postURL, s.UI); err != nil {
 			return err // Ran out of options.
 		}
 	}
 
-	Demangle(p, force, demanglerMode)
+	demangleFunction(p, force, demanglerMode)
 	return nil
 }
 
@@ -134,18 +139,10 @@ func statusCodeError(resp *http.Response) error {
 // doLocalSymbolize adds symbol and line number information to all locations
 // in a profile. mode enables some options to control
 // symbolization.
-func doLocalSymbolize(mode string, prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI) error {
-	force := false
-	// Disable some mechanisms based on mode string.
-	for _, o := range strings.Split(strings.ToLower(mode), ":") {
-		switch {
-		case o == "force":
-			force = true
-		case o == "fastlocal":
-			if bu, ok := obj.(*binutils.Binutils); ok {
-				bu.SetFastSymbolization(true)
-			}
-		default:
+func doLocalSymbolize(prof *profile.Profile, fast, force bool, obj plugin.ObjTool, ui plugin.UI) error {
+	if fast {
+		if bu, ok := obj.(*binutils.Binutils); ok {
+			bu.SetFastSymbolization(true)
 		}
 	}
 
