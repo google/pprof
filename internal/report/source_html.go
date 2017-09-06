@@ -18,12 +18,13 @@ import (
 	"html/template"
 )
 
+// AddSourceTemplates adds templates used by PrintWebList to t.
 func AddSourceTemplates(t *template.Template) {
-	template.Must(t.Parse(`{{define "weblistcss"}}` + weblistPageCss + `{{end}}`))
+	template.Must(t.Parse(`{{define "weblistcss"}}` + weblistPageCSS + `{{end}}`))
 	template.Must(t.Parse(`{{define "weblistjs"}}` + weblistPageScript + `{{end}}`))
 }
 
-const weblistPageCss = `<style type="text/css">
+const weblistPageCSS = `<style type="text/css">
 body {
 font-family: sans-serif;
 }

@@ -124,6 +124,7 @@ func printWebSource(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 	return nil
 }
 
+// PrintWebList prints annotated source listing of rpt to w.
 func PrintWebList(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFiles int) error {
 	o := rpt.options
 	g := rpt.newGraph(nil)
@@ -294,7 +295,7 @@ func printHeader(w io.Writer, rpt *Report) {
 <head>
 <meta charset="UTF-8">
 <title>Pprof listing</title>`)
-	fmt.Fprintln(w, weblistPageCss)
+	fmt.Fprintln(w, weblistPageCSS)
 	fmt.Fprintln(w, weblistPageScript)
 	fmt.Fprintln(w, "</head>\n<body>\n")
 
