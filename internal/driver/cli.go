@@ -34,6 +34,9 @@ type source struct {
 	Timeout      int
 	Symbolize    string
 	HTTPHostport string
+
+	// Comment will be appended to any output format that supports comments.
+	Comment string
 }
 
 // Parse parses the command lines through the specified flags package
@@ -61,6 +64,8 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 
 	flagTimeout := flag.Int("timeout", -1, "Timeout in seconds for fetching a profile")
 	flagHTTP := flag.String("http", "", "Present interactive web based UI at the specified http host:port")
+
+	comment := flag.String("comment", "", "Append comment to output")
 
 	// Flags used during command processing
 	installedFlags := installFlags(flag)
@@ -135,6 +140,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		Timeout:      *flagTimeout,
 		Symbolize:    *flagSymbolize,
 		HTTPHostport: *flagHTTP,
+		Comment:      *comment,
 	}
 
 	for _, s := range *flagBase {
