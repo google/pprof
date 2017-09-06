@@ -297,7 +297,7 @@ func printHeader(w io.Writer, rpt *Report) {
 <title>Pprof listing</title>`)
 	fmt.Fprintln(w, weblistPageCSS)
 	fmt.Fprintln(w, weblistPageScript)
-	fmt.Fprintln(w, "</head>\n<body>\n")
+	fmt.Fprint(w, "</head>\n<body>\n\n")
 
 	var labels []string
 	for _, l := range ProfileLabels(rpt) {
