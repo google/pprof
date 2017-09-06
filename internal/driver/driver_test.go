@@ -203,6 +203,57 @@ func TestParse(t *testing.T) {
 	}
 }
 
+func TestAppendComment(t *testing.T) {
+
+	// Encode profile into a protobuf and decode it again.
+	protoTempFile, err := ioutil.TempFile("", "profile_proto")
+	if err != nil {
+		t.Errorf("cannot create tempfile: %v", err)
+	}
+	defer os.Remove(protoTempFile.Name())
+	defer protoTempFile.Close()
+
+	testFlagSet := baseFlags()
+	testFlagSet.bools["proto"] = true
+	testFlagSet.strings["comment"] = "test comment please ignore"
+	testFlagSet.strings["output"] = protoTempFile.Name()
+	testFlagSet.args = []string{"cpu"}
+
+	options := setDefaults(nil)
+	options.Flagset = testFlagSet
+	options.Fetch = testFetcher{}
+	options.Sym = testSymbolizer{}
+
+	if err := PProf(options); err != nil {
+		t.Errorf("error in PProf %v", err)
+	}
+
+	actualBytes, err := ioutil.ReadFile(protoTempFile.Name())
+	if err != nil {
+		t.Errorf("error in ReadFile %v", err)
+	}
+
+	expectedProfile := cpuProfile()
+	expectedProfile.Comments = append(expectedProfile.Comments, "test comment please ignore")
+	expectedBuf := bytes.NewBuffer(nil)
+	err = expectedProfile.Write(expectedBuf)
+	if err != nil {
+		t.Errorf("error in Profile.Write %v", err)
+	}
+
+	if string(expectedBuf.Bytes()) != string(actualBytes) {
+		actualProfile, err := profile.ParseData(actualBytes)
+		if err != nil {
+
+		}
+
+		ajs := proftest.EncodeJSON(&actualProfile)
+		ejs := proftest.EncodeJSON(&expectedProfile)
+
+		t.Errorf("output doesnt match \n%v\n%v", string(ejs), string(ajs))
+	}
+}
+
 // removeScripts removes <script > .. </script> pairs from its input
 func removeScripts(in []byte) []byte {
 	beginMarker := []byte("<script")
