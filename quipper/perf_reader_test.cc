@@ -554,6 +554,80 @@ TEST(PerfReaderTest, ReadsAndWritesSampleEvent) {
   }
 }
 
+TEST(PerfReaderTest, ReadsAndWritesSampleEventMissingTime) {
+  using testing::PunU32U64;
+
+  std::stringstream input;
+
+  // header
+  testing::ExamplePipedPerfDataFileHeader().WriteTo(&input);
+
+  // data
+
+  // PERF_RECORD_HEADER_ATTR
+  const u64 sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_READ | PERF_SAMPLE_ID;
+  const size_t num_sample_event_bits = 2;
+  testing::ExamplePerfEventAttrEvent_Hardware(sample_type,
+                                              true /*sample_id_all*/)
+      .WithId(401)
+      .WithReadFormat(PERF_FORMAT_ID)
+      .WriteTo(&input);
+  const sample_event written_sample_event = {
+      .header = {
+          .type = PERF_RECORD_SAMPLE,
+          .misc = 0,
+          .size = sizeof(struct sample_event) +
+                  num_sample_event_bits * sizeof(u64) +
+                  2 * sizeof(u64),  // Non-grouped read info (without times!).
+      }};
+  const u64 sample_event_array[] = {
+      0xffffffff01234567,  // IP
+      401,                 // ID
+      // READ
+      0x103c5d0,  // value
+      402,        // id
+  };
+  ASSERT_EQ(written_sample_event.header.size,
+            sizeof(written_sample_event.header) + sizeof(sample_event_array));
+  input.write(reinterpret_cast<const char*>(&written_sample_event),
+              sizeof(written_sample_event));
+  input.write(reinterpret_cast<const char*>(sample_event_array),
+              sizeof(sample_event_array));
+
+  //
+  // Parse input.
+  //
+
+  PerfReader pr1;
+  ASSERT_TRUE(pr1.ReadFromString(input.str()));
+  // Write it out and read it in again, the two should have the same data.
+  std::vector<char> output_perf_data;
+  ASSERT_TRUE(pr1.WriteToVector(&output_perf_data));
+  PerfReader pr2;
+  ASSERT_TRUE(pr2.ReadFromVector(output_perf_data));
+
+  // Test both versions:
+  for (PerfReader* pr : {&pr1, &pr2}) {
+    // PERF_RECORD_HEADER_ATTR is added to attr(), not events().
+    EXPECT_EQ(1, pr->events().size());
+
+    const PerfEvent& event = pr->events().Get(0);
+    EXPECT_EQ(PERF_RECORD_SAMPLE, event.header().type());
+
+    const SampleEvent& sample = event.sample_event();
+    EXPECT_EQ(0xffffffff01234567, sample.ip());
+    EXPECT_EQ(401, sample.id());
+
+    // Read info
+    EXPECT_TRUE(sample.has_read_info());
+    EXPECT_FALSE(sample.read_info().has_time_enabled());
+    EXPECT_FALSE(sample.read_info().has_time_running());
+    ASSERT_EQ(1, sample.read_info().read_value_size());
+    EXPECT_EQ(0x103c5d0, sample.read_info().read_value(0).value());
+    EXPECT_EQ(402, sample.read_info().read_value(0).id());
+  }
+}
+
 TEST(PerfReaderTest, ReadsAndWritesSampleAndSampleIdAll) {
   using testing::PunU32U64;
 

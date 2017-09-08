@@ -358,8 +358,10 @@ bool PerfSerializer::SerializeSampleEvent(
     const SampleInfoReader* reader = GetSampleInfoReaderForEvent(event);
     if (reader) {
       PerfDataProto_ReadInfo* read_info = sample->mutable_read_info();
-      read_info->set_time_enabled(sample_info.read.time_enabled);
-      read_info->set_time_running(sample_info.read.time_running);
+      if (reader->event_attr().read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
+        read_info->set_time_enabled(sample_info.read.time_enabled);
+      if (reader->event_attr().read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
+        read_info->set_time_running(sample_info.read.time_running);
       if (reader->event_attr().read_format & PERF_FORMAT_GROUP) {
         for (size_t i = 0; i < sample_info.read.group.nr; i++) {
           auto read_value = read_info->add_read_value();
@@ -425,8 +427,10 @@ bool PerfSerializer::DeserializeSampleEvent(
     const SampleInfoReader* reader = GetSampleInfoReaderForEvent(*event);
     if (reader) {
       const PerfDataProto_ReadInfo& read_info = sample.read_info();
-      sample_info.read.time_enabled = read_info.time_enabled();
-      sample_info.read.time_running = read_info.time_running();
+      if (reader->event_attr().read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
+        sample_info.read.time_enabled = read_info.time_enabled();
+      if (reader->event_attr().read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
+        sample_info.read.time_running = read_info.time_running();
       if (reader->event_attr().read_format & PERF_FORMAT_GROUP) {
         sample_info.read.group.nr = read_info.read_value_size();
         sample_info.read.group.values =
