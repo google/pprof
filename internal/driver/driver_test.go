@@ -1041,55 +1041,55 @@ func TestInferUnits(t *testing.T) {
 		name             string
 		tags             []map[string][]profile.NumValue
 		expInferredUnits map[string]string
-		ignoreRX				 string
+		ignoreRX         string
 	}{
 		{
 			"test1",
-			[]map[string][]profile.NumValue{map[string][]profile.NumValue{"key1": {{Unit: "bytes", Value: 131072}}, "key2": {{Unit: "kilobytes", Value: 128}}}},
+			[]map[string][]profile.NumValue{{"key1": {{Unit: "bytes", Value: 131072}}, "key2": {{Unit: "kilobytes", Value: 128}}}},
 			map[string]string{"key1": "bytes", "key2": "kilobytes"},
 			"",
 		},
 		{
 			"test2",
-			[]map[string][]profile.NumValue{map[string][]profile.NumValue{"key1": {{Unit: "bytes", Value: 8}}}},
+			[]map[string][]profile.NumValue{{"key1": {{Unit: "bytes", Value: 8}}}},
 			map[string]string{"key1": "bytes"},
 			"",
 		},
 		{
 			"test3",
-			[]map[string][]profile.NumValue{map[string][]profile.NumValue{"bytes": {{Unit: "", Value: 8}}}},
+			[]map[string][]profile.NumValue{{"bytes": {{Unit: "", Value: 8}}}},
 			map[string]string{"bytes": "bytes"},
 			"",
 		},
 		{
 			"test4",
-			[]map[string][]profile.NumValue{map[string][]profile.NumValue{"kilobytes": {{Unit: "", Value: 8}}}},
+			[]map[string][]profile.NumValue{{"kilobytes": {{Unit: "", Value: 8}}}},
 			map[string]string{"kilobytes": "kilobytes"},
 			"",
 		},
 		{
 			"test5",
-			[]map[string][]profile.NumValue{map[string][]profile.NumValue{"requests": {{Unit: "", Value: 8}}}},
+			[]map[string][]profile.NumValue{{"requests": {{Unit: "", Value: 8}}}},
 			map[string]string{"requests": "bytes"},
 			"",
 		},
 		{
 			"test6",
-			[]map[string][]profile.NumValue{map[string][]profile.NumValue{"alignment": {{Unit: "", Value: 8}}}},
+			[]map[string][]profile.NumValue{{"alignment": {{Unit: "", Value: 8}}}},
 			map[string]string{"alignment": "bytes"},
 			"",
 		},
 		{
 			"test7",
-			[]map[string][]profile.NumValue{map[string][]profile.NumValue{"key1": {{Unit: "bytes", Value: 8},{Unit: "kilobytes", Value: 8}}}},
+			[]map[string][]profile.NumValue{{"key1": {{Unit: "bytes", Value: 8}, {Unit: "kilobytes", Value: 8}}}},
 			map[string]string{"key1": "bytes"},
-		  "(For tag key1 used unit bytes also encountered unit\\(s\\) kilobytes)",
+			"(For tag key1 used unit bytes also encountered unit\\(s\\) kilobytes)",
 		},
 		{
 			"test8",
 			[]map[string][]profile.NumValue{
-				map[string][]profile.NumValue{"key1": {{Unit: "bytes", Value: 8}}},
-				map[string][]profile.NumValue{"key1": {{Unit: "kilobytes", Value: 8}}},
+				{"key1": {{Unit: "bytes", Value: 8}}},
+				{"key1": {{Unit: "kilobytes", Value: 8}}},
 			},
 			map[string]string{"key1": "bytes"},
 			"(For tag key1 used unit bytes also encountered unit\\(s\\) kilobytes)",
@@ -1097,15 +1097,15 @@ func TestInferUnits(t *testing.T) {
 		{
 			"test9",
 			[]map[string][]profile.NumValue{
-				map[string][]profile.NumValue{
+				{
 					"alignment": {{Unit: "seconds", Value: 8}},
-					"requests": {{Unit: "minutes", Value: 8}},
-					"bytes": {{Unit: "hours", Value: 8}},
+					"requests":  {{Unit: "minutes", Value: 8}},
+					"bytes":     {{Unit: "hours", Value: 8}},
 				}},
 			map[string]string{
 				"alignment": "seconds",
-				"requests": "minutes",
-				"bytes": "hours",
+				"requests":  "minutes",
+				"bytes":     "hours",
 			},
 			"",
 		},
@@ -1268,7 +1268,7 @@ func TestNumericTagFilter(t *testing.T) {
 		},
 	}
 	for _, test := range tagFilterTests {
-		expectedErrMsg := strings.Join([]string{"(",test.name, ":Interpreted '", test.value[strings.Index(test.value, "=")+1:], "' as range, not regexp",")"},"")
+		expectedErrMsg := strings.Join([]string{"(", test.name, ":Interpreted '", test.value[strings.Index(test.value, "=")+1:], "' as range, not regexp", ")"}, "")
 		fmt.Println(expectedErrMsg)
 		filter, err := compileTagFilter(test.name, test.value, test.inferredUnits, &proftest.TestUI{T: t,
 			IgnoreRx: expectedErrMsg}, nil)

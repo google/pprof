@@ -113,8 +113,11 @@ var all = &Profile{
 				"key2": {"value2"},
 			},
 			NumLabel: map[string][]NumValue{
-				"key1": {{Unit: "", Value: 1}, {Unit: "", Value: 2}},
-				"key2": {{Unit: "", Value: 3}, {Unit: "", Value: 4}},
+				"key1":      {{Unit: "", Value: 1}, {Unit: "", Value: 2}},
+				"key2":      {{Unit: "", Value: 3}, {Unit: "", Value: 4}},
+				"bytes":     {{Unit: "", Value: 3}, {Unit: "", Value: 4}},
+				"requests":  {{Unit: "seconds", Value: 3}, {Unit: "", Value: 4}},
+				"alignment": {{Unit: "kilobytes", Value: 3}, {Unit: "kilobytes", Value: 4}},
 			},
 		},
 	},
