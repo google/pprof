@@ -33,8 +33,8 @@ func applyFocus(prof *profile.Profile, v variables, ui plugin.UI) error {
 	ignore, err := compileRegexOption("ignore", v["ignore"].value, err)
 	hide, err := compileRegexOption("hide", v["hide"].value, err)
 	show, err := compileRegexOption("show", v["show"].value, err)
-	tagfocus, err := compileTagFilter("tagfocus", v["tagfocus"].value, ui, err)
-	tagignore, err := compileTagFilter("tagignore", v["tagignore"].value, ui, err)
+	tagfocus, err := compileTagFilter("tagfocus", v["tagfocus"].value, prof.InferredNumLabelUnits, ui, err)
+	tagignore, err := compileTagFilter("tagignore", v["tagignore"].value, prof.InferredNumLabelUnits, ui, err)
 	prunefrom, err := compileRegexOption("prune_from", v["prune_from"].value, err)
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func compileRegexOption(name, value string, err error) (*regexp.Regexp, error) {
 	return rx, nil
 }
 
-func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profile.Sample) bool, error) {
+func compileTagFilter(name, value string, inferredUnits map[string]string, ui plugin.UI, err error) (func(*profile.Sample) bool, error) {
 	if value == "" || err != nil {
 		return nil, err
 	}
@@ -87,18 +87,24 @@ func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profil
 
 	if numFilter := parseTagFilterRange(value); numFilter != nil {
 		ui.PrintErr(name, ":Interpreted '", value, "' as range, not regexp")
-		labelFilter := func(vals profile.NumValues, key string) bool {
-			for _, val := range vals.Values {
-				if numFilter(val, vals.Unit) {
+		labelFilter := func(vals []profile.NumValue, unit string) bool {
+			for _, val := range vals {
+				if numFilter(val.Value, unit) {
 					return true
 				}
 			}
 			return false
 		}
+		inferUnits := func(key string) string {
+			if inferredUnits != nil {
+				return inferredUnits[key]
+			}
+			return key
+		}
 		if wantKey == "" {
 			return func(s *profile.Sample) bool {
 				for key, vals := range s.NumLabel {
-					if labelFilter(vals, key) {
+					if labelFilter(vals, inferUnits(key)) {
 						return true
 					}
 				}
@@ -107,7 +113,7 @@ func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profil
 		}
 		return func(s *profile.Sample) bool {
 			if vals, ok := s.NumLabel[wantKey]; ok {
-				return labelFilter(vals, wantKey)
+				return labelFilter(vals, inferUnits(wantKey))
 			}
 			return false
 		}, nil

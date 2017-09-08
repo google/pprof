@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/internal/report"
@@ -60,6 +61,9 @@ func PProf(eo *plugin.Options) error {
 
 func generateRawReport(p *profile.Profile, cmd []string, vars variables, o *plugin.Options) (*command, *report.Report, error) {
 	p = p.Copy() // Prevent modification to the incoming profile.
+
+	// infer units of numeric tags in profile
+	p.InferredNumLabelUnits = inferNumericLabelUnits(p, o.UI)
 
 	vars = applyCommandOverrides(cmd, vars)
 
@@ -275,6 +279,70 @@ func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) 
 	}
 
 	return ropt, nil
+}
+
+// inferNumericLabelUnits returns a map of numeric label keys to the units
+// associated with those keys.
+// Unit for a given key is the first encountered unit for that key. If multiple
+// units are encountered for values paired with a particular key, then the first
+// unit encountered is used and an error message is displayed.
+// if units are encountered for a particular key, the unit is then inferred
+// based on the key.
+func inferNumericLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string {
+	inferredNumericLabelUnits := map[string]string{}
+	unusedUnits := map[string]map[string]bool{}
+	encounteredKeys := map[string]bool{}
+
+	// determine units based on numeric tags for each sample
+	for _, s := range p.Sample {
+		for key, vs := range s.NumLabel {
+			encounteredKeys[key] = true
+			for _, v := range vs {
+				unit := v.Unit
+				if unit != "" {
+					if expUnit, ok := inferredNumericLabelUnits[key]; !ok {
+						inferredNumericLabelUnits[key] = unit
+					} else if expUnit != unit {
+						if v, ok := unusedUnits[key]; ok {
+							v[unit] = true
+						} else {
+							unusedUnits[key] = map[string]bool{unit: true}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// infer units for keys without any units associated with
+	// numeric tag values
+	for key := range encounteredKeys {
+		if _, ok := inferredNumericLabelUnits[key]; !ok {
+			switch key {
+			case "alignment":
+				inferredNumericLabelUnits[key] = "bytes"
+			case "bytes":
+				inferredNumericLabelUnits[key] = "bytes"
+			case "requests":
+				inferredNumericLabelUnits[key] = "bytes"
+			default:
+				inferredNumericLabelUnits[key] = key
+			}
+		}
+	}
+
+	// print errors for tags with multiple units associated with
+	// a single key
+	for key, v := range unusedUnits {
+		units := make([]string, len(v))
+		i := 0
+		for unit := range v {
+			units[i] = unit
+			i++
+		}
+		ui.PrintErr("For tag ", key, " used unit ", inferredNumericLabelUnits[key], " also encountered unit(s) ", strings.Join(units, ","))
+	}
+	return inferredNumericLabelUnits
 }
 
 type sampleValueFunc func([]int64) int64

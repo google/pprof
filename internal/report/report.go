@@ -241,12 +241,18 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	for _, f := range prof.Function {
 		f.Filename = trimPath(f.Filename)
 	}
-	// Remove numeric tags not recognized by pprof.
+	// Remove numeric tags not recognized by pprof
+	// label with inferred units
 	for _, s := range prof.Sample {
-		numLabels := make(map[string]profile.NumValues, len(s.NumLabel))
-		for k, v := range s.NumLabel {
-			if k == "bytes" && v.Unit == "bytes" {
-				numLabels[k] = profile.NumValues{Unit: v.Unit, Values: append(numLabels[k].Values, v.Values...)}
+		numLabels := make(map[string][]profile.NumValue, len(s.NumLabel))
+		for k, vs := range s.NumLabel {
+			if k == "bytes" {
+				unit := prof.InferredNumLabelUnits[k]
+				numValues := make([]profile.NumValue, len(vs))
+				for i, v := range vs {
+					numValues[i] = profile.NumValue{Unit: unit, Value: v.Value}
+				}
+				numLabels[k] = append(numLabels[k], numValues...)
 			}
 		}
 		s.NumLabel = numLabels
@@ -651,8 +657,9 @@ func printTags(w io.Writer, rpt *Report) error {
 			}
 		}
 		for key, vals := range s.NumLabel {
-			for _, nval := range vals.Values {
-				val := formatTag(nval, vals.Unit)
+			unit := p.InferredNumLabelUnits[key]
+			for _, nval := range vals {
+				val := formatTag(nval.Value, unit)
 				valueMap, ok := tagMap[key]
 				if !ok {
 					valueMap = make(map[string]int64)
@@ -811,9 +818,10 @@ func printTraces(w io.Writer, rpt *Report) error {
 			formatTag := func(vv int64, key string) string {
 				return measurement.ScaledLabel(vv, key, o.OutputUnit)
 			}
-			numValues := make([]string, len(v.Values))
-			for i, vv := range v.Values {
-				numValues[i] = formatTag(vv, v.Unit)
+			unit := prof.InferredNumLabelUnits[k]
+			numValues := make([]string, len(v))
+			for i, vv := range v {
+				numValues[i] = formatTag(vv.Value, unit)
 			}
 			numLabels = append(numLabels, fmt.Sprintf("%10s:  %s\n", k, strings.Join(numValues, " ")))
 		}

@@ -88,7 +88,7 @@ var testL = []*Location{
 	},
 }
 
-var profileIn = &Profile{
+var all = &Profile{
 	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
 	Period:        10,
 	DurationNanos: 10e9,
@@ -99,17 +99,11 @@ var profileIn = &Profile{
 	Sample: []*Sample{
 		{
 			Location: []*Location{testL[0], testL[1], testL[2], testL[1], testL[1]},
-			Value:    []int64{10, 20},
 			Label: map[string][]string{
 				"key1": {"value1"},
 				"key2": {"value2"},
 			},
-			NumLabel: map[string]NumValues{
-				"key1":      {"", []int64{1, 2}},
-				"key2":      {"", []int64{1, 2}},
-				"request":   {"count", []int64{1, 2}},
-				"alignment": {"second", []int64{1, 2}},
-			},
+			Value: []int64{10, 20},
 		},
 		{
 			Location: []*Location{testL[1], testL[2], testL[0], testL[1]},
@@ -118,59 +112,9 @@ var profileIn = &Profile{
 				"key1": {"value1"},
 				"key2": {"value2"},
 			},
-			NumLabel: map[string]NumValues{
-				"key1":      {"bytes", []int64{1, 2}},
-				"key2":      {"kilobytes", []int64{1, 2}},
-				"key3":      {"seconds", []int64{1, 2}},
-				"bytes":     {"", []int64{1024, 2048}},
-				"requests":  {"", []int64{4096, 8192}},
-				"alignment": {"", []int64{5, 10}},
-			},
-		},
-	},
-	Function: testF,
-	Mapping:  testM,
-	Location: testL,
-	Comments: []string{"Comment 1", "Comment 2"},
-}
-
-var profileOut = &Profile{
-	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
-	Period:        10,
-	DurationNanos: 10e9,
-	SampleType: []*ValueType{
-		{Type: "cpu", Unit: "cycles"},
-		{Type: "object", Unit: "count"},
-	},
-	Sample: []*Sample{
-		{
-			Location: []*Location{testL[0], testL[1], testL[2], testL[1], testL[1]},
-			Value:    []int64{10, 20},
-			Label: map[string][]string{
-				"key1": {"value1"},
-				"key2": {"value2"},
-			},
-			NumLabel: map[string]NumValues{
-				"key1":      {"key1", []int64{1, 2}},
-				"key2":      {"key2", []int64{1, 2}},
-				"request":   {"count", []int64{1, 2}},
-				"alignment": {"second", []int64{1, 2}},
-			},
-		},
-		{
-			Location: []*Location{testL[1], testL[2], testL[0], testL[1]},
-			Value:    []int64{30, 40},
-			Label: map[string][]string{
-				"key1": {"value1"},
-				"key2": {"value2"},
-			},
-			NumLabel: map[string]NumValues{
-				"key1":      {"bytes", []int64{1, 2}},
-				"key2":      {"kilobytes", []int64{1, 2}},
-				"key3":      {"seconds", []int64{1, 2}},
-				"bytes":     {"bytes", []int64{1024, 2048}},
-				"requests":  {"bytes", []int64{4096, 8192}},
-				"alignment": {"bytes", []int64{5, 10}},
+			NumLabel: map[string][]NumValue{
+				"key1": {{Unit: "", Value: 1}, {Unit: "", Value: 2}},
+				"key2": {{Unit: "", Value: 3}, {Unit: "", Value: 4}},
 			},
 		},
 	},
@@ -181,29 +125,22 @@ var profileOut = &Profile{
 }
 
 func TestMarshalUnmarshal(t *testing.T) {
-	for _, profiles := range []struct {
-		in  *Profile
-		exp *Profile
-	}{
-		{profileIn, profileOut},
-	} {
-		// Write the profile, parse it, and ensure equal to expected output.
-		buf := bytes.NewBuffer(nil)
-		profiles.in.Write(buf)
-		out, err := Parse(buf)
+	// Write the profile, parse it, and ensure they're equal.
+	buf := bytes.NewBuffer(nil)
+	all.Write(buf)
+	all2, err := Parse(buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	js1 := proftest.EncodeJSON(&all)
+	js2 := proftest.EncodeJSON(&all2)
+	if string(js1) != string(js2) {
+		t.Errorf("profiles differ")
+		d, err := proftest.Diff(js1, js2)
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		js1 := proftest.EncodeJSON(&profiles.exp)
-		js2 := proftest.EncodeJSON(&out)
-		if string(js1) != string(js2) {
-			t.Errorf("profiles differ")
-			d, err := proftest.Diff(js1, js2)
-			if err != nil {
-				t.Fatal(err)
-			}
-			t.Error("\n" + string(d))
-		}
+		t.Error("\n" + string(d))
 	}
 }

@@ -154,7 +154,7 @@ func (pm *profileMerger) mapSample(src *Sample) *Sample {
 		Location: make([]*Location, len(src.Location)),
 		Value:    make([]int64, len(src.Value)),
 		Label:    make(map[string][]string, len(src.Label)),
-		NumLabel: make(map[string]NumValues, len(src.NumLabel)),
+		NumLabel: make(map[string][]NumValue, len(src.NumLabel)),
 	}
 	for i, l := range src.Location {
 		s.Location[i] = pm.mapLocation(l)
@@ -165,9 +165,9 @@ func (pm *profileMerger) mapSample(src *Sample) *Sample {
 		s.Label[k] = vv
 	}
 	for k, v := range src.NumLabel {
-		vv := make([]int64, len(v.Values))
-		copy(vv, v.Values)
-		s.NumLabel[k] = NumValues{Unit: v.Unit, Values: vv}
+		vv := make([]NumValue, len(v))
+		copy(vv, v)
+		s.NumLabel[k] = vv
 	}
 	// Check memoization table. Must be done on the remapped location to
 	// account for the remapped mapping. Add current values to the

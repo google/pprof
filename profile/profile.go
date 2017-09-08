@@ -32,13 +32,14 @@ import (
 
 // Profile is an in-memory representation of profile.proto.
 type Profile struct {
-	SampleType        []*ValueType
-	DefaultSampleType string
-	Sample            []*Sample
-	Mapping           []*Mapping
-	Location          []*Location
-	Function          []*Function
-	Comments          []string
+	SampleType            []*ValueType
+	DefaultSampleType     string
+	Sample                []*Sample
+	Mapping               []*Mapping
+	Location              []*Location
+	Function              []*Function
+	Comments              []string
+	InferredNumLabelUnits map[string]string
 
 	DropFrames string
 	KeepFrames string
@@ -73,17 +74,17 @@ type Sample struct {
 	Location []*Location
 	Value    []int64
 	Label    map[string][]string
-	NumLabel map[string]NumValues
+	NumLabel map[string][]NumValue
 
 	locationIDX []uint64
 	labelX      []label
 }
 
-// NumValues used to store numeric values and unit for numeric values
+// NumValue used to store numeric value with unit for numeric values
 // of Profile.Label
-type NumValues struct {
-	Unit   string
-	Values []int64
+type NumValue struct {
+	Unit  string
+	Value int64
 }
 
 // label corresponds to Profile.Label

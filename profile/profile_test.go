@@ -361,9 +361,9 @@ var testProfile4 = &Profile{
 		{
 			Location: []*Location{cpuL[0]},
 			Value:    []int64{1000},
-			NumLabel: map[string]NumValues{
-				"key1": {Unit: "bytes", Values: []int64{10}},
-				"key2": {Unit: "bytes", Values: []int64{30}},
+			NumLabel: map[string][]NumValue{
+				"key1": {{Unit: "bytes", Value: 10}},
+				"key2": {{Unit: "bytes", Value: 30}},
 			},
 		},
 	},
@@ -383,9 +383,9 @@ var testProfile5 = &Profile{
 		{
 			Location: []*Location{cpuL[0]},
 			Value:    []int64{1000},
-			NumLabel: map[string]NumValues{
-				"key1": {Unit: "kilobytes", Values: []int64{10}},
-				"key2": {Unit: "kilobytes", Values: []int64{30}},
+			NumLabel: map[string][]NumValue{
+				"key1": {{Unit: "kilobytes", Value: 10}},
+				"key2": {{Unit: "kilobytes", Value: 30}},
 			},
 		},
 	},
@@ -554,19 +554,19 @@ func TestNumLabelMerge(t *testing.T) {
 	for _, tc := range []struct {
 		Name         string
 		Profs        []*Profile
-		ExpNumLabels []map[string]NumValues
+		ExpNumLabels []map[string][]NumValue
 	}{
 		{
 			Name:  "different tag units not merged",
 			Profs: []*Profile{testProfile4.Copy(), testProfile5.Copy()},
-			ExpNumLabels: []map[string]NumValues{
+			ExpNumLabels: []map[string][]NumValue{
 				{
-					"key1": {Unit: "bytes", Values: []int64{10}},
-					"key2": {Unit: "bytes", Values: []int64{30}},
+					"key1": {{Unit: "bytes", Value: 10}},
+					"key2": {{Unit: "bytes", Value: 30}},
 				},
 				{
-					"key1": {Unit: "kilobytes", Values: []int64{10}},
-					"key2": {Unit: "kilobytes", Values: []int64{30}},
+					"key1": {{Unit: "kilobytes", Value: 10}},
+					"key2": {{Unit: "kilobytes", Value: 30}},
 				},
 			},
 		},
@@ -584,12 +584,15 @@ func TestNumLabelMerge(t *testing.T) {
 				}
 				for k, expVs := range expLabels {
 					if vs, ok := numLabels[k]; ok {
-						if len(vs.Values) != len(expVs.Values) {
-							t.Errorf("for sample %d, tag %s, want %v got %v", i, k, expVs.Values, vs.Values)
+						if len(vs) != len(expVs) {
+							t.Errorf("for sample %d, tag %s, want %v got %v", i, k, expVs, vs)
 						}
-						for j, expV := range expVs.Values {
-							if want, got := expV, vs.Values[j]; want != got {
+						for j, expV := range expVs {
+							if want, got := expV.Value, vs[j].Value; want != got {
 								t.Errorf("for sample %d, tag %s, value %d, want %v got %v", i, k, j, want, got)
+							}
+							if want, got := expV.Unit, vs[j].Unit; want != got {
+								t.Errorf("for sample %d, tag %s, unit %d, want %v got %v", i, k, j, want, got)
 							}
 						}
 					} else {

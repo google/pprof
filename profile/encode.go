@@ -16,8 +16,6 @@ package profile
 
 import (
 	"errors"
-	"fmt"
-	"os"
 	"sort"
 )
 
@@ -62,12 +60,13 @@ func (p *Profile) preEncode() {
 		sort.Strings(numKeys)
 		for _, k := range numKeys {
 			vs := s.NumLabel[k]
-			unitX := addString(strings, vs.Unit)
-			for _, v := range vs.Values {
+			keyX := addString(strings, k)
+			for _, v := range vs {
+				unitX := addString(strings, v.Unit)
 				s.labelX = append(s.labelX,
 					label{
-						keyX:  addString(strings, k),
-						numX:  v,
+						keyX:  keyX,
+						numX:  v.Value,
 						unitX: unitX,
 					},
 				)
@@ -292,7 +291,7 @@ func (p *Profile) postDecode() error {
 
 	for _, s := range p.Sample {
 		labels := make(map[string][]string, len(s.labelX))
-		numLabels := make(map[string]NumValues, len(s.labelX))
+		numLabels := make(map[string][]NumValue, len(s.labelX))
 		for _, l := range s.labelX {
 			var key, value string
 			key, err = getString(p.stringTable, &l.keyX, err)
@@ -303,20 +302,8 @@ func (p *Profile) postDecode() error {
 				var unit string
 				if l.unitX != 0 {
 					unit, err = getString(p.stringTable, &l.unitX, err)
-				} else if key == "bytes" || key == "requests" || key == "alignment" {
-					unit = "bytes"
-				} else {
-					unit = key
 				}
-				if v, ok := numLabels[key]; ok {
-					if unit != v.Unit {
-						fmt.Fprintf(os.Stderr, "for tag %s, found value with unit %s, but using first unit value encountered, %s", key, unit, v.Unit)
-					}
-					vv := append(v.Values, l.numX)
-					numLabels[key] = NumValues{Unit: v.Unit, Values: vv}
-				} else {
-					numLabels[key] = NumValues{Unit: unit, Values: []int64{l.numX}}
-				}
+				numLabels[key] = append(numLabels[key], NumValue{Unit: unit, Value: l.numX})
 			}
 		}
 		if len(labels) > 0 {
