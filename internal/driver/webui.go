@@ -335,7 +335,8 @@ func (ui *webInterface) disasm(w http.ResponseWriter, req *http.Request) {
 
 }
 
-// source generates a web page containing disassembly.
+// source generates a web page containing source code annotated with profile
+// data.
 func (ui *webInterface) source(w http.ResponseWriter, req *http.Request) {
 	args := []string{"weblist", req.URL.Query().Get("f")}
 	rpt, errList := ui.makeReport(w, req, args)

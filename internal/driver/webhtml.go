@@ -16,7 +16,7 @@ package driver
 
 import "html/template"
 
-// addTemplates add a set of template defintions to templates.
+// addTemplates adds a set of template definitions to templates.
 func addTemplates(templates *template.Template) {
 	template.Must(templates.Parse(`
 {{define "css"}}
