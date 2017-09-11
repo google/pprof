@@ -203,6 +203,57 @@ func TestParse(t *testing.T) {
 	}
 }
 
+// TestAppendComment tests that the flag '-comment foo' will append a comment to the profile.
+func TestAppendComment(t *testing.T) {
+
+	savedVariables := pprofVariables.makeCopy()
+	defer func() { pprofVariables = savedVariables }()
+
+	tempFile, err := ioutil.TempFile("", "profile_proto")
+	if err != nil {
+		t.Fatalf("Error in TempFile: %v", err)
+	}
+	defer os.Remove(tempFile.Name())
+	defer tempFile.Close()
+
+	testFlagSet := baseFlags()
+	testFlagSet.bools["proto"] = true
+	testFlagSet.strings["comment"] = "test comment please ignore"
+	testFlagSet.strings["output"] = tempFile.Name()
+	testFlagSet.args = []string{"cpusmall"}
+
+	options := setDefaults(nil)
+	options.Flagset = testFlagSet
+	options.Fetch = testFetcher{}
+	options.Sym = testSymbolizer{}
+
+	if err := PProf(options); err != nil {
+		t.Fatalf("error in PProf %v", err)
+	}
+
+	gotBytes, err := ioutil.ReadFile(tempFile.Name())
+	if err != nil {
+		t.Fatalf("error in ReadFile %v", err)
+	}
+
+	wantProfile := cpuProfileSmall()
+	wantProfile.Comments = append(wantProfile.Comments, "test comment please ignore")
+	wantBuf := bytes.NewBuffer(nil)
+	err = wantProfile.Write(wantBuf)
+	if err != nil {
+		t.Fatalf("error in Profile.Write %v", err)
+	}
+	wantBytes := wantBuf.Bytes()
+
+	if string(wantBytes) != string(gotBytes) {
+		diff, err := proftest.Diff(wantBytes, gotBytes)
+		if err != nil {
+			t.Fatalf("Error in Diff: %v", err)
+		}
+		t.Errorf("output not expected\n%s\n%s\n%s", wantBytes, gotBytes, diff)
+	}
+}
+
 // removeScripts removes <script > .. </script> pairs from its input
 func removeScripts(in []byte) []byte {
 	beginMarker := []byte("<script")
@@ -633,27 +684,27 @@ func cpuProfileSmall() *profile.Profile {
 
 	var cpuL = []*profile.Location{
 		{
-			ID:      1000,
+			ID:      1,
 			Mapping: cpuM[0],
 			Address: 0x1000,
 		},
 		{
-			ID:      2000,
+			ID:      2,
 			Mapping: cpuM[0],
 			Address: 0x2000,
 		},
 		{
-			ID:      3000,
+			ID:      3,
 			Mapping: cpuM[0],
 			Address: 0x3000,
 		},
 		{
-			ID:      4000,
+			ID:      4,
 			Mapping: cpuM[0],
 			Address: 0x4000,
 		},
 		{
-			ID:      5000,
+			ID:      5,
 			Mapping: cpuM[0],
 			Address: 0x5000,
 		},
