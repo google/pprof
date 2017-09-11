@@ -32,14 +32,13 @@ import (
 
 // Profile is an in-memory representation of profile.proto.
 type Profile struct {
-	SampleType            []*ValueType
-	DefaultSampleType     string
-	Sample                []*Sample
-	Mapping               []*Mapping
-	Location              []*Location
-	Function              []*Function
-	Comments              []string
-	InferredNumLabelUnits map[string]string
+	SampleType        []*ValueType
+	DefaultSampleType string
+	Sample            []*Sample
+	Mapping           []*Mapping
+	Location          []*Location
+	Function          []*Function
+	Comments          []string
 
 	DropFrames string
 	KeepFrames string

@@ -28,13 +28,13 @@ import (
 var tagFilterRangeRx = regexp.MustCompile("([[:digit:]]+)([[:alpha:]]+)")
 
 // applyFocus filters samples based on the focus/ignore options
-func applyFocus(prof *profile.Profile, v variables, ui plugin.UI) error {
+func applyFocus(prof *profile.Profile, numLabelUnits map[string]string, v variables, ui plugin.UI) error {
 	focus, err := compileRegexOption("focus", v["focus"].value, nil)
 	ignore, err := compileRegexOption("ignore", v["ignore"].value, err)
 	hide, err := compileRegexOption("hide", v["hide"].value, err)
 	show, err := compileRegexOption("show", v["show"].value, err)
-	tagfocus, err := compileTagFilter("tagfocus", v["tagfocus"].value, prof.InferredNumLabelUnits, ui, err)
-	tagignore, err := compileTagFilter("tagignore", v["tagignore"].value, prof.InferredNumLabelUnits, ui, err)
+	tagfocus, err := compileTagFilter("tagfocus", v["tagfocus"].value, numLabelUnits, ui, err)
+	tagignore, err := compileTagFilter("tagignore", v["tagignore"].value, numLabelUnits, ui, err)
 	prunefrom, err := compileRegexOption("prune_from", v["prune_from"].value, err)
 	if err != nil {
 		return err

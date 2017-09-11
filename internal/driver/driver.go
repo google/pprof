@@ -63,18 +63,18 @@ func generateRawReport(p *profile.Profile, cmd []string, vars variables, o *plug
 	p = p.Copy() // Prevent modification to the incoming profile.
 
 	// infer units of numeric tags in profile
-	p.InferredNumLabelUnits = inferNumericLabelUnits(p, o.UI)
+	numLabelUnits := getNumLabelUnits(p, o.UI)
 
 	vars = applyCommandOverrides(cmd, vars)
 
 	// Delay focus after configuring report to get percentages on all samples.
 	relative := vars["relative_percentages"].boolValue()
 	if relative {
-		if err := applyFocus(p, vars, o.UI); err != nil {
+		if err := applyFocus(p, numLabelUnits, vars, o.UI); err != nil {
 			return nil, nil, err
 		}
 	}
-	ropt, err := reportOptions(p, vars)
+	ropt, err := reportOptions(p, numLabelUnits, vars)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -93,7 +93,7 @@ func generateRawReport(p *profile.Profile, cmd []string, vars variables, o *plug
 
 	rpt := report.New(p, ropt)
 	if !relative {
-		if err := applyFocus(p, vars, o.UI); err != nil {
+		if err := applyFocus(p, numLabelUnits, vars, o.UI); err != nil {
 			return nil, nil, err
 		}
 	}
@@ -225,7 +225,7 @@ func aggregate(prof *profile.Profile, v variables) error {
 	return prof.Aggregate(inlines, function, filename, linenumber, address)
 }
 
-func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) {
+func reportOptions(p *profile.Profile, numLabelUnits map[string]string, vars variables) (*report.Options, error) {
 	si, mean := vars["sample_index"].value, vars["mean"].boolValue()
 	value, meanDiv, sample, err := sampleFormat(p, si, mean)
 	if err != nil {
@@ -263,6 +263,7 @@ func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) 
 		EdgeFraction: vars["edgefraction"].floatValue(),
 
 		ActiveFilters: filters,
+		NumLabelUnits: numLabelUnits,
 
 		SampleValue:       value,
 		SampleMeanDivisor: meanDiv,
@@ -281,15 +282,15 @@ func reportOptions(p *profile.Profile, vars variables) (*report.Options, error) 
 	return ropt, nil
 }
 
-// inferNumericLabelUnits returns a map of numeric label keys to the units
+// getNumLabelUnits returns a map of numeric label keys to the units
 // associated with those keys.
 // Unit for a given key is the first encountered unit for that key. If multiple
 // units are encountered for values paired with a particular key, then the first
 // unit encountered is used and an error message is displayed.
-// if units are encountered for a particular key, the unit is then inferred
+// If units are encountered for a particular key, the unit is then inferred
 // based on the key.
-func inferNumericLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string {
-	inferredNumericLabelUnits := map[string]string{}
+func getNumLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string {
+	numLabelUnits := map[string]string{}
 	unusedUnits := map[string]map[string]bool{}
 	encounteredKeys := map[string]bool{}
 
@@ -299,15 +300,16 @@ func inferNumericLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string 
 			encounteredKeys[key] = true
 			for _, v := range vs {
 				unit := v.Unit
-				if unit != "" {
-					if expUnit, ok := inferredNumericLabelUnits[key]; !ok {
-						inferredNumericLabelUnits[key] = unit
-					} else if expUnit != unit {
-						if v, ok := unusedUnits[key]; ok {
-							v[unit] = true
-						} else {
-							unusedUnits[key] = map[string]bool{unit: true}
-						}
+				if unit == "" {
+					continue
+				}
+				if expUnit, ok := numLabelUnits[key]; !ok {
+					numLabelUnits[key] = unit
+				} else if expUnit != unit {
+					if v, ok := unusedUnits[key]; ok {
+						v[unit] = true
+					} else {
+						unusedUnits[key] = map[string]bool{unit: true}
 					}
 				}
 			}
@@ -317,16 +319,14 @@ func inferNumericLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string 
 	// infer units for keys without any units associated with
 	// numeric tag values
 	for key := range encounteredKeys {
-		if _, ok := inferredNumericLabelUnits[key]; !ok {
+		if _, ok := numLabelUnits[key]; !ok {
 			switch key {
 			case "alignment":
-				inferredNumericLabelUnits[key] = "bytes"
-			case "bytes":
-				inferredNumericLabelUnits[key] = "bytes"
+				numLabelUnits[key] = "bytes"
 			case "requests":
-				inferredNumericLabelUnits[key] = "bytes"
+				numLabelUnits[key] = "bytes"
 			default:
-				inferredNumericLabelUnits[key] = key
+				numLabelUnits[key] = key
 			}
 		}
 	}
@@ -340,9 +340,9 @@ func inferNumericLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string 
 			units[i] = unit
 			i++
 		}
-		ui.PrintErr("For tag ", key, " used unit ", inferredNumericLabelUnits[key], " also encountered unit(s) ", strings.Join(units, ","))
+		ui.PrintErr("For tag ", key, " used unit ", numLabelUnits[key], " also encountered unit(s) ", strings.Join(units, ","))
 	}
-	return inferredNumericLabelUnits
+	return numLabelUnits
 }
 
 type sampleValueFunc func([]int64) int64

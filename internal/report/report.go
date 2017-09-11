@@ -65,6 +65,7 @@ type Options struct {
 	Title               string
 	ProfileLabels       []string
 	ActiveFilters       []string
+	NumLabelUnits       map[string]string
 
 	NodeCount    int
 	NodeFraction float64
@@ -247,7 +248,7 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 		numLabels := make(map[string][]profile.NumValue, len(s.NumLabel))
 		for k, vs := range s.NumLabel {
 			if k == "bytes" {
-				unit := prof.InferredNumLabelUnits[k]
+				unit := o.NumLabelUnits[k]
 				numValues := make([]profile.NumValue, len(vs))
 				for i, v := range vs {
 					numValues[i] = profile.NumValue{Unit: unit, Value: v.Value}
@@ -657,7 +658,7 @@ func printTags(w io.Writer, rpt *Report) error {
 			}
 		}
 		for key, vals := range s.NumLabel {
-			unit := p.InferredNumLabelUnits[key]
+			unit := o.NumLabelUnits[key]
 			for _, nval := range vals {
 				val := formatTag(nval.Value, unit)
 				valueMap, ok := tagMap[key]
@@ -818,7 +819,7 @@ func printTraces(w io.Writer, rpt *Report) error {
 			formatTag := func(vv int64, key string) string {
 				return measurement.ScaledLabel(vv, key, o.OutputUnit)
 			}
-			unit := prof.InferredNumLabelUnits[k]
+			unit := o.NumLabelUnits[k]
 			numValues := make([]string, len(v))
 			for i, vv := range v {
 				numValues[i] = formatTag(vv.Value, unit)
