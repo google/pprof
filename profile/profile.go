@@ -473,98 +473,135 @@ func (p *Profile) String() string {
 	}
 	ss = append(ss, strings.TrimSpace(sh1))
 	for _, s := range p.Sample {
-		var sv string
-		for _, v := range s.Value {
-			sv = fmt.Sprintf("%s %10d", sv, v)
-		}
-		sv = sv + ": "
-		for _, l := range s.Location {
-			sv = sv + fmt.Sprintf("%d ", l.ID)
-		}
-		ss = append(ss, sv)
-		const labelHeader = "                "
-		if len(s.Label) > 0 {
-			ls := []string{}
-			for k, v := range s.Label {
-				ls = append(ls, fmt.Sprintf("%s:%v", k, v))
-			}
-			sort.Strings(ls)
-			ss = append(ss, labelHeader+strings.Join(ls, " "))
-		}
-		if len(s.NumLabel) > 0 {
-			ls := []string{}
-			for k, v := range s.NumLabel {
-				unitsEmpty := true
-				values := make([]int64, len(v))
-				for i, vv := range v {
-					values[i] = vv.Value
-					if vv.Unit != "" {
-						unitsEmpty = false
-						break
-					}
-				}
-				if unitsEmpty {
-					ls = append(ls, fmt.Sprintf("%s:%v", k, values))
-				} else {
-					ls = append(ls, fmt.Sprintf("%s:%v", k, v))
-				}
-			}
-			sort.Strings(ls)
-			ss = append(ss, labelHeader+strings.Join(ls, " "))
-		}
+		ss = append(ss, s.String())
 	}
 
 	ss = append(ss, "Locations")
 	for _, l := range p.Location {
-		locStr := fmt.Sprintf("%6d: %#x ", l.ID, l.Address)
-		if m := l.Mapping; m != nil {
-			locStr = locStr + fmt.Sprintf("M=%d ", m.ID)
-		}
-		if len(l.Line) == 0 {
-			ss = append(ss, locStr)
-		}
-		for li := range l.Line {
-			lnStr := "??"
-			if fn := l.Line[li].Function; fn != nil {
-				lnStr = fmt.Sprintf("%s %s:%d s=%d",
-					fn.Name,
-					fn.Filename,
-					l.Line[li].Line,
-					fn.StartLine)
-				if fn.Name != fn.SystemName {
-					lnStr = lnStr + "(" + fn.SystemName + ")"
-				}
-			}
-			ss = append(ss, locStr+lnStr)
-			// Do not print location details past the first line
-			locStr = "             "
-		}
+		ss = append(ss, l.String())
 	}
 
 	ss = append(ss, "Mappings")
 	for _, m := range p.Mapping {
-		bits := ""
-		if m.HasFunctions {
-			bits = bits + "[FN]"
-		}
-		if m.HasFilenames {
-			bits = bits + "[FL]"
-		}
-		if m.HasLineNumbers {
-			bits = bits + "[LN]"
-		}
-		if m.HasInlineFrames {
-			bits = bits + "[IN]"
-		}
-		ss = append(ss, fmt.Sprintf("%d: %#x/%#x/%#x %s %s %s",
-			m.ID,
-			m.Start, m.Limit, m.Offset,
-			m.File,
-			m.BuildID,
-			bits))
+		ss = append(ss, m.String())
 	}
 
 	return strings.Join(ss, "\n") + "\n"
+}
+
+// String dumps a text representation of a mapping. Intended mainly
+// for debugging purposes.
+func (m *Mapping) String() string {
+	bits := ""
+	if m.HasFunctions {
+		bits = bits + "[FN]"
+	}
+	if m.HasFilenames {
+		bits = bits + "[FL]"
+	}
+	if m.HasLineNumbers {
+		bits = bits + "[LN]"
+	}
+	if m.HasInlineFrames {
+		bits = bits + "[IN]"
+	}
+	return fmt.Sprintf("%d: %#x/%#x/%#x %s %s %s",
+		m.ID,
+		m.Start, m.Limit, m.Offset,
+		m.File,
+		m.BuildID,
+		bits)
+}
+
+// String dumps a text representation of a location. Intended mainly
+// for debugging purposes.
+func (l *Location) String() string {
+	ss := []string{}
+	locStr := fmt.Sprintf("%6d: %#x ", l.ID, l.Address)
+	if m := l.Mapping; m != nil {
+		locStr = locStr + fmt.Sprintf("M=%d ", m.ID)
+	}
+	if len(l.Line) == 0 {
+		ss = append(ss, locStr)
+	}
+	for li := range l.Line {
+		lnStr := "??"
+		if fn := l.Line[li].Function; fn != nil {
+			lnStr = fmt.Sprintf("%s %s:%d s=%d",
+				fn.Name,
+				fn.Filename,
+				l.Line[li].Line,
+				fn.StartLine)
+			if fn.Name != fn.SystemName {
+				lnStr = lnStr + "(" + fn.SystemName + ")"
+			}
+		}
+		ss = append(ss, locStr+lnStr)
+		// Do not print location details past the first line
+		locStr = "             "
+	}
+	return strings.Join(ss, "\n")
+}
+
+// String dumps a text representation of a sample. Intended mainly
+// for debugging purposes.
+func (s *Sample) String() string {
+	ss := []string{}
+	var sv string
+	for _, v := range s.Value {
+		sv = fmt.Sprintf("%s %10d", sv, v)
+	}
+	sv = sv + ": "
+	for _, l := range s.Location {
+		sv = sv + fmt.Sprintf("%d ", l.ID)
+	}
+	ss = append(ss, sv)
+	const labelHeader = "                "
+	if len(s.Label) > 0 {
+		ss = append(ss, labelHeader+labelsToString(s.Label))
+	}
+	if len(s.NumLabel) > 0 {
+		ss = append(ss, labelHeader+numLabelsToString(s.NumLabel))
+	}
+	return strings.Join(ss, "\n")
+}
+
+// labelsToString returns a string representation of a
+// map representing labels
+func labelsToString(labels map[string][]string) string {
+	ls := []string{}
+	for k, v := range labels {
+		ls = append(ls, fmt.Sprintf("%s:%v", k, v))
+	}
+	sort.Strings(ls)
+	return strings.Join(ls, " ")
+}
+
+// numLablesToString returns a string representation of a map
+// representing numeric labels
+func numLabelsToString(numLabels map[string][]NumValue) string {
+	ls := []string{}
+	for k, v := range numLabels {
+		unitsEmpty := true
+		values := make([]int64, len(v))
+		for i, vv := range v {
+			values[i] = vv.Value
+			if vv.Unit != "" {
+				unitsEmpty = false
+				break
+			}
+		}
+
+		var labelString string
+		if unitsEmpty {
+			labelString = fmt.Sprintf("%s:%v", k, values)
+		} else {
+			labelString = fmt.Sprintf("%s:%v", k, v)
+		}
+		ls = append(ls, labelString)
+	}
+	sort.Strings(ls)
+	return strings.Join(ls, " ")
 }
 
 // Scale multiplies all sample values in a profile by a constant.

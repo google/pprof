@@ -282,7 +282,7 @@ func reportOptions(p *profile.Profile, numLabelUnits map[string]string, vars var
 	return ropt, nil
 }
 
-// getNumLabelUnits returns a map of numeric label keys to the units
+// identifyNumLabelUnits returns a map of numeric label keys to the units
 // associated with those keys.
 // Unit for a given key is the first encountered unit for that key. If multiple
 // units are encountered for values paired with a particular key, then the first
