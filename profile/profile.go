@@ -494,7 +494,20 @@ func (p *Profile) String() string {
 		if len(s.NumLabel) > 0 {
 			ls := []string{}
 			for k, v := range s.NumLabel {
-				ls = append(ls, fmt.Sprintf("%s:%v", k, v))
+				unitsEmpty := true;
+				values := make([]int64, len(v))
+				for i, vv := range v {
+					values[i] = vv.Value
+					if vv.Unit != "" {
+						unitsEmpty = false;
+						break
+					}
+				}
+				if unitsEmpty {
+					ls = append(ls, fmt.Sprintf("%s:%v", k, values))
+				} else {
+					ls = append(ls, fmt.Sprintf("%s:%v", k, v))
+				}
 			}
 			sort.Strings(ls)
 			ss = append(ss, labelHeader+strings.Join(ls, " "))
