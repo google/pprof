@@ -104,13 +104,15 @@ button {
   margin-top: 0px;
   margin-bottom: 0px;
 }
-.menu button {
+.menu a, .menu button {
   display: block;
   width: 100%;
   margin: 0px;
+  padding: 2px 0px 2px 0px;
   text-align: left;
-  padding-left: 2px;
-  background-color: #fff;
+  text-decoration: none;
+  color: #000;
+  background-color: #f8f8f8;
   font-size: 12pt;
   border: none;
 }
@@ -120,8 +122,12 @@ button {
 .menu-header:hover .menu {
   display: block;
 }
-.menu button:hover {
+.menu a:hover, .menu button:hover {
   background-color: #ccc;
+}
+.menu a.disabled {
+  color: gray;
+  pointer-events: none;
 }
 #searchbox {
   margin-left: 10pt;
@@ -174,11 +180,11 @@ button {
 <div class="menu-header">
 View
 <div class="menu">
-<button title="{{.Help.top}}" id="topbtn">Top</button>
-<button title="{{.Help.graph}}" id="graphbtn">Graph</button>
-<button title="{{.Help.peek}}" id="peek">Peek</button>
-<button title="{{.Help.list}}" id="list">Source</button>
-<button title="{{.Help.disasm}}" id="disasm">Disassemble</button>
+<a title="{{.Help.top}}"  href="/top" id="topbtn">Top</a>
+<a title="{{.Help.graph}}" href="/" id="graphbtn">Graph</a>
+<a title="{{.Help.peek}}" href="/peek" id="peek">Peek</a>
+<a title="{{.Help.list}}" href="/source" id="list">Source</a>
+<a title="{{.Help.disasm}}" href="/disasm" id="disasm">Disassemble</a>
 <hr>
 <button title="{{.Help.details}}" id="details">Details</button>
 </div>
@@ -187,12 +193,12 @@ View
 <div class="menu-header">
 Refine
 <div class="menu">
-<button title="{{.Help.focus}}" id="focus">Focus</button>
-<button title="{{.Help.ignore}}" id="ignore">Ignore</button>
-<button title="{{.Help.hide}}" id="hide">Hide</button>
-<button title="{{.Help.show}}" id="show">Show</button>
+<a title="{{.Help.focus}}" href="{{.BaseURL}}" id="focus">Focus</a>
+<a title="{{.Help.ignore}}" href="{{.BaseURL}}" id="ignore">Ignore</a>
+<a title="{{.Help.hide}}" href="{{.BaseURL}}" id="hide">Hide</a>
+<a title="{{.Help.show}}" href="{{.BaseURL}}" id="show">Show</a>
 <hr>
-<button title="{{.Help.reset}}" id="reset">Reset</button>
+<a title="{{.Help.reset}}" href="{{.BaseURL}}">Reset</a>
 </div>
 </div>
 
@@ -471,20 +477,10 @@ function viewer(baseUrl, nodes) {
     if (detailsText != null) detailsText.style.display = "none"
   }
 
-  function handleReset() { window.location.href = baseUrl }
-  function handleTop() { navigate("/top", "f") }
-  function handleGraph() { navigate("/", "f") }
-  function handleList() { navigate("/source", "f") }
-  function handleDisasm() { navigate("/disasm", "f") }
-  function handlePeek() { navigate("/peek", "f") }
-  function handleFocus() { navigate(baseUrl, "f") }
-  function handleShow() { navigate(baseUrl, "s") }
-  function handleIgnore() { navigate(baseUrl, "i") }
-  function handleHide() { navigate(baseUrl, "h") }
-
   function handleKey(e) {
     if (e.keyCode != 13) return
-    handleFocus()
+    window.location.href =
+        updateUrl(new URL({{.BaseURL}}, window.location.href), "f")
     e.preventDefault()
   }
 
@@ -607,36 +603,56 @@ function viewer(baseUrl, nodes) {
     return str.replace(/([\\\.?+*\[\](){}|^$])/g, '\\$1')
   }
 
-  // Navigate to specified path with current selection reflected
-  // in the named parameter.
-  function navigate(path, param) {
+  // Update id's href to reflect current selection whenever it is
+  // liable to be followed.
+  function makeLinkDynamic(id) {
+    const elem = document.getElementById(id)
+    if (elem == null) return
+
+    // Most links copy current selection into the "f" parameter,
+    // but Refine menu links are different.
+    let param = "f"
+    if (id == "ignore") param = "i"
+    if (id == "hide") param = "h"
+    if (id == "show") param = "s"
+
+    // We update on mouseenter so middle-click/right-click work properly.
+    elem.addEventListener("mouseenter", updater)
+    elem.addEventListener("touchstart", updater)
+
+    function updater() {
+      elem.href = updateUrl(new URL(elem.href), param)
+    }
+  }
+
+  // Update URL to reflect current selection.
+  function updateUrl(url, param) {
+    url.hash = ""
+
     // The selection can be in one of two modes: regexp-based or
     // list-based.  Construct regular expression depending on mode.
-    let re = regexpActive ? search.value : ""
-    if (!regexpActive) {
-      selected.forEach(function(v, key) {
-        if (re != "") re += "|"
-        re += quotemeta(nodes[key])
-      })
-    }
+    let re = regexpActive
+        ? search.value
+        : Array.from(selected.keys()).map(key => quotemeta(nodes[key])).join("|")
 
-    const url = new URL(window.location.href)
-    url.pathname = path
-    url.hash = ""
+    // Copy params from this page's URL.
+    const params = url.searchParams
+    for (const p of new URLSearchParams(window.location.search)) {
+      params.set(p[0], p[1])
+    }
 
     if (re != "") {
       // For focus/show, forget old parameter.  For others, add to re.
-      const params = url.searchParams
       if (param != "f" && param != "s" && params.has(param)) {
         const old = params.get(param)
-        if (old != "") {
+         if (old != "") {
           re += "|" + old
         }
       }
       params.set(param, re)
     }
 
-    window.location.href = url.toString()
+    return url.toString()
   }
 
   function handleTopClick(e) {
@@ -671,9 +687,9 @@ function viewer(baseUrl, nodes) {
     if (buttonsEnabled == enable) return
     buttonsEnabled = enable
     for (const id of ["focus", "ignore", "hide", "show"]) {
-      const btn = document.getElementById(id)
-      if (btn != null) {
-        btn.disabled = !enable
+      const link = document.getElementById(id)
+      if (link != null) {
+        link.classList.toggle("disabled", !enable)
       }
     }
   }
@@ -690,6 +706,10 @@ function viewer(baseUrl, nodes) {
     toptable.addEventListener("touchstart", handleTopClick)
   }
 
+  const ids = ["topbtn", "graphbtn", "peek", "list", "disasm",
+               "focus", "ignore", "hide", "show"]
+  ids.forEach(makeLinkDynamic)
+
   // Bind action to button with specified id.
   function addAction(id, action) {
     const btn = document.getElementById(id)
@@ -701,16 +721,6 @@ function viewer(baseUrl, nodes) {
 
   addAction("details", handleDetails)
   addAction("closedetails", handleCloseDetails)
-  addAction("topbtn", handleTop)
-  addAction("graphbtn", handleGraph)
-  addAction("reset", handleReset)
-  addAction("peek", handlePeek)
-  addAction("list", handleList)
-  addAction("disasm", handleDisasm)
-  addAction("focus", handleFocus)
-  addAction("ignore", handleIgnore)
-  addAction("hide", handleHide)
-  addAction("show", handleShow)
 
   search.addEventListener("input", handleSearch)
   search.addEventListener("keydown", handleKey)
