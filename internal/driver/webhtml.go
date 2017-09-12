@@ -479,7 +479,8 @@ function viewer(baseUrl, nodes) {
 
   function handleKey(e) {
     if (e.keyCode != 13) return
-    handleFocus()
+    window.location.href =
+        updateUrl(new URL({{.BaseURL}}, window.location.href), "f")
     e.preventDefault()
   }
 
@@ -615,45 +616,47 @@ function viewer(baseUrl, nodes) {
     if (id == "hide") param = "h"
     if (id == "show") param = "s"
 
-    // updater does the actual work.
-    function updater() {
-      const url = new URL(elem.href)
-      url.hash = ""
-
-      // The selection can be in one of two modes: regexp-based or
-      // list-based.  Construct regular expression depending on mode.
-      let re = regexpActive ? search.value : ""
-      if (!regexpActive) {
-        selected.forEach(function(v, key) {
-          if (re != "") re += "|"
-          re += quotemeta(nodes[key])
-        })
-      }
-
-      // Copy params from this page's URL.
-      const params = url.searchParams
-      for (const p of new URLSearchParams(window.location.search)) {
-        params.set(p[0], p[1])
-      }
-
-      if (re != "") {
-        // For focus/show, forget old parameter.  For others, add to re.
-        if (param != "f" && param != "s" && params.has(param)) {
-          const old = params.get(param)
-          if (old != "") {
-            re += "|" + old
-          }
-        }
-        params.set(param, re)
-      }
-
-      elem.href = url.toString()
-    }
-
     // We update on mouseenter so middle-click/right-click work properly.
-    for (const e of ["mouseenter", "touchstart"]) {
-      elem.addEventListener(e, updater)
+    elem.addEventListener("mouseenter", updater)
+    elem.addEventListener("touchstart", updater)
+
+    function updater() {
+      elem.href = updateUrl(new URL(elem.href), param)
     }
+  }
+
+  // Update URL to reflect current selection.
+  function updateUrl(url, param) {
+    url.hash = ""
+
+    // The selection can be in one of two modes: regexp-based or
+    // list-based.  Construct regular expression depending on mode.
+    let re = regexpActive ? search.value : ""
+    if (!regexpActive) {
+      selected.forEach(function(v, key) {
+        if (re != "") re += "|"
+        re += quotemeta(nodes[key])
+      })
+    }
+
+    // Copy params from this page's URL.
+    const params = url.searchParams
+    for (const p of new URLSearchParams(window.location.search)) {
+      params.set(p[0], p[1])
+    }
+
+    if (re != "") {
+      // For focus/show, forget old parameter.  For others, add to re.
+      if (param != "f" && param != "s" && params.has(param)) {
+        const old = params.get(param)
+         if (old != "") {
+          re += "|" + old
+        }
+      }
+      params.set(param, re)
+    }
+
+    return url.toString()
   }
 
   function handleTopClick(e) {
@@ -707,10 +710,9 @@ function viewer(baseUrl, nodes) {
     toptable.addEventListener("touchstart", handleTopClick)
   }
 
-  for (const id of ["topbtn", "graphbtn", "peek", "list", "disasm",
-                    "focus", "ignore", "hide", "show"]) {
-    makeLinkDynamic(id)
-  }
+  const ids = ["topbtn", "graphbtn", "peek", "list", "disasm",
+               "focus", "ignore", "hide", "show"]
+  ids.forEach(makeLinkDynamic)
 
   // Bind action to button with specified id.
   function addAction(id, action) {
