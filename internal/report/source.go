@@ -116,6 +116,16 @@ func printSource(w io.Writer, rpt *Report) error {
 // printWebSource prints an annotated source listing, include all
 // functions with samples that match the regexp rpt.options.symbol.
 func printWebSource(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
+	printHeader(w, rpt)
+	if err := PrintWebList(w, rpt, obj, -1); err != nil {
+		return err
+	}
+	printPageClosing(w)
+	return nil
+}
+
+// PrintWebList prints annotated source listing of rpt to w.
+func PrintWebList(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFiles int) error {
 	o := rpt.options
 	g := rpt.newGraph(nil)
 
@@ -176,10 +186,18 @@ func printWebSource(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 		sNode.Flat, sNode.Cum = nodes.Sum()
 		sourceFiles = append(sourceFiles, &sNode)
 	}
-	sourceFiles.Sort(graph.FileOrder)
+
+	// Limit number of files printed?
+	if maxFiles < 0 {
+		sourceFiles.Sort(graph.FileOrder)
+	} else {
+		sourceFiles.Sort(graph.FlatNameOrder)
+		if maxFiles < len(sourceFiles) {
+			sourceFiles = sourceFiles[:maxFiles]
+		}
+	}
 
 	// Print each file associated with this function.
-	printHeader(w, rpt)
 	for _, n := range sourceFiles {
 		ff := fileFunction{n.Info.File, n.Info.Name}
 		fns := fileNodes[ff]
@@ -198,7 +216,6 @@ func printWebSource(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 		}
 		printFunctionClosing(w)
 	}
-	printPageClosing(w)
 	return nil
 }
 
@@ -272,7 +289,15 @@ func findMatchingSymbol(objSyms []*objSymbol, ns graph.Nodes) *objSymbol {
 
 // printHeader prints the page header for a weblist report.
 func printHeader(w io.Writer, rpt *Report) {
-	fmt.Fprintln(w, weblistPageHeader)
+	fmt.Fprintln(w, `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Pprof listing</title>`)
+	fmt.Fprintln(w, weblistPageCSS)
+	fmt.Fprintln(w, weblistPageScript)
+	fmt.Fprint(w, "</head>\n<body>\n\n")
 
 	var labels []string
 	for _, l := range ProfileLabels(rpt) {

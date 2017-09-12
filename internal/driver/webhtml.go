@@ -16,21 +16,18 @@ package driver
 
 import "html/template"
 
-// webTemplate defines a collection of related templates:
-//    css
-//    header
-//    script
-//    graph
-//    top
-var webTemplate = template.Must(template.New("web").Parse(`
+// addTemplates adds a set of template definitions to templates.
+func addTemplates(templates *template.Template) {
+	template.Must(templates.Parse(`
 {{define "css"}}
 <style type="text/css">
-html, body {
+html {
   height: 100%;
   min-height: 100%;
   margin: 0px;
 }
 body {
+  margin: 0px;
   width: 100%;
   height: 100%;
   min-height: 100%;
@@ -129,11 +126,12 @@ button {
 #searchbox {
   margin-left: 10pt;
 }
-#topcontainer {
+#bodycontainer {
   width: 100%;
   height: 100%;
   max-height: 100%;
   overflow: scroll;
+  padding-top: 5px;
 }
 #toptable {
   border-spacing: 0px;
@@ -176,23 +174,13 @@ button {
 <div class="menu-header">
 View
 <div class="menu">
-{{if (ne .Type "top")}}
-  <button title="{{.Help.top}}" id="topbtn">Top</button>
-{{end}}
-{{if (ne .Type "dot")}}
-  <button title="{{.Help.graph}}" id="graphbtn">Graph</button>
-{{end}}
+<button title="{{.Help.top}}" id="topbtn">Top</button>
+<button title="{{.Help.graph}}" id="graphbtn">Graph</button>
+<button title="{{.Help.peek}}" id="peek">Peek</button>
+<button title="{{.Help.list}}" id="list">Source</button>
+<button title="{{.Help.disasm}}" id="disasm">Disassemble</button>
 <hr>
 <button title="{{.Help.details}}" id="details">Details</button>
-</div>
-</div>
-
-<div class="menu-header">
-Functions
-<div class="menu">
-<button title="{{.Help.peek}}" id="peek">Peek</button>
-<button title="{{.Help.list}}" id="list">List</button>
-<button title="{{.Help.disasm}}" id="disasm">Disassemble</button>
 </div>
 </div>
 
@@ -230,7 +218,7 @@ Refine
 {{template "header" .}}
 <div id="graphcontainer">
 <div id="graph">
-{{.Svg}}
+{{.HTMLBody}}
 </div>
 
 </div>
@@ -484,15 +472,15 @@ function viewer(baseUrl, nodes) {
   }
 
   function handleReset() { window.location.href = baseUrl }
-  function handleTop() { navigate("/top", "f", false) }
-  function handleGraph() { navigate("/", "f", false) }
-  function handleList() { navigate("/weblist", "f", true) }
-  function handleDisasm() { navigate("/disasm", "f", true) }
-  function handlePeek() { navigate("/peek", "f", true) }
-  function handleFocus() { navigate(baseUrl, "f", false) }
-  function handleShow() { navigate(baseUrl, "s", false) }
-  function handleIgnore() { navigate(baseUrl, "i", false) }
-  function handleHide() { navigate(baseUrl, "h", false) }
+  function handleTop() { navigate("/top", "f") }
+  function handleGraph() { navigate("/", "f") }
+  function handleList() { navigate("/source", "f") }
+  function handleDisasm() { navigate("/disasm", "f") }
+  function handlePeek() { navigate("/peek", "f") }
+  function handleFocus() { navigate(baseUrl, "f") }
+  function handleShow() { navigate(baseUrl, "s") }
+  function handleIgnore() { navigate(baseUrl, "i") }
+  function handleHide() { navigate(baseUrl, "h") }
 
   function handleKey(e) {
     if (e.keyCode != 13) return
@@ -621,7 +609,7 @@ function viewer(baseUrl, nodes) {
 
   // Navigate to specified path with current selection reflected
   // in the named parameter.
-  function navigate(path, param, newWindow) {
+  function navigate(path, param) {
     // The selection can be in one of two modes: regexp-based or
     // list-based.  Construct regular expression depending on mode.
     let re = regexpActive ? search.value : ""
@@ -648,11 +636,7 @@ function viewer(baseUrl, nodes) {
       params.set(param, re)
     }
 
-    if (newWindow) {
-      window.open(url.toString(), "_blank")
-    } else {
-      window.location.href = url.toString()
-    }
+    window.location.href = url.toString()
   }
 
   function handleTopClick(e) {
@@ -686,7 +670,7 @@ function viewer(baseUrl, nodes) {
     const enable = (search.value != "" || selected.size != 0)
     if (buttonsEnabled == enable) return
     buttonsEnabled = enable
-    for (const id of ["peek", "list", "disasm", "focus", "ignore", "hide", "show"]) {
+    for (const id of ["focus", "ignore", "hide", "show"]) {
       const btn = document.getElementById(id)
       if (btn != null) {
         btn.disabled = !enable
@@ -730,6 +714,12 @@ function viewer(baseUrl, nodes) {
 
   search.addEventListener("input", handleSearch)
   search.addEventListener("keydown", handleKey)
+
+  // Give initial focus to main container so it can be scrolled using keys.
+  const main = document.getElementById("bodycontainer")
+  if (main) {
+    main.focus()
+  }
 }
 </script>
 {{end}}
@@ -746,7 +736,7 @@ function viewer(baseUrl, nodes) {
 
 {{template "header" .}}
 
-<div id="topcontainer">
+<div id="bodycontainer">
 <table id="toptable">
 <tr><th>Flat<th>Flat%<th>Sum%<th>Cum<th>Cum%<th>Name<th>Inlined?</tr>
 {{range $i,$e := .Top}}
@@ -760,4 +750,53 @@ function viewer(baseUrl, nodes) {
 </body>
 </html>
 {{end}}
+
+{{define "sourcelisting" -}}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{.Title}}</title>
+{{template "css" .}}
+{{template "weblistcss" .}}
+{{template "weblistjs" .}}
+</head>
+<body>
+
+{{template "header" .}}
+
+<div id="bodycontainer">
+{{.HTMLBody}}
+</div>
+
+{{template "script" .}}
+<script>viewer({{.BaseURL}}, null)</script>
+</body>
+</html>
+{{end}}
+
+{{define "plaintext" -}}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{.Title}}</title>
+{{template "css" .}}
+</head>
+<body>
+
+{{template "header" .}}
+
+<div id="bodycontainer">
+<pre>
+{{.TextBody}}
+</pre>
+</div>
+
+{{template "script" .}}
+<script>viewer({{.BaseURL}}, null)</script>
+</body>
+</html>
+{{end}}
 `))
+}
