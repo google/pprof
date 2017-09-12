@@ -123,7 +123,7 @@ var generateReportWrapper = generateReport // For testing purposes.
 // greetings prints a brief welcome and some overall profile
 // information before accepting interactive commands.
 func greetings(p *profile.Profile, ui plugin.UI) {
-	numLabelUnits := getNumLabelUnits(p, ui)
+	numLabelUnits := identifyNumLabelUnits(p, ui)
 	ropt, err := reportOptions(p, numLabelUnits, pprofVariables)
 	if err == nil {
 		ui.Print(strings.Join(report.ProfileLabels(report.New(p, ropt)), "\n"))

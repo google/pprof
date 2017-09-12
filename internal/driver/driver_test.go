@@ -1118,7 +1118,7 @@ func TestInferUnits(t *testing.T) {
 			}
 			p.Sample[i] = &s
 		}
-		units := getNumLabelUnits(&p, &proftest.TestUI{T: t, IgnoreRx: test.ignoreRX})
+		units := identifyNumLabelUnits(&p, &proftest.TestUI{T: t, IgnoreRx: test.ignoreRX})
 
 		for key, unit := range test.expInferredUnits {
 			expUnit, ok := units[key]

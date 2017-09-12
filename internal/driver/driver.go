@@ -62,8 +62,8 @@ func PProf(eo *plugin.Options) error {
 func generateRawReport(p *profile.Profile, cmd []string, vars variables, o *plugin.Options) (*command, *report.Report, error) {
 	p = p.Copy() // Prevent modification to the incoming profile.
 
-	// infer units of numeric tags in profile
-	numLabelUnits := getNumLabelUnits(p, o.UI)
+	// identify units of numeric tags in profile
+	numLabelUnits := identifyNumLabelUnits(p, o.UI)
 
 	vars = applyCommandOverrides(cmd, vars)
 
@@ -289,7 +289,7 @@ func reportOptions(p *profile.Profile, numLabelUnits map[string]string, vars var
 // unit encountered is used and an error message is displayed.
 // If units are encountered for a particular key, the unit is then inferred
 // based on the key.
-func getNumLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string {
+func identifyNumLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string {
 	numLabelUnits := map[string]string{}
 	unusedUnits := map[string]map[string]bool{}
 	encounteredKeys := map[string]bool{}
