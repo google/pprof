@@ -631,13 +631,9 @@ function viewer(baseUrl, nodes) {
 
     // The selection can be in one of two modes: regexp-based or
     // list-based.  Construct regular expression depending on mode.
-    let re = regexpActive ? search.value : ""
-    if (!regexpActive) {
-      selected.forEach(function(v, key) {
-        if (re != "") re += "|"
-        re += quotemeta(nodes[key])
-      })
-    }
+    let re = regexpActive
+        ? search.value
+        : Array.from(selected.keys()).map(key => quotemeta(nodes[key])).join("|")
 
     // Copy params from this page's URL.
     const params = url.searchParams
