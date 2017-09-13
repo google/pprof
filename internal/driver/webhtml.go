@@ -151,8 +151,6 @@ button {
   padding-top: 0.2em;
   padding-bottom: 0.2em;
 }
-#toptable tr th:nth-child(6) { text-align: left; }
-#toptable tr th:nth-child(7) { text-align: left; }
 #toptable tr td {
   padding-left: 1em;
   font: monospace;
@@ -160,12 +158,19 @@ button {
   white-space: nowrap;
   cursor: default;
 }
-#toptable tr td:nth-child(6) {
+#toptable tr th:nth-child(6),
+#toptable tr th:nth-child(7),
+#toptable tr td:nth-child(6),
+#toptable tr td:nth-child(7) {
   text-align: left;
+}
+#toptable tr td:nth-child(6) {
   max-width: 30em;  // Truncate very long names
   overflow: hidden;
 }
-#toptable tr td:nth-child(7) { text-align: left; }
+#flathdr1, #flathdr2, #cumhdr1, #cumhdr2, #namehdr {
+  cursor: ns-resize;
+}
 .hilite {
   background-color: #ccf;
 }
@@ -745,9 +750,6 @@ function viewer(baseUrl, nodes) {
 <title>{{.Title}}</title>
 {{template "css" .}}
 <style type="text/css">
-#flathdr1, #flathdr2, #cumhdr1, #cumhdr2, #namehdr {
-  cursor: ns-resize;
-}
 </style>
 </head>
 <body>
@@ -781,16 +783,16 @@ function makeSortable() {
 
   // Unit conversions (for toUnit values produced by measurement.go)
   const units = new Map([
-    ["B", 1.0],
-    ["kB", 1024.0],
-    ["MB", 1024.0 * 1024.0],
-    ["GB", 1024.0 * 1024.0 * 1024.0],
-    ["TB", 1024.0 * 1024.0 * 1024.0 * 1024.0],
-    ["PB", 1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0],
+    ["B", 1],
+    ["kB", 2**10],
+    ["MB", 2**20],
+    ["GB", 2**30],
+    ["TB", 2**40],
+    ["PB", 2**50],
     ["ns", 1e-9],
     ["us", 1e-6],
     ["ms", 1e-3],
-    ["s", 1.0],
+    ["s", 1],
     ["mins", 60.0],
     ["hrs", 3600.0],
     ["days", 3600.0 * 24.0],
@@ -826,7 +828,7 @@ function makeSortable() {
       let suffix = val
       if (numeric) {
         const match = val.match(numParseRe)
-	if (match != null) {
+        if (match != null) {
           const n = parseFloat(match[1])
           if (!isNaN(n)) {
             num = n
