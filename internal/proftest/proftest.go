@@ -118,3 +118,31 @@ func (ui *TestUI) IsTerminal() bool {
 // SetAutoComplete is not supported by the test UI.
 func (ui *TestUI) SetAutoComplete(_ func(string) string) {
 }
+
+// TestTempFile is a temporary file for use in testing.
+type TestTempFile struct {
+	*os.File
+	closed bool
+}
+
+// NewTestTempFile creates a temporary file.
+// If an error occurs, the test fails fatally.
+// The file must be closed with Close().
+func NewTestTempFile(t *testing.T) *TestTempFile {
+	tempFile, err := ioutil.TempFile("", "test_temp")
+	if err != nil {
+		t.Fatalf("ioutil.TempFile(): got error %v", err)
+	}
+	return &TestTempFile{tempFile, false}
+}
+
+// Close closes the file and removes it from the file system.
+func (t *TestTempFile) Close() {
+	if t.closed {
+		return
+	}
+
+	t.closed = true
+	t.File.Close()
+	os.Remove(t.Name())
+}
