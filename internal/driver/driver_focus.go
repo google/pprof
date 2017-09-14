@@ -73,7 +73,7 @@ func compileRegexOption(name, value string, err error) (*regexp.Regexp, error) {
 	return rx, nil
 }
 
-func compileTagFilter(name, value string, inferredUnits map[string]string, ui plugin.UI, err error) (func(*profile.Sample) bool, error) {
+func compileTagFilter(name, value string, numLabelUnits map[string]string, ui plugin.UI, err error) (func(*profile.Sample) bool, error) {
 	if value == "" || err != nil {
 		return nil, err
 	}
@@ -96,8 +96,8 @@ func compileTagFilter(name, value string, inferredUnits map[string]string, ui pl
 			return false
 		}
 		inferUnits := func(key string) string {
-			if inferredUnits != nil {
-				return inferredUnits[key]
+			if numLabelUnits != nil {
+				return numLabelUnits[key]
 			}
 			return key
 		}

@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/google/pprof/internal/proftest"
+	"reflect"
 )
 
 func TestParse(t *testing.T) {
@@ -552,14 +553,14 @@ func TestMergeAll(t *testing.T) {
 
 func TestNumLabelMerge(t *testing.T) {
 	for _, tc := range []struct {
-		Name         string
-		Profs        []*Profile
-		ExpNumLabels []map[string][]NumValue
+		name          string
+		profs         []*Profile
+		wantNumLabels []map[string][]NumValue
 	}{
 		{
-			Name:  "different tag units not merged",
-			Profs: []*Profile{testProfile4.Copy(), testProfile5.Copy()},
-			ExpNumLabels: []map[string][]NumValue{
+			name:  "different tag units not merged",
+			profs: []*Profile{testProfile4.Copy(), testProfile5.Copy()},
+			wantNumLabels: []map[string][]NumValue{
 				{
 					"key1": {{Unit: "bytes", Value: 10}},
 					"key2": {{Unit: "bytes", Value: 30}},
@@ -571,33 +572,15 @@ func TestNumLabelMerge(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(tc.Name, func(t *testing.T) {
-			prof, err := Merge(tc.Profs)
+		t.Run(tc.name, func(t *testing.T) {
+			prof, err := Merge(tc.profs)
 			if err != nil {
 				t.Errorf("merge error: %v", err)
 			}
-			for i, expLabels := range tc.ExpNumLabels {
+			for i, wantLabels := range tc.wantNumLabels {
 				numLabels := prof.Sample[i].NumLabel
-				if want, got := len(expLabels), len(numLabels); want != got {
-					t.Errorf("for sample %d, want %d numeric tags, got %d", i, want, got)
-					continue
-				}
-				for k, expVs := range expLabels {
-					if vs, ok := numLabels[k]; ok {
-						if len(vs) != len(expVs) {
-							t.Errorf("for sample %d, tag %s, want %v got %v", i, k, expVs, vs)
-						}
-						for j, expV := range expVs {
-							if want, got := expV.Value, vs[j].Value; want != got {
-								t.Errorf("for sample %d, tag %s, value %d, want %v got %v", i, k, j, want, got)
-							}
-							if want, got := expV.Unit, vs[j].Unit; want != got {
-								t.Errorf("for sample %d, tag %s, unit %d, want %v got %v", i, k, j, want, got)
-							}
-						}
-					} else {
-						t.Errorf("for sample %d, want tag %v, but did not get tag", i, k)
-					}
+				if !reflect.DeepEqual(wantLabels, numLabels) {
+					t.Errorf("want numeric labels %v, got %v", wantLabels, numLabels)
 				}
 			}
 		})

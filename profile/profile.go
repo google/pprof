@@ -80,7 +80,7 @@ type Sample struct {
 }
 
 // NumValue used to store numeric value with unit for numeric values
-// of Profile.Label
+// of Profile.Label.
 type NumValue struct {
 	Unit  string
 	Value int64
@@ -473,25 +473,25 @@ func (p *Profile) String() string {
 	}
 	ss = append(ss, strings.TrimSpace(sh1))
 	for _, s := range p.Sample {
-		ss = append(ss, s.String())
+		ss = append(ss, s.string())
 	}
 
 	ss = append(ss, "Locations")
 	for _, l := range p.Location {
-		ss = append(ss, l.String())
+		ss = append(ss, l.string())
 	}
 
 	ss = append(ss, "Mappings")
 	for _, m := range p.Mapping {
-		ss = append(ss, m.String())
+		ss = append(ss, m.string())
 	}
 
 	return strings.Join(ss, "\n") + "\n"
 }
 
-// String dumps a text representation of a mapping. Intended mainly
+// string dumps a text representation of a mapping. Intended mainly
 // for debugging purposes.
-func (m *Mapping) String() string {
+func (m *Mapping) string() string {
 	bits := ""
 	if m.HasFunctions {
 		bits = bits + "[FN]"
@@ -513,9 +513,9 @@ func (m *Mapping) String() string {
 		bits)
 }
 
-// String dumps a text representation of a location. Intended mainly
+// string dumps a text representation of a location. Intended mainly
 // for debugging purposes.
-func (l *Location) String() string {
+func (l *Location) string() string {
 	ss := []string{}
 	locStr := fmt.Sprintf("%6d: %#x ", l.ID, l.Address)
 	if m := l.Mapping; m != nil {
@@ -543,9 +543,9 @@ func (l *Location) String() string {
 	return strings.Join(ss, "\n")
 }
 
-// String dumps a text representation of a sample. Intended mainly
+// string dumps a text representation of a sample. Intended mainly
 // for debugging purposes.
-func (s *Sample) String() string {
+func (s *Sample) string() string {
 	ss := []string{}
 	var sv string
 	for _, v := range s.Value {
@@ -567,7 +567,7 @@ func (s *Sample) String() string {
 }
 
 // labelsToString returns a string representation of a
-// map representing labels
+// map representing labels.
 func labelsToString(labels map[string][]string) string {
 	ls := []string{}
 	for k, v := range labels {
@@ -578,7 +578,7 @@ func labelsToString(labels map[string][]string) string {
 }
 
 // numLablesToString returns a string representation of a map
-// representing numeric labels
+// representing numeric labels.
 func numLabelsToString(numLabels map[string][]NumValue) string {
 	ls := []string{}
 	for k, v := range numLabels {

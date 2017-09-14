@@ -28,6 +28,7 @@ import (
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/internal/report"
 	"github.com/google/pprof/profile"
+	"sort"
 )
 
 // PProf acquires a profile, and symbolizes it using a profile
@@ -292,20 +293,15 @@ func reportOptions(p *profile.Profile, numLabelUnits map[string]string, vars var
 func identifyNumLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string {
 	numLabelUnits := map[string]string{}
 	unusedUnits := map[string]map[string]bool{}
-	encounteredKeys := map[string]bool{}
 
 	// determine units based on numeric tags for each sample
 	for _, s := range p.Sample {
 		for key, vs := range s.NumLabel {
-			encounteredKeys[key] = true
 			for _, v := range vs {
 				unit := v.Unit
-				if unit == "" {
-					continue
-				}
-				if expUnit, ok := numLabelUnits[key]; !ok {
+				if wantUnit, ok := numLabelUnits[key]; !ok {
 					numLabelUnits[key] = unit
-				} else if expUnit != unit {
+				} else if wantUnit != unit {
 					if v, ok := unusedUnits[key]; ok {
 						v[unit] = true
 					} else {
@@ -318,12 +314,10 @@ func identifyNumLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string {
 
 	// infer units for keys without any units associated with
 	// numeric tag values
-	for key := range encounteredKeys {
-		if _, ok := numLabelUnits[key]; !ok {
+	for key := range numLabelUnits {
+		if unit := numLabelUnits[key]; unit == "" {
 			switch key {
-			case "alignment":
-				numLabelUnits[key] = "bytes"
-			case "requests":
+			case "alignment", "requests":
 				numLabelUnits[key] = "bytes"
 			default:
 				numLabelUnits[key] = key
@@ -333,14 +327,15 @@ func identifyNumLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string {
 
 	// print errors for tags with multiple units associated with
 	// a single key
-	for key, v := range unusedUnits {
+	for k, v := range unusedUnits {
 		units := make([]string, len(v))
 		i := 0
 		for unit := range v {
 			units[i] = unit
 			i++
 		}
-		ui.PrintErr("For tag ", key, " used unit ", numLabelUnits[key], " also encountered unit(s) ", strings.Join(units, ","))
+		sort.Strings(units)
+		ui.PrintErr("For tag ", k, " used unit ", numLabelUnits[k], " also encountered unit(s) ", strings.Join(units, ","))
 	}
 	return numLabelUnits
 }
