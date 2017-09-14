@@ -142,14 +142,15 @@ button {
 #toptable {
   border-spacing: 0px;
   width: 100%;
+  padding-bottom: 1em;
 }
 #toptable tr th {
   border-bottom: 1px solid black;
   text-align: right;
   padding-left: 1em;
+  padding-top: 0.2em;
+  padding-bottom: 0.2em;
 }
-#toptable tr th:nth-child(6) { text-align: left; }
-#toptable tr th:nth-child(7) { text-align: left; }
 #toptable tr td {
   padding-left: 1em;
   font: monospace;
@@ -157,12 +158,19 @@ button {
   white-space: nowrap;
   cursor: default;
 }
-#toptable tr td:nth-child(6) {
+#toptable tr th:nth-child(6),
+#toptable tr th:nth-child(7),
+#toptable tr td:nth-child(6),
+#toptable tr td:nth-child(7) {
   text-align: left;
+}
+#toptable tr td:nth-child(6) {
   max-width: 30em;  // Truncate very long names
   overflow: hidden;
 }
-#toptable tr td:nth-child(7) { text-align: left; }
+#flathdr1, #flathdr2, #cumhdr1, #cumhdr2, #namehdr {
+  cursor: ns-resize;
+}
 .hilite {
   background-color: #ccf;
 }
@@ -741,6 +749,8 @@ function viewer(baseUrl, nodes) {
 <meta charset="utf-8">
 <title>{{.Title}}</title>
 {{template "css" .}}
+<style type="text/css">
+</style>
 </head>
 <body>
 
@@ -748,15 +758,104 @@ function viewer(baseUrl, nodes) {
 
 <div id="bodycontainer">
 <table id="toptable">
-<tr><th>Flat<th>Flat%<th>Sum%<th>Cum<th>Cum%<th>Name<th>Inlined?</tr>
-{{range $i,$e := .Top}}
-  <tr id="node{{$i}}"><td>{{$e.Flat}}<td>{{$e.FlatPercent}}<td>{{$e.SumPercent}}<td>{{$e.Cum}}<td>{{$e.CumPercent}}<td>{{$e.Name}}<td>{{$e.InlineLabel}}</tr>
-{{end}}
+<tr>
+<th id="flathdr1">Flat
+<th id="flathdr2">Flat%
+<th>Sum%
+<th id="cumhdr1">Cum
+<th id="cumhdr2">Cum%
+<th id="namehdr">Name
+<th>Inlined?</tr>
+<tbody id="rows">
+</tbody>
 </table>
 </div>
 
 {{template "script" .}}
-<script>viewer({{.BaseURL}}, {{.Nodes}})</script>
+<script>
+function makeTopTable(total, entries) {
+  const rows = document.getElementById("rows")
+  if (rows == null) return
+
+  // Store initial index in each entry so we have stable node ids for selection.
+  for (let i = 0; i < entries.length; i++) {
+    entries[i].Id = "node" + i
+  }
+
+  // Which column are we currently sorted by and in what order?
+  let currentColumn = ""
+  let descending = false
+  sortBy("Flat")
+
+  function sortBy(column) {
+    // Update sort criteria
+    if (column == currentColumn) {
+      descending = !descending  // Reverse order
+    } else {
+      currentColumn = column
+      descending = (column != "Name")
+    }
+
+    // Sort according to current criteria.
+    function cmp(a, b) {
+      const av = a[currentColumn]
+      const bv = b[currentColumn]
+      if (av < bv) return -1
+      if (av > bv) return +1
+      return 0
+    }
+    entries.sort(cmp)
+    if (descending) entries.reverse()
+
+    function addCell(tr, val) {
+      const td = document.createElement('td')
+      td.textContent = val
+      tr.appendChild(td)
+    }
+
+    function percent(v) {
+      return (v * 100.0 / total).toFixed(2) + "%"
+    }
+
+    // Generate rows
+    const fragment = document.createDocumentFragment()
+    let sum = 0
+    for (const row of entries) {
+      const tr = document.createElement('tr')
+      tr.id = row.Id
+      sum += row.Flat
+      addCell(tr, row.FlatFormat)
+      addCell(tr, percent(row.Flat))
+      addCell(tr, percent(sum))
+      addCell(tr, row.CumFormat)
+      addCell(tr, percent(row.Cum))
+      addCell(tr, row.Name)
+      addCell(tr, row.InlineLabel)
+      fragment.appendChild(tr)
+    }
+
+    rows.textContent = ''  // Remove old rows
+    rows.appendChild(fragment)
+  }
+
+  // Make different column headers trigger sorting.
+  function bindSort(id, column) {
+    const hdr = document.getElementById(id)
+    if (hdr == null) return
+    const fn = function() { sortBy(column) }
+    hdr.addEventListener("click", fn)
+    hdr.addEventListener("touch", fn)
+  }
+  bindSort("flathdr1", "Flat")
+  bindSort("flathdr2", "Flat")
+  bindSort("cumhdr1", "Cum")
+  bindSort("cumhdr2", "Cum")
+  bindSort("namehdr", "Name")
+}
+
+viewer({{.BaseURL}}, {{.Nodes}})
+makeTopTable({{.Total}}, {{.Top}})
+</script>
 </body>
 </html>
 {{end}}
