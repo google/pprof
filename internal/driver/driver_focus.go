@@ -95,7 +95,7 @@ func compileTagFilter(name, value string, numLabelUnits map[string]string, ui pl
 			}
 			return false
 		}
-		inferUnits := func(key string) string {
+		numLabelUnits := func(key string) string {
 			if numLabelUnits != nil {
 				return numLabelUnits[key]
 			}
@@ -104,7 +104,7 @@ func compileTagFilter(name, value string, numLabelUnits map[string]string, ui pl
 		if wantKey == "" {
 			return func(s *profile.Sample) bool {
 				for key, vals := range s.NumLabel {
-					if labelFilter(vals, inferUnits(key)) {
+					if labelFilter(vals, numLabelUnits(key)) {
 						return true
 					}
 				}
@@ -113,7 +113,7 @@ func compileTagFilter(name, value string, numLabelUnits map[string]string, ui pl
 		}
 		return func(s *profile.Sample) bool {
 			if vals, ok := s.NumLabel[wantKey]; ok {
-				return labelFilter(vals, inferUnits(wantKey))
+				return labelFilter(vals, numLabelUnits(wantKey))
 			}
 			return false
 		}, nil
