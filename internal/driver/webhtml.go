@@ -767,125 +767,94 @@ function viewer(baseUrl, nodes) {
 <th id="namehdr">Name
 <th>Inlined?</tr>
 <tbody id="rows">
-{{range $i,$e := .Top}}
-  <tr id="node{{$i}}"><td>{{$e.Flat}}<td>{{$e.FlatPercent}}<td>{{$e.SumPercent}}<td>{{$e.Cum}}<td>{{$e.CumPercent}}<td>{{$e.Name}}<td>{{$e.InlineLabel}}</tr>
-{{end}}
 </tbody>
 </table>
 </div>
 
 {{template "script" .}}
 <script>
-function makeSortable() {
-  // Regular expression to extract leading number and a suffix.
-  // E.g., "1.3s" => 1.3, "s"
-  let numParseRe = new RegExp("^([\\-+]?[0-9]+([.][0-9]+)?)(.*)$")
+function makeTopTable(total, entries) {
+  const rows = document.getElementById("rows")
+  if (rows == null) return
 
-  // Unit conversions (for toUnit values produced by measurement.go)
-  const units = new Map([
-    ["B", 1],
-    ["kB", 2**10],
-    ["MB", 2**20],
-    ["GB", 2**30],
-    ["TB", 2**40],
-    ["PB", 2**50],
-    ["ns", 1e-9],
-    ["us", 1e-6],
-    ["ms", 1e-3],
-    ["s", 1],
-    ["mins", 60.0],
-    ["hrs", 3600.0],
-    ["days", 3600.0 * 24.0],
-    ["wks", 3600.0 * 24.0 * 7.0],
-    ["yrs", 3600.0 * 24.0 * 7.0 * 365.0],  // Ignore leap years like measurement.go
-  ])
+  // Store initial index in each entry so we have stable node ids for selection.
+  for (let i = 0; i < entries.length; i++) {
+    entries[i].Id = "node" + i
+  }
 
   // Which column are we currently sorted by and in what order?
-  let currentColumn = 0
-  let descending = true
+  let currentColumn = ""
+  let descending = false
+  sortBy("Flat")
 
-  function sortBy(column, numeric) {
-    const rows = document.getElementById("rows")
-    if (rows == null) return
-
+  function sortBy(column) {
     // Update sort criteria
     if (column == currentColumn) {
       descending = !descending  // Reverse order
     } else {
       currentColumn = column
-      descending = (column != 5)  // Name is ascending by default
+      descending = (column != "Name")
     }
 
-    // Get info for all rows we want to sort.
-    let list = []
-    for (const r of rows.children) {
-      if (r.children.length <= column) continue
-      const c = r.children[column]
-      const val = c.innerText
-
-      // Extract numeric and string portions from val.
-      let num = 0
-      let suffix = val
-      if (numeric) {
-        const match = val.match(numParseRe)
-        if (match != null) {
-          const n = parseFloat(match[1])
-          if (!isNaN(n)) {
-            num = n
-            suffix = match[3]
-            if (units.has(suffix)) {
-              num *= units.get(suffix)
-              suffix = ""
-            }
-          }
-        }
-      }
-      list.push([num, suffix, r])
-    }
-
+    // Sort according to current criteria.
     function cmp(a, b) {
-      if (a[0] < b[0]) return -1
-      if (a[0] > b[0]) return +1
-      if (a[1] < b[1]) return -1
-      if (a[1] > b[1]) return +1
+      const av = a[currentColumn]
+      const bv = b[currentColumn]
+      if (av < bv) return -1
+      if (av > bv) return +1
       return 0
     }
-    function dcmp(a, b) { return -cmp(a, b) }
+    entries.sort(cmp)
+    if (descending) entries.reverse()
 
-    list.sort(descending ? dcmp : cmp)
-
-    // Sum% column holds the running sum of rows and since we
-    // have re-ordered rows, recompute that.
-    let sumPercent = 0.0
-    for (const r of list) {
-      const row = r[2]
-      if (row.children.length < 3) continue
-      const flatPercent = parseFloat(row.children[1].innerText)
-      if (!isNaN(flatPercent)) sumPercent += flatPercent
-      row.children[2].innerText = sumPercent.toFixed(2) + "%"
+    function addCell(tr, val) {
+      const td = document.createElement('td')
+      td.textContent = val
+      tr.appendChild(td)
     }
 
-    for (const r of list) {
-      rows.appendChild(r[2])
+    function percent(v) {
+      return (v * 100.0 / total).toFixed(2) + "%"
     }
+
+    // Generate rows
+    const fragment = document.createDocumentFragment()
+    let sum = 0
+    for (const row of entries) {
+      const tr = document.createElement('tr')
+      tr.id = row.Id
+      sum += row.Flat
+      addCell(tr, row.FlatFormat)
+      addCell(tr, percent(row.Flat))
+      addCell(tr, percent(sum))
+      addCell(tr, row.CumFormat)
+      addCell(tr, percent(row.Cum))
+      addCell(tr, row.Name)
+      addCell(tr, row.InlineLabel)
+      fragment.appendChild(tr)
+    }
+
+    rows.textContent = ''  // Remove old rows
+    rows.appendChild(fragment)
   }
 
-  function bindSort(id, column, numeric) {
+  // Make different column headers trigger sorting.
+  function bindSort(id, column) {
     const hdr = document.getElementById(id)
     if (hdr == null) return
-    const fn = function() { sortBy(column, numeric) }
+    const fn = function() { sortBy(column) }
     hdr.addEventListener("click", fn)
     hdr.addEventListener("touch", fn)
   }
-
-  bindSort("flathdr1", 0, true)
-  bindSort("flathdr2", 0, true)
-  bindSort("cumhdr1", 3, true)
-  bindSort("cumhdr2", 3, true)
-  bindSort("namehdr", 5, false)
+  bindSort("flathdr1", "Flat")
+  bindSort("flathdr2", "Flat")
+  bindSort("cumhdr1", "Cum")
+  bindSort("cumhdr2", "Cum")
+  bindSort("namehdr", "Name")
 }
+
 viewer({{.BaseURL}}, {{.Nodes}})
-makeSortable()
+makeTopTable({{.Total}}, {{.Top}})
 </script>
 </body>
 </html>

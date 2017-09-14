@@ -32,7 +32,10 @@ import (
 
 func TestWebInterface(t *testing.T) {
 	prof := makeFakeProfile()
-	ui := makeWebInterface(prof, &plugin.Options{Obj: fakeObjTool{}})
+	ui := makeWebInterface(prof, &plugin.Options{
+		Obj: fakeObjTool{},
+		UI:  &stdUI{},
+	})
 
 	// Start test server.
 	server := httptest.NewServer(http.HandlerFunc(
@@ -64,7 +67,7 @@ func TestWebInterface(t *testing.T) {
 	}
 	testcases := []testCase{
 		{"/", []string{"F1", "F2", "F3", "testbin", "cpu"}, true},
-		{"/top", []string{"Flat", "200ms.*100%.*F2"}, false},
+		{"/top", []string{`"Name":"F2","InlineLabel":"","Flat":200,"Cum":300,"FlatFormat":"200ms","CumFormat":"300ms"}`}, false},
 		{"/source?f=" + url.QueryEscape("F[12]"),
 			[]string{"F1", "F2", "300ms line1"}, false},
 		{"/peek?f=" + url.QueryEscape("F[12]"),

@@ -704,11 +704,10 @@ func printComments(w io.Writer, rpt *Report) error {
 
 // TextItem holds a single text report entry.
 type TextItem struct {
-	Name              string
-	InlineLabel       string // Not empty if inlined
-	Flat, FlatPercent string
-	SumPercent        string
-	Cum, CumPercent   string
+	Name                  string
+	InlineLabel           string // Not empty if inlined
+	Flat, Cum             int64  // Raw values
+	FlatFormat, CumFormat string // Formatted values
 }
 
 // TextItems returns a list of text items from the report and a list
@@ -745,11 +744,10 @@ func TextItems(rpt *Report) ([]TextItem, []string) {
 		items = append(items, TextItem{
 			Name:        name,
 			InlineLabel: inl,
-			Flat:        rpt.formatValue(flat),
-			FlatPercent: percentage(flat, rpt.total),
-			SumPercent:  percentage(flatSum, rpt.total),
-			Cum:         rpt.formatValue(cum),
-			CumPercent:  percentage(cum, rpt.total),
+			Flat:        flat,
+			Cum:         cum,
+			FlatFormat:  rpt.formatValue(flat),
+			CumFormat:   rpt.formatValue(cum),
 		})
 	}
 	return items, labels
@@ -761,15 +759,17 @@ func printText(w io.Writer, rpt *Report) error {
 	fmt.Fprintln(w, strings.Join(labels, "\n"))
 	fmt.Fprintf(w, "%10s %5s%% %5s%% %10s %5s%%\n",
 		"flat", "flat", "sum", "cum", "cum")
+	var flatSum int64
 	for _, item := range items {
 		inl := item.InlineLabel
 		if inl != "" {
 			inl = " " + inl
 		}
+		flatSum += item.Flat
 		fmt.Fprintf(w, "%10s %s %s %10s %s  %s%s\n",
-			item.Flat, item.FlatPercent,
-			item.SumPercent,
-			item.Cum, item.CumPercent,
+			item.FlatFormat, percentage(item.Flat, rpt.total),
+			percentage(flatSum, rpt.total),
+			item.CumFormat, percentage(item.Cum, rpt.total),
 			item.Name, inl)
 	}
 	return nil
@@ -1238,6 +1238,9 @@ type Report struct {
 	options     *Options
 	formatValue func(int64) string
 }
+
+// Total returns the total number of samples in a report.
+func (rpt *Report) Total() int64 { return rpt.total }
 
 func abs64(i int64) int64 {
 	if i < 0 {

@@ -71,6 +71,7 @@ type webArgs struct {
 	BaseURL  string
 	Title    string
 	Errors   []string
+	Total    int64
 	Legend   []string
 	Help     map[string]string
 	Nodes    []string
@@ -219,12 +220,13 @@ func (ui *webInterface) makeReport(w http.ResponseWriter, req *http.Request,
 
 // render generates html using the named template based on the contents of data.
 func (ui *webInterface) render(w http.ResponseWriter, baseURL, tmpl string,
-	errList, legend []string, data webArgs) {
+	rpt *report.Report, errList, legend []string, data webArgs) {
 	file := getFromLegend(legend, "File: ", "unknown")
 	profile := getFromLegend(legend, "Type: ", "unknown")
 	data.BaseURL = baseURL
 	data.Title = file + " " + profile
 	data.Errors = errList
+	data.Total = rpt.Total()
 	data.Legend = legend
 	data.Help = ui.help
 	html := &bytes.Buffer{}
@@ -272,7 +274,7 @@ func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
 		nodes = append(nodes, n.Info.Name)
 	}
 
-	ui.render(w, "/", "graph", errList, legend, webArgs{
+	ui.render(w, "/", "graph", rpt, errList, legend, webArgs{
 		HTMLBody: template.HTML(string(svg)),
 		Nodes:    nodes,
 	})
@@ -307,7 +309,7 @@ func (ui *webInterface) top(w http.ResponseWriter, req *http.Request) {
 		nodes = append(nodes, item.Name)
 	}
 
-	ui.render(w, "/top", "top", errList, legend, webArgs{
+	ui.render(w, "/top", "top", rpt, errList, legend, webArgs{
 		Top:   top,
 		Nodes: nodes,
 	})
@@ -329,7 +331,7 @@ func (ui *webInterface) disasm(w http.ResponseWriter, req *http.Request) {
 	}
 
 	legend := report.ProfileLabels(rpt)
-	ui.render(w, "/disasm", "plaintext", errList, legend, webArgs{
+	ui.render(w, "/disasm", "plaintext", rpt, errList, legend, webArgs{
 		TextBody: out.String(),
 	})
 
@@ -353,7 +355,7 @@ func (ui *webInterface) source(w http.ResponseWriter, req *http.Request) {
 	}
 
 	legend := report.ProfileLabels(rpt)
-	ui.render(w, "/source", "sourcelisting", errList, legend, webArgs{
+	ui.render(w, "/source", "sourcelisting", rpt, errList, legend, webArgs{
 		HTMLBody: template.HTML(body.String()),
 	})
 }
@@ -374,7 +376,7 @@ func (ui *webInterface) peek(w http.ResponseWriter, req *http.Request) {
 	}
 
 	legend := report.ProfileLabels(rpt)
-	ui.render(w, "/peek", "plaintext", errList, legend, webArgs{
+	ui.render(w, "/peek", "plaintext", rpt, errList, legend, webArgs{
 		TextBody: out.String(),
 	})
 }
