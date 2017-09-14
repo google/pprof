@@ -139,10 +139,10 @@ var pprofVariables = variables{
 	// Comparisons.
 	"positive_percentages": &variable{boolKind, "f", "", helpText(
 		"Ignore negative samples when computing percentages",
-		" Do not count negative samples when computing the total value",
-		" of the profile, used to compute percentages. If set, and the -base",
-		" option is used, percentages reported will be computed against the",
-		" main profile, ignoring the base profile.")},
+		"Do not count negative samples when computing the total value",
+		"of the profile, used to compute percentages. If set, and the -base",
+		"option is used, percentages reported will be computed against the",
+		"main profile, ignoring the base profile.")},
 
 	// Graph handling options.
 	"call_tree": &variable{boolKind, "f", "", helpText(
@@ -157,9 +157,9 @@ var pprofVariables = variables{
 	"unit": &variable{stringKind, "minimum", "", helpText(
 		"Measurement units to display",
 		"Scale the sample values to this unit.",
-		" For time-based profiles, use seconds, milliseconds, nanoseconds, etc.",
-		" For memory profiles, use megabytes, kilobytes, bytes, etc.",
-		" auto will scale each value independently to the most natural unit.")},
+		"For time-based profiles, use seconds, milliseconds, nanoseconds, etc.",
+		"For memory profiles, use megabytes, kilobytes, bytes, etc.",
+		"Using auto will scale each value independently to the most natural unit.")},
 	"compact_labels": &variable{boolKind, "f", "", "Show minimal headers"},
 	"source_path":    &variable{stringKind, "", "", "Search path for source files"},
 
