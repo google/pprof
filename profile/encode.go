@@ -59,14 +59,18 @@ func (p *Profile) preEncode() {
 		}
 		sort.Strings(numKeys)
 		for _, k := range numKeys {
-			vs := s.NumLabel[k]
 			keyX := addString(strings, k)
-			for _, v := range vs {
-				unitX := addString(strings, v.Unit)
+			vs := s.NumLabel[k]
+			units := s.NumUnit[k]
+			for i, v := range vs {
+				var unitX int64
+				if len(vs) == len(units) {
+					unitX = addString(strings, units[i])
+				}
 				s.labelX = append(s.labelX,
 					label{
 						keyX:  keyX,
-						numX:  v.Value,
+						numX:  v,
 						unitX: unitX,
 					},
 				)
@@ -291,7 +295,9 @@ func (p *Profile) postDecode() error {
 
 	for _, s := range p.Sample {
 		labels := make(map[string][]string, len(s.labelX))
-		numLabels := make(map[string][]NumValue, len(s.labelX))
+		numLabels := make(map[string][]int64, len(s.labelX))
+		numUnits := make(map[string][]string, len(s.labelX))
+		unitEncountered := make(map[string]bool, len(s.labelX))
 		for _, l := range s.labelX {
 			var key, value string
 			key, err = getString(p.stringTable, &l.keyX, err)
@@ -302,8 +308,10 @@ func (p *Profile) postDecode() error {
 				var unit string
 				if l.unitX != 0 {
 					unit, err = getString(p.stringTable, &l.unitX, err)
+					unitEncountered[key] = true
 				}
-				numLabels[key] = append(numLabels[key], NumValue{Unit: unit, Value: l.numX})
+				numLabels[key] = append(numLabels[key], l.numX)
+				numUnits[key] = append(numUnits[key], unit)
 			}
 		}
 		if len(labels) > 0 {
@@ -311,6 +319,12 @@ func (p *Profile) postDecode() error {
 		}
 		if len(numLabels) > 0 {
 			s.NumLabel = numLabels
+			for k := range numUnits {
+				if !unitEncountered[k] {
+					delete(numUnits, k)
+				}
+			}
+			s.NumUnit = numUnits
 		}
 		s.Location = make([]*Location, len(s.locationIDX))
 		for i, lid := range s.locationIDX {

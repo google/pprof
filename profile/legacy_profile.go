@@ -541,7 +541,7 @@ func parseHeap(b []byte) (p *Profile, err error) {
 		p.Sample = append(p.Sample, &Sample{
 			Value:    value,
 			Location: sloc,
-			NumLabel: map[string][]NumValue{"bytes": {{Value: blocksize}}},
+			NumLabel: map[string][]int64{"bytes": {blocksize}},
 		})
 	}
 	if err := s.Err(); err != nil {

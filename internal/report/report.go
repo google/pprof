@@ -245,18 +245,23 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	// Remove numeric tags not recognized by pprof
 	// label with inferred units
 	for _, s := range prof.Sample {
-		numLabels := make(map[string][]profile.NumValue, len(s.NumLabel))
+		numLabels := make(map[string][]int64, len(s.NumLabel))
+		numUnits := make(map[string][]string, len(s.NumLabel))
 		for k, vs := range s.NumLabel {
 			if k == "bytes" {
 				unit := o.NumLabelUnits[k]
-				numValues := make([]profile.NumValue, len(vs))
+				numValues := make([]int64, len(vs))
+				numUnit := make([]string, len(vs))
 				for i, v := range vs {
-					numValues[i] = profile.NumValue{Unit: unit, Value: v.Value}
+					numValues[i] = v
+					numUnit[i] = unit
 				}
 				numLabels[k] = append(numLabels[k], numValues...)
+				numUnits[k] = append(numUnits[k], numUnit...)
 			}
 		}
 		s.NumLabel = numLabels
+		s.NumUnit = numUnits
 	}
 
 	formatTag := func(v int64, key string) string {
@@ -660,7 +665,7 @@ func printTags(w io.Writer, rpt *Report) error {
 		for key, vals := range s.NumLabel {
 			unit := o.NumLabelUnits[key]
 			for _, nval := range vals {
-				val := formatTag(nval.Value, unit)
+				val := formatTag(nval, unit)
 				valueMap, ok := tagMap[key]
 				if !ok {
 					valueMap = make(map[string]int64)
@@ -819,7 +824,7 @@ func printTraces(w io.Writer, rpt *Report) error {
 			unit := o.NumLabelUnits[k]
 			numValues := make([]string, len(v))
 			for i, vv := range v {
-				numValues[i] = measurement.Label(vv.Value, unit)
+				numValues[i] = measurement.Label(vv, unit)
 			}
 			numLabels = append(numLabels, fmt.Sprintf("%10s:  %s\n", k, strings.Join(numValues, " ")))
 		}

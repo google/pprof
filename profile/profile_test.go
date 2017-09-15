@@ -362,9 +362,13 @@ var testProfile4 = &Profile{
 		{
 			Location: []*Location{cpuL[0]},
 			Value:    []int64{1000},
-			NumLabel: map[string][]NumValue{
-				"key1": {{Unit: "bytes", Value: 10}},
-				"key2": {{Unit: "bytes", Value: 30}},
+			NumLabel: map[string][]int64{
+				"key1": {10},
+				"key2": {30},
+			},
+			NumUnit: map[string][]string{
+				"key1": {"bytes"},
+				"key2": {"bytes"},
 			},
 		},
 	},
@@ -384,9 +388,25 @@ var testProfile5 = &Profile{
 		{
 			Location: []*Location{cpuL[0]},
 			Value:    []int64{1000},
-			NumLabel: map[string][]NumValue{
-				"key1": {{Unit: "kilobytes", Value: 10}},
-				"key2": {{Unit: "kilobytes", Value: 30}},
+			NumLabel: map[string][]int64{
+				"key1": {10},
+				"key2": {30},
+			},
+			NumUnit: map[string][]string{
+				"key1": {"bytes"},
+				"key2": {"bytes"},
+			},
+		},
+		{
+			Location: []*Location{cpuL[0]},
+			Value:    []int64{1000},
+			NumLabel: map[string][]int64{
+				"key1": {10},
+				"key2": {30},
+			},
+			NumUnit: map[string][]string{
+				"key1": {"kilobytes"},
+				"key2": {"kilobytes"},
 			},
 		},
 	},
@@ -555,19 +575,30 @@ func TestNumLabelMerge(t *testing.T) {
 	for _, tc := range []struct {
 		name          string
 		profs         []*Profile
-		wantNumLabels []map[string][]NumValue
+		wantNumLabels []map[string][]int64
+		wantNumUnits  []map[string][]string
 	}{
 		{
 			name:  "different tag units not merged",
-			profs: []*Profile{testProfile4.Copy(), testProfile5.Copy()},
-			wantNumLabels: []map[string][]NumValue{
+			profs: []*Profile{testProfile5.Copy()},
+			wantNumLabels: []map[string][]int64{
 				{
-					"key1": {{Unit: "bytes", Value: 10}},
-					"key2": {{Unit: "bytes", Value: 30}},
+					"key1": {10},
+					"key2": {30},
 				},
 				{
-					"key1": {{Unit: "kilobytes", Value: 10}},
-					"key2": {{Unit: "kilobytes", Value: 30}},
+					"key1": {10},
+					"key2": {30},
+				},
+			},
+			wantNumUnits: []map[string][]string{
+				{
+					"key1": {"bytes"},
+					"key2": {"bytes"},
+				},
+				{
+					"key1": {"kilobytes"},
+					"key2": {"kilobytes"},
 				},
 			},
 		},
@@ -577,10 +608,20 @@ func TestNumLabelMerge(t *testing.T) {
 			if err != nil {
 				t.Errorf("merge error: %v", err)
 			}
+			fmt.Printf("%v", prof)
+			if want, got := len(tc.wantNumLabels), len(prof.Sample); want != got {
+				t.Fatalf("want %d samples, got %d samples", want, got)
+			}
 			for i, wantLabels := range tc.wantNumLabels {
 				numLabels := prof.Sample[i].NumLabel
 				if !reflect.DeepEqual(wantLabels, numLabels) {
 					t.Errorf("want numeric labels %v, got %v", wantLabels, numLabels)
+				}
+
+				wantUnits := tc.wantNumUnits[i]
+				numUnits := prof.Sample[i].NumUnit
+				if !reflect.DeepEqual(wantUnits, numUnits) {
+					t.Errorf("want numeric labels %v, got %v", wantUnits, numUnits)
 				}
 			}
 		})

@@ -73,17 +73,11 @@ type Sample struct {
 	Location []*Location
 	Value    []int64
 	Label    map[string][]string
-	NumLabel map[string][]NumValue
+	NumLabel map[string][]int64
+	NumUnit  map[string][]string
 
 	locationIDX []uint64
 	labelX      []label
-}
-
-// NumValue used to store numeric value with unit for numeric values
-// of Profile.Label.
-type NumValue struct {
-	Unit  string
-	Value int64
 }
 
 // label corresponds to Profile.Label
@@ -561,7 +555,7 @@ func (s *Sample) string() string {
 		ss = append(ss, labelHeader+labelsToString(s.Label))
 	}
 	if len(s.NumLabel) > 0 {
-		ss = append(ss, labelHeader+numLabelsToString(s.NumLabel))
+		ss = append(ss, labelHeader+numLabelsToString(s.NumLabel, s.NumUnit))
 	}
 	return strings.Join(ss, "\n")
 }
@@ -579,21 +573,16 @@ func labelsToString(labels map[string][]string) string {
 
 // numLablesToString returns a string representation of a map
 // representing numeric labels.
-func numLabelsToString(numLabels map[string][]NumValue) string {
+func numLabelsToString(numLabels map[string][]int64, numUnits map[string][]string) string {
 	ls := []string{}
 	for k, v := range numLabels {
-		unitsEmpty := true
-		values := make([]int64, len(v))
-		for i, vv := range v {
-			values[i] = vv.Value
-			if vv.Unit != "" {
-				unitsEmpty = false
-				break
-			}
-		}
-
+		units := numUnits[k]
 		var labelString string
-		if unitsEmpty {
+		if len(units) == len(v) {
+			values := make([]string, len(v))
+			for i, vv := range v {
+				values[i] = fmt.Sprintf("%d %s", vv, units[i])
+			}
 			labelString = fmt.Sprintf("%s:%v", k, values)
 		} else {
 			labelString = fmt.Sprintf("%s:%v", k, v)

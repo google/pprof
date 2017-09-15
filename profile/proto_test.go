@@ -112,12 +112,16 @@ var all = &Profile{
 				"key1": {"value1"},
 				"key2": {"value2"},
 			},
-			NumLabel: map[string][]NumValue{
-				"key1":      {{Unit: "", Value: 1}, {Unit: "", Value: 2}},
-				"key2":      {{Unit: "", Value: 3}, {Unit: "", Value: 4}},
-				"bytes":     {{Unit: "", Value: 3}, {Unit: "", Value: 4}},
-				"requests":  {{Unit: "seconds", Value: 3}, {Unit: "", Value: 4}},
-				"alignment": {{Unit: "kilobytes", Value: 3}, {Unit: "kilobytes", Value: 4}},
+			NumLabel: map[string][]int64{
+				"key1":      {1, 2},
+				"key2":      {3, 4},
+				"bytes":     {3, 4},
+				"requests":  {3, 4},
+				"alignment": {3, 4},
+			},
+			NumUnit: map[string][]string{
+				"requests":  {"seconds", ""},
+				"alignment": {"kilobytes", "kilobytes"},
 			},
 		},
 	},

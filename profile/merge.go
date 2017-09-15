@@ -154,7 +154,8 @@ func (pm *profileMerger) mapSample(src *Sample) *Sample {
 		Location: make([]*Location, len(src.Location)),
 		Value:    make([]int64, len(src.Value)),
 		Label:    make(map[string][]string, len(src.Label)),
-		NumLabel: make(map[string][]NumValue, len(src.NumLabel)),
+		NumLabel: make(map[string][]int64, len(src.NumLabel)),
+		NumUnit:  make(map[string][]string, len(src.NumLabel)),
 	}
 	for i, l := range src.Location {
 		s.Location[i] = pm.mapLocation(l)
@@ -165,9 +166,13 @@ func (pm *profileMerger) mapSample(src *Sample) *Sample {
 		s.Label[k] = vv
 	}
 	for k, v := range src.NumLabel {
-		vv := make([]NumValue, len(v))
+		u := src.NumUnit[k]
+		vv := make([]int64, len(v))
+		uu := make([]string, len(u))
 		copy(vv, v)
+		copy(uu, u)
 		s.NumLabel[k] = vv
+		s.NumUnit[k] = uu
 	}
 	// Check memoization table. Must be done on the remapped location to
 	// account for the remapped mapping. Add current values to the
@@ -200,7 +205,8 @@ func (sample *Sample) key() sampleKey {
 
 	numlabels := make([]string, 0, len(sample.NumLabel))
 	for k, v := range sample.NumLabel {
-		numlabels = append(numlabels, fmt.Sprintf("%q%x", k, v))
+		u := sample.NumUnit[k]
+		numlabels = append(numlabels, fmt.Sprintf("%q%x%x", k, v, u))
 	}
 	sort.Strings(numlabels)
 

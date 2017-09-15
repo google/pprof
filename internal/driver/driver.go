@@ -296,16 +296,24 @@ func identifyNumLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string {
 
 	// determine units based on numeric tags for each sample
 	for _, s := range p.Sample {
-		for key, vs := range s.NumLabel {
-			for _, v := range vs {
-				unit := v.Unit
-				if wantUnit, ok := numLabelUnits[key]; !ok {
-					numLabelUnits[key] = unit
+		for k, vs := range s.NumLabel {
+			units := s.NumUnit[k]
+			if len(units) != len(vs) {
+				if _, ok := numLabelUnits[k]; !ok {
+					numLabelUnits[k] = ""
+				} else {
+					unusedUnits[k] = map[string]bool{"": true}
+				}
+				continue
+			}
+			for _, unit := range units {
+				if wantUnit, ok := numLabelUnits[k]; !ok {
+					numLabelUnits[k] = unit
 				} else if wantUnit != unit {
-					if v, ok := unusedUnits[key]; ok {
+					if v, ok := unusedUnits[k]; ok {
 						v[unit] = true
 					} else {
-						unusedUnits[key] = map[string]bool{unit: true}
+						unusedUnits[k] = map[string]bool{unit: true}
 					}
 				}
 			}
@@ -317,7 +325,7 @@ func identifyNumLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string {
 	for key := range numLabelUnits {
 		if unit := numLabelUnits[key]; unit == "" {
 			switch key {
-			case "alignment", "requests":
+			case "alignment", "request":
 				numLabelUnits[key] = "bytes"
 			default:
 				numLabelUnits[key] = key
