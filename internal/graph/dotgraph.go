@@ -186,8 +186,8 @@ func (b *builder) addNode(node *Node, nodeID int, maxFlat float64) {
 	}
 
 	// Create DOT attribute for node.
-	attr := fmt.Sprintf(`label="%s" fontsize=%d shape=%s tooltip="%s (%s)" color="%s" fillcolor="%s"`,
-		label, fontSize, shape, node.Info.PrintableName(), cumValue,
+	attr := fmt.Sprintf(`label="%s" id="node%d" fontsize=%d shape=%s tooltip="%s (%s)" color="%s" fillcolor="%s"`,
+		label, nodeID, fontSize, shape, node.Info.PrintableName(), cumValue,
 		dotColor(float64(node.CumValue())/float64(abs64(b.config.Total)), false),
 		dotColor(float64(node.CumValue())/float64(abs64(b.config.Total)), true))
 
@@ -247,7 +247,7 @@ func (b *builder) addNodelets(node *Node, nodeID int) bool {
 			continue
 		}
 		weight := b.config.FormatValue(w)
-		nodelets += fmt.Sprintf(`N%d_%d [label = "%s" fontsize=8 shape=box3d tooltip="%s"]`+"\n", nodeID, i, t.Name, weight)
+		nodelets += fmt.Sprintf(`N%d_%d [label = "%s" id="N%d_%d" fontsize=8 shape=box3d tooltip="%s"]`+"\n", nodeID, i, t.Name, nodeID, i, weight)
 		nodelets += fmt.Sprintf(`N%d -> N%d_%d [label=" %s" weight=100 tooltip="%s" labeltooltip="%s"]`+"\n", nodeID, nodeID, i, weight, weight, weight)
 		if nts := lnts[t.Name]; nts != nil {
 			nodelets += b.numericNodelets(nts, maxNodelets, flatTags, fmt.Sprintf(`N%d_%d`, nodeID, i))
@@ -274,7 +274,7 @@ func (b *builder) numericNodelets(nts []*Tag, maxNumNodelets int, flatTags bool,
 		}
 		if w != 0 {
 			weight := b.config.FormatValue(w)
-			nodelets += fmt.Sprintf(`N%s_%d [label = "%s" fontsize=8 shape=box3d tooltip="%s"]`+"\n", source, j, t.Name, weight)
+			nodelets += fmt.Sprintf(`N%s_%d [label = "%s" id="N%s_%d" fontsize=8 shape=box3d tooltip="%s"]`+"\n", source, j, t.Name, source, j, weight)
 			nodelets += fmt.Sprintf(`%s -> N%s_%d [label=" %s" weight=100 tooltip="%s" labeltooltip="%s"%s]`+"\n", source, source, j, weight, weight, weight, attr)
 		}
 	}
