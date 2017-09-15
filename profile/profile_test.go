@@ -580,7 +580,7 @@ func TestNumLabelMerge(t *testing.T) {
 	}{
 		{
 			name:  "different tag units not merged",
-			profs: []*Profile{testProfile5.Copy()},
+			profs: []*Profile{testProfile4.Copy(), testProfile5.Copy()},
 			wantNumLabels: []map[string][]int64{
 				{
 					"key1": {10},
