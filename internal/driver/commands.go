@@ -131,12 +131,6 @@ var pprofVariables = variables{
 	// Filename for file-based output formats, stdout by default.
 	"output": &variable{stringKind, "", "", helpText("Output filename for file-based outputs")},
 
-	"comment": &variable{stringKind, "", "", helpText(
-		"Comment string to add to the profile",
-		"The string is appended to any output format that includes comments,",
-		"for example, 'proto'. The common use is with remote sources to record",
-		"a note within the saved profile.")},
-
 	// Comparisons.
 	"drop_negative": &variable{boolKind, "f", "", helpText(
 		"Ignore negative differences",

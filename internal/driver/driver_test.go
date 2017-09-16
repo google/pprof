@@ -73,7 +73,7 @@ func TestParse(t *testing.T) {
 		{"dot,unit=minimum", "heap_sizetags"},
 		{"dot,addresses,flat,ignore=[X3]002,focus=[X1]000", "contention"},
 		{"dot,files,cum", "contention"},
-		{"comments,comment=some-comment", "cpu"},
+		{"comments,add_comment=some-comment", "cpu"},
 		{"comments", "heap"},
 		{"tags", "cpu"},
 		{"tags,tagignore=tag[13],tagfocus=key[12]", "cpu"},
@@ -153,8 +153,8 @@ func TestParse(t *testing.T) {
 			addFlags(&f, flags[:1])
 			solution = solutionFilename(tc.source, &f)
 		}
-		// The comment flag is not idempotent so only apply it on the first run.
-		delete(f.strings, "comment")
+		// The add_comment flag is not idempotent so only apply it on the first run.
+		delete(f.strings, "add_comment")
 
 		// Second pprof invocation to read the profile from profile.proto
 		// and generate a report.
