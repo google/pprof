@@ -16,8 +16,10 @@ package graph
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -26,7 +28,7 @@ import (
 	"github.com/google/pprof/internal/proftest"
 )
 
-const path = "testdata/"
+var updateFlag = flag.Bool("update", false, "Update the golden files")
 
 func TestComposeWithStandardGraph(t *testing.T) {
 	g := baseGraph()
@@ -35,12 +37,7 @@ func TestComposeWithStandardGraph(t *testing.T) {
 	var buf bytes.Buffer
 	ComposeDot(&buf, g, a, c)
 
-	want, err := ioutil.ReadFile(path + "compose1.dot")
-	if err != nil {
-		t.Fatalf("error reading test file: %v", err)
-	}
-
-	compareGraphs(t, buf.Bytes(), want)
+	compareGraphs(t, buf.Bytes(), "compose1.dot")
 }
 
 func TestComposeWithNodeAttributesAndZeroFlat(t *testing.T) {
@@ -64,12 +61,7 @@ func TestComposeWithNodeAttributesAndZeroFlat(t *testing.T) {
 	var buf bytes.Buffer
 	ComposeDot(&buf, g, a, c)
 
-	want, err := ioutil.ReadFile(path + "compose2.dot")
-	if err != nil {
-		t.Fatalf("error reading test file: %v", err)
-	}
-
-	compareGraphs(t, buf.Bytes(), want)
+	compareGraphs(t, buf.Bytes(), "compose2.dot")
 }
 
 func TestComposeWithTagsAndResidualEdge(t *testing.T) {
@@ -97,12 +89,7 @@ func TestComposeWithTagsAndResidualEdge(t *testing.T) {
 	var buf bytes.Buffer
 	ComposeDot(&buf, g, a, c)
 
-	want, err := ioutil.ReadFile(path + "compose3.dot")
-	if err != nil {
-		t.Fatalf("error reading test file: %v", err)
-	}
-
-	compareGraphs(t, buf.Bytes(), want)
+	compareGraphs(t, buf.Bytes(), "compose3.dot")
 }
 
 func TestComposeWithNestedTags(t *testing.T) {
@@ -127,12 +114,7 @@ func TestComposeWithNestedTags(t *testing.T) {
 	var buf bytes.Buffer
 	ComposeDot(&buf, g, a, c)
 
-	want, err := ioutil.ReadFile(path + "compose5.dot")
-	if err != nil {
-		t.Fatalf("error reading test file: %v", err)
-	}
-
-	compareGraphs(t, buf.Bytes(), want)
+	compareGraphs(t, buf.Bytes(), "compose5.dot")
 }
 
 func TestComposeWithEmptyGraph(t *testing.T) {
@@ -142,12 +124,7 @@ func TestComposeWithEmptyGraph(t *testing.T) {
 	var buf bytes.Buffer
 	ComposeDot(&buf, g, a, c)
 
-	want, err := ioutil.ReadFile(path + "compose4.dot")
-	if err != nil {
-		t.Fatalf("error reading test file: %v", err)
-	}
-
-	compareGraphs(t, buf.Bytes(), want)
+	compareGraphs(t, buf.Bytes(), "compose4.dot")
 }
 
 func TestComposeWithStandardGraphAndURL(t *testing.T) {
@@ -158,12 +135,7 @@ func TestComposeWithStandardGraphAndURL(t *testing.T) {
 	var buf bytes.Buffer
 	ComposeDot(&buf, g, a, c)
 
-	want, err := ioutil.ReadFile(path + "compose6.dot")
-	if err != nil {
-		t.Fatalf("error reading test file: %v", err)
-	}
-
-	compareGraphs(t, buf.Bytes(), want)
+	compareGraphs(t, buf.Bytes(), "compose6.dot")
 }
 
 func baseGraph() *Graph {
@@ -215,13 +187,25 @@ func baseAttrsAndConfig() (*DotAttributes, *DotConfig) {
 	return a, c
 }
 
-func compareGraphs(t *testing.T, got, want []byte) {
+func compareGraphs(t *testing.T, got []byte, wantFile string) {
+	wantFile = filepath.Join("testdata", wantFile)
+	want, err := ioutil.ReadFile(wantFile)
+	if err != nil {
+		t.Fatalf("error reading test file %s: %v", wantFile, err)
+	}
+
 	if string(got) != string(want) {
 		d, err := proftest.Diff(got, want)
 		if err != nil {
 			t.Fatalf("error finding diff: %v", err)
 		}
 		t.Errorf("Compose incorrectly wrote %s", string(d))
+		if *updateFlag {
+			err := ioutil.WriteFile(wantFile, got, 0644)
+			if err != nil {
+				t.Errorf("failed to update the golden file %q: %v", wantFile, err)
+			}
+		}
 	}
 }
 
