@@ -9,22 +9,33 @@ matrix:
     - os: linux
       go: 1.8.x
     - os: linux
+      go: 1.9.x
+    - os: linux
       go: master
     - os: osx
       osx_image: xcode6.4
       go: 1.8.x
+    - os: osx
+      osx_image: xcode6.4
+      go: 1.9.x
     - os: osx
       osx_image: xcode6.4
       go: master
     - os: osx
       osx_image: xcode7.3
       go: 1.8.x
+    - os: osx
+      osx_image: xcode7.3
+      go: 1.9.x
     - os: osx
       osx_image: xcode7.3
       go: master
     - os: osx
       osx_image: xcode8.3
       go: 1.8.x
+    - os: osx
+      osx_image: xcode8.3
+      go: 1.9.x
     - os: osx
       osx_image: xcode8.3
       go: master
