@@ -181,8 +181,10 @@
             'scoped_temp_path_test.cc',
             'test_runner.cc',
           ],
-          'link_settings': {
-            'libraries': ['-lcap'],
+          'variables': {
+            'deps': [
+              'libcap',
+            ],
           },
         },
       ],
