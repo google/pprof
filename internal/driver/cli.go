@@ -34,6 +34,9 @@ type source struct {
 	Timeout      int
 	Symbolize    string
 	HTTPHostport string
+
+	// Comment will be appended to any output format that supports comments.
+	Comment string
 }
 
 // Parse parses the command lines through the specified flags package
@@ -127,6 +130,8 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		pprofVariables.set("mean", "true")
 	}
 
+	comment := pprofVariables["comment"].stringValue()
+
 	source := &source{
 		Sources:      args,
 		ExecName:     execName,
@@ -135,6 +140,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		Timeout:      *flagTimeout,
 		Symbolize:    *flagSymbolize,
 		HTTPHostport: *flagHTTP,
+		Comment:      comment,
 	}
 
 	for _, s := range *flagBase {

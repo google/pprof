@@ -203,6 +203,92 @@ func TestParse(t *testing.T) {
 	}
 }
 
+// TestAppendComment tests that the flag '-comment foo' will append a comment
+// to the profile.
+func TestAppendComment(t *testing.T) {
+
+	savedVariables := pprofVariables.makeCopy()
+	defer func() { pprofVariables = savedVariables }()
+
+	gotFile := proftest.NewTestTempFile(t)
+	defer gotFile.Close()
+
+	gotFlags := baseFlags()
+	gotFlags.bools["proto"] = true
+	gotFlags.strings["comment"] = "test comment please ignore"
+	gotFlags.strings["output"] = gotFile.Name()
+	gotFlags.args = []string{"cpusmall"}
+
+	options := newTestOptions(&gotFlags)
+
+	if err := PProf(options); err != nil {
+		t.Fatalf("PProf(): got error %v", err)
+	}
+
+	gotBytes, err := ioutil.ReadFile(gotFile.Name())
+	if err != nil {
+		t.Fatalf("ioutil.ReadFile(): got error %v", err)
+	}
+
+	// The expected profile needs to be fetched with PProf() rather than used
+	// directly, because the fetch step normalizes field IDs.
+	wantFile := proftest.NewTestTempFile(t)
+	defer wantFile.Close()
+
+	wantFlags := baseFlags()
+	wantFlags.bools["proto"] = true
+	wantFlags.strings["output"] = wantFile.Name()
+	wantFlags.args = []string{"cpusmall"}
+
+	wantOptions := newTestOptions(&wantFlags)
+
+	if err := PProf(wantOptions); err != nil {
+		t.Fatalf("PProf(): got error %v", err)
+	}
+
+	wantBytes, err := ioutil.ReadFile(wantFile.Name())
+	if err != nil {
+		t.Fatalf("ioutil.ReadFile(): got error %v", err)
+	}
+
+	assertProfilesEqual(t, wantBytes, gotBytes)
+}
+
+// assertProfilesEqual checks that two encoded profiles are equal.
+// If the test fails, the profiles are decoded, serialized to JSON, and the
+// diff is logged.
+func assertProfilesEqual(t *testing.T, wantBytes []byte, gotBytes []byte) {
+	if string(wantBytes) != string(gotBytes) {
+
+		wantProfile, err := profile.Parse(bytes.NewBuffer(wantBytes))
+		if err != nil {
+			t.Fatalf("Profile.Parse(): got error %v", err)
+		}
+		wantJSON := proftest.EncodeJSON(&wantProfile)
+
+		gotProfile, err := profile.Parse(bytes.NewBuffer(gotBytes))
+		if err != nil {
+			t.Fatalf("Profile.Parse(): got error %v", err)
+		}
+		gotJSON := proftest.EncodeJSON(&gotProfile)
+
+		diff, err := proftest.Diff([]byte(wantJSON), []byte(gotJSON))
+		if err != nil {
+			t.Fatalf("proftest.Diff(): got error %v", err)
+		}
+
+		t.Errorf("Profiles are not equal %s", diff)
+	}
+}
+
+func newTestOptions(testFlagSet *testFlags) *plugin.Options {
+	options := setDefaults(nil)
+	options.Flagset = testFlagSet
+	options.Fetch = testFetcher{}
+	options.Sym = testSymbolizer{}
+	return options
+}
+
 // removeScripts removes <script > .. </script> pairs from its input
 func removeScripts(in []byte) []byte {
 	beginMarker := []byte("<script")
