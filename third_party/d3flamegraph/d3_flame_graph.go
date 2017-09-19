@@ -5,16 +5,10 @@
 
 package d3flamegraph
 
-// D3FlameGraphJS returns the d3.flameGraph.js file
-const D3FlameGraphJS = `
-// Copyright 2017 Martin Spier. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the “License”); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an “AS IS” BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
+// D3FLAMEGRAPH returns the d3.flameGraph.js file
+const D3FLAMEGRAPH = `
+{{define "d3flamegraphscript"}}
+<script>
 (function() {
   'use strict';
 
@@ -593,10 +587,11 @@ const D3FlameGraphJS = `
 		d3.flameGraph = flameGraph;
 	}
 })();
-`
+</script>
+{{end}}
 
-// D3FlameGraphCSS returns the d3.flameGraph.CSS file
-const D3FlameGraphCSS = `
+{{define "d3flamegraphcss"}}
+<style type="text/css">
 .d3-flame-graph rect {
   stroke: #EEEEEE;
   fill-opacity: .8;
@@ -689,4 +684,6 @@ const D3FlameGraphCSS = `
   top: 50%;
   left: 100%;
 }
+</style>
+{{end}}
 `

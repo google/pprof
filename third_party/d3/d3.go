@@ -5,9 +5,10 @@
 
 package d3
 
-// D3JS returns the d3.js file
-const D3JS = `
-// https://d3js.org Version 4.10.0. Copyright 2017 Mike Bostock.
+// D3 returns the d3.js file
+const D3 = `
+{{define "d3script"}}
+<script>
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -16917,4 +16918,6 @@ exports.zoomIdentity = identity$8;
 Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
+</script>
+{{end}}
 `

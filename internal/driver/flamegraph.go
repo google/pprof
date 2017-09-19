@@ -15,197 +15,13 @@
 package driver
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
 	"path/filepath"
 	"time"
-
-	"github.com/google/pprof/third_party/d3"
-	"github.com/google/pprof/third_party/d3flamegraph"
-	"github.com/google/pprof/third_party/d3tip"
 )
-
-var flameGraphTemplate = template.Must(template.New("graph").Parse(`<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-	<style>
-		// d3.flameGraph.css
-		{{ .D3FlameGraphCSS }}
-	</style>
-	<style>
-		form {
-     		display:inline;
-		}
-		.page {
-			display: flex;
-			flex-direction: column;
-			height: 80%;
-			min-height: 80%;
-			width: 80%;
-			min-width: 80%;
-			margin-left: 10%;
-		}
-		button {
-			margin-top: 5px;
-			margin-bottom: 5px;
-		}
-		.detailtext {
-			display: none;
-			position: absolute;
-			background-color: #ffffff;
-			min-width: 160px;
-			border-top: 1px solid black;
-			box-shadow: 2px 2px 2px 0px #aaa;
-			z-index: 1;
-		}
-		.title {
-			font-size: 16pt;
-			padding-left: 0.5em;
-			padding-right: 0.5em;
-		}
-		.details {
-			height: 1.2em;
-			width: 80%;
-			min-width: 80%;
-			margin-left: 10%;
-		}
-    </style>
-    <title>{{.Title}} {{.Type}}</title>
-  </head>
-  <body>
-	<div>
-		<button id="details-button">&#x25b7; Details</button>
-		<div id="detail-text" class="detailtext">
-		{{range .Legend}}<div>{{.}}</div>{{end}}
-		</div>
-		<select id="type" onchange="location = this.value;">
-		{{range .Types}}
-			<option value="?t={{.}}"{{if eq . $.Type}} selected{{end}}>{{.}}</option>
-		{{end}}
-		</select>
-		<button id="reset">Reset zoom</button>
-		<button id="clear">Clear</button>
-		<button id="graph">Graph</button>
-		<span class="title">{{.Title}}</span>
-		<form id="form">
-			<input id="term" type="text" placeholder="Search" autocomplete="off" autocapitalize="none" size=40>
-			<button id="search">Search</button>
-		</form>
-		<div class="page">
-			<div id="errors">{{range .Errors}}<div>{{.}}</div>{{end}}</div>
-			<div id="chart"></div>
-		</div>
-		<div id="details" class="details"></div>
-	</div>
-	<script type="text/javascript">
-		var detailsButton = document.getElementById("details-button");
-		var detailsText = document.getElementById("detail-text");
-		function handleDetails() {
-			if (detailsText.style.display == "block") {
-				detailsText.style.display = "none"
-				detailsButton.innerText = "\u25b7 Details"
-			} else {
-				detailsText.style.display = "block"
-				detailsButton.innerText = "\u25bd Details"
-			}
-		}
-		detailsButton.addEventListener("click", handleDetails);
-		document.getElementById("graph").addEventListener("click", function() {
-			window.location = "/";
-		});
-	</script>
-	<script type="text/javascript">
-		// d3.js
-		{{ .D3JS }}
-    </script>
-	<script type="text/javascript">
-		// d3-tip.js
-		{{ .D3TipJS }}
-    </script>
-	<script type="text/javascript">
-		// d3.flameGraph.js
-		{{ .D3FlameGraphJS }}
-    </script>
-	<script type="text/javascript">
-		var data = {{.Data}};
-	</script>
-	<script type="text/javascript">
-		var label = function(d) {
-			{{if eq .Unit "nanoseconds"}}
-			return d.data.n + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d3.format(".5f")(d.data.v / 1000000000) + " seconds)";
-			{{else}}
-			return d.data.n + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d.data.v + " {{.Unit}})";
-			{{end}}
-		};
-
-		var width = document.getElementById("chart").clientWidth;
-
-		var flameGraph = d3.flameGraph()
-			.width(width)
-			.cellHeight(18)
-			.minFrameSize(5)
-			.transitionDuration(750)
-			.transitionEase(d3.easeCubic)
-			.sort(true)
-			.title("")
-			.label(label);
-
-		var tip = d3.tip()
-			.direction("s")
-			.offset([8, 0])
-			.attr('class', 'd3-flame-graph-tip')
-			{{if eq .Unit "nanoseconds"}}
-			.html(function(d) { return "name: " + d.data.n + ", value: " + d3.format(".5f")(d.data.v / 1000000000) + " seconds"; });
-			{{else}}
-			.html(function(d) { return "name: " + d.data.n + ", value: " + d.data.v; });
-			{{end}}
-
-		flameGraph.tooltip(tip);
-
-		d3.select("#chart")
-			.datum(data)
-			.call(flameGraph);
-
-		document.getElementById("form").addEventListener("submit", function(event){
-			event.preventDefault();
-			search();
-		});
-
-		function search() {
-			var term = document.getElementById("term").value;
-			flameGraph.search(term);
-		}
-		document.getElementById("search").addEventListener("click", search);
-
-		function clear() {
-			document.getElementById('term').value = '';
-			flameGraph.clear();
-		}
-		document.getElementById("clear").addEventListener("click", clear);
-
-		function resetZoom() {
-			flameGraph.resetZoom();
-		}
-		document.getElementById("reset").addEventListener("click", resetZoom);
-		
-		window.addEventListener("resize", function() {
-			var width = document.getElementById("chart").clientWidth;
-			var graphs = document.getElementsByClassName("d3-flame-graph");
-			if (graphs.length > 0) {
-				graphs[0].setAttribute("width", width);
-			}
-			flameGraph.width(width);
-			flameGraph.resetZoom();
-		}, true);
-	</script>
-  </body>
-</html>`))
 
 type flameGraphNode struct {
 	Name     string
@@ -245,11 +61,6 @@ func (n *flameGraphNode) MarshalJSON() ([]byte, error) {
 
 // flamegraph generates a web page containing a flamegraph.
 func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
-	if req.URL.Path != "/flamegraph" {
-		http.NotFound(w, req)
-		return
-	}
-
 	// Capture any error messages generated while generating a report.
 	catcher := &errorCatcher{UI: ui.options.UI}
 	options := *ui.options
@@ -324,40 +135,14 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 		"Duration: " + profileDuration,
 	}
 
-	// Embed in html.
-	data := struct {
-		Title           string
-		Legend          []string
-		Type            string
-		Unit            string
-		Types           []string
-		Errors          []string
-		Data            template.JS
-		D3JS            template.JS
-		D3TipJS         template.JS
-		D3FlameGraphJS  template.JS
-		D3FlameGraphCSS template.CSS
-		Help            map[string]string
-	}{
-		Title:           file,
-		Legend:          legend,
-		Type:            profileType,
-		Unit:            profileUnit,
-		Types:           profileTypes,
-		Errors:          catcher.errors,
-		D3JS:            template.JS(d3.D3JS),
-		D3TipJS:         template.JS(d3tip.D3TipJS),
-		D3FlameGraphJS:  template.JS(d3flamegraph.D3FlameGraphJS),
-		D3FlameGraphCSS: template.CSS(d3flamegraph.D3FlameGraphCSS),
-		Data:            template.JS(b),
-		Help:            ui.help,
+	rpt, errList := ui.makeReport(w, req, []string{"svg"})
+	if rpt == nil {
+		return // error already reported
 	}
-	html := &bytes.Buffer{}
-	if err := flameGraphTemplate.Execute(html, data); err != nil {
-		http.Error(w, "internal template error", http.StatusInternalServerError)
-		ui.options.UI.PrintErr(err)
-		return
-	}
-	w.Header().Set("Content-Type", "text/html")
-	w.Write(html.Bytes())
+
+	ui.render(w, "/flamegraph", "flamegraph", rpt, errList, legend, webArgs{
+		Title:          file,
+		FlameGraph:     template.JS(b),
+		FlameGraphUnit: profileUnit,
+	})
 }

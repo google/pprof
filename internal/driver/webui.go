@@ -68,16 +68,18 @@ func (ec *errorCatcher) PrintErr(args ...interface{}) {
 
 // webArgs contains arguments passed to templates in webhtml.go.
 type webArgs struct {
-	BaseURL  string
-	Title    string
-	Errors   []string
-	Total    int64
-	Legend   []string
-	Help     map[string]string
-	Nodes    []string
-	HTMLBody template.HTML
-	TextBody string
-	Top      []report.TextItem
+	BaseURL        string
+	Title          string
+	Errors         []string
+	Total          int64
+	Legend         []string
+	Help           map[string]string
+	Nodes          []string
+	HTMLBody       template.HTML
+	TextBody       string
+	Top            []report.TextItem
+	FlameGraph     template.JS
+	FlameGraphUnit string
 }
 
 func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) error {
