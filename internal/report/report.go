@@ -342,6 +342,11 @@ func (fm functionMap) FindOrAdd(ni graph.NodeInfo) *profile.Function {
 
 // printAssembly prints an annotated assembly listing.
 func printAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
+	return PrintAssembly(w, rpt, obj, -1)
+}
+
+// PrintAssembly prints annotated disasssembly of rpt to w.
+func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) error {
 	o := rpt.options
 	prof := rpt.prof
 
@@ -357,12 +362,34 @@ func printAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 	fmt.Fprintln(w, "Total:", rpt.formatValue(rpt.total))
 	symbols := symbolsFromBinaries(prof, g, o.Symbol, address, obj)
 	symNodes := nodesPerSymbol(g.Nodes, symbols)
-	// Sort function names for printing.
-	var syms objSymbols
+
+	// Sort for printing.
+	var syms []*objSymbol
 	for s := range symNodes {
 		syms = append(syms, s)
 	}
-	sort.Sort(syms)
+	byName := func(a, b *objSymbol) bool {
+		if na, nb := a.sym.Name[0], b.sym.Name[0]; na != nb {
+			return na < nb
+		}
+		return a.sym.Start < b.sym.Start
+	}
+	if maxFuncs < 0 {
+		sort.Sort(orderSyms{syms, byName})
+	} else {
+		byFlatSum := func(a, b *objSymbol) bool {
+			suma, _ := symNodes[a].Sum()
+			sumb, _ := symNodes[b].Sum()
+			if suma != sumb {
+				return suma > sumb
+			}
+			return byName(a, b)
+		}
+		sort.Sort(orderSyms{syms, byFlatSum})
+		if len(syms) > maxFuncs {
+			syms = syms[:maxFuncs]
+		}
+	}
 
 	// Correlate the symbols from the binary with the profile samples.
 	for _, s := range syms {
@@ -492,23 +519,15 @@ type objSymbol struct {
 	base uint64
 }
 
-// objSymbols is a wrapper type to enable sorting of []*objSymbol.
-type objSymbols []*objSymbol
-
-func (o objSymbols) Len() int {
-	return len(o)
+// orderSyms is a wrapper type to sort []*objSymbol by a supplied comparator.
+type orderSyms struct {
+	v    []*objSymbol
+	less func(a, b *objSymbol) bool
 }
 
-func (o objSymbols) Less(i, j int) bool {
-	if namei, namej := o[i].sym.Name[0], o[j].sym.Name[0]; namei != namej {
-		return namei < namej
-	}
-	return o[i].sym.Start < o[j].sym.Start
-}
-
-func (o objSymbols) Swap(i, j int) {
-	o[i], o[j] = o[j], o[i]
-}
+func (o orderSyms) Len() int           { return len(o.v) }
+func (o orderSyms) Less(i, j int) bool { return o.less(o.v[i], o.v[j]) }
+func (o orderSyms) Swap(i, j int)      { o.v[i], o.v[j] = o.v[j], o.v[i] }
 
 // nodesPerSymbol classifies nodes into a group of symbols.
 func nodesPerSymbol(ns graph.Nodes, symbols []*objSymbol) map[*objSymbol]graph.Nodes {
@@ -685,11 +704,10 @@ func printComments(w io.Writer, rpt *Report) error {
 
 // TextItem holds a single text report entry.
 type TextItem struct {
-	Name              string
-	InlineLabel       string // Not empty if inlined
-	Flat, FlatPercent string
-	SumPercent        string
-	Cum, CumPercent   string
+	Name                  string
+	InlineLabel           string // Not empty if inlined
+	Flat, Cum             int64  // Raw values
+	FlatFormat, CumFormat string // Formatted values
 }
 
 // TextItems returns a list of text items from the report and a list
@@ -726,11 +744,10 @@ func TextItems(rpt *Report) ([]TextItem, []string) {
 		items = append(items, TextItem{
 			Name:        name,
 			InlineLabel: inl,
-			Flat:        rpt.formatValue(flat),
-			FlatPercent: percentage(flat, rpt.total),
-			SumPercent:  percentage(flatSum, rpt.total),
-			Cum:         rpt.formatValue(cum),
-			CumPercent:  percentage(cum, rpt.total),
+			Flat:        flat,
+			Cum:         cum,
+			FlatFormat:  rpt.formatValue(flat),
+			CumFormat:   rpt.formatValue(cum),
 		})
 	}
 	return items, labels
@@ -742,15 +759,17 @@ func printText(w io.Writer, rpt *Report) error {
 	fmt.Fprintln(w, strings.Join(labels, "\n"))
 	fmt.Fprintf(w, "%10s %5s%% %5s%% %10s %5s%%\n",
 		"flat", "flat", "sum", "cum", "cum")
+	var flatSum int64
 	for _, item := range items {
 		inl := item.InlineLabel
 		if inl != "" {
 			inl = " " + inl
 		}
+		flatSum += item.Flat
 		fmt.Fprintf(w, "%10s %s %s %10s %s  %s%s\n",
-			item.Flat, item.FlatPercent,
-			item.SumPercent,
-			item.Cum, item.CumPercent,
+			item.FlatFormat, percentage(item.Flat, rpt.total),
+			percentage(flatSum, rpt.total),
+			item.CumFormat, percentage(item.Cum, rpt.total),
 			item.Name, inl)
 	}
 	return nil
@@ -1219,6 +1238,9 @@ type Report struct {
 	options     *Options
 	formatValue func(int64) string
 }
+
+// Total returns the total number of samples in a report.
+func (rpt *Report) Total() int64 { return rpt.total }
 
 func abs64(i int64) int64 {
 	if i < 0 {

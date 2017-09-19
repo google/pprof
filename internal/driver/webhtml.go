@@ -16,21 +16,18 @@ package driver
 
 import "html/template"
 
-// webTemplate defines a collection of related templates:
-//    css
-//    header
-//    script
-//    graph
-//    top
-var webTemplate = template.Must(template.New("web").Parse(`
+// addTemplates adds a set of template definitions to templates.
+func addTemplates(templates *template.Template) {
+	template.Must(templates.Parse(`
 {{define "css"}}
 <style type="text/css">
-html, body {
+html {
   height: 100%;
   min-height: 100%;
   margin: 0px;
 }
 body {
+  margin: 0px;
   width: 100%;
   height: 100%;
   min-height: 100%;
@@ -107,13 +104,15 @@ button {
   margin-top: 0px;
   margin-bottom: 0px;
 }
-.menu button {
+.menu a, .menu button {
   display: block;
   width: 100%;
   margin: 0px;
+  padding: 2px 0px 2px 0px;
   text-align: left;
-  padding-left: 2px;
-  background-color: #fff;
+  text-decoration: none;
+  color: #000;
+  background-color: #f8f8f8;
   font-size: 12pt;
   border: none;
 }
@@ -123,28 +122,35 @@ button {
 .menu-header:hover .menu {
   display: block;
 }
-.menu button:hover {
+.menu a:hover, .menu button:hover {
   background-color: #ccc;
+}
+.menu a.disabled {
+  color: gray;
+  pointer-events: none;
 }
 #searchbox {
   margin-left: 10pt;
 }
-#topcontainer {
+#bodycontainer {
   width: 100%;
   height: 100%;
   max-height: 100%;
   overflow: scroll;
+  padding-top: 5px;
 }
 #toptable {
   border-spacing: 0px;
+  width: 100%;
+  padding-bottom: 1em;
 }
 #toptable tr th {
   border-bottom: 1px solid black;
   text-align: right;
   padding-left: 1em;
+  padding-top: 0.2em;
+  padding-bottom: 0.2em;
 }
-#toptable tr th:nth-child(6) { text-align: left; }
-#toptable tr th:nth-child(7) { text-align: left; }
 #toptable tr td {
   padding-left: 1em;
   font: monospace;
@@ -152,8 +158,19 @@ button {
   white-space: nowrap;
   cursor: default;
 }
-#toptable tr td:nth-child(6) { text-align: left; }
-#toptable tr td:nth-child(7) { text-align: left; }
+#toptable tr th:nth-child(6),
+#toptable tr th:nth-child(7),
+#toptable tr td:nth-child(6),
+#toptable tr td:nth-child(7) {
+  text-align: left;
+}
+#toptable tr td:nth-child(6) {
+  max-width: 30em;  // Truncate very long names
+  overflow: hidden;
+}
+#flathdr1, #flathdr2, #cumhdr1, #cumhdr2, #namehdr {
+  cursor: ns-resize;
+}
 .hilite {
   background-color: #ccf;
 }
@@ -171,35 +188,25 @@ button {
 <div class="menu-header">
 View
 <div class="menu">
-{{if (ne .Type "top")}}
-  <button title="{{.Help.top}}" id="topbtn">Top</button>
-{{end}}
-{{if (ne .Type "dot")}}
-  <button title="{{.Help.graph}}" id="graphbtn">Graph</button>
-{{end}}
+<a title="{{.Help.top}}"  href="/top" id="topbtn">Top</a>
+<a title="{{.Help.graph}}" href="/" id="graphbtn">Graph</a>
+<a title="{{.Help.peek}}" href="/peek" id="peek">Peek</a>
+<a title="{{.Help.list}}" href="/source" id="list">Source</a>
+<a title="{{.Help.disasm}}" href="/disasm" id="disasm">Disassemble</a>
 <hr>
 <button title="{{.Help.details}}" id="details">Details</button>
 </div>
 </div>
 
 <div class="menu-header">
-Functions
-<div class="menu">
-<button title="{{.Help.peek}}" id="peek">Peek</button>
-<button title="{{.Help.list}}" id="list">List</button>
-<button title="{{.Help.disasm}}" id="disasm">Disassemble</button>
-</div>
-</div>
-
-<div class="menu-header">
 Refine
 <div class="menu">
-<button title="{{.Help.focus}}" id="focus">Focus</button>
-<button title="{{.Help.ignore}}" id="ignore">Ignore</button>
-<button title="{{.Help.hide}}" id="hide">Hide</button>
-<button title="{{.Help.show}}" id="show">Show</button>
+<a title="{{.Help.focus}}" href="{{.BaseURL}}" id="focus">Focus</a>
+<a title="{{.Help.ignore}}" href="{{.BaseURL}}" id="ignore">Ignore</a>
+<a title="{{.Help.hide}}" href="{{.BaseURL}}" id="hide">Hide</a>
+<a title="{{.Help.show}}" href="{{.BaseURL}}" id="show">Show</a>
 <hr>
-<button title="{{.Help.reset}}" id="reset">Reset</button>
+<a title="{{.Help.reset}}" href="{{.BaseURL}}">Reset</a>
 </div>
 </div>
 
@@ -225,7 +232,7 @@ Refine
 {{template "header" .}}
 <div id="graphcontainer">
 <div id="graph">
-{{.Svg}}
+{{.HTMLBody}}
 </div>
 
 </div>
@@ -478,20 +485,10 @@ function viewer(baseUrl, nodes) {
     if (detailsText != null) detailsText.style.display = "none"
   }
 
-  function handleReset() { window.location.href = baseUrl }
-  function handleTop() { navigate("/top", "f", false) }
-  function handleGraph() { navigate("/", "f", false) }
-  function handleList() { navigate("/weblist", "f", true) }
-  function handleDisasm() { navigate("/disasm", "f", true) }
-  function handlePeek() { navigate("/peek", "f", true) }
-  function handleFocus() { navigate(baseUrl, "f", false) }
-  function handleShow() { navigate(baseUrl, "s", false) }
-  function handleIgnore() { navigate(baseUrl, "i", false) }
-  function handleHide() { navigate(baseUrl, "h", false) }
-
   function handleKey(e) {
     if (e.keyCode != 13) return
-    handleFocus()
+    window.location.href =
+        updateUrl(new URL({{.BaseURL}}, window.location.href), "f")
     e.preventDefault()
   }
 
@@ -614,40 +611,56 @@ function viewer(baseUrl, nodes) {
     return str.replace(/([\\\.?+*\[\](){}|^$])/g, '\\$1')
   }
 
-  // Navigate to specified path with current selection reflected
-  // in the named parameter.
-  function navigate(path, param, newWindow) {
+  // Update id's href to reflect current selection whenever it is
+  // liable to be followed.
+  function makeLinkDynamic(id) {
+    const elem = document.getElementById(id)
+    if (elem == null) return
+
+    // Most links copy current selection into the "f" parameter,
+    // but Refine menu links are different.
+    let param = "f"
+    if (id == "ignore") param = "i"
+    if (id == "hide") param = "h"
+    if (id == "show") param = "s"
+
+    // We update on mouseenter so middle-click/right-click work properly.
+    elem.addEventListener("mouseenter", updater)
+    elem.addEventListener("touchstart", updater)
+
+    function updater() {
+      elem.href = updateUrl(new URL(elem.href), param)
+    }
+  }
+
+  // Update URL to reflect current selection.
+  function updateUrl(url, param) {
+    url.hash = ""
+
     // The selection can be in one of two modes: regexp-based or
     // list-based.  Construct regular expression depending on mode.
-    let re = regexpActive ? search.value : ""
-    if (!regexpActive) {
-      selected.forEach(function(v, key) {
-        if (re != "") re += "|"
-        re += quotemeta(nodes[key])
-      })
-    }
+    let re = regexpActive
+        ? search.value
+        : Array.from(selected.keys()).map(key => quotemeta(nodes[key])).join("|")
 
-    const url = new URL(window.location.href)
-    url.pathname = path
-    url.hash = ""
+    // Copy params from this page's URL.
+    const params = url.searchParams
+    for (const p of new URLSearchParams(window.location.search)) {
+      params.set(p[0], p[1])
+    }
 
     if (re != "") {
       // For focus/show, forget old parameter.  For others, add to re.
-      const params = url.searchParams
       if (param != "f" && param != "s" && params.has(param)) {
         const old = params.get(param)
-        if (old != "") {
+         if (old != "") {
           re += "|" + old
         }
       }
       params.set(param, re)
     }
 
-    if (newWindow) {
-      window.open(url.toString(), "_blank")
-    } else {
-      window.location.href = url.toString()
-    }
+    return url.toString()
   }
 
   function handleTopClick(e) {
@@ -681,10 +694,10 @@ function viewer(baseUrl, nodes) {
     const enable = (search.value != "" || selected.size != 0)
     if (buttonsEnabled == enable) return
     buttonsEnabled = enable
-    for (const id of ["peek", "list", "disasm", "focus", "ignore", "hide", "show"]) {
-      const btn = document.getElementById(id)
-      if (btn != null) {
-        btn.disabled = !enable
+    for (const id of ["focus", "ignore", "hide", "show"]) {
+      const link = document.getElementById(id)
+      if (link != null) {
+        link.classList.toggle("disabled", !enable)
       }
     }
   }
@@ -701,6 +714,10 @@ function viewer(baseUrl, nodes) {
     toptable.addEventListener("touchstart", handleTopClick)
   }
 
+  const ids = ["topbtn", "graphbtn", "peek", "list", "disasm",
+               "focus", "ignore", "hide", "show"]
+  ids.forEach(makeLinkDynamic)
+
   // Bind action to button with specified id.
   function addAction(id, action) {
     const btn = document.getElementById(id)
@@ -712,19 +729,15 @@ function viewer(baseUrl, nodes) {
 
   addAction("details", handleDetails)
   addAction("closedetails", handleCloseDetails)
-  addAction("topbtn", handleTop)
-  addAction("graphbtn", handleGraph)
-  addAction("reset", handleReset)
-  addAction("peek", handlePeek)
-  addAction("list", handleList)
-  addAction("disasm", handleDisasm)
-  addAction("focus", handleFocus)
-  addAction("ignore", handleIgnore)
-  addAction("hide", handleHide)
-  addAction("show", handleShow)
 
   search.addEventListener("input", handleSearch)
   search.addEventListener("keydown", handleKey)
+
+  // Give initial focus to main container so it can be scrolled using keys.
+  const main = document.getElementById("bodycontainer")
+  if (main) {
+    main.focus()
+  }
 }
 </script>
 {{end}}
@@ -736,23 +749,163 @@ function viewer(baseUrl, nodes) {
 <meta charset="utf-8">
 <title>{{.Title}}</title>
 {{template "css" .}}
+<style type="text/css">
+</style>
 </head>
 <body>
 
 {{template "header" .}}
 
-<div id="topcontainer">
+<div id="bodycontainer">
 <table id="toptable">
-<tr><th>Flat<th>Flat%<th>Sum%<th>Cum<th>Cum%<th>Name<th>Inlined?</tr>
-{{range $i,$e := .Top}}
-  <tr id="node{{$i}}"><td>{{$e.Flat}}<td>{{$e.FlatPercent}}<td>{{$e.SumPercent}}<td>{{$e.Cum}}<td>{{$e.CumPercent}}<td>{{$e.Name}}<td>{{$e.InlineLabel}}</tr>
-{{end}}
+<tr>
+<th id="flathdr1">Flat
+<th id="flathdr2">Flat%
+<th>Sum%
+<th id="cumhdr1">Cum
+<th id="cumhdr2">Cum%
+<th id="namehdr">Name
+<th>Inlined?</tr>
+<tbody id="rows">
+</tbody>
 </table>
 </div>
 
 {{template "script" .}}
-<script>viewer({{.BaseURL}}, {{.Nodes}})</script>
+<script>
+function makeTopTable(total, entries) {
+  const rows = document.getElementById("rows")
+  if (rows == null) return
+
+  // Store initial index in each entry so we have stable node ids for selection.
+  for (let i = 0; i < entries.length; i++) {
+    entries[i].Id = "node" + i
+  }
+
+  // Which column are we currently sorted by and in what order?
+  let currentColumn = ""
+  let descending = false
+  sortBy("Flat")
+
+  function sortBy(column) {
+    // Update sort criteria
+    if (column == currentColumn) {
+      descending = !descending  // Reverse order
+    } else {
+      currentColumn = column
+      descending = (column != "Name")
+    }
+
+    // Sort according to current criteria.
+    function cmp(a, b) {
+      const av = a[currentColumn]
+      const bv = b[currentColumn]
+      if (av < bv) return -1
+      if (av > bv) return +1
+      return 0
+    }
+    entries.sort(cmp)
+    if (descending) entries.reverse()
+
+    function addCell(tr, val) {
+      const td = document.createElement('td')
+      td.textContent = val
+      tr.appendChild(td)
+    }
+
+    function percent(v) {
+      return (v * 100.0 / total).toFixed(2) + "%"
+    }
+
+    // Generate rows
+    const fragment = document.createDocumentFragment()
+    let sum = 0
+    for (const row of entries) {
+      const tr = document.createElement('tr')
+      tr.id = row.Id
+      sum += row.Flat
+      addCell(tr, row.FlatFormat)
+      addCell(tr, percent(row.Flat))
+      addCell(tr, percent(sum))
+      addCell(tr, row.CumFormat)
+      addCell(tr, percent(row.Cum))
+      addCell(tr, row.Name)
+      addCell(tr, row.InlineLabel)
+      fragment.appendChild(tr)
+    }
+
+    rows.textContent = ''  // Remove old rows
+    rows.appendChild(fragment)
+  }
+
+  // Make different column headers trigger sorting.
+  function bindSort(id, column) {
+    const hdr = document.getElementById(id)
+    if (hdr == null) return
+    const fn = function() { sortBy(column) }
+    hdr.addEventListener("click", fn)
+    hdr.addEventListener("touch", fn)
+  }
+  bindSort("flathdr1", "Flat")
+  bindSort("flathdr2", "Flat")
+  bindSort("cumhdr1", "Cum")
+  bindSort("cumhdr2", "Cum")
+  bindSort("namehdr", "Name")
+}
+
+viewer({{.BaseURL}}, {{.Nodes}})
+makeTopTable({{.Total}}, {{.Top}})
+</script>
+</body>
+</html>
+{{end}}
+
+{{define "sourcelisting" -}}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{.Title}}</title>
+{{template "css" .}}
+{{template "weblistcss" .}}
+{{template "weblistjs" .}}
+</head>
+<body>
+
+{{template "header" .}}
+
+<div id="bodycontainer">
+{{.HTMLBody}}
+</div>
+
+{{template "script" .}}
+<script>viewer({{.BaseURL}}, null)</script>
+</body>
+</html>
+{{end}}
+
+{{define "plaintext" -}}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{.Title}}</title>
+{{template "css" .}}
+</head>
+<body>
+
+{{template "header" .}}
+
+<div id="bodycontainer">
+<pre>
+{{.TextBody}}
+</pre>
+</div>
+
+{{template "script" .}}
+<script>viewer({{.BaseURL}}, null)</script>
 </body>
 </html>
 {{end}}
 `))
+}
