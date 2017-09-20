@@ -79,6 +79,9 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Creating empty node list
+	var nodes []string
+
 	// Creating empty flame graph structure
 	rootNode := flameGraphNode{"root", 0, make(map[string]*flameGraphNode)}
 
@@ -88,6 +91,7 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 		for _, lo := range sa.Location {
 			for _, li := range lo.Line {
 				stack = append(stack, li.Function.Name)
+				nodes = append(nodes, li.Function.Name)
 			}
 		}
 		value := sa.Value[index]
@@ -109,5 +113,6 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 		Title:          file,
 		FlameGraph:     template.JS(b),
 		FlameGraphUnit: prof.SampleType[index].Unit,
+		Nodes:          nodes,
 	})
 }
