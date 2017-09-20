@@ -1,6 +1,6 @@
 // A D3.js plugin that produces flame graphs from hierarchical data.
 // https://github.com/spiermar/d3-flame-graph
-// Version 1.0.9
+// Version 1.0.10
 // See LICENSE file for license details
 
 package d3flamegraph
@@ -181,13 +181,7 @@ const D3FLAMEGRAPH = `
     }
 
     function hide(d) {
-      if(!d.data.original) {
-        d.data.original = value(d);
-      }
-      d.data.v = 0;
-      if (d.data.value) {
-        delete d.data.value;
-      }
+      d.data.hide = true;
       if(children(d)) {
         children(d).forEach(hide);
       }
@@ -195,9 +189,7 @@ const D3FLAMEGRAPH = `
 
     function show(d) {
       d.data.fade = false;
-      if(d.data.original) {
-        d.data.v = d.data.original;
-      }
+      d.data.hide = false;
       if(children(d)) {
         children(d).forEach(show);
       }
@@ -310,7 +302,7 @@ const D3FLAMEGRAPH = `
 
         if (sort) root.sort(doSort);
         root.sum(function(d) {
-          if (d.fade || !value(d)) {
+          if (d.fade || d.hide) {
             return 0;
           }
           // The node's self value is its total value minus all children.
