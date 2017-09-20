@@ -1242,6 +1242,9 @@ type Report struct {
 // Total returns the total number of samples in a report.
 func (rpt *Report) Total() int64 { return rpt.total }
 
+// Prof returns the report profile.
+func (rpt *Report) Prof() *profile.Profile { return rpt.prof }
+
 func abs64(i int64) int64 {
 	if i < 0 {
 		return -i

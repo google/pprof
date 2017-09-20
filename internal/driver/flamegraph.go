@@ -16,11 +16,10 @@ package driver
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"net/http"
-	"path/filepath"
-	"time"
+
+	"github.com/google/pprof/internal/report"
 )
 
 type flameGraphNode struct {
@@ -61,29 +60,30 @@ func (n *flameGraphNode) MarshalJSON() ([]byte, error) {
 
 // flamegraph generates a web page containing a flamegraph.
 func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
-	// Capture any error messages generated while generating a report.
-	catcher := &errorCatcher{UI: ui.options.UI}
-	options := *ui.options
-	options.UI = catcher
+	rpt, errList := ui.makeReport(w, req, []string{"svg"})
+	if rpt == nil {
+		return // error already reported
+	}
+
+	// Obtaining prof from report
+	prof := rpt.Prof()
 
 	// Get sample_index from variables
 	si := pprofVariables["sample_index"].value
 
-	// Get query parameters
-	t := req.URL.Query().Get("t")
-
-	// Defaulting to first SampleType in profile
-	index := 0
-
-	if t != "" {
-		index, _ = ui.prof.SampleIndexByName(t)
-	} else if si != "" {
-		index, _ = ui.prof.SampleIndexByName(si)
+	// Getting default index
+	index, err := ui.prof.SampleIndexByName(si)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ui.options.UI.PrintErr(err)
+		return
 	}
 
+	// Creating empty flame graph structure
 	rootNode := flameGraphNode{"root", 0, make(map[string]*flameGraphNode)}
 
-	for _, sa := range ui.prof.Sample {
+	// Walking sample structure and creating flame graph
+	for _, sa := range prof.Sample {
 		stack := []string{}
 		for _, lo := range sa.Location {
 			for _, li := range lo.Line {
@@ -94,6 +94,7 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 		rootNode.add(&stack, len(stack)-1, value)
 	}
 
+	// JSON marshalling flame graph
 	b, err := rootNode.MarshalJSON()
 	if err != nil {
 		http.Error(w, "error serializing flame graph", http.StatusInternalServerError)
@@ -101,48 +102,12 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Looking for profile metadata
-	const layout = "Jan 2, 2006 at 3:04pm (MST)"
-	file := "unknown"
-	if ui.prof.Mapping[0].File != "" {
-		file = filepath.Base(ui.prof.Mapping[0].File)
-	}
-	profileType := ui.prof.SampleType[index].Type
-	profileUnit := ui.prof.SampleType[index].Unit
-
-	profileTime := time.Unix(0, ui.prof.TimeNanos).Format(layout)
-	profileDuration := fmt.Sprintf("%d ns", ui.prof.DurationNanos)
-	if ui.prof.DurationNanos > 1000000000 {
-		profileDuration = fmt.Sprintf("%f s", float64(ui.prof.DurationNanos)/1000000000)
-	}
-
-	// Creating list of profile types
-	profileTypes := []string{}
-	for _, s := range ui.prof.SampleType {
-		profileTypes = append(profileTypes, s.Type)
-	}
-
-	legendUnit := profileUnit
-	if legendUnit == "nanoseconds" {
-		legendUnit = "seconds"
-	}
-
-	legend := []string{
-		"File: " + file,
-		"Type: " + profileType,
-		"Unit: " + legendUnit,
-		"Time: " + profileTime,
-		"Duration: " + profileDuration,
-	}
-
-	rpt, errList := ui.makeReport(w, req, []string{"svg"})
-	if rpt == nil {
-		return // error already reported
-	}
+	legend := report.ProfileLabels(rpt)
+	file := getFromLegend(legend, "File: ", "unknown")
 
 	ui.render(w, "/flamegraph", "flamegraph", rpt, errList, legend, webArgs{
 		Title:          file,
 		FlameGraph:     template.JS(b),
-		FlameGraphUnit: profileUnit,
+		FlameGraphUnit: prof.SampleType[index].Unit,
 	})
 }
