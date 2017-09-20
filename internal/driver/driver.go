@@ -291,59 +291,13 @@ func reportOptions(p *profile.Profile, numLabelUnits map[string]string, vars var
 // If units are encountered for a particular key, the unit is then inferred
 // based on the key.
 func identifyNumLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string {
-	numLabelUnits := map[string]string{}
-	unusedUnits := map[string]map[string]bool{}
+	numLabelUnits, ignoredUnits := p.NumLabelUnits()
 
-	// determine units based on numeric tags for each sample
-	for _, s := range p.Sample {
-		for k, vs := range s.NumLabel {
-			units := s.NumUnit[k]
-			if len(units) != len(vs) {
-				if _, ok := numLabelUnits[k]; !ok {
-					numLabelUnits[k] = ""
-				} else {
-					unusedUnits[k] = map[string]bool{"": true}
-				}
-				continue
-			}
-			for _, unit := range units {
-				if wantUnit, ok := numLabelUnits[k]; !ok {
-					numLabelUnits[k] = unit
-				} else if wantUnit != unit {
-					if v, ok := unusedUnits[k]; ok {
-						v[unit] = true
-					} else {
-						unusedUnits[k] = map[string]bool{unit: true}
-					}
-				}
-			}
-		}
-	}
-
-	// infer units for keys without any units associated with
-	// numeric tag values
-	for key := range numLabelUnits {
-		if unit := numLabelUnits[key]; unit == "" {
-			switch key {
-			case "alignment", "request":
-				numLabelUnits[key] = "bytes"
-			default:
-				numLabelUnits[key] = key
-			}
-		}
-	}
-
-	// print errors for tags with multiple units associated with
-	// a single key
-	for k, v := range unusedUnits {
-		units := make([]string, len(v))
-		i := 0
-		for unit := range v {
-			units[i] = unit
-			i++
-		}
+	// Print errors for tags with multiple units associated with
+	// a single key.
+	for k, units := range ignoredUnits {
 		sort.Strings(units)
-		ui.PrintErr("For tag ", k, " used unit ", numLabelUnits[k], " also encountered unit(s) ", strings.Join(units, ","))
+		ui.PrintErr(fmt.Sprintf("For tag %s used unit %s, also encountered unit(s) %s", k, numLabelUnits[k], strings.Join(units, ",")))
 	}
 	return numLabelUnits
 }

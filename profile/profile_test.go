@@ -26,6 +26,7 @@ import (
 
 	"github.com/google/pprof/internal/proftest"
 	"reflect"
+	"sort"
 )
 
 func TestParse(t *testing.T) {
@@ -809,6 +810,125 @@ func locationHash(s *Sample) string {
 		}
 	}
 	return tb
+}
+
+func TestInferUnits(t *testing.T) {
+	var tagFilterTests = []struct {
+		name             string
+		tagVals          []map[string][]int64
+		tagUnits         []map[string][]string
+		wantUnits        map[string]string
+		wantIgnoredUnits map[string][]string
+	}{
+		{
+			"test1",
+			[]map[string][]int64{{"key1": {131072}, "key2": {128}}},
+			[]map[string][]string{{"key1": {"bytes"}, "key2": {"kilobytes"}}},
+			map[string]string{"key1": "bytes", "key2": "kilobytes"},
+			map[string][]string{},
+		},
+		{
+			"test2",
+			[]map[string][]int64{{"key1": {8}}},
+			[]map[string][]string{{"key1": {"bytes"}}},
+			map[string]string{"key1": "bytes"},
+			map[string][]string{},
+		},
+		{
+			"test3",
+			[]map[string][]int64{{"bytes": {8}}},
+			[]map[string][]string{nil},
+			map[string]string{"bytes": "bytes"},
+			map[string][]string{},
+		},
+		{
+			"test4",
+			[]map[string][]int64{{"kilobytes": {8}}},
+			[]map[string][]string{nil},
+			map[string]string{"kilobytes": "kilobytes"},
+			map[string][]string{},
+		},
+		{
+			"test5",
+			[]map[string][]int64{{"request": {8}}},
+			[]map[string][]string{nil},
+			map[string]string{"request": "bytes"},
+			map[string][]string{},
+		},
+		{
+			"test6",
+			[]map[string][]int64{{"alignment": {8}}},
+			[]map[string][]string{nil},
+			map[string]string{"alignment": "bytes"},
+			map[string][]string{},
+		},
+		{
+			"test7",
+			[]map[string][]int64{{"key1": {8, 8}}},
+			[]map[string][]string{{"key1": {"bytes", "kilobytes"}}},
+			map[string]string{"key1": "bytes"},
+			map[string][]string{"key1": {"kilobytes"}},
+		},
+		{
+			"test8",
+			[]map[string][]int64{{"key1": {8}}, {"key1": {8}}},
+			[]map[string][]string{{"key1": {"bytes"}}, {"key1": {"kilobytes"}}},
+			map[string]string{"key1": "bytes"},
+			map[string][]string{"key1": {"kilobytes"}},
+		},
+		{
+			"test9",
+			[]map[string][]int64{{
+				"alignment": {8},
+				"request":   {8},
+				"bytes":     {8},
+			}},
+			[]map[string][]string{{
+				"alignment": {"seconds"},
+				"request":   {"minutes"},
+				"bytes":     {"hours"},
+			}},
+			map[string]string{
+				"alignment": "seconds",
+				"request":   "minutes",
+				"bytes":     "hours",
+			},
+			map[string][]string{},
+		},
+	}
+	for _, test := range tagFilterTests {
+		p := &Profile{Sample: make([]*Sample, len(test.tagVals))}
+		for i, numLabel := range test.tagVals {
+			s := Sample{
+				NumLabel: numLabel,
+				NumUnit:  test.tagUnits[i],
+			}
+			p.Sample[i] = &s
+		}
+		units, ignoredUnits := p.NumLabelUnits()
+		for key, wantUnit := range test.wantUnits {
+			unit := units[key]
+			if wantUnit != unit {
+				t.Errorf("%s: for key %s, want unit %s, got unit %s", test.name, key, wantUnit, unit)
+			}
+		}
+		for key, ignored := range ignoredUnits {
+			wantIgnored := test.wantIgnoredUnits[key]
+			sort.Strings(wantIgnored)
+			sort.Strings(ignored)
+			if len(wantIgnored) != len(ignored) {
+				t.Errorf("%s: for key %s, want ignored units %v, got ignored units %v", test.name, wantIgnored, ignored)
+				continue
+			}
+			for i, want := range wantIgnored {
+				got := ignored[i]
+				if want != got {
+					t.Errorf("%s: for key %s, want ignored units %v, got ignored units %v", test.name, wantIgnored, ignored)
+					break
+				}
+			}
+		}
+	}
 }
 
 func TestSetMain(t *testing.T) {

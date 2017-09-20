@@ -438,6 +438,65 @@ func (p *Profile) Aggregate(inlineFrame, function, filename, linenumber, address
 	return p.CheckValid()
 }
 
+func (p *Profile) NumLabelUnits() (map[string]string, map[string][]string) {
+	numLabelUnits := map[string]string{}
+	ignoredUnits := map[string]map[string]bool{}
+
+	// Determine units based on numeric tags for each sample.
+	for _, s := range p.Sample {
+		for k, vs := range s.NumLabel {
+			units := s.NumUnit[k]
+			if len(units) != len(vs) {
+				if _, ok := numLabelUnits[k]; !ok {
+					numLabelUnits[k] = ""
+				} else {
+					ignoredUnits[k] = map[string]bool{"": true}
+				}
+				continue
+			}
+			for _, unit := range units {
+				if wantUnit, ok := numLabelUnits[k]; !ok {
+					numLabelUnits[k] = unit
+				} else if wantUnit != unit {
+					if v, ok := ignoredUnits[k]; ok {
+						v[unit] = true
+					} else {
+						ignoredUnits[k] = map[string]bool{unit: true}
+					}
+				}
+			}
+		}
+	}
+
+	// Infer units for keys without any units associated with
+	// numeric tag values.
+	for key := range numLabelUnits {
+		if unit := numLabelUnits[key]; unit == "" {
+			switch key {
+			case "alignment", "request":
+				numLabelUnits[key] = "bytes"
+			default:
+				numLabelUnits[key] = key
+			}
+		}
+	}
+
+	// Copy ignored units into more readable format
+	unitsIgnored := make(map[string][]string, len(ignoredUnits))
+	for key, values := range ignoredUnits {
+		fmt.Printf("%v", values)
+		units := make([]string, len(values))
+		i := 0
+		for unit := range values {
+			units[i] = unit
+			i++
+		}
+		unitsIgnored[key] = units
+	}
+
+	return numLabelUnits, unitsIgnored
+}
+
 // String dumps a text representation of a profile. Intended mainly
 // for debugging purposes.
 func (p *Profile) String() string {

@@ -1019,7 +1019,7 @@ func TestTagFilter(t *testing.T) {
 	}
 }
 
-func TestInferUnits(t *testing.T) {
+func TestIdentifyNumLabelUnits(t *testing.T) {
 	var tagFilterTests = []struct {
 		name      string
 		tagVals   []map[string][]int64
@@ -1035,56 +1035,21 @@ func TestInferUnits(t *testing.T) {
 			"",
 		},
 		{
-			"test2",
-			[]map[string][]int64{{"key1": {8}}},
-			[]map[string][]string{{"key1": {"bytes"}}},
-			map[string]string{"key1": "bytes"},
-			"",
-		},
-		{
 			"test3",
-			[]map[string][]int64{{"bytes": {8}}},
-			[]map[string][]string{nil},
-			map[string]string{"bytes": "bytes"},
-			"",
-		},
-		{
-			"test4",
-			[]map[string][]int64{{"kilobytes": {8}}},
-			[]map[string][]string{nil},
-			map[string]string{"kilobytes": "kilobytes"},
-			"",
-		},
-		{
-			"test5",
-			[]map[string][]int64{{"request": {8}}},
-			[]map[string][]string{nil},
-			map[string]string{"request": "bytes"},
-			"",
-		},
-		{
-			"test6",
-			[]map[string][]int64{{"alignment": {8}}},
-			[]map[string][]string{nil},
-			map[string]string{"alignment": "bytes"},
-			"",
-		},
-		{
-			"test7",
 			[]map[string][]int64{{"key1": {8, 8}}},
 			[]map[string][]string{{"key1": {"bytes", "kilobytes"}}},
 			map[string]string{"key1": "bytes"},
-			"(For tag key1 used unit bytes also encountered unit\\(s\\) kilobytes)",
+			"(For tag key1 used unit bytes, also encountered unit\\(s\\) kilobytes)",
 		},
 		{
-			"test8",
+			"test4",
 			[]map[string][]int64{{"key1": {8}}, {"key1": {8}}},
 			[]map[string][]string{{"key1": {"bytes"}}, {"key1": {"kilobytes"}}},
 			map[string]string{"key1": "bytes"},
-			"(For tag key1 used unit bytes also encountered unit\\(s\\) kilobytes)",
+			"(For tag key1 used unit bytes, also encountered unit\\(s\\) kilobytes)",
 		},
 		{
-			"test9",
+			"test5",
 			[]map[string][]int64{{
 				"alignment": {8},
 				"request":   {8},
