@@ -1,6 +1,6 @@
 // A D3.js plugin that produces flame graphs from hierarchical data.
 // https://github.com/spiermar/d3-flame-graph
-// Version 1.0.6
+// Version 1.0.9
 // See LICENSE file for license details
 
 package d3flamegraph
@@ -9,6 +9,7 @@ package d3flamegraph
 const D3FLAMEGRAPH = `
 {{define "d3flamegraphscript"}}
 <script>
+// Copyright 2017 Martin Spier <spiermar@gmail.com>
 (function() {
   'use strict';
 
@@ -84,6 +85,16 @@ const D3FLAMEGRAPH = `
   };
   /*jshint eqnull:false */
 
+  // Node/CommonJS - require D3
+  if (typeof(module) !== 'undefined' && typeof(exports) !== 'undefined' && typeof(d3) == 'undefined') {
+      d3 = require('d3');
+  }
+
+  // Node/CommonJS - require d3-tip
+  if (typeof(module) !== 'undefined' && typeof(exports) !== 'undefined' && typeof(d3.tip) == 'undefined') {
+      d3.tip = require('d3-tip');
+  }
+
   function flameGraph() {
 
     var w = 960, // graph width
@@ -97,7 +108,8 @@ const D3FLAMEGRAPH = `
       sort = false,
       reversed = false, // reverse the graph direction
       clickHandler = null,
-      minFrameSize = 0;
+      minFrameSize = 0,
+      details = null;
 
     var tip = d3.tip()
       .direction("s")
@@ -124,7 +136,6 @@ const D3FLAMEGRAPH = `
     };
 
     function setDetails(t) {
-      var details = document.getElementById("details");
       if (details)
         details.innerHTML = t;
     }
@@ -293,18 +304,17 @@ const D3FLAMEGRAPH = `
     }
 
     function update() {
-
       selection.each(function(root) {
         var x = d3.scaleLinear().range([0, w]),
             y = d3.scaleLinear().range([0, c]);
 
         if (sort) root.sort(doSort);
         root.sum(function(d) {
-          if (d.fade) {
+          if (d.fade || !value(d)) {
             return 0;
           }
           // The node's self value is its total value minus all children.
-          var v = value(d) || 0;
+          var v = value(d);
           if (children(d)) {
             var c = children(d);
             for (var i = 0; i < c.length; i++) {
@@ -388,7 +398,7 @@ const D3FLAMEGRAPH = `
     function merge(data, samples) {
       samples.forEach(function (sample) {
         var node = data.find(function (element) {
-          return (name(element) === name(sample));
+          return (element.name === sample.name);
         });
 
         if (node) {
@@ -424,7 +434,9 @@ const D3FLAMEGRAPH = `
     }
 
     function chart(s) {
-      var root = d3.hierarchy(s.datum(), function(d) { return children(d); });
+      var root = d3.hierarchy(
+        s.datum(), function(d) { return children(d); }
+      );
       injectIds(root);
       selection = s.datum(root);
 
@@ -560,6 +572,7 @@ const D3FLAMEGRAPH = `
       selection.each(function (root) {
         merge([root.data], [samples]);
         newRoot = d3.hierarchy(root.data, function(d) { return children(d); });
+        injectIds(newRoot);
       });
       selection = selection.datum(newRoot);
       update();
@@ -577,15 +590,21 @@ const D3FLAMEGRAPH = `
       return chart;
     };
 
+    chart.details = function (_) {
+      if (!arguments.length) { return details; }
+      details = _;
+      return chart;
+    };
+
     return chart;
   }
 
-  if (typeof module !== 'undefined' && module.exports){
-		module.exports = flameGraph;
-	}
-	else {
-		d3.flameGraph = flameGraph;
-	}
+  // Node/CommonJS exports
+  if (typeof(module) !== 'undefined' && typeof(exports) !== 'undefined') {
+    module.exports = flameGraph;
+  } else {
+    d3.flameGraph = flameGraph;
+  }
 })();
 </script>
 {{end}}
