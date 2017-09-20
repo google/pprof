@@ -51,6 +51,8 @@ func TestWebInterface(t *testing.T) {
 				ui.peek(w, r)
 			case "/source":
 				ui.source(w, r)
+			case "/flamegraph":
+				ui.flamegraph(w, r)
 			}
 		}))
 	defer server.Close()
@@ -74,6 +76,7 @@ func TestWebInterface(t *testing.T) {
 			[]string{"300ms.*F1", "200ms.*300ms.*F2"}, false},
 		{"/disasm?f=" + url.QueryEscape("F[12]"),
 			[]string{"f1:asm", "f2:asm"}, false},
+		{"/flamegraph", []string{"File: testbin", "\"n\":\"root\"", "\"n\":\"F1\"", "function tip", "function flameGraph", "function hierarchy"}, false},
 	}
 	for _, c := range testcases {
 		if c.needDot && !haveDot {
@@ -255,50 +258,4 @@ func TestIsLocalHost(t *testing.T) {
 			t.Errorf("host %s from %s not considered local", host, s)
 		}
 	}
-}
-
-func TestFlameGraph(t *testing.T) {
-	prof := makeFakeProfile()
-	ui := &webInterface{
-		prof:    prof,
-		options: &plugin.Options{Obj: fakeObjTool{}},
-		help:    make(map[string]string),
-	}
-
-	// Start test server.
-	server := httptest.NewServer(http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			ui.flamegraph(w, r)
-		}))
-	defer server.Close()
-
-	type testCase struct {
-		path string
-		want []string
-	}
-	testcases := []testCase{
-		{"/flamegraph", []string{"File: testbin", "\"n\":\"root\"", "Unit: milliseconds", "\"n\":\"F1\"", "function tip", "function flameGraph", "function hierarchy"}},
-		{"/flamegraph?t=cpu", []string{"File: testbin", "\"n\":\"root\"", "Unit: milliseconds", "\"n\":\"F1\"", "function tip", "function flameGraph", "function hierarchy"}},
-	}
-	for _, c := range testcases {
-		res, err := http.Get(server.URL + c.path)
-		if err != nil {
-			t.Error("could not fetch", c.path, err)
-			continue
-		}
-		data, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			t.Error("could not read response", c.path, err)
-			continue
-		}
-		result := string(data)
-		for _, w := range c.want {
-			if match, _ := regexp.MatchString(w, result); !match {
-				t.Errorf("response for %s does not match "+
-					"expected pattern '%s'; "+
-					"actual result:\n%s", c.path, w, result)
-			}
-		}
-	}
-
 }
