@@ -285,11 +285,6 @@ func reportOptions(p *profile.Profile, numLabelUnits map[string]string, vars var
 
 // identifyNumLabelUnits returns a map of numeric label keys to the units
 // associated with those keys.
-// Unit for a given key is the first encountered unit for that key. If multiple
-// units are encountered for values paired with a particular key, then the first
-// unit encountered is used and an error message is displayed.
-// If units are encountered for a particular key, the unit is then inferred
-// based on the key.
 func identifyNumLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string {
 	numLabelUnits, ignoredUnits := p.NumLabelUnits()
 

@@ -438,6 +438,15 @@ func (p *Profile) Aggregate(inlineFrame, function, filename, linenumber, address
 	return p.CheckValid()
 }
 
+// NumLabelUnits returns a map of numeric label keys to the units
+// associated with those keys and a map of those keys to any units
+// that were encountered but not used.
+// Unit for a given key is the first encountered unit for that key. If multiple
+// units are encountered for values paired with a particular key, then the first
+// unit encountered is used and all other units are returned in map of
+// ignored units
+// If no units are encountered for a particular key, the unit is then inferred
+// based on the key.
 func (p *Profile) NumLabelUnits() (map[string]string, map[string][]string) {
 	numLabelUnits := map[string]string{}
 	ignoredUnits := map[string]map[string]bool{}
