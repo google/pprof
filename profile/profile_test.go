@@ -917,13 +917,13 @@ func TestInferUnits(t *testing.T) {
 			sort.Strings(wantIgnored)
 			sort.Strings(ignored)
 			if len(wantIgnored) != len(ignored) {
-				t.Errorf("%s: for key %s, want ignored units %v, got ignored units %v", test.name, wantIgnored, ignored)
+				t.Errorf("%s: for key %s, want ignored units %v, got ignored units %v", test.name, key, wantIgnored, ignored)
 				continue
 			}
 			for i, want := range wantIgnored {
 				got := ignored[i]
 				if want != got {
-					t.Errorf("%s: for key %s, want ignored units %v, got ignored units %v", test.name, wantIgnored, ignored)
+					t.Errorf("%s: for key %s, want ignored units %v, got ignored units %v", test.name, key, wantIgnored, ignored)
 					break
 				}
 			}
