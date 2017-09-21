@@ -34,6 +34,7 @@ type source struct {
 	Timeout      int
 	Symbolize    string
 	HTTPHostport string
+	Comment      string
 }
 
 // Parse parses the command lines through the specified flags package
@@ -43,9 +44,11 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	flag := o.Flagset
 	// Comparisons.
 	flagBase := flag.StringList("base", "", "Source for base profile for comparison")
-	// Internal options.
+	// Source options.
 	flagSymbolize := flag.String("symbolize", "", "Options for profile symbolization")
 	flagBuildID := flag.String("buildid", "", "Override build id for first mapping")
+	flagTimeout := flag.Int("timeout", -1, "Timeout in seconds for fetching a profile")
+	flagAddComment := flag.String("add_comment", "", "Annotation string to record in the profile")
 	// CPU profile options
 	flagSeconds := flag.Int("seconds", -1, "Length of time for dynamic profiles")
 	// Heap profile options
@@ -59,7 +62,6 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	flagMeanDelay := flag.Bool("mean_delay", false, "Display mean delay at each region")
 	flagTools := flag.String("tools", os.Getenv("PPROF_TOOLS"), "Path for object tool pathnames")
 
-	flagTimeout := flag.Int("timeout", -1, "Timeout in seconds for fetching a profile")
 	flagHTTP := flag.String("http", "", "Present interactive web based UI at the specified http host:port")
 
 	// Flags used during command processing
@@ -135,6 +137,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		Timeout:      *flagTimeout,
 		Symbolize:    *flagSymbolize,
 		HTTPHostport: *flagHTTP,
+		Comment:      *flagAddComment,
 	}
 
 	for _, s := range *flagBase {
@@ -278,6 +281,8 @@ var usageMsgSrc = "\n\n" +
 	"    -seconds              Duration for time-based profile collection\n" +
 	"    -timeout              Timeout in seconds for profile collection\n" +
 	"    -buildid              Override build id for main binary\n" +
+	"    -add_comment          Free-form annotation to add to the profile\n" +
+	"                          Displayed on some reports or with pprof -comments\n" +
 	"    -base source          Source of profile to use as baseline\n" +
 	"    profile.pb.gz         Profile in compressed protobuf format\n" +
 	"    legacy_profile        Profile in legacy pprof format\n" +
