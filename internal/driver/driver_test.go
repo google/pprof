@@ -1091,7 +1091,7 @@ func TestIdentifyNumLabelUnits(t *testing.T) {
 			}
 		}
 		if got, want := testUI.IgnoredErrCount, test.wantIgnoreErrCount; want != got {
-			t.Errorf("%s: got %d errors logged, want %d errors logged", got, want)
+			t.Errorf("%s: got %d errors logged, want %d errors logged", test.name, got, want)
 		}
 	}
 }
