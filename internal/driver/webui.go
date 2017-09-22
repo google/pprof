@@ -23,6 +23,7 @@ import (
 	gourl "net/url"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -81,6 +82,18 @@ type webArgs struct {
 }
 
 func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) error {
+	host, portStr, err := net.SplitHostPort(hostport)
+	if err != nil {
+		return fmt.Errorf("could not split http address: %v", err)
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return fmt.Errorf("invalid port number: %v", err)
+	}
+	if host == "" {
+		host = "localhost"
+	}
+
 	interactiveMode = true
 	ui := makeWebInterface(p, o)
 	for n, c := range pprofCommands {
@@ -93,47 +106,51 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) e
 	ui.help["graph"] = "Display profile as a directed graph"
 	ui.help["reset"] = "Show the entire profile"
 
-	ln, url, isLocal, err := newListenerAndURL(hostport)
+	server := o.HTTPServer
+	if server == nil {
+		server = defaultWebServer
+	}
+	args := &plugin.HTTPServerArgs{
+		Hostport: net.JoinHostPort(host, portStr),
+		Host:     host,
+		Port:     port,
+		Handlers: map[string]http.Handler{
+			"/":       http.HandlerFunc(ui.dot),
+			"/top":    http.HandlerFunc(ui.top),
+			"/disasm": http.HandlerFunc(ui.disasm),
+			"/source": http.HandlerFunc(ui.source),
+			"/peek":   http.HandlerFunc(ui.peek),
+		},
+	}
+
+	go openBrowser("http://"+args.Hostport, o)
+	return server(args)
+}
+
+func defaultWebServer(args *plugin.HTTPServerArgs) error {
+	ln, err := net.Listen("tcp", args.Hostport)
 	if err != nil {
 		return err
 	}
-
-	// authorization wrapper
-	wrap := o.HTTPWrapper
-	if wrap == nil {
+	isLocal := isLocalhost(args.Host)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if isLocal {
-			// Only allow requests from local host.
-			wrap = checkLocalHost
-		} else {
-			wrap = func(h http.Handler) http.Handler { return h }
+			// Only allow local clients
+			host, _, err := net.SplitHostPort(req.RemoteAddr)
+			if err != nil || !isLocalhost(host) {
+				http.Error(w, "permission denied", http.StatusForbidden)
+				return
+			}
 		}
-	}
-
-	mux := http.NewServeMux()
-	mux.Handle("/", wrap(http.HandlerFunc(ui.dot)))
-	mux.Handle("/top", wrap(http.HandlerFunc(ui.top)))
-	mux.Handle("/disasm", wrap(http.HandlerFunc(ui.disasm)))
-	mux.Handle("/source", wrap(http.HandlerFunc(ui.source)))
-	mux.Handle("/peek", wrap(http.HandlerFunc(ui.peek)))
-
-	s := &http.Server{Handler: mux}
-	go openBrowser(url, o)
+		h := args.Handlers[req.URL.Path]
+		if h == nil {
+			// Fall back to default behavior
+			h = http.DefaultServeMux
+		}
+		h.ServeHTTP(w, req)
+	})
+	s := &http.Server{Handler: handler}
 	return s.Serve(ln)
-}
-
-func newListenerAndURL(hostport string) (ln net.Listener, url string, isLocal bool, err error) {
-	host, _, err := net.SplitHostPort(hostport)
-	if err != nil {
-		return nil, "", false, err
-	}
-	if host == "" {
-		host = "localhost"
-	}
-	if ln, err = net.Listen("tcp", hostport); err != nil {
-		return nil, "", false, err
-	}
-	url = fmt.Sprint("http://", net.JoinHostPort(host, fmt.Sprint(ln.Addr().(*net.TCPAddr).Port)))
-	return ln, url, isLocalhost(host), nil
 }
 
 func isLocalhost(host string) bool {
@@ -177,17 +194,6 @@ func openBrowser(url string, o *plugin.Options) {
 	}
 	// No visualizer succeeded, so just print URL.
 	o.UI.PrintErr(u.String())
-}
-
-func checkLocalHost(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		host, _, err := net.SplitHostPort(req.RemoteAddr)
-		if err != nil || !isLocalhost(host) {
-			http.Error(w, "permission denied", http.StatusForbidden)
-			return
-		}
-		h.ServeHTTP(w, req)
-	})
 }
 
 func varsFromURL(u *gourl.URL) variables {
@@ -241,12 +247,6 @@ func (ui *webInterface) render(w http.ResponseWriter, baseURL, tmpl string,
 
 // dot generates a web page containing an svg diagram.
 func (ui *webInterface) dot(w http.ResponseWriter, req *http.Request) {
-	// Disable prefix matching behavior of net/http.
-	if req.URL.Path != "/" {
-		http.NotFound(w, req)
-		return
-	}
-
 	rpt, errList := ui.makeReport(w, req, []string{"svg"})
 	if rpt == nil {
 		return // error already reported
