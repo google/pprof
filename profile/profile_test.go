@@ -19,14 +19,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/google/pprof/internal/proftest"
-	"reflect"
-	"sort"
 )
 
 func TestParse(t *testing.T) {
@@ -914,8 +913,6 @@ func TestInferUnits(t *testing.T) {
 		}
 		for key, ignored := range ignoredUnits {
 			wantIgnored := test.wantIgnoredUnits[key]
-			sort.Strings(wantIgnored)
-			sort.Strings(ignored)
 			if len(wantIgnored) != len(ignored) {
 				t.Errorf("%s: for key %s, want ignored units %v, got ignored units %v", test.name, key, wantIgnored, ignored)
 				continue

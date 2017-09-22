@@ -28,7 +28,6 @@ import (
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/internal/report"
 	"github.com/google/pprof/profile"
-	"sort"
 )
 
 // PProf acquires a profile, and symbolizes it using a profile
@@ -63,7 +62,7 @@ func PProf(eo *plugin.Options) error {
 func generateRawReport(p *profile.Profile, cmd []string, vars variables, o *plugin.Options) (*command, *report.Report, error) {
 	p = p.Copy() // Prevent modification to the incoming profile.
 
-	// identify units of numeric tags in profile
+	// Identify units of numeric tags in profile.
 	numLabelUnits := identifyNumLabelUnits(p, o.UI)
 
 	vars = applyCommandOverrides(cmd, vars)
@@ -291,7 +290,6 @@ func identifyNumLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string {
 	// Print errors for tags with multiple units associated with
 	// a single key.
 	for k, units := range ignoredUnits {
-		sort.Strings(units)
 		ui.PrintErr(fmt.Sprintf("For tag %s used unit %s, also encountered unit(s) %s", k, numLabelUnits[k], strings.Join(units, ",")))
 	}
 	return numLabelUnits

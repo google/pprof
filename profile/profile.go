@@ -443,8 +443,8 @@ func (p *Profile) Aggregate(inlineFrame, function, filename, linenumber, address
 // that were encountered but not used.
 // Unit for a given key is the first encountered unit for that key. If multiple
 // units are encountered for values paired with a particular key, then the first
-// unit encountered is used and all other units are returned in map of
-// ignored units
+// unit encountered is used and all other units are returned in sorted order
+// in map of ignored units.
 // If no units are encountered for a particular key, the unit is then inferred
 // based on the key.
 func (p *Profile) NumLabelUnits() (map[string]string, map[string][]string) {
@@ -500,6 +500,7 @@ func (p *Profile) NumLabelUnits() (map[string]string, map[string][]string) {
 			units[i] = unit
 			i++
 		}
+		sort.Strings(units)
 		unitsIgnored[key] = units
 	}
 

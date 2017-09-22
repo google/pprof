@@ -1021,11 +1021,12 @@ func TestTagFilter(t *testing.T) {
 
 func TestIdentifyNumLabelUnits(t *testing.T) {
 	var tagFilterTests = []struct {
-		name      string
-		tagVals   []map[string][]int64
-		tagUnits  []map[string][]string
-		wantUnits map[string]string
-		ignoreRX  string
+		name               string
+		tagVals            []map[string][]int64
+		tagUnits           []map[string][]string
+		wantUnits          map[string]string
+		ignoreRX           string
+		wantIgnoreErrCount int
 	}{
 		{
 			"test1",
@@ -1033,20 +1034,23 @@ func TestIdentifyNumLabelUnits(t *testing.T) {
 			[]map[string][]string{{"key1": {"bytes"}, "key2": {"kilobytes"}}},
 			map[string]string{"key1": "bytes", "key2": "kilobytes"},
 			"",
+			0,
 		},
 		{
 			"test3",
 			[]map[string][]int64{{"key1": {8, 8}}},
 			[]map[string][]string{{"key1": {"bytes", "kilobytes"}}},
 			map[string]string{"key1": "bytes"},
-			"(For tag key1 used unit bytes, also encountered unit\\(s\\) kilobytes)",
+			`(For tag key1 used unit bytes, also encountered unit\(s\) kilobytes)`,
+			1,
 		},
 		{
 			"test4",
 			[]map[string][]int64{{"key1": {8}}, {"key1": {8}}},
 			[]map[string][]string{{"key1": {"bytes"}}, {"key1": {"kilobytes"}}},
 			map[string]string{"key1": "bytes"},
-			"(For tag key1 used unit bytes, also encountered unit\\(s\\) kilobytes)",
+			`(For tag key1 used unit bytes, also encountered unit\(s\) kilobytes)`,
+			1,
 		},
 		{
 			"test5",
@@ -1066,6 +1070,7 @@ func TestIdentifyNumLabelUnits(t *testing.T) {
 				"bytes":     "hours",
 			},
 			"",
+			0,
 		},
 	}
 	for _, test := range tagFilterTests {
@@ -1077,12 +1082,16 @@ func TestIdentifyNumLabelUnits(t *testing.T) {
 			}
 			p.Sample[i] = &s
 		}
-		units := identifyNumLabelUnits(&p, &proftest.TestUI{T: t, IgnoreRx: test.ignoreRX})
+		testUI := &proftest.TestUI{T: t, IgnoreRx: test.ignoreRX}
+		units := identifyNumLabelUnits(&p, testUI)
 		for key, wantUnit := range test.wantUnits {
 			unit := units[key]
 			if wantUnit != unit {
-				t.Errorf("%s: for key %s, want unit %s, got unit %s", test.name, key, wantUnit, unit)
+				t.Errorf("%s: for key %s, got unit %s, want unit %s", test.name, key, unit, wantUnit)
 			}
+		}
+		if got, want := testUI.IgnoredErrCount, test.wantIgnoreErrCount; want != got {
+			t.Errorf("%s: got %d errors logged, want %d errors logged", got, want)
 		}
 	}
 }
@@ -1222,10 +1231,9 @@ func TestNumericTagFilter(t *testing.T) {
 		},
 	}
 	for _, test := range tagFilterTests {
-		expectedErrMsg := strings.Join([]string{"(", test.name, ":Interpreted '", test.value[strings.Index(test.value, "=")+1:], "' as range, not regexp", ")"}, "")
-		fmt.Println(expectedErrMsg)
+		wantErrMsg := strings.Join([]string{"(", test.name, ":Interpreted '", test.value[strings.Index(test.value, "=")+1:], "' as range, not regexp", ")"}, "")
 		filter, err := compileTagFilter(test.name, test.value, test.inferredUnits, &proftest.TestUI{T: t,
-			IgnoreRx: expectedErrMsg}, nil)
+			IgnoreRx: wantErrMsg}, nil)
 		if err != nil {
 			t.Errorf("tagFilter %s:%v", test.name, err)
 			continue

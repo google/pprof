@@ -74,9 +74,10 @@ func EncodeJSON(x interface{}) []byte {
 // TestUI implements the plugin.UI interface, triggering test failures
 // if more than Ignore errors not matching IgnoreRx are printed.
 type TestUI struct {
-	T        *testing.T
-	Ignore   int
-	IgnoreRx string
+	T               *testing.T
+	Ignore          int
+	IgnoreRx        string
+	IgnoredErrCount int
 }
 
 // ReadLine returns no input, as no input is expected during testing.
@@ -96,10 +97,12 @@ func (ui *TestUI) PrintErr(args ...interface{}) {
 			if err != nil {
 				ui.T.Errorf("failed to match against regex %q: %v", ui.IgnoreRx, err)
 			}
+			ui.IgnoredErrCount++
 			return
 		}
 	}
 	if ui.Ignore > 0 {
+		ui.IgnoredErrCount++
 		ui.Ignore--
 		return
 	}
