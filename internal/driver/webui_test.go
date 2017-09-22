@@ -31,27 +31,28 @@ import (
 
 func TestWebInterface(t *testing.T) {
 	prof := makeFakeProfile()
-	ui := makeWebInterface(prof, &plugin.Options{
-		Obj: fakeObjTool{},
-		UI:  &stdUI{},
-	})
 
-	// Start test server.
-	server := httptest.NewServer(http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			switch r.URL.Path {
-			case "/":
-				ui.dot(w, r)
-			case "/top":
-				ui.top(w, r)
-			case "/disasm":
-				ui.disasm(w, r)
-			case "/peek":
-				ui.peek(w, r)
-			case "/source":
-				ui.source(w, r)
-			}
-		}))
+	// Custom http server creator
+	var server *httptest.Server
+	serverCreated := make(chan bool)
+	creator := func(a *plugin.HTTPServerArgs) error {
+		server = httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				if h := a.Handlers[r.URL.Path]; h != nil {
+					h.ServeHTTP(w, r)
+				}
+			}))
+		serverCreated <- true
+		return nil
+	}
+
+	// Start server and wait for it to be initialized
+	go serveWebInterface("unused:1234", prof, &plugin.Options{
+		Obj:        fakeObjTool{},
+		UI:         &stdUI{},
+		HTTPServer: creator,
+	})
+	<-serverCreated
 	defer server.Close()
 
 	haveDot := false
