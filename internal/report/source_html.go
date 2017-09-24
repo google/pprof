@@ -35,17 +35,11 @@ h1 {
 .legend {
   font-size: 1.25em;
 }
-.line {
-color: #aaaaaa;
+.line, .nop, .unimportant {
+  color: #aaaaaa;
 }
-.nop {
-color: #aaaaaa;
-}
-.unimportant {
-color: #cccccc;
-}
-.disasmloc {
-color: #000000;
+.inlinesrc {
+  color: #000066;
 }
 .deadsrc {
 cursor: pointer;
