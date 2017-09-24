@@ -255,12 +255,12 @@ func TestLLVMSymbolizer(t *testing.T) {
 		frames []plugin.Frame
 	}{
 		{0x10, []plugin.Frame{
-			{"Inlined_0x10", "foo.h", 0},
-			{"Func_0x10", "foo.c", 2},
+			{Func: "Inlined_0x10", File: "foo.h", Line: 0},
+			{Func: "Func_0x10", File: "foo.c", Line: 2},
 		}},
 		{0x20, []plugin.Frame{
-			{"Inlined_0x20", "foo.h", 0},
-			{"Func_0x20", "foo.c", 2},
+			{Func: "Inlined_0x20", File: "foo.h", Line: 0},
+			{Func: "Func_0x20", File: "foo.c", Line: 2},
 		}},
 	} {
 		frames, err := symbolizer.addrInfo(c.addr)
