@@ -16,13 +16,16 @@
 #
 # Fake llvm-symbolizer to use in tests
 
+set -f
+IFS=" "
+
 while read line; do
   # line has form:
   #    filename 0xaddr
   # Emit dummy output that matches llvm-symbolizer output format.
-  fields=($line)
-  fname=${fields[0]}
-  addr=${fields[1]}
+  set -- $line
+  fname=$1
+  addr=$2
   echo "Inlined_$addr"
   echo "$fname.h"
   echo "Func_$addr"

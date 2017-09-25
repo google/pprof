@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -73,7 +72,6 @@ func newLLVMSymbolizer(cmd, file string, base uint64) (*llvmSymbolizer, error) {
 	j := &llvmSymbolizerJob{
 		cmd: exec.Command(cmd, "-inlining", "-demangle=false"),
 	}
-	j.cmd.Stderr = os.Stderr
 
 	var err error
 	if j.in, err = j.cmd.StdinPipe(); err != nil {
