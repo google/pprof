@@ -37,7 +37,7 @@ const (
 // addr2Liner is a connection to an addr2line command for obtaining
 // address and line number information from a binary.
 type addr2Liner struct {
-	sync.Mutex
+	mu   sync.Mutex
 	rw   lineReaderWriter
 	base uint64
 
@@ -173,8 +173,8 @@ func (d *addr2Liner) readFrame() (plugin.Frame, bool) {
 }
 
 func (d *addr2Liner) rawAddrInfo(addr uint64) ([]plugin.Frame, error) {
-	d.Lock()
-	defer d.Unlock()
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
 	if err := d.rw.write(fmt.Sprintf("%x", addr-d.base)); err != nil {
 		return nil, err
