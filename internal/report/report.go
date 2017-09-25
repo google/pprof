@@ -242,7 +242,9 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	for _, f := range prof.Function {
 		f.Filename = trimPath(f.Filename)
 	}
-	// Remove numeric tags not recognized by pprof label with inferred units.
+	// Removes all numeric tags except for the bytes tag prior
+	// to making graph.
+	// TODO : modify to select first numeric tag if no bytes tag
 	for _, s := range prof.Sample {
 		numLabels := make(map[string][]int64, len(s.NumLabel))
 		numUnits := make(map[string][]string, len(s.NumLabel))
