@@ -73,7 +73,7 @@ func TestParse(t *testing.T) {
 		{"dot,unit=minimum", "heap_sizetags"},
 		{"dot,addresses,flat,ignore=[X3]002,focus=[X1]000", "contention"},
 		{"dot,files,cum", "contention"},
-		{"comments", "cpu"},
+		{"comments,add_comment=some-comment", "cpu"},
 		{"comments", "heap"},
 		{"tags", "cpu"},
 		{"tags,tagignore=tag[13],tagfocus=key[12]", "cpu"},
@@ -153,6 +153,8 @@ func TestParse(t *testing.T) {
 			addFlags(&f, flags[:1])
 			solution = solutionFilename(tc.source, &f)
 		}
+		// The add_comment flag is not idempotent so only apply it on the first run.
+		delete(f.strings, "add_comment")
 
 		// Second pprof invocation to read the profile from profile.proto
 		// and generate a report.
@@ -401,7 +403,6 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 		}
 	case "heap_tags":
 		p = heapProfile()
-
 		for i := 0; i < len(p.Sample); i += 2 {
 			s := p.Sample[i]
 			if s.Label == nil {
@@ -410,7 +411,6 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 			s.NumLabel["request"] = s.NumLabel["bytes"]
 			s.Label["key1"] = []string{"tag"}
 		}
-
 	case "contention":
 		p = contentionProfile()
 	case "symbolz":

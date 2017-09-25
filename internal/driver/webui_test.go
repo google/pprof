@@ -23,7 +23,6 @@ import (
 	"net/url"
 	"os/exec"
 	"regexp"
-	"runtime"
 	"testing"
 
 	"github.com/google/pprof/internal/plugin"
@@ -32,29 +31,28 @@ import (
 
 func TestWebInterface(t *testing.T) {
 	prof := makeFakeProfile()
-	ui := makeWebInterface(prof, &plugin.Options{
-		Obj: fakeObjTool{},
-		UI:  &stdUI{},
-	})
 
-	// Start test server.
-	server := httptest.NewServer(http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			switch r.URL.Path {
-			case "/":
-				ui.dot(w, r)
-			case "/top":
-				ui.top(w, r)
-			case "/disasm":
-				ui.disasm(w, r)
-			case "/peek":
-				ui.peek(w, r)
-			case "/source":
-				ui.source(w, r)
-			case "/flamegraph":
-				ui.flamegraph(w, r)
-			}
-		}))
+	// Custom http server creator
+	var server *httptest.Server
+	serverCreated := make(chan bool)
+	creator := func(a *plugin.HTTPServerArgs) error {
+		server = httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				if h := a.Handlers[r.URL.Path]; h != nil {
+					h.ServeHTTP(w, r)
+				}
+			}))
+		serverCreated <- true
+		return nil
+	}
+
+	// Start server and wait for it to be initialized
+	go serveWebInterface("unused:1234", prof, &plugin.Options{
+		Obj:        fakeObjTool{},
+		UI:         &stdUI{},
+		HTTPServer: creator,
+	})
+	<-serverCreated
 	defer server.Close()
 
 	haveDot := false
@@ -195,55 +193,6 @@ func makeFakeProfile() *profile.Profile {
 		Location: locs,
 		Function: funcs,
 		Mapping:  mapping,
-	}
-}
-
-func TestNewListenerAndURL(t *testing.T) {
-	if runtime.GOOS == "nacl" {
-		t.Skip("test assumes tcp available")
-	}
-
-	tests := []struct {
-		hostport  string
-		wantErr   bool
-		wantURLRe *regexp.Regexp
-		wantLocal bool
-	}{
-		{
-			hostport:  ":",
-			wantURLRe: regexp.MustCompile(`http://localhost:\d+`),
-			wantLocal: true,
-		},
-		{
-			hostport:  "localhost:",
-			wantURLRe: regexp.MustCompile(`http://localhost:\d+`),
-			wantLocal: true,
-		},
-		{
-			hostport: "http://localhost:12345",
-			wantErr:  true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.hostport, func(t *testing.T) {
-			_, url, isLocal, err := newListenerAndURL(tt.hostport)
-			if tt.wantErr {
-				if err == nil {
-					t.Fatalf("newListenerAndURL(%v) want error; got none", tt.hostport)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("newListenerAndURL(%v) = %v", tt.hostport, err)
-			}
-			if !tt.wantURLRe.MatchString(url) {
-				t.Errorf("newListenerAndURL(%v) URL = %v; want URL matching %v", tt.hostport, url, tt.wantURLRe)
-			}
-			if got, want := isLocal, tt.wantLocal; got != want {
-				t.Errorf("newListenerAndURL(%v) isLocal = %v; want %v", tt.hostport, got, want)
-			}
-		})
 	}
 }
 
