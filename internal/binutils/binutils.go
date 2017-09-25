@@ -54,7 +54,7 @@ type binrep struct {
 	fast bool
 }
 
-// get returns the current representation for b, initializing it if necessary.
+// get returns the current representation for bu, initializing it if necessary.
 func (bu *Binutils) get() *binrep {
 	bu.Mutex.Lock()
 	r := bu.rep
@@ -67,7 +67,7 @@ func (bu *Binutils) get() *binrep {
 	return r
 }
 
-// update modifies the rep for b via the supplied function.
+// update modifies the rep for bu via the supplied function.
 func (bu *Binutils) update(fn func(r *binrep)) {
 	r := &binrep{}
 	bu.Mutex.Lock()
