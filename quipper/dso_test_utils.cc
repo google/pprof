@@ -45,22 +45,30 @@ class ElfStringTable {
 };
 
 // Helper to control the scope of data in Elf_Data.d_buf added to a Elf_Scn.
-// Basically, makes sure that the .data() set to d_buf remains valid, and
-// holds on to a copy of your buffer so you don't have to.
+// Basically, makes sure that the d_buf pointer remains valid, and holds on to a
+// copy of your buffer so you don't have to.
 class ElfDataCache {
  public:
   Elf_Data *AddDataToSection(Elf_Scn *section, const string &data_str) {
-    cache_.emplace_back(data_str);
-    string &d = cache_.back();
     Elf_Data *data = elf_newdata(section);
     CHECK(data) << elf_errmsg(-1);
-    data->d_buf = const_cast<char*>(d.data());
-    data->d_size = d.size();
+    // avoid zero memory allocation
+    char *data_storage = new char[data_str.size() + 1];
+    cache_.emplace_back(data_storage);
+    memcpy(data_storage, data_str.data(), data_str.size());
+    data->d_buf = data_storage;
+    data->d_size = data_str.size();
     return data;
   }
 
+  ~ElfDataCache() {
+    for (auto &s : cache_) {
+      delete[] s;
+    }
+  }
+
  private:
-  std::vector<string> cache_;
+  std::vector<char *> cache_;
 };
 
 }  // namespace
