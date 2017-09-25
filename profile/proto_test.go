@@ -116,11 +116,11 @@ var all = &Profile{
 				"key1":      {1, 2},
 				"key2":      {3, 4},
 				"bytes":     {3, 4},
-				"requests":  {3, 4},
+				"requests":  {1, 1, 3, 4, 5},
 				"alignment": {3, 4},
 			},
 			NumUnit: map[string][]string{
-				"requests":  {"seconds", ""},
+				"requests":  {"", "", "seconds", "", "s"},
 				"alignment": {"kilobytes", "kilobytes"},
 			},
 		},

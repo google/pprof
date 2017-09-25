@@ -297,7 +297,6 @@ func (p *Profile) postDecode() error {
 		labels := make(map[string][]string, len(s.labelX))
 		numLabels := make(map[string][]int64, len(s.labelX))
 		numUnits := make(map[string][]string, len(s.labelX))
-		unitEncountered := make(map[string]bool, len(s.labelX))
 		for _, l := range s.labelX {
 			var key, value string
 			key, err = getString(p.stringTable, &l.keyX, err)
@@ -305,13 +304,17 @@ func (p *Profile) postDecode() error {
 				value, err = getString(p.stringTable, &l.strX, err)
 				labels[key] = append(labels[key], value)
 			} else if l.numX != 0 {
-				var unit string
+				numValues := numLabels[key]
+				units := numUnits[key]
 				if l.unitX != 0 {
+					var unit string
 					unit, err = getString(p.stringTable, &l.unitX, err)
-					unitEncountered[key] = true
+					if len(units) < len(numValues) {
+						units = padStringArray(units, len(numValues))
+					}
+					numUnits[key] = append(units, unit)
 				}
 				numLabels[key] = append(numLabels[key], l.numX)
-				numUnits[key] = append(numUnits[key], unit)
 			}
 		}
 		if len(labels) > 0 {
@@ -319,9 +322,9 @@ func (p *Profile) postDecode() error {
 		}
 		if len(numLabels) > 0 {
 			s.NumLabel = numLabels
-			for k := range numUnits {
-				if !unitEncountered[k] {
-					delete(numUnits, k)
+			for key, units := range numUnits {
+				if lenUnits, lenLabels := len(units), len(numLabels[key]); lenUnits > 0 && lenUnits < lenLabels {
+					numUnits[key] = padStringArray(units, lenLabels)
 				}
 			}
 			s.NumUnit = numUnits
@@ -359,6 +362,17 @@ func (p *Profile) postDecode() error {
 	p.DefaultSampleType, err = getString(p.stringTable, &p.defaultSampleTypeX, err)
 	p.stringTable = nil
 	return err
+}
+
+// padStringArray pads arr with enough empty strings to make arr
+// length l when arr's length is less than l.
+func padStringArray(arr []string, l int) []string {
+	lenDiff := l - len(arr)
+	if lenDiff > 0 {
+		padding := make([]string, lenDiff)
+		arr = append(arr, padding...)
+	}
+	return arr
 }
 
 func (p *ValueType) decoder() []decoder {

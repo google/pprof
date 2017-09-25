@@ -821,13 +821,13 @@ func printTraces(w io.Writer, rpt *Report) error {
 
 		// Print any numeric labels for the sample
 		var numLabels []string
-		for k, v := range sample.NumLabel {
-			unit := o.NumLabelUnits[k]
-			numValues := make([]string, len(v))
-			for i, vv := range v {
+		for key, vals := range sample.NumLabel {
+			unit := o.NumLabelUnits[key]
+			numValues := make([]string, len(vals))
+			for i, vv := range vals {
 				numValues[i] = measurement.Label(vv, unit)
 			}
-			numLabels = append(numLabels, fmt.Sprintf("%10s:  %s\n", k, strings.Join(numValues, " ")))
+			numLabels = append(numLabels, fmt.Sprintf("%10s:  %s\n", key, strings.Join(numValues, " ")))
 		}
 		sort.Strings(numLabels)
 		fmt.Fprint(w, strings.Join(numLabels, ""))
