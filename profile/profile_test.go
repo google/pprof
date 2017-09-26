@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/google/pprof/internal/proftest"
@@ -693,4 +694,30 @@ func TestSetMain(t *testing.T) {
 	if testProfile1.Mapping[0].File != mainBinary {
 		t.Errorf("got %s for main", testProfile1.Mapping[0].File)
 	}
+}
+
+// parallel runs n copies of fn in parallel.
+func parallel(n int, fn func()) {
+	var wg sync.WaitGroup
+	wg.Add(n)
+	for i := 0; i < n; i++ {
+		go func() {
+			fn()
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+}
+
+func TestThreadSafety(t *testing.T) {
+	src := testProfile1.Copy()
+	parallel(4, func() { src.Copy() })
+	parallel(4, func() {
+		var b bytes.Buffer
+		src.WriteUncompressed(&b)
+	})
+	parallel(4, func() {
+		var b bytes.Buffer
+		src.Write(&b)
+	})
 }

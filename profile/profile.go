@@ -26,6 +26,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -46,6 +47,10 @@ type Profile struct {
 	DurationNanos int64
 	PeriodType    *ValueType
 	Period        int64
+
+	// The following fields are modified during encoding and copying,
+	// so are protected by a Mutex.
+	encodeMu sync.Mutex
 
 	commentX           []int64
 	dropFramesX        int64
@@ -296,21 +301,25 @@ func (p *Profile) updateLocationMapping(from, to *Mapping) {
 	}
 }
 
-// Write writes the profile as a gzip-compressed marshaled protobuf.
-func (p *Profile) Write(w io.Writer) error {
+func serialize(p *Profile) []byte {
+	p.encodeMu.Lock()
 	p.preEncode()
 	b := marshal(p)
+	p.encodeMu.Unlock()
+	return b
+}
+
+// Write writes the profile as a gzip-compressed marshaled protobuf.
+func (p *Profile) Write(w io.Writer) error {
 	zw := gzip.NewWriter(w)
 	defer zw.Close()
-	_, err := zw.Write(b)
+	_, err := zw.Write(serialize(p))
 	return err
 }
 
 // WriteUncompressed writes the profile as a marshaled protobuf.
 func (p *Profile) WriteUncompressed(w io.Writer) error {
-	p.preEncode()
-	b := marshal(p)
-	_, err := w.Write(b)
+	_, err := w.Write(serialize(p))
 	return err
 }
 
@@ -605,11 +614,8 @@ func (m *Mapping) Unsymbolizable() bool {
 
 // Copy makes a fully independent copy of a profile.
 func (p *Profile) Copy() *Profile {
-	p.preEncode()
-	b := marshal(p)
-
 	pp := &Profile{}
-	if err := unmarshal(b, pp); err != nil {
+	if err := unmarshal(serialize(p), pp); err != nil {
 		panic(err)
 	}
 	if err := pp.postDecode(); err != nil {
