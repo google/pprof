@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"os/exec"
 	"regexp"
+	"sync"
 	"testing"
 
 	"github.com/google/pprof/internal/plugin"
@@ -101,6 +102,23 @@ func TestWebInterface(t *testing.T) {
 		}
 	}
 
+	// Also fetch all the test case URLs in parallel to test thread
+	// safety when run under the race detector.
+	var wg sync.WaitGroup
+	for _, c := range testcases {
+		if c.needDot && !haveDot {
+			continue
+		}
+		path := server.URL + c.path
+		for count := 0; count < 2; count++ {
+			wg.Add(1)
+			go func() {
+				http.Get(path)
+				wg.Done()
+			}()
+		}
+	}
+	wg.Wait()
 }
 
 // Implement fake object file support.
