@@ -309,9 +309,7 @@ func (p *Profile) postDecode() error {
 				if l.unitX != 0 {
 					var unit string
 					unit, err = getString(p.stringTable, &l.unitX, err)
-					if len(units) < len(numValues) {
-						units = padStringArray(units, len(numValues))
-					}
+					units = padStringArray(units, len(numValues))
 					numUnits[key] = append(units, unit)
 				}
 				numLabels[key] = append(numLabels[key], l.numX)
@@ -367,12 +365,10 @@ func (p *Profile) postDecode() error {
 // padStringArray pads arr with enough empty strings to make arr
 // length l when arr's length is less than l.
 func padStringArray(arr []string, l int) []string {
-	lenDiff := l - len(arr)
-	if lenDiff > 0 {
-		padding := make([]string, lenDiff)
-		arr = append(arr, padding...)
+	if l <= len(arr) {
+		return arr
 	}
-	return arr
+	return append(arr, make([]string, l-len(arr))...)
 }
 
 func (p *ValueType) decoder() []decoder {

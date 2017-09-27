@@ -608,20 +608,20 @@ func TestNumLabelMerge(t *testing.T) {
 			if err != nil {
 				t.Errorf("merge error: %v", err)
 			}
-			fmt.Printf("%v", prof)
+
 			if want, got := len(tc.wantNumLabels), len(prof.Sample); want != got {
-				t.Fatalf("want %d samples, got %d samples", want, got)
+				t.Fatalf("got %d samples, want %d samples", got, want)
 			}
 			for i, wantLabels := range tc.wantNumLabels {
 				numLabels := prof.Sample[i].NumLabel
 				if !reflect.DeepEqual(wantLabels, numLabels) {
-					t.Errorf("want numeric labels %v, got %v", wantLabels, numLabels)
+					t.Errorf("got numeric labels %v, want %v", numLabels, wantLabels)
 				}
 
 				wantUnits := tc.wantNumUnits[i]
 				numUnits := prof.Sample[i].NumUnit
 				if !reflect.DeepEqual(wantUnits, numUnits) {
-					t.Errorf("want numeric labels %v, got %v", wantUnits, numUnits)
+					t.Errorf("got numeric labels %v, want %v", numUnits, wantUnits)
 				}
 			}
 		})
@@ -820,63 +820,63 @@ func TestInferUnits(t *testing.T) {
 		wantIgnoredUnits map[string][]string
 	}{
 		{
-			"test1",
+			"One sample, multiple keys, different specified units",
 			[]map[string][]int64{{"key1": {131072}, "key2": {128}}},
 			[]map[string][]string{{"key1": {"bytes"}, "key2": {"kilobytes"}}},
 			map[string]string{"key1": "bytes", "key2": "kilobytes"},
 			map[string][]string{},
 		},
 		{
-			"test2",
+			"One sample, one key with one value, unit specified",
 			[]map[string][]int64{{"key1": {8}}},
 			[]map[string][]string{{"key1": {"bytes"}}},
 			map[string]string{"key1": "bytes"},
 			map[string][]string{},
 		},
 		{
-			"test3",
+			"bytes key, unit not specified",
 			[]map[string][]int64{{"bytes": {8}}},
 			[]map[string][]string{nil},
 			map[string]string{"bytes": "bytes"},
 			map[string][]string{},
 		},
 		{
-			"test4",
+			"One sample, one key with one value, unit not specified",
 			[]map[string][]int64{{"kilobytes": {8}}},
 			[]map[string][]string{nil},
 			map[string]string{"kilobytes": "kilobytes"},
 			map[string][]string{},
 		},
 		{
-			"test5",
+			"request key, unit not specified",
 			[]map[string][]int64{{"request": {8}}},
 			[]map[string][]string{nil},
 			map[string]string{"request": "bytes"},
 			map[string][]string{},
 		},
 		{
-			"test6",
+			"alignment key, unit not specified",
 			[]map[string][]int64{{"alignment": {8}}},
 			[]map[string][]string{nil},
 			map[string]string{"alignment": "bytes"},
 			map[string][]string{},
 		},
 		{
-			"test7",
+			"One sample, one key with multiple values and different units",
 			[]map[string][]int64{{"key1": {8, 8}}},
 			[]map[string][]string{{"key1": {"bytes", "kilobytes"}}},
 			map[string]string{"key1": "bytes"},
 			map[string][]string{"key1": {"kilobytes"}},
 		},
 		{
-			"test8",
+			"Two samples, one key, different units specified",
 			[]map[string][]int64{{"key1": {8}}, {"key1": {8}}},
 			[]map[string][]string{{"key1": {"bytes"}}, {"key1": {"kilobytes"}}},
 			map[string]string{"key1": "bytes"},
 			map[string][]string{"key1": {"kilobytes"}},
 		},
 		{
-			"test9",
+			"Keys alignment, request, and bytes have units specified",
 			[]map[string][]int64{{
 				"alignment": {8},
 				"request":   {8},
@@ -918,8 +918,7 @@ func TestInferUnits(t *testing.T) {
 				continue
 			}
 			for i, want := range wantIgnored {
-				got := ignored[i]
-				if want != got {
+				if got := ignored[i]; want != got {
 					t.Errorf("%s: for key %s, want ignored units %v, got ignored units %v", test.name, key, wantIgnored, ignored)
 					break
 				}

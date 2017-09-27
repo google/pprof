@@ -244,7 +244,7 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	}
 	// Removes all numeric tags except for the bytes tag prior
 	// to making graph.
-	// TODO : modify to select first numeric tag if no bytes tag
+	// TODO: modify to select first numeric tag if no bytes tag
 	for _, s := range prof.Sample {
 		numLabels := make(map[string][]int64, len(s.NumLabel))
 		numUnits := make(map[string][]string, len(s.NumLabel))

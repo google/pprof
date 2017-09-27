@@ -493,7 +493,6 @@ func (p *Profile) NumLabelUnits() (map[string]string, map[string][]string) {
 	// Copy ignored units into more readable format
 	unitsIgnored := make(map[string][]string, len(ignoredUnits))
 	for key, values := range ignoredUnits {
-		fmt.Printf("%v", values)
 		units := make([]string, len(values))
 		i := 0
 		for unit := range values {
