@@ -321,8 +321,8 @@ func (p *Profile) postDecode() error {
 		if len(numLabels) > 0 {
 			s.NumLabel = numLabels
 			for key, units := range numUnits {
-				if lenUnits, lenLabels := len(units), len(numLabels[key]); lenUnits > 0 {
-					numUnits[key] = padStringArray(units, lenLabels)
+				if len(units) > 0 {
+					numUnits[key] = padStringArray(units, len(numLabels[key]))
 				}
 			}
 			s.NumUnit = numUnits

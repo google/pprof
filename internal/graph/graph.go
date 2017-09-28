@@ -637,7 +637,7 @@ func (n *Node) addSample(dw, w int64, labels string, numLabel map[string][]int64
 		units := numUnit[k]
 		for i, v := range nvals {
 			var t *Tag
-			if len(units) == len(nvals) {
+			if len(units) > 0 {
 				t = numericTags.findOrAddTag(format(v, units[i]), units[i], v)
 			} else {
 				t = numericTags.findOrAddTag(format(v, k), k, v)

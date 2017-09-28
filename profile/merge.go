@@ -205,8 +205,7 @@ func (sample *Sample) key() sampleKey {
 
 	numlabels := make([]string, 0, len(sample.NumLabel))
 	for k, v := range sample.NumLabel {
-		u := sample.NumUnit[k]
-		numlabels = append(numlabels, fmt.Sprintf("%q%x%x", k, v, u))
+		numlabels = append(numlabels, fmt.Sprintf("%q%x%x", k, v, sample.NumUnit[k]))
 	}
 	sort.Strings(numlabels)
 

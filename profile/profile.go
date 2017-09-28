@@ -479,8 +479,8 @@ func (p *Profile) NumLabelUnits() (map[string]string, map[string][]string) {
 
 	// Infer units for keys without any units associated with
 	// numeric tag values.
-	for key := range numLabelUnits {
-		if unit := numLabelUnits[key]; unit == "" {
+	for key, unit := range numLabelUnits {
+		if unit == "" {
 			switch key {
 			case "alignment", "request":
 				numLabelUnits[key] = "bytes"
