@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 set -e
-echo "" > coverage.txt
+MODE=atomic
+echo "mode: $MODE" > coverage.txt
 
 PKG=$(go list ./... | grep -v /vendor/)
 
@@ -10,9 +11,9 @@ unused $PKG
 go test -v $PKG
 
 for d in $PKG; do
-  go test -race -coverprofile=profile.out -covermode=atomic $d
+  go test -race -coverprofile=profile.out -covermode=$MODE $d
   if [ -f profile.out ]; then
-    cat profile.out >> coverage.txt
+    cat profile.out | grep -v "^mode: " >> coverage.txt
     rm profile.out
   fi
 done
