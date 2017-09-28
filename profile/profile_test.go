@@ -834,7 +834,7 @@ func TestInferUnits(t *testing.T) {
 			map[string][]string{},
 		},
 		{
-			"bytes key, unit not specified",
+			"Key bytes, unit not specified",
 			[]map[string][]int64{{"bytes": {8}}},
 			[]map[string][]string{nil},
 			map[string]string{"bytes": "bytes"},
@@ -848,14 +848,14 @@ func TestInferUnits(t *testing.T) {
 			map[string][]string{},
 		},
 		{
-			"request key, unit not specified",
+			"Key request, unit not specified",
 			[]map[string][]int64{{"request": {8}}},
 			[]map[string][]string{nil},
 			map[string]string{"request": "bytes"},
 			map[string][]string{},
 		},
 		{
-			"alignment key, unit not specified",
+			"Key alignment, unit not specified",
 			[]map[string][]int64{{"alignment": {8}}},
 			[]map[string][]string{nil},
 			map[string]string{"alignment": "bytes"},
@@ -908,18 +908,18 @@ func TestInferUnits(t *testing.T) {
 		for key, wantUnit := range test.wantUnits {
 			unit := units[key]
 			if wantUnit != unit {
-				t.Errorf("%s: for key %s, want unit %s, got unit %s", test.name, key, wantUnit, unit)
+				t.Errorf("%s: for key %s, got unit %s, want unit %s", test.name, key, unit, wantUnit)
 			}
 		}
 		for key, ignored := range ignoredUnits {
 			wantIgnored := test.wantIgnoredUnits[key]
 			if len(wantIgnored) != len(ignored) {
-				t.Errorf("%s: for key %s, want ignored units %v, got ignored units %v", test.name, key, wantIgnored, ignored)
+				t.Errorf("%s: for key %s, got ignored units %v, got ignored units %v", test.name, key, ignored, wantIgnored)
 				continue
 			}
 			for i, want := range wantIgnored {
 				if got := ignored[i]; want != got {
-					t.Errorf("%s: for key %s, want ignored units %v, got ignored units %v", test.name, key, wantIgnored, ignored)
+					t.Errorf("%s: for key %s, got ignored units %v, want ignored units %v", test.name, key, ignored, wantIgnored)
 					break
 				}
 			}
