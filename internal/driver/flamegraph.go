@@ -19,100 +19,69 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/google/pprof/internal/graph"
 	"github.com/google/pprof/internal/report"
 )
 
-type flameGraphNode struct {
-	Name     string
-	Value    int64
-	Children map[string]*flameGraphNode
-}
-
-func (n *flameGraphNode) add(stackPtr *[]string, index int, value int64) {
-	n.Value += value
-	if index >= 0 {
-		head := (*stackPtr)[index]
-		childPtr, ok := n.Children[head]
-		if !ok {
-			childPtr = &(flameGraphNode{head, 0, make(map[string]*flameGraphNode)})
-			n.Children[head] = childPtr
-		}
-		childPtr.add(stackPtr, index-1, value)
-	}
-}
-
-func (n *flameGraphNode) MarshalJSON() ([]byte, error) {
-	v := make([]flameGraphNode, 0, len(n.Children))
-	for _, value := range n.Children {
-		v = append(v, *value)
-	}
-
-	return json.Marshal(&struct {
-		Name     string           `json:"n"`
-		Value    int64            `json:"v"`
-		Children []flameGraphNode `json:"c"`
-	}{
-		Name:     n.Name,
-		Value:    n.Value,
-		Children: v,
-	})
+type treeNode struct {
+	Name      string      `json:"n"`
+	Cum       int64       `json:"v"`
+	CumFormat string      `json:"l"`
+	Children  []*treeNode `json:"c"`
 }
 
 // flamegraph generates a web page containing a flamegraph.
 func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
-	rpt, errList := ui.makeReport(w, req, []string{"svg"})
+	// Force the call tree so that the graph is a tree.
+	rpt, errList := ui.makeReport(w, req, []string{"svg"}, "call_tree", "true")
 	if rpt == nil {
 		return // error already reported
 	}
 
-	// Obtaining prof from report
-	prof := rpt.Prof()
-
-	// Get sample_index from variables
-	si := pprofVariables["sample_index"].value
-
-	// Getting default index
-	index, err := ui.prof.SampleIndexByName(si)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		ui.options.UI.PrintErr(err)
-		return
+	// Generate dot graph.
+	g, config := report.GetDOT(rpt)
+	var nodes []*treeNode
+	nroots := 0
+	nodeMap := map[*graph.Node]*treeNode{}
+	// Make all nodes and the map, collect the roots.
+	for _, n := range g.Nodes {
+		v := n.CumValue()
+		node := &treeNode{
+			Name:      n.Info.PrintableName(),
+			Cum:       v,
+			CumFormat: config.FormatValue(v),
+		}
+		nodes = append(nodes, node)
+		if len(n.In) == 0 {
+			nodes[nroots], nodes[len(nodes)-1] = nodes[len(nodes)-1], nodes[nroots]
+			nroots++
+		}
+		nodeMap[n] = node
+	}
+	// Populate the child links.
+	for _, n := range g.Nodes {
+		node := nodeMap[n]
+		for child, _ := range n.Out {
+			node.Children = append(node.Children, nodeMap[child])
+		}
 	}
 
-	// Creating empty node list
-	var nodes []string
-
-	// Creating empty flame graph structure
-	rootNode := flameGraphNode{"root", 0, make(map[string]*flameGraphNode)}
-
-	// Walking sample structure and creating flame graph
-	for _, sa := range prof.Sample {
-		stack := []string{}
-		for _, lo := range sa.Location {
-			for _, li := range lo.Line {
-				stack = append(stack, li.Function.Name)
-				nodes = append(nodes, li.Function.Name)
-			}
-		}
-		value := sa.Value[index]
-		rootNode.add(&stack, len(stack)-1, value)
+	rootNode := &treeNode{
+		Name:      "root",
+		Cum:       config.Total,
+		CumFormat: config.FormatValue(config.Total),
+		Children:  nodes[0:nroots],
 	}
 
 	// JSON marshalling flame graph
-	b, err := rootNode.MarshalJSON()
+	b, err := json.Marshal(rootNode)
 	if err != nil {
 		http.Error(w, "error serializing flame graph", http.StatusInternalServerError)
 		ui.options.UI.PrintErr(err)
 		return
 	}
 
-	legend := report.ProfileLabels(rpt)
-	file := getFromLegend(legend, "File: ", "unknown")
-
-	ui.render(w, "/flamegraph", "flamegraph", rpt, errList, legend, webArgs{
-		Title:          file,
-		FlameGraph:     template.JS(b),
-		FlameGraphUnit: prof.SampleType[index].Unit,
-		Nodes:          nodes,
+	ui.render(w, "/flamegraph", "flamegraph", rpt, errList, config.Labels, webArgs{
+		FlameGraph: template.JS(b),
 	})
 }
