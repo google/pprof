@@ -6,7 +6,7 @@
 #define CHROMIUMOS_WIDE_PROFILING_TEST_PERF_DATA_H_
 
 #include <memory>
-#include <ostream>  // NOLINT
+#include <ostream>  
 #include <vector>
 
 #include "binary_data_utils.h"
@@ -70,7 +70,7 @@ class StreamWriteable {
 class ExamplePerfDataFileHeader : public StreamWriteable {
  public:
   typedef ExamplePerfDataFileHeader SelfT;
-  explicit ExamplePerfDataFileHeader(const unsigned long features);  // NOLINT
+  explicit ExamplePerfDataFileHeader(const unsigned long features);  
 
   SelfT& WithAttrIdsCount(size_t n);
   SelfT& WithAttrCount(size_t n);

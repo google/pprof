@@ -8,7 +8,7 @@
 #include <errno.h>   // for errno
 #include <string.h>  // for strerror
 
-#include <iostream>  // NOLINT(readability/streams)
+#include <iostream>  
 #include <sstream>
 #include <string>
 

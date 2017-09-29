@@ -10,7 +10,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>  // NOLINT(readability/streams)
+#include <fstream>  
 #include <iomanip>
 
 #include "base/logging.h"
@@ -27,7 +27,7 @@ namespace quipper {
 
 static uint64_t Md5Prefix(
     const unsigned char* data,
-    unsigned long length) { // NOLINT
+    unsigned long length) { 
   uint64_t digest_prefix = 0;
   unsigned char digest[MD5_DIGEST_LENGTH + 1];
 

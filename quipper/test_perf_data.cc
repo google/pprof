@@ -7,7 +7,7 @@
 #include <stddef.h>
 
 #include <algorithm>
-#include <ostream>  // NOLINT
+#include <ostream>  
 #include <vector>
 
 #include "base/logging.h"
@@ -43,7 +43,7 @@ void SwapBitfieldOfBits(u8* field, size_t len) {
 }  // namespace
 
 ExamplePerfDataFileHeader::ExamplePerfDataFileHeader(
-    const unsigned long features) {  // NOLINT
+    const unsigned long features) {  
   CHECK_EQ(112U, sizeof(perf_file_attr)) << "perf_file_attr has changed size!";
   header_ = {
     .magic = kPerfMagic,
