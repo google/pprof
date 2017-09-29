@@ -68,5 +68,22 @@ func readProfile(fname string, t *testing.T) *profile.Profile {
 	if err != nil {
 		t.Fatalf("%s: could not parse profile: %v", fname, err)
 	}
+
+	// Fix file names so they do not include absolute path names.
+	fix := func(s string) string {
+		const testdir = "/internal/report/"
+		pos := strings.Index(s, testdir)
+		if pos == -1 {
+			return s
+		}
+		return s[pos+len(testdir):]
+	}
+	for _, m := range p.Mapping {
+		m.File = fix(m.File)
+	}
+	for _, f := range p.Function {
+		f.Filename = fix(f.Filename)
+	}
+
 	return p
 }
