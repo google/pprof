@@ -266,9 +266,8 @@ func assemblyPerSourceLine(objSyms []*objSymbol, rs graph.Nodes, src string, obj
 		// number from F, not from H (which is what Disasm gives us).
 		//
 		// So find the outer-most linenumber in the source file.
-		frames, err := o.file.SourceLine(an.address + o.base)
 		found := false
-		if err == nil {
+		if frames, err := o.file.SourceLine(an.address + o.base); err == nil {
 			for i := len(frames) - 1; i >= 0; i-- {
 				if filepath.Base(frames[i].File) == srcBase {
 					for j := i - 1; j >= 0; j-- {
@@ -522,6 +521,8 @@ type sourceReader struct {
 	// files[*][0] is unused since line numbering starts at 1.
 	files map[string][]string
 
+	// errors collects errors encountered per file.  These errors are
+	// consulted before returning out of these module.
 	errors map[string]error
 }
 
