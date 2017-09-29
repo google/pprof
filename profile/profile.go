@@ -74,6 +74,7 @@ type Sample struct {
 	Value    []int64
 	Label    map[string][]string
 	NumLabel map[string][]int64
+	NumUnit  map[string][]string
 
 	locationIDX []uint64
 	labelX      []label
@@ -85,6 +86,8 @@ type label struct {
 	// Exactly one of the two following values must be set
 	strX int64
 	numX int64 // Integer value for this label
+	// can be set if numX has value
+	unitX int64
 }
 
 // Mapping corresponds to Profile.Mapping
@@ -435,6 +438,74 @@ func (p *Profile) Aggregate(inlineFrame, function, filename, linenumber, address
 	return p.CheckValid()
 }
 
+// NumLabelUnits returns a map of numeric label keys to the units
+// associated with those keys and a map of those keys to any units
+// that were encountered but not used.
+// Unit for a given key is the first encountered unit for that key. If multiple
+// units are encountered for values paired with a particular key, then the first
+// unit encountered is used and all other units are returned in sorted order
+// in map of ignored units.
+// If no units are encountered for a particular key, the unit is then inferred
+// based on the key.
+func (p *Profile) NumLabelUnits() (map[string]string, map[string][]string) {
+	numLabelUnits := map[string]string{}
+	ignoredUnits := map[string]map[string]bool{}
+
+	// Determine units based on numeric tags for each sample.
+	for _, s := range p.Sample {
+		for k, vs := range s.NumLabel {
+			units := s.NumUnit[k]
+			if len(units) != len(vs) {
+				if _, ok := numLabelUnits[k]; !ok {
+					numLabelUnits[k] = ""
+				} else {
+					ignoredUnits[k] = map[string]bool{"": true}
+				}
+				continue
+			}
+			for _, unit := range units {
+				if wantUnit, ok := numLabelUnits[k]; !ok {
+					numLabelUnits[k] = unit
+				} else if wantUnit != unit {
+					if v, ok := ignoredUnits[k]; ok {
+						v[unit] = true
+					} else {
+						ignoredUnits[k] = map[string]bool{unit: true}
+					}
+				}
+			}
+		}
+	}
+
+	// Infer units for keys without any units associated with
+	// numeric tag values.
+	for key, unit := range numLabelUnits {
+		if unit == "" {
+			switch key {
+			case "alignment", "request":
+				numLabelUnits[key] = "bytes"
+			default:
+				numLabelUnits[key] = key
+			}
+		}
+	}
+
+	// Copy ignored units into more readable format
+	unitsIgnored := make(map[string][]string, len(ignoredUnits))
+	for key, values := range ignoredUnits {
+		units := make([]string, len(values))
+		i := 0
+		for unit := range values {
+			units[i] = unit
+			i++
+		}
+		sort.Strings(units)
+		unitsIgnored[key] = units
+	}
+
+	return numLabelUnits, unitsIgnored
+}
+
 // String dumps a text representation of a profile. Intended mainly
 // for debugging purposes.
 func (p *Profile) String() string {
@@ -464,85 +535,130 @@ func (p *Profile) String() string {
 	}
 	ss = append(ss, strings.TrimSpace(sh1))
 	for _, s := range p.Sample {
-		var sv string
-		for _, v := range s.Value {
-			sv = fmt.Sprintf("%s %10d", sv, v)
-		}
-		sv = sv + ": "
-		for _, l := range s.Location {
-			sv = sv + fmt.Sprintf("%d ", l.ID)
-		}
-		ss = append(ss, sv)
-		const labelHeader = "                "
-		if len(s.Label) > 0 {
-			ls := []string{}
-			for k, v := range s.Label {
-				ls = append(ls, fmt.Sprintf("%s:%v", k, v))
-			}
-			sort.Strings(ls)
-			ss = append(ss, labelHeader+strings.Join(ls, " "))
-		}
-		if len(s.NumLabel) > 0 {
-			ls := []string{}
-			for k, v := range s.NumLabel {
-				ls = append(ls, fmt.Sprintf("%s:%v", k, v))
-			}
-			sort.Strings(ls)
-			ss = append(ss, labelHeader+strings.Join(ls, " "))
-		}
+		ss = append(ss, s.string())
 	}
 
 	ss = append(ss, "Locations")
 	for _, l := range p.Location {
-		locStr := fmt.Sprintf("%6d: %#x ", l.ID, l.Address)
-		if m := l.Mapping; m != nil {
-			locStr = locStr + fmt.Sprintf("M=%d ", m.ID)
-		}
-		if len(l.Line) == 0 {
-			ss = append(ss, locStr)
-		}
-		for li := range l.Line {
-			lnStr := "??"
-			if fn := l.Line[li].Function; fn != nil {
-				lnStr = fmt.Sprintf("%s %s:%d s=%d",
-					fn.Name,
-					fn.Filename,
-					l.Line[li].Line,
-					fn.StartLine)
-				if fn.Name != fn.SystemName {
-					lnStr = lnStr + "(" + fn.SystemName + ")"
-				}
-			}
-			ss = append(ss, locStr+lnStr)
-			// Do not print location details past the first line
-			locStr = "             "
-		}
+		ss = append(ss, l.string())
 	}
 
 	ss = append(ss, "Mappings")
 	for _, m := range p.Mapping {
-		bits := ""
-		if m.HasFunctions {
-			bits = bits + "[FN]"
-		}
-		if m.HasFilenames {
-			bits = bits + "[FL]"
-		}
-		if m.HasLineNumbers {
-			bits = bits + "[LN]"
-		}
-		if m.HasInlineFrames {
-			bits = bits + "[IN]"
-		}
-		ss = append(ss, fmt.Sprintf("%d: %#x/%#x/%#x %s %s %s",
-			m.ID,
-			m.Start, m.Limit, m.Offset,
-			m.File,
-			m.BuildID,
-			bits))
+		ss = append(ss, m.string())
 	}
 
 	return strings.Join(ss, "\n") + "\n"
+}
+
+// string dumps a text representation of a mapping. Intended mainly
+// for debugging purposes.
+func (m *Mapping) string() string {
+	bits := ""
+	if m.HasFunctions {
+		bits = bits + "[FN]"
+	}
+	if m.HasFilenames {
+		bits = bits + "[FL]"
+	}
+	if m.HasLineNumbers {
+		bits = bits + "[LN]"
+	}
+	if m.HasInlineFrames {
+		bits = bits + "[IN]"
+	}
+	return fmt.Sprintf("%d: %#x/%#x/%#x %s %s %s",
+		m.ID,
+		m.Start, m.Limit, m.Offset,
+		m.File,
+		m.BuildID,
+		bits)
+}
+
+// string dumps a text representation of a location. Intended mainly
+// for debugging purposes.
+func (l *Location) string() string {
+	ss := []string{}
+	locStr := fmt.Sprintf("%6d: %#x ", l.ID, l.Address)
+	if m := l.Mapping; m != nil {
+		locStr = locStr + fmt.Sprintf("M=%d ", m.ID)
+	}
+	if len(l.Line) == 0 {
+		ss = append(ss, locStr)
+	}
+	for li := range l.Line {
+		lnStr := "??"
+		if fn := l.Line[li].Function; fn != nil {
+			lnStr = fmt.Sprintf("%s %s:%d s=%d",
+				fn.Name,
+				fn.Filename,
+				l.Line[li].Line,
+				fn.StartLine)
+			if fn.Name != fn.SystemName {
+				lnStr = lnStr + "(" + fn.SystemName + ")"
+			}
+		}
+		ss = append(ss, locStr+lnStr)
+		// Do not print location details past the first line
+		locStr = "             "
+	}
+	return strings.Join(ss, "\n")
+}
+
+// string dumps a text representation of a sample. Intended mainly
+// for debugging purposes.
+func (s *Sample) string() string {
+	ss := []string{}
+	var sv string
+	for _, v := range s.Value {
+		sv = fmt.Sprintf("%s %10d", sv, v)
+	}
+	sv = sv + ": "
+	for _, l := range s.Location {
+		sv = sv + fmt.Sprintf("%d ", l.ID)
+	}
+	ss = append(ss, sv)
+	const labelHeader = "                "
+	if len(s.Label) > 0 {
+		ss = append(ss, labelHeader+labelsToString(s.Label))
+	}
+	if len(s.NumLabel) > 0 {
+		ss = append(ss, labelHeader+numLabelsToString(s.NumLabel, s.NumUnit))
+	}
+	return strings.Join(ss, "\n")
+}
+
+// labelsToString returns a string representation of a
+// map representing labels.
+func labelsToString(labels map[string][]string) string {
+	ls := []string{}
+	for k, v := range labels {
+		ls = append(ls, fmt.Sprintf("%s:%v", k, v))
+	}
+	sort.Strings(ls)
+	return strings.Join(ls, " ")
+}
+
+// numLablesToString returns a string representation of a map
+// representing numeric labels.
+func numLabelsToString(numLabels map[string][]int64, numUnits map[string][]string) string {
+	ls := []string{}
+	for k, v := range numLabels {
+		units := numUnits[k]
+		var labelString string
+		if len(units) == len(v) {
+			values := make([]string, len(v))
+			for i, vv := range v {
+				values[i] = fmt.Sprintf("%d %s", vv, units[i])
+			}
+			labelString = fmt.Sprintf("%s:%v", k, values)
+		} else {
+			labelString = fmt.Sprintf("%s:%v", k, v)
+		}
+		ls = append(ls, labelString)
+	}
+	sort.Strings(ls)
+	return strings.Join(ls, " ")
 }
 
 // Scale multiplies all sample values in a profile by a constant.

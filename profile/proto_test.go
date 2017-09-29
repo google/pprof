@@ -113,8 +113,15 @@ var all = &Profile{
 				"key2": {"value2"},
 			},
 			NumLabel: map[string][]int64{
-				"key1": {1, 2},
-				"key2": {3, 4},
+				"key1":      {1, 2},
+				"key2":      {3, 4},
+				"bytes":     {3, 4},
+				"requests":  {1, 1, 3, 4, 5},
+				"alignment": {3, 4},
+			},
+			NumUnit: map[string][]string{
+				"requests":  {"", "", "seconds", "", "s"},
+				"alignment": {"kilobytes", "kilobytes"},
 			},
 		},
 	},

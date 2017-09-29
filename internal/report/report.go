@@ -65,6 +65,7 @@ type Options struct {
 	Title               string
 	ProfileLabels       []string
 	ActiveFilters       []string
+	NumLabelUnits       map[string]string
 
 	NodeCount    int
 	NodeFraction float64
@@ -241,15 +242,27 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	for _, f := range prof.Function {
 		f.Filename = trimPath(f.Filename)
 	}
-	// Remove numeric tags not recognized by pprof.
+	// Removes all numeric tags except for the bytes tag prior
+	// to making graph.
+	// TODO: modify to select first numeric tag if no bytes tag
 	for _, s := range prof.Sample {
 		numLabels := make(map[string][]int64, len(s.NumLabel))
-		for k, v := range s.NumLabel {
+		numUnits := make(map[string][]string, len(s.NumLabel))
+		for k, vs := range s.NumLabel {
 			if k == "bytes" {
-				numLabels[k] = append(numLabels[k], v...)
+				unit := o.NumLabelUnits[k]
+				numValues := make([]int64, len(vs))
+				numUnit := make([]string, len(vs))
+				for i, v := range vs {
+					numValues[i] = v
+					numUnit[i] = unit
+				}
+				numLabels[k] = append(numLabels[k], numValues...)
+				numUnits[k] = append(numUnits[k], numUnit...)
 			}
 		}
 		s.NumLabel = numLabels
+		s.NumUnit = numUnits
 	}
 
 	formatTag := func(v int64, key string) string {
@@ -651,8 +664,9 @@ func printTags(w io.Writer, rpt *Report) error {
 			}
 		}
 		for key, vals := range s.NumLabel {
+			unit := o.NumLabelUnits[key]
 			for _, nval := range vals {
-				val := formatTag(nval, key)
+				val := formatTag(nval, unit)
 				valueMap, ok := tagMap[key]
 				if !ok {
 					valueMap = make(map[string]int64)
@@ -807,8 +821,13 @@ func printTraces(w io.Writer, rpt *Report) error {
 
 		// Print any numeric labels for the sample
 		var numLabels []string
-		for k, v := range sample.NumLabel {
-			numLabels = append(numLabels, fmt.Sprintf("%10s:  %s\n", k, strings.Trim(fmt.Sprintf("%d", v), "[]")))
+		for key, vals := range sample.NumLabel {
+			unit := o.NumLabelUnits[key]
+			numValues := make([]string, len(vals))
+			for i, vv := range vals {
+				numValues[i] = measurement.Label(vv, unit)
+			}
+			numLabels = append(numLabels, fmt.Sprintf("%10s:  %s\n", key, strings.Join(numValues, " ")))
 		}
 		sort.Strings(numLabels)
 		fmt.Fprint(w, strings.Join(numLabels, ""))

@@ -89,6 +89,7 @@ func TestParse(t *testing.T) {
 		{"disasm=line[13],addresses,flat", "cpu"},
 		{"peek=line.*01", "cpu"},
 		{"weblist=line[13],addresses,flat", "cpu"},
+		{"tags,tagfocus=400kb:", "heap_request"},
 	}
 
 	baseVars := pprofVariables
@@ -395,11 +396,17 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 			{Type: "alloc_objects", Unit: "count"},
 			{Type: "alloc_space", Unit: "bytes"},
 		}
+	case "heap_request":
+		p = heapProfile()
+		for _, s := range p.Sample {
+			s.NumLabel["request"] = s.NumLabel["bytes"]
+		}
 	case "heap_sizetags":
 		p = heapProfile()
 		tags := []int64{2, 4, 8, 16, 32, 64, 128, 256}
 		for _, s := range p.Sample {
-			s.NumLabel["bytes"] = append(s.NumLabel["bytes"], tags...)
+			numValues := append(s.NumLabel["bytes"], tags...)
+			s.NumLabel["bytes"] = numValues
 		}
 	case "heap_tags":
 		p = heapProfile()
@@ -783,30 +790,22 @@ func heapProfile() *profile.Profile {
 			{
 				Location: []*profile.Location{heapL[0], heapL[1], heapL[2]},
 				Value:    []int64{10, 1024000},
-				NumLabel: map[string][]int64{
-					"bytes": {102400},
-				},
+				NumLabel: map[string][]int64{"bytes": {102400}},
 			},
 			{
 				Location: []*profile.Location{heapL[0], heapL[3]},
 				Value:    []int64{20, 4096000},
-				NumLabel: map[string][]int64{
-					"bytes": {204800},
-				},
+				NumLabel: map[string][]int64{"bytes": {204800}},
 			},
 			{
 				Location: []*profile.Location{heapL[1], heapL[4]},
 				Value:    []int64{40, 65536000},
-				NumLabel: map[string][]int64{
-					"bytes": {1638400},
-				},
+				NumLabel: map[string][]int64{"bytes": {1638400}},
 			},
 			{
 				Location: []*profile.Location{heapL[2]},
 				Value:    []int64{80, 32768000},
-				NumLabel: map[string][]int64{
-					"bytes": {409600},
-				},
+				NumLabel: map[string][]int64{"bytes": {409600}},
 			},
 		},
 		DropFrames: ".*operator new.*|malloc",
@@ -989,76 +988,320 @@ func TestAutoComplete(t *testing.T) {
 
 func TestTagFilter(t *testing.T) {
 	var tagFilterTests = []struct {
-		name, value string
+		desc, value string
 		tags        map[string][]string
 		want        bool
 	}{
-		{"test1", "tag2", map[string][]string{"value1": {"tag1", "tag2"}}, true},
-		{"test2", "tag3", map[string][]string{"value1": {"tag1", "tag2"}}, false},
-		{"test3", "tag1,tag3", map[string][]string{"value1": {"tag1", "tag2"}, "value2": {"tag3"}}, true},
-		{"test4", "t..[12],t..3", map[string][]string{"value1": {"tag1", "tag2"}, "value2": {"tag3"}}, true},
-		{"test5", "tag2,tag3", map[string][]string{"value1": {"tag1", "tag2"}}, false},
-		{"test6", "key1=tag1,tag2", map[string][]string{"key1": {"tag1", "tag2"}}, true},
-		{"test7", "key1=tag1,tag2", map[string][]string{"key1": {"tag1"}}, true},
-		{"test8", "key1:tag1,tag2", map[string][]string{"key1": {"tag1", "tag2"}}, true},
-		{"test9", "key1:tag1,tag2", map[string][]string{"key1": {"tag2"}}, false},
-		{"test10", "key1:tag1,tag2", map[string][]string{"key1": {"tag1"}}, false},
+		{
+			"1 key with 1 matching value",
+			"tag2",
+			map[string][]string{"value1": {"tag1", "tag2"}},
+			true,
+		},
+		{
+			"1 key with no matching values",
+			"tag3",
+			map[string][]string{"value1": {"tag1", "tag2"}},
+			false,
+		},
+		{
+			"two keys, each with value matching different one value in list",
+			"tag1,tag3",
+			map[string][]string{"value1": {"tag1", "tag2"}, "value2": {"tag3"}},
+			true,
+		},
+		{"two keys, all value matching different regex value in list",
+			"t..[12],t..3",
+			map[string][]string{"value1": {"tag1", "tag2"}, "value2": {"tag3"}},
+			true,
+		},
+		{
+			"one key, not all values in list matched",
+			"tag2,tag3",
+			map[string][]string{"value1": {"tag1", "tag2"}},
+			false,
+		},
+		{
+			"key specified, list of tags where all tags in list matched",
+			"key1=tag1,tag2",
+			map[string][]string{"key1": {"tag1", "tag2"}},
+			true,
+		},
+		{"key specified, list of tag values where not all are matched",
+			"key1=tag1,tag2",
+			map[string][]string{"key1": {"tag1"}},
+			true,
+		},
+		{
+			"key included for regex matching, list of values where all values in list matched",
+			"key1:tag1,tag2",
+			map[string][]string{"key1": {"tag1", "tag2"}},
+			true,
+		},
+		{
+			"key included for regex matching, list of values where not only second value matched",
+			"key1:tag1,tag2",
+			map[string][]string{"key1": {"tag2"}},
+			false,
+		},
+		{
+			"key included for regex matching, list of values where not only first value matched",
+			"key1:tag1,tag2",
+			map[string][]string{"key1": {"tag1"}},
+			false,
+		},
 	}
 	for _, test := range tagFilterTests {
-		filter, err := compileTagFilter(test.name, test.value, &proftest.TestUI{T: t}, nil)
-		if err != nil {
-			t.Errorf("tagFilter %s:%v", test.name, err)
-			continue
-		}
-		s := profile.Sample{
-			Label: test.tags,
-		}
+		t.Run(test.desc, func(*testing.T) {
+			filter, err := compileTagFilter(test.desc, test.value, nil, &proftest.TestUI{T: t}, nil)
+			if err != nil {
+				t.Fatalf("tagFilter %s:%v", test.desc, err)
+			}
+			s := profile.Sample{
+				Label: test.tags,
+			}
+			if got := filter(&s); got != test.want {
+				t.Errorf("tagFilter %s: got %v, want %v", test.desc, got, test.want)
+			}
+		})
+	}
+}
 
-		if got := filter(&s); got != test.want {
-			t.Errorf("tagFilter %s: got %v, want %v", test.name, got, test.want)
-		}
+func TestIdentifyNumLabelUnits(t *testing.T) {
+	var tagFilterTests = []struct {
+		desc               string
+		tagVals            []map[string][]int64
+		tagUnits           []map[string][]string
+		wantUnits          map[string]string
+		allowedRx          string
+		wantIgnoreErrCount int
+	}{
+		{
+			"Multiple keys, different units",
+			[]map[string][]int64{{"key1": {131072}, "key2": {128}}},
+			[]map[string][]string{{"key1": {"bytes"}, "key2": {"kilobytes"}}},
+			map[string]string{"key1": "bytes", "key2": "kilobytes"},
+			"",
+			0,
+		},
+		{
+			"One key with different units in same sample",
+			[]map[string][]int64{{"key1": {8, 8}}},
+			[]map[string][]string{{"key1": {"bytes", "kilobytes"}}},
+			map[string]string{"key1": "bytes"},
+			`(For tag key1 used unit bytes, also encountered unit\(s\) kilobytes)`,
+			1,
+		},
+		{
+			"One key with different units in different samples",
+			[]map[string][]int64{{"key1": {8}}, {"key1": {8}}},
+			[]map[string][]string{{"key1": {"bytes"}}, {"key1": {"kilobytes"}}},
+			map[string]string{"key1": "bytes"},
+			`(For tag key1 used unit bytes, also encountered unit\(s\) kilobytes)`,
+			1,
+		},
+		{
+			"Check units not over-written for keys with default units",
+			[]map[string][]int64{{
+				"alignment": {8},
+				"request":   {8},
+				"bytes":     {8},
+			}},
+			[]map[string][]string{{
+				"alignment": {"seconds"},
+				"request":   {"minutes"},
+				"bytes":     {"hours"},
+			}},
+			map[string]string{
+				"alignment": "seconds",
+				"request":   "minutes",
+				"bytes":     "hours",
+			},
+			"",
+			0,
+		},
+	}
+	for _, test := range tagFilterTests {
+		t.Run(test.desc, func(*testing.T) {
+			p := profile.Profile{Sample: make([]*profile.Sample, len(test.tagVals))}
+			for i, numLabel := range test.tagVals {
+				s := profile.Sample{
+					NumLabel: numLabel,
+					NumUnit:  test.tagUnits[i],
+				}
+				p.Sample[i] = &s
+			}
+			testUI := &proftest.TestUI{T: t, AllowRx: test.allowedRx}
+			units := identifyNumLabelUnits(&p, testUI)
+			for key, wantUnit := range test.wantUnits {
+				unit := units[key]
+				if wantUnit != unit {
+					t.Errorf("for key %s, got unit %s, want unit %s", key, unit, wantUnit)
+				}
+			}
+			if got, want := testUI.NumAllowRxMatches, test.wantIgnoreErrCount; want != got {
+				t.Errorf("got %d errors logged, want %d errors logged", got, want)
+			}
+		})
 	}
 }
 
 func TestNumericTagFilter(t *testing.T) {
 	var tagFilterTests = []struct {
-		name, value string
-		tags        map[string][]int64
-		want        bool
+		desc, value     string
+		tags            map[string][]int64
+		identifiedUnits map[string]string
+		want            bool
 	}{
-		{"test1", "128kb", map[string][]int64{"bytes": {131072}, "kilobytes": {128}}, true},
-		{"test2", "512kb", map[string][]int64{"bytes": {512}, "kilobytes": {128}}, false},
-		{"test3", "10b", map[string][]int64{"bytes": {10, 20}, "kilobytes": {128}}, true},
-		{"test4", ":10b", map[string][]int64{"bytes": {8}}, true},
-		{"test5", ":10kb", map[string][]int64{"bytes": {8}}, true},
-		{"test6", "10b:", map[string][]int64{"kilobytes": {8}}, true},
-		{"test7", "10b:", map[string][]int64{"bytes": {12}}, true},
-		{"test8", "10b:", map[string][]int64{"bytes": {8}}, false},
-		{"test9", "10kb:", map[string][]int64{"bytes": {8}}, false},
-		{"test10", ":10b", map[string][]int64{"kilobytes": {8}}, false},
-		{"test11", ":10b", map[string][]int64{"bytes": {12}}, false},
-		{"test12", "bytes=5b", map[string][]int64{"bytes": {5, 10}}, true},
-		{"test13", "bytes=1024b", map[string][]int64{"kilobytes": {1, 1024}}, false},
-		{"test14", "bytes=1024b", map[string][]int64{"kilobytes": {5}, "bytes": {1024}}, true},
-		{"test15", "bytes=512b:1024b", map[string][]int64{"bytes": {780}}, true},
-		{"test16", "bytes=1kb:2kb", map[string][]int64{"bytes": {4096}}, false},
-		{"test17", "bytes=512b:1024b", map[string][]int64{"bytes": {256}}, false},
+		{
+			"Match when unit conversion required",
+			"128kb",
+			map[string][]int64{"key1": {131072}, "key2": {128}},
+			map[string]string{"key1": "bytes", "key2": "kilobytes"},
+			true,
+		},
+		{
+			"Match only when values equal after unit conversion",
+			"512kb",
+			map[string][]int64{"key1": {512}, "key2": {128}},
+			map[string]string{"key1": "bytes", "key2": "kilobytes"},
+			false,
+		},
+		{
+			"Match when values and units initially equal",
+			"10bytes",
+			map[string][]int64{"key1": {10}, "key2": {128}},
+			map[string]string{"key1": "bytes", "key2": "kilobytes"},
+			true,
+		},
+		{
+			"Match range without lower bound, no unit conversion required",
+			":10bytes",
+			map[string][]int64{"key1": {8}},
+			map[string]string{"key1": "bytes"},
+			true,
+		},
+		{
+			"Match range without lower bound, unit conversion required",
+			":10kb",
+			map[string][]int64{"key1": {8}},
+			map[string]string{"key1": "bytes"},
+			true,
+		},
+		{
+			"Match range without upper bound, unit conversion required",
+			"10b:",
+			map[string][]int64{"key1": {8}},
+			map[string]string{"key1": "kilobytes"},
+			true,
+		},
+		{
+			"Match range without upper bound, no unit conversion required",
+			"10b:",
+			map[string][]int64{"key1": {12}},
+			map[string]string{"key1": "bytes"},
+			true,
+		},
+		{
+			"Don't match range without upper bound, no unit conversion required",
+			"10b:",
+			map[string][]int64{"key1": {8}},
+			map[string]string{"key1": "bytes"},
+			false,
+		},
+		{
+			"Multiple keys with different units, don't match range without upper bound",
+			"10kb:",
+			map[string][]int64{"key1": {8}},
+			map[string]string{"key1": "bytes", "key2": "kilobytes"},
+			false,
+		},
+		{
+			"Match range without upper bound, unit conversion required",
+			"10b:",
+			map[string][]int64{"key1": {8}},
+			map[string]string{"key1": "kilobytes"},
+			true,
+		},
+		{
+			"Don't match range without lower bound, no unit conversion required",
+			":10b",
+			map[string][]int64{"key1": {12}},
+			map[string]string{"key1": "bytes"},
+			false,
+		},
+		{
+			"Match specific key, key present, one of two values match",
+			"bytes=5b",
+			map[string][]int64{"bytes": {10, 5}},
+			map[string]string{"bytes": "bytes"},
+			true,
+		},
+		{
+			"Match specific key, key present and value matches",
+			"bytes=1024b",
+			map[string][]int64{"bytes": {1024}},
+			map[string]string{"bytes": "kilobytes"},
+			false,
+		},
+		{
+			"Match specific key, matching key present and value matches, also non-matching key",
+			"bytes=1024b",
+			map[string][]int64{"bytes": {1024}, "key2": {5}},
+			map[string]string{"bytes": "bytes", "key2": "bytes"},
+			true,
+		},
+		{
+			"Match specific key and range of values, value matches",
+			"bytes=512b:1024b",
+			map[string][]int64{"bytes": {780}},
+			map[string]string{"bytes": "bytes"},
+			true,
+		},
+		{
+			"Match specific key and range of values, value too large",
+			"key1=1kb:2kb",
+			map[string][]int64{"key1": {4096}},
+			map[string]string{"key1": "bytes"},
+			false,
+		},
+		{
+			"Match specific key and range of values, value too small",
+			"key1=1kb:2kb",
+			map[string][]int64{"key1": {256}},
+			map[string]string{"key1": "bytes"},
+			false,
+		},
+		{
+			"Match specific key and value, unit conversion required",
+			"bytes=1024b",
+			map[string][]int64{"bytes": {1}},
+			map[string]string{"bytes": "kilobytes"},
+			true,
+		},
+		{
+			"Match specific key and value, key does not appear",
+			"key2=256bytes",
+			map[string][]int64{"key1": {256}},
+			map[string]string{"key1": "bytes"},
+			false,
+		},
 	}
 	for _, test := range tagFilterTests {
-		expectedErrMsg := fmt.Sprint([]string{test.name, ":Interpreted '", test.value, "' as range, not regexp"})
-		filter, err := compileTagFilter(test.name, test.value, &proftest.TestUI{T: t,
-			IgnoreRx: expectedErrMsg}, nil)
-		if err != nil {
-			t.Errorf("tagFilter %s:%v", test.name, err)
-			continue
-		}
-		s := profile.Sample{
-			NumLabel: test.tags,
-		}
-
-		if got := filter(&s); got != test.want {
-			t.Errorf("tagFilter %s: got %v, want %v", test.name, got, test.want)
-		}
+		t.Run(test.desc, func(*testing.T) {
+			wantErrMsg := strings.Join([]string{"(", test.desc, ":Interpreted '", test.value[strings.Index(test.value, "=")+1:], "' as range, not regexp", ")"}, "")
+			filter, err := compileTagFilter(test.desc, test.value, test.identifiedUnits, &proftest.TestUI{T: t,
+				AllowRx: wantErrMsg}, nil)
+			if err != nil {
+				t.Fatalf("%v", err)
+			}
+			s := profile.Sample{
+				NumLabel: test.tags,
+			}
+			if got := filter(&s); got != test.want {
+				t.Fatalf("got %v, want %v", got, test.want)
+			}
+		})
 	}
 }
 
