@@ -27,7 +27,7 @@ func TestWebList(t *testing.T) {
 	})
 	buf := bytes.NewBuffer(nil)
 	if err := Generate(buf, rpt, &binutils.Binutils{}); err != nil {
-		t.Fatalf("could not generate weblist", err)
+		t.Fatalf("could not generate weblist: %v", err)
 	}
 	output := buf.String()
 
