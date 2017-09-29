@@ -42,7 +42,7 @@ func TestParse(t *testing.T) {
 	pprofCommands["weblist"].postProcess = nil
 
 	// Our mockObjTool.Open will always return success, causing
-	// driver.locateBinaries to "find" the binaries below in a non-existant
+	// driver.locateBinaries to "find" the binaries below in a non-existent
 	// directory. As a workaround, point the search path to the fake
 	// directory containing out fake binaries.
 	savePath := os.Getenv("PPROF_BINARY_PATH")

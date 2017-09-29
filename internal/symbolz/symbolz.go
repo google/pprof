@@ -83,7 +83,7 @@ func symbolz(source string) string {
 
 // symbolizeMapping symbolizes locations belonging to a Mapping by querying
 // a symbolz handler. An offset is applied to all addresses to take care of
-// normalization occured for merged Mappings.
+// normalization occurred for merged Mappings.
 func symbolizeMapping(source string, offset int64, syms func(string, string) ([]byte, error), m *profile.Mapping, p *profile.Profile) error {
 	// Construct query of addresses to symbolize.
 	var a []string
