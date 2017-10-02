@@ -60,3 +60,9 @@ Recent versions of pprof will automatically invoke `perf_to_profile`:
 ```
 pprof -web perf.data
 ```
+
+# Contribution:
+We appreciate your help!
+
+Note that perf data converter and quipper projects do not use GitHub pull
+requests, and that we use the issue tracker for bug reports.
