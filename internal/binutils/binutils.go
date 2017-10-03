@@ -32,7 +32,7 @@ import (
 
 // A Binutils implements plugin.ObjTool by invoking the GNU binutils.
 type Binutils struct {
-	sync.Mutex
+	mu  sync.Mutex
 	rep *binrep
 }
 
@@ -56,22 +56,22 @@ type binrep struct {
 
 // get returns the current representation for bu, initializing it if necessary.
 func (bu *Binutils) get() *binrep {
-	bu.Mutex.Lock()
+	bu.mu.Lock()
 	r := bu.rep
 	if r == nil {
 		r = &binrep{}
 		initTools(r, "")
 		bu.rep = r
 	}
-	bu.Mutex.Unlock()
+	bu.mu.Unlock()
 	return r
 }
 
 // update modifies the rep for bu via the supplied function.
 func (bu *Binutils) update(fn func(r *binrep)) {
 	r := &binrep{}
-	bu.Mutex.Lock()
-	defer bu.Mutex.Unlock()
+	bu.mu.Lock()
+	defer bu.mu.Unlock()
 	if bu.rep == nil {
 		initTools(r, "")
 	} else {

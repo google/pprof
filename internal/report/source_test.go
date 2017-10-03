@@ -14,8 +14,8 @@ import (
 )
 
 func TestWebList(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("weblist only tested on linux")
+	if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
+		t.Skip("weblist only tested on x86-64 linux")
 	}
 
 	cpu := readProfile(filepath.Join("testdata", "sample.cpu"), t)
@@ -40,8 +40,8 @@ func TestWebList(t *testing.T) {
 
 func TestIndentation(t *testing.T) {
 	for _, c := range []struct {
-		str    string
-		indent int
+		str        string
+		wantIndent int
 	}{
 		{"", 0},
 		{"foobar", 0},
@@ -52,8 +52,8 @@ func TestIndentation(t *testing.T) {
 		{"       \tfoo", 8},
 		{"        \tfoo", 16},
 	} {
-		if n := indentation(c.str); n != c.indent {
-			t.Errorf("indentation for %v: expect %d, got %d\n", c.str, c.indent, n)
+		if n := indentation(c.str); n != c.wantIndent {
+			t.Errorf("indentation(%v): got %d, want %d", c.str, n, c.wantIndent)
 		}
 	}
 }
