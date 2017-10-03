@@ -70,7 +70,7 @@ func TestWebInterface(t *testing.T) {
 		{"/", []string{"F1", "F2", "F3", "testbin", "cpu"}, true},
 		{"/top", []string{`"Name":"F2","InlineLabel":"","Flat":200,"Cum":300,"FlatFormat":"200ms","CumFormat":"300ms"}`}, false},
 		{"/source?f=" + url.QueryEscape("F[12]"),
-			[]string{"F1", "F2", "300ms line1"}, false},
+			[]string{"F1", "F2", "300ms +line1"}, false},
 		{"/peek?f=" + url.QueryEscape("F[12]"),
 			[]string{"300ms.*F1", "200ms.*300ms.*F2"}, false},
 		{"/disasm?f=" + url.QueryEscape("F[12]"),

@@ -516,6 +516,7 @@ func symbolsFromBinaries(prof *profile.Profile, g *graph.Graph, rx *regexp.Regex
 				&objSymbol{
 					sym:  ms,
 					base: base,
+					file: f,
 				},
 			)
 		}
@@ -530,6 +531,7 @@ func symbolsFromBinaries(prof *profile.Profile, g *graph.Graph, rx *regexp.Regex
 type objSymbol struct {
 	sym  *plugin.Sym
 	base uint64
+	file plugin.ObjFile
 }
 
 // orderSyms is a wrapper type to sort []*objSymbol by a supplied comparator.
@@ -566,6 +568,12 @@ type assemblyInstruction struct {
 	flat, cum       int64
 	flatDiv, cumDiv int64
 	startsBlock     bool
+	inlineCalls     []callID
+}
+
+type callID struct {
+	file string
+	line int
 }
 
 func (a *assemblyInstruction) flatValue() int64 {
