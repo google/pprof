@@ -290,7 +290,7 @@ func identifyNumLabelUnits(p *profile.Profile, ui plugin.UI) map[string]string {
 	// Print errors for tags with multiple units associated with
 	// a single key.
 	for k, units := range ignoredUnits {
-		ui.PrintErr(fmt.Sprintf("For tag %s used unit %s, also encountered unit(s) %s", k, numLabelUnits[k], strings.Join(units, ",")))
+		ui.PrintErr(fmt.Sprintf("For tag %s used unit %s, also encountered unit(s) %s", k, numLabelUnits[k], strings.Join(units, ", ")))
 	}
 	return numLabelUnits
 }

@@ -450,20 +450,16 @@ func (p *Profile) Aggregate(inlineFrame, function, filename, linenumber, address
 func (p *Profile) NumLabelUnits() (map[string]string, map[string][]string) {
 	numLabelUnits := map[string]string{}
 	ignoredUnits := map[string]map[string]bool{}
+	encounteredKeys := map[string]bool{}
 
 	// Determine units based on numeric tags for each sample.
 	for _, s := range p.Sample {
-		for k, vs := range s.NumLabel {
-			units := s.NumUnit[k]
-			if len(units) != len(vs) {
-				if _, ok := numLabelUnits[k]; !ok {
-					numLabelUnits[k] = ""
-				} else {
-					ignoredUnits[k] = map[string]bool{"": true}
+		for k := range s.NumLabel {
+			encounteredKeys[k] = true
+			for _, unit := range s.NumUnit[k] {
+				if unit == "" {
+					continue
 				}
-				continue
-			}
-			for _, unit := range units {
 				if wantUnit, ok := numLabelUnits[k]; !ok {
 					numLabelUnits[k] = unit
 				} else if wantUnit != unit {
@@ -476,10 +472,10 @@ func (p *Profile) NumLabelUnits() (map[string]string, map[string][]string) {
 			}
 		}
 	}
-
 	// Infer units for keys without any units associated with
 	// numeric tag values.
-	for key, unit := range numLabelUnits {
+	for key := range encounteredKeys {
+		unit := numLabelUnits[key]
 		if unit == "" {
 			switch key {
 			case "alignment", "request":

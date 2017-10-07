@@ -22,6 +22,7 @@ import (
 	"net"
 	_ "net/http/pprof"
 	"os"
+	"reflect"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -1077,28 +1078,84 @@ func TestIdentifyNumLabelUnits(t *testing.T) {
 		wantIgnoreErrCount int
 	}{
 		{
-			"Multiple keys, different units",
-			[]map[string][]int64{{"key1": {131072}, "key2": {128}}},
-			[]map[string][]string{{"key1": {"bytes"}, "key2": {"kilobytes"}}},
-			map[string]string{"key1": "bytes", "key2": "kilobytes"},
+			"Multiple keys, no units for all keys",
+			[]map[string][]int64{{"keyA": {131072}, "keyB": {128}}},
+			[]map[string][]string{{"keyA": {}, "keyB": {""}}},
+			map[string]string{"keyA": "keyA", "keyB": "keyB"},
 			"",
 			0,
 		},
 		{
-			"One key with different units in same sample",
-			[]map[string][]int64{{"key1": {8, 8}}},
-			[]map[string][]string{{"key1": {"bytes", "kilobytes"}}},
-			map[string]string{"key1": "bytes"},
-			`(For tag key1 used unit bytes, also encountered unit\(s\) kilobytes)`,
+			"Multiple keys, different units for each key",
+			[]map[string][]int64{{"keyA": {131072}, "keyB": {128}}},
+			[]map[string][]string{{"keyA": {"bytes"}, "keyB": {"kilobytes"}}},
+			map[string]string{"keyA": "bytes", "keyB": "kilobytes"},
+			"",
+			0,
+		},
+		{
+			"Multiple keys with multiple values, different units for each key",
+			[]map[string][]int64{{"keyC": {131072, 1}, "keyD": {128, 252}}},
+			[]map[string][]string{{"keyC": {"bytes", "bytes"}, "keyD": {"kilobytes", "kilobytes"}}},
+			map[string]string{"keyC": "bytes", "keyD": "kilobytes"},
+			"",
+			0,
+		},
+		{
+			"Multiple keys with multiple values, some units missing",
+			[]map[string][]int64{{"key1": {131072, 1}, "A": {128, 252}, "key3": {128}, "key4": {1}}, {"key3": {128}, "key4": {1}}},
+			[]map[string][]string{{"key1": {"", "bytes"}, "A": {"kilobytes", ""}, "key3": {""}, "key4": {"hour"}}, {"key3": {"seconds"}, "key4": {""}}},
+			map[string]string{"key1": "bytes", "A": "kilobytes", "key3": "seconds", "key4": "hour"},
+			"",
+			0,
+		},
+		{
+			"One key with three units in same sample",
+			[]map[string][]int64{{"key": {8, 8, 16}}},
+			[]map[string][]string{{"key": {"bytes", "megabytes", "kilobytes"}}},
+			map[string]string{"key": "bytes"},
+			`(For tag key used unit bytes, also encountered unit\(s\) kilobytes, megabytes)`,
+			1,
+		},
+		{
+			"One key with four units in same sample",
+			[]map[string][]int64{{"key": {8, 8, 16, 32}}},
+			[]map[string][]string{{"key": {"bytes", "kilobytes", "a", "megabytes"}}},
+			map[string]string{"key": "bytes"},
+			`(For tag key used unit bytes, also encountered unit\(s\) a, kilobytes, megabytes)`,
+			1,
+		},
+		{
+			"One key with two units in same sample",
+			[]map[string][]int64{{"key": {8, 8}}},
+			[]map[string][]string{{"key": {"bytes", "seconds"}}},
+			map[string]string{"key": "bytes"},
+			`(For tag key used unit bytes, also encountered unit\(s\) seconds)`,
 			1,
 		},
 		{
 			"One key with different units in different samples",
-			[]map[string][]int64{{"key1": {8}}, {"key1": {8}}},
-			[]map[string][]string{{"key1": {"bytes"}}, {"key1": {"kilobytes"}}},
+			[]map[string][]int64{{"key1": {8}}, {"key1": {8}}, {"key1": {8}}},
+			[]map[string][]string{{"key1": {"bytes"}}, {"key1": {"kilobytes"}}, {"key1": {"megabytes"}}},
 			map[string]string{"key1": "bytes"},
-			`(For tag key1 used unit bytes, also encountered unit\(s\) kilobytes)`,
+			`(For tag key1 used unit bytes, also encountered unit\(s\) kilobytes, megabytes)`,
 			1,
+		},
+		{
+			"Key alignment, unit not specified",
+			[]map[string][]int64{{"alignment": {8}}},
+			[]map[string][]string{nil},
+			map[string]string{"alignment": "bytes"},
+			"",
+			0,
+		},
+		{
+			"Key request, unit not specified",
+			[]map[string][]int64{{"request": {8}}, {"request": {8, 8}}},
+			[]map[string][]string{nil, nil},
+			map[string]string{"request": "bytes"},
+			"",
+			0,
 		},
 		{
 			"Check units not over-written for keys with default units",
@@ -1133,11 +1190,8 @@ func TestIdentifyNumLabelUnits(t *testing.T) {
 			}
 			testUI := &proftest.TestUI{T: t, AllowRx: test.allowedRx}
 			units := identifyNumLabelUnits(&p, testUI)
-			for key, wantUnit := range test.wantUnits {
-				unit := units[key]
-				if wantUnit != unit {
-					t.Errorf("for key %s, got unit %s, want unit %s", key, unit, wantUnit)
-				}
+			if !reflect.DeepEqual(test.wantUnits, units) {
+				t.Errorf("got %v units, want %v", units, test.wantUnits)
 			}
 			if got, want := testUI.NumAllowRxMatches, test.wantIgnoreErrCount; want != got {
 				t.Errorf("got %d errors logged, want %d errors logged", got, want)

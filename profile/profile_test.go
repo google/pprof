@@ -811,9 +811,9 @@ func locationHash(s *Sample) string {
 	return tb
 }
 
-func TestInferUnits(t *testing.T) {
+func TestNumLabelUnits(t *testing.T) {
 	var tagFilterTests = []struct {
-		name             string
+		desc             string
 		tagVals          []map[string][]int64
 		tagUnits         []map[string][]string
 		wantUnits        map[string]string
@@ -831,6 +831,13 @@ func TestInferUnits(t *testing.T) {
 			[]map[string][]int64{{"key1": {8}}},
 			[]map[string][]string{{"key1": {"bytes"}}},
 			map[string]string{"key1": "bytes"},
+			map[string][]string{},
+		},
+		{
+			"One sample, one key with one value, empty unit specified",
+			[]map[string][]int64{{"key1": {8}}},
+			[]map[string][]string{{"key1": {""}}},
+			map[string]string{"key1": "key1"},
 			map[string][]string{},
 		},
 		{
@@ -862,11 +869,18 @@ func TestInferUnits(t *testing.T) {
 			map[string][]string{},
 		},
 		{
-			"One sample, one key with multiple values and different units",
+			"One sample, one key with multiple values and two different units",
 			[]map[string][]int64{{"key1": {8, 8}}},
 			[]map[string][]string{{"key1": {"bytes", "kilobytes"}}},
 			map[string]string{"key1": "bytes"},
 			map[string][]string{"key1": {"kilobytes"}},
+		},
+		{
+			"One sample, one key with multiple values and three different units",
+			[]map[string][]int64{{"key1": {8, 8}}},
+			[]map[string][]string{{"key1": {"bytes", "megabytes", "kilobytes"}}},
+			map[string]string{"key1": "bytes"},
+			map[string][]string{"key1": {"kilobytes", "megabytes"}},
 		},
 		{
 			"Two samples, one key, different units specified",
@@ -905,24 +919,11 @@ func TestInferUnits(t *testing.T) {
 			p.Sample[i] = &s
 		}
 		units, ignoredUnits := p.NumLabelUnits()
-		for key, wantUnit := range test.wantUnits {
-			unit := units[key]
-			if wantUnit != unit {
-				t.Errorf("%s: for key %s, got unit %s, want unit %s", test.name, key, unit, wantUnit)
-			}
+		if !reflect.DeepEqual(test.wantUnits, units) {
+			t.Errorf("%s: got %v units, want %v", test.desc, units, test.wantUnits)
 		}
-		for key, ignored := range ignoredUnits {
-			wantIgnored := test.wantIgnoredUnits[key]
-			if len(wantIgnored) != len(ignored) {
-				t.Errorf("%s: for key %s, got ignored units %v, got ignored units %v", test.name, key, ignored, wantIgnored)
-				continue
-			}
-			for i, want := range wantIgnored {
-				if got := ignored[i]; want != got {
-					t.Errorf("%s: for key %s, got ignored units %v, want ignored units %v", test.name, key, ignored, wantIgnored)
-					break
-				}
-			}
+		if !reflect.DeepEqual(test.wantIgnoredUnits, ignoredUnits) {
+			t.Errorf("%s: got %v ignored units, want %v", test.desc, ignoredUnits, test.wantIgnoredUnits)
 		}
 	}
 }
