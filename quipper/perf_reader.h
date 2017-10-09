@@ -11,6 +11,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "base/macros.h"
@@ -262,6 +263,8 @@ class PerfReader {
   // Store the perf data as a protobuf.
   Arena arena_;
   PerfDataProto* proto_;
+  // Attribute ids that have been added to |proto_|, for deduplication.
+  std::unordered_set<u64> file_attrs_seen_;
 
   // Whether the incoming data is from a machine with a different endianness. We
   // got rid of this flag in the past but now we need to store this so it can be

@@ -1120,6 +1120,7 @@ bool PerfReader::ReadEventDescMetadata(DataReader* data, u32 type,
     return false;
   }
 
+  file_attrs_seen_.clear();
   proto_->clear_file_attrs();
   proto_->mutable_file_attrs()->Reserve(nr_events);
 
@@ -1741,10 +1742,11 @@ bool PerfReader::ReadAttrEventBlock(DataReader* data, size_t size) {
 
   // Event types are found many times in the perf data file.
   // Only add this event type if it is not already present.
-  for (const auto& stored_attr : proto_->file_attrs()) {
-    if (stored_attr.ids(0) == attr.ids[0])
-      return true;
+  if (!attr.ids.empty() &&
+      file_attrs_seen_.find(attr.ids[0]) != file_attrs_seen_.end()) {
+    return true;
   }
+
   AddPerfFileAttr(attr);
   return true;
 }
@@ -1946,6 +1948,9 @@ void PerfReader::AddPerfFileAttr(const PerfFileAttr& attr) {
 
   // Generate a new SampleInfoReader with the new attr.
   serializer_.CreateSampleInfoReader(attr, is_cross_endian_);
+  if (!attr.ids.empty()) {
+    file_attrs_seen_.insert(attr.ids[0]);
+  }
 }
 
 }  // namespace quipper
