@@ -255,7 +255,9 @@ void Normalizer::InvokeHandleSample(
   context.main_mapping = GetMainMMapFromPid(pid);
   std::unique_ptr<PerfDataHandler::Mapping> fake;
   // Kernel samples might take some extra work.
-  if (context.main_mapping == nullptr && event_proto.header().misc() & 0x1) {
+  if (context.main_mapping == nullptr &&
+      (event_proto.header().misc() & PERF_RECORD_MISC_CPUMODE_MASK) ==
+          PERF_RECORD_MISC_KERNEL) {
     auto comm_it = pid_to_comm_event_.find(pid);
     auto kernel_it = pid_to_executable_mmap_.find(-1);
     if (comm_it != pid_to_comm_event_.end()) {
