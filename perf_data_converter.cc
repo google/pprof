@@ -58,7 +58,7 @@ const char* ExecModeString(ExecutionMode mode) {
 
 ExecutionMode PerfExecMode(const PerfDataHandler::SampleContext& sample) {
   if (sample.header.has_misc()) {
-    switch (sample.header.misc()) {
+    switch (sample.header.misc() & PERF_RECORD_MISC_CPUMODE_MASK) {
       case PERF_RECORD_MISC_KERNEL:
         return HostKernel;
       case PERF_RECORD_MISC_USER:
