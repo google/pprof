@@ -32,7 +32,7 @@ cd perf_data_converter
 make perf_to_profile
 ```
 
-Place the perf_to_profile binary in a place accessible from your path (eg /usr/local/bin).
+Place the `perf_to_profile` binary in a place accessible from your path (eg `/usr/local/bin`).
 
 # Running tests:
 There are a small number of tests that verify the basic functionality.
@@ -60,3 +60,9 @@ Recent versions of pprof will automatically invoke `perf_to_profile`:
 ```
 pprof -web perf.data
 ```
+
+# Contribution:
+We appreciate your help!
+
+Note that perf data converter and quipper projects do not use GitHub pull
+requests, and that we use the issue tracker for bug reports.
