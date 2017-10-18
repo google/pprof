@@ -85,9 +85,7 @@ button {
   position: relative;
   display: inline-block;
   padding: 2px 2px;
-  cursor: default;
   font-size: 14pt;
-  user-select: none;
 }
 .menu {
   display: none;
@@ -99,8 +97,13 @@ button {
   margin-top: 2px;
   left: 0px;
   min-width: 5em;
+}
+.menu-header, .menu {
   cursor: default;
   user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-select: none;
 }
 .menu hr {
   background-color: #fff;
