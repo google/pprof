@@ -113,7 +113,7 @@ func TestCheckValid(t *testing.T) {
 
 	inbytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		t.Fatal("failed to read profile file %q: %v", path)
+		t.Fatalf("failed to read profile file %q: %v", path)
 	}
 	p, err := Parse(bytes.NewBuffer(inbytes))
 	if err != nil {
