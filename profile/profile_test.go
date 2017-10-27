@@ -93,7 +93,6 @@ func TestParse(t *testing.T) {
 }
 
 func TestParseError(t *testing.T) {
-
 	testcases := []string{
 		"",
 		"garbage text",
@@ -106,6 +105,63 @@ func TestParseError(t *testing.T) {
 		if err == nil {
 			t.Errorf("got nil, want error for input #%d", i)
 		}
+	}
+}
+
+func TestCheckValid(t *testing.T) {
+	const path = "testdata/java.cpu"
+
+	inbytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		t.Fatal("failed to read profile file %q: %v", path)
+	}
+	p, err := Parse(bytes.NewBuffer(inbytes))
+	if err != nil {
+		t.Fatalf("failed to parse profile %q: %s", path, err)
+	}
+
+	for _, tc := range []struct {
+		mutateFn func(*Profile)
+		wantErr  string
+	}{
+		{
+			mutateFn: func(p *Profile) { p.SampleType = nil },
+			wantErr:  "missing sample type information",
+		},
+		{
+			mutateFn: func(p *Profile) { p.Sample[0] = nil },
+			wantErr:  "profile has nil sample",
+		},
+		{
+			mutateFn: func(p *Profile) { p.Sample[0].Value = append(p.Sample[0].Value, 0) },
+			wantErr:  "sample has 3 values vs. 2 types",
+		},
+		{
+			mutateFn: func(p *Profile) { p.Sample[0].Location[0] = nil },
+			wantErr:  "sample has nil location",
+		},
+		{
+			mutateFn: func(p *Profile) { p.Location[0] = nil },
+			wantErr:  "profile has nil location",
+		},
+		{
+			mutateFn: func(p *Profile) { p.Mapping = append(p.Mapping, nil) },
+			wantErr:  "profile has nil mapping",
+		},
+		{
+			mutateFn: func(p *Profile) { p.Function[0] = nil },
+			wantErr:  "profile has nil function",
+		},
+	} {
+		t.Run(tc.wantErr, func(t *testing.T) {
+			p := p.Copy()
+			tc.mutateFn(p)
+			if err := p.CheckValid(); err == nil {
+				t.Errorf("CheckValid(): got no error, want error %q", tc.wantErr)
+			} else if !strings.Contains(err.Error(), tc.wantErr) {
+				t.Errorf("CheckValid(): got error %v, want error %q", err, tc.wantErr)
+			}
+		})
 	}
 }
 

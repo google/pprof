@@ -337,8 +337,11 @@ func (p *Profile) CheckValid() error {
 		return fmt.Errorf("missing sample type information")
 	}
 	for _, s := range p.Sample {
+		if s == nil {
+			return fmt.Errorf("profile has nil sample")
+		}
 		if len(s.Value) != sampleLen {
-			return fmt.Errorf("mismatch: sample has: %d values vs. %d types", len(s.Value), len(p.SampleType))
+			return fmt.Errorf("mismatch: sample has %d values vs. %d types", len(s.Value), len(p.SampleType))
 		}
 		for _, l := range s.Location {
 			if l == nil {
@@ -351,6 +354,9 @@ func (p *Profile) CheckValid() error {
 	// Check that there are no duplicate ids
 	mappings := make(map[uint64]*Mapping, len(p.Mapping))
 	for _, m := range p.Mapping {
+		if m == nil {
+			return fmt.Errorf("profile has nil mapping")
+		}
 		if m.ID == 0 {
 			return fmt.Errorf("found mapping with reserved ID=0")
 		}
@@ -361,6 +367,9 @@ func (p *Profile) CheckValid() error {
 	}
 	functions := make(map[uint64]*Function, len(p.Function))
 	for _, f := range p.Function {
+		if f == nil {
+			return fmt.Errorf("profile has nil function")
+		}
 		if f.ID == 0 {
 			return fmt.Errorf("found function with reserved ID=0")
 		}
@@ -371,6 +380,9 @@ func (p *Profile) CheckValid() error {
 	}
 	locations := make(map[uint64]*Location, len(p.Location))
 	for _, l := range p.Location {
+		if l == nil {
+			return fmt.Errorf("profile has nil location")
+		}
 		if l.ID == 0 {
 			return fmt.Errorf("found location with reserved id=0")
 		}
