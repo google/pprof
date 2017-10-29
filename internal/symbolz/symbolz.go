@@ -64,18 +64,15 @@ func Symbolize(p *profile.Profile, force bool, sources plugin.MappingSources, sy
 }
 
 // symbolz returns the corresponding symbolz source for a profile URL.
-func symbolz(source string) string {
+func symbolz(source string) (ret string) {
 	if url, err := url.Parse(source); err == nil && url.Host != "" {
-		if strings.Contains(url.Path, "/") {
-			if dir := path.Dir(url.Path); dir == "/debug/pprof" {
-				// For Go language profile handlers in net/http/pprof package.
-				url.Path = "/debug/pprof/symbol"
-			} else {
-				url.Path = "/symbolz"
-			}
-			url.RawQuery = ""
-			return url.String()
+		if strings.Contains(url.Path, "/debug/pprof/") {
+			url.Path = path.Clean(url.Path + "/../symbol")
+		} else {
+			url.Path = "/symbolz"
 		}
+		url.RawQuery = ""
+		return url.String()
 	}
 
 	return ""
