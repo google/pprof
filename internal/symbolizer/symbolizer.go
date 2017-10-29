@@ -121,7 +121,7 @@ func postURL(source, post string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, statusCodeError(resp)
+		return nil, fmt.Errorf("%s: %v", source, statusCodeError(resp))
 	}
 	return ioutil.ReadAll(resp.Body)
 }
