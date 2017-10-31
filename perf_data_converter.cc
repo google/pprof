@@ -207,9 +207,9 @@ class PerfDataConverter : public PerfDataHandler {
   ProcessProfiles Profiles();
 
   // Callbacks for PerfDataHandler
-  virtual void Sample(const PerfDataHandler::SampleContext& sample);
-  virtual void Comm(const CommContext& comm);
-  virtual void MMap(const MMapContext& mmap);
+  void Sample(const PerfDataHandler::SampleContext& sample) override;
+  void Comm(const CommContext& comm) override;
+  void MMap(const MMapContext& mmap) override;
 
  private:
   // Adds a new sample updating the event counters if such sample is not present
@@ -353,6 +353,17 @@ ProfileBuilder* PerfDataConverter::GetOrCreateBuilder(
       fake_main->set_memory_limit(1);
     } else {
       AddOrGetMapping(sample.sample.pid(), sample.main_mapping, builder);
+    }
+    if (perf_data_.string_metadata().has_perf_version()) {
+      string perf_version =
+          "perf-version:" + perf_data_.string_metadata().perf_version().value();
+      profile->add_comment(UTF8StringId(perf_version, builder));
+    }
+    if (perf_data_.string_metadata().has_perf_command_line_whole()) {
+      string perf_command =
+          "perf-command:" +
+          perf_data_.string_metadata().perf_command_line_whole().value();
+      profile->add_comment(UTF8StringId(perf_command, builder));
     }
   } else {
     Profile* profile = per_pid.builder->mutable_profile();

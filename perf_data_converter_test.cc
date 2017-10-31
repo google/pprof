@@ -31,6 +31,7 @@ using perftools::ProcessProfiles;
 using perftools::profiles::Location;
 using perftools::profiles::Mapping;
 using quipper::PerfDataProto;
+using testing::Contains;
 
 namespace {
 
@@ -100,6 +101,16 @@ std::unordered_set<string> AllBuildIDs(const ProcessProfiles& pps) {
   for (const auto& pp : pps) {
     for (const auto& it : pp->data.mapping()) {
       ret.insert(pp->data.string_table(it.build_id()));
+    }
+  }
+  return ret;
+}
+
+std::unordered_set<string> AllComments(const ProcessProfiles& pps) {
+  std::unordered_set<string> ret;
+  for (const auto& pp : pps) {
+    for (const auto& it : pp->data.comment()) {
+      ret.insert(pp->data.string_table(it));
     }
   }
   return ret;
@@ -192,8 +203,7 @@ TEST_F(PerfDataConverterTest, Converts) {
   cases.emplace_back(TestCase{stack_profile, 1138, 1210, 2247});
 
   for (const auto& c : cases) {
-    std::stringstream casename;
-    casename << "case " << Basename(c.filename);
+    string casename = "case " + Basename(c.filename);
     string raw_perf_data;
     GetContents(c.filename, &raw_perf_data);
 
@@ -277,7 +287,7 @@ TEST_F(PerfDataConverterTest, Injects) {
       reinterpret_cast<const void*>(raw_perf_data.c_str()),
       raw_perf_data.size(), build_ids);
   std::unordered_set<string> all_build_ids = AllBuildIDs(pps);
-  EXPECT_TRUE(all_build_ids.find(want_build_id) != all_build_ids.end());
+  EXPECT_THAT(all_build_ids, Contains(want_build_id));
 }
 
 TEST_F(PerfDataConverterTest, HandlesKernelMmapOverlappingUserCode) {
@@ -302,6 +312,24 @@ TEST_F(PerfDataConverterTest, HandlesKernelMmapOverlappingUserCode) {
   EXPECT_EQ(kernel_mapping_id, profile.location(0).mapping_id());
   EXPECT_EQ(user_mapping_id, profile.location(1).mapping_id());
   EXPECT_EQ(kernel_mapping_id, profile.location(2).mapping_id());
+}
+
+TEST_F(PerfDataConverterTest, PerfInfoSavedInComment) {
+  string path = GetResource(
+      "testdata"
+      "/single-event-single-process.perf.data");
+  string raw_perf_data;
+  GetContents(path, &raw_perf_data);
+  const string want_version = "perf-version:3.16.7-ckt20";
+  const string want_command = "perf-command:/usr/bin/perf_3.16 record ./a.out";
+
+  // Test RawPerfData input.
+  const ProcessProfiles pps = RawPerfDataToProfiles(
+      reinterpret_cast<const void*>(raw_perf_data.c_str()),
+      raw_perf_data.size(), {});
+  std::unordered_set<string> comments = AllComments(pps);
+  EXPECT_THAT(comments, Contains(want_version));
+  EXPECT_THAT(comments, Contains(want_command));
 }
 
 }  // namespace perftools

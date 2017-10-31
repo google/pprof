@@ -116,11 +116,11 @@ third_party/protobuf/src/.libs/libprotobuf.a: third_party/protobuf/configure
 ifeq ($(wildcard third_party/googletest/googletest/include/gtest/gtest.h),)
 # Use local gtest includes, already on the system path
 GTEST_INCLUDES =
-GTEST_LIBS = -lgtest
+GTEST_LIBS = -lgtest -lgmock
 else
 # Pick up gtest includes from submodule.
-GTEST_INCLUDES = -Ithird_party/googletest/googletest/include
-GTEST_LIBS = -Ithird_party/googletest/googletest third_party/googletest/googletest/src/gtest-all.cc
+GTEST_INCLUDES = -Ithird_party/googletest/googlemock/include -Ithird_party/googletest/googletest/include
+GTEST_LIBS = -Ithird_party/googletest/googlemock third_party/googletest/googlemock/src/gmock-all.cc -Ithird_party/googletest/googletest third_party/googletest/googletest/src/gtest-all.cc
 endif
 
 ifneq ($(MAKECMDGOALS),clean)
