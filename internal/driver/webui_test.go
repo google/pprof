@@ -28,9 +28,14 @@ import (
 
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/profile"
+	"runtime"
 )
 
 func TestWebInterface(t *testing.T) {
+	if runtime.GOOS == "nacl" {
+		t.Skip("test assumes tcp available")
+	}
+
 	prof := makeFakeProfile()
 
 	// Custom http server creator
