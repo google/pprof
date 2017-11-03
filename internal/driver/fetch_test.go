@@ -351,6 +351,13 @@ func stubHTTPGet(source string, _ time.Duration) (*http.Response, error) {
 	return c.Get("file:///" + file)
 }
 
+func closedError() string {
+	if runtime.GOOS == "plan9" {
+		return "listen hungup"
+	}
+	return "use of closed"
+}
+
 func TestHttpsInsecure(t *testing.T) {
 	if runtime.GOOS == "nacl" {
 		t.Skip("test assumes tcp available")
@@ -372,7 +379,7 @@ func TestHttpsInsecure(t *testing.T) {
 		donec <- http.Serve(l, nil)
 	}(donec)
 	defer func() {
-		if got, want := <-donec, "use of closed"; !strings.Contains(got.Error(), want) {
+		if got, want := <-donec, closedError(); !strings.Contains(got.Error(), want) {
 			t.Fatalf("Serve got error %v, want %q", got, want)
 		}
 	}()
