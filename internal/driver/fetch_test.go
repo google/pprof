@@ -423,6 +423,10 @@ func TestHttpsInsecure(t *testing.T) {
 	if len(p.SampleType) == 0 {
 		t.Fatalf("fetchProfiles(%s) got empty profile: len(p.SampleType)==0", address)
 	}
+	if runtime.GOOS == "plan9" {
+		// CPU profiling is not supported on Plan9; see golang.org/issues/22564.
+		return
+	}
 	if len(p.Function) == 0 {
 		t.Fatalf("fetchProfiles(%s) got non-symbolized profile: len(p.Function)==0", address)
 	}
@@ -436,7 +440,6 @@ func TestHttpsInsecure(t *testing.T) {
 var badSigprofOS = map[string]bool{
 	"darwin": true,
 	"netbsd": true,
-	"plan9":  true,
 }
 
 func checkProfileHasFunction(p *profile.Profile, fname string) error {
