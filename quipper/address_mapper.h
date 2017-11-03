@@ -14,6 +14,9 @@
 namespace quipper {
 
 class AddressMapper {
+ private:
+  struct MappedRange;
+
  public:
   AddressMapper() : page_alignment_(0) {}
 
@@ -21,6 +24,8 @@ class AddressMapper {
   // is useful for copying mappings from parent to child process upon fork(). It
   // is also useful to copy kernel mappings to any process that is created.
   AddressMapper(const AddressMapper& other);
+
+  typedef std::list<MappedRange> MappingList;
 
   // Maps a new address range [real_addr, real_addr + length) to quipper space.
   // |id| is an identifier value to be stored along with the mapping.
@@ -42,14 +47,18 @@ class AddressMapper {
                  const uint64_t offset_base,
                  bool remove_existing_mappings);
 
-  // Looks up |real_addr| and returns the mapped address.
-  bool GetMappedAddress(const uint64_t real_addr, uint64_t* mapped_addr) const;
+  // Looks up |real_addr| and returns the mapped address and MappingList
+  // iterator.
+  bool GetMappedAddressAndListIterator(const uint64_t real_addr,
+                                       uint64_t* mapped_addr,
+                                       MappingList::const_iterator* iter) const;
 
-  // Looks up |real_addr| and returns the mapping's ID and offset from the
-  // start of the mapped space.
-  bool GetMappedIDAndOffset(const uint64_t real_addr,
-                            uint64_t* id,
-                            uint64_t* offset) const;
+  // Uses MappingList iterator to fetch and return the mapping's ID and offset
+  // from the start of the mapped space.
+  // |real_addr_iter| must be valid and not at the end of the list.
+  void GetMappedIDAndOffset(const uint64_t real_addr,
+                            MappingList::const_iterator real_addr_iter,
+                            uint64_t* id, uint64_t* offset) const;
 
   // Returns true if there are no mappings.
   bool IsEmpty() const {
@@ -81,6 +90,8 @@ class AddressMapper {
   void DumpToLog() const;
 
  private:
+  typedef std::map<uint64_t, MappingList::iterator> MappingMap;
+
   struct MappedRange {
     uint64_t real_addr;
     uint64_t mapped_addr;
@@ -116,9 +127,6 @@ class AddressMapper {
       return (addr >= real_addr && addr <= real_addr + size - 1);
     }
   };
-
-  typedef std::list<MappedRange> MappingList;
-  typedef std::map<uint64_t, MappingList::iterator> MappingMap;
 
   // Returns an iterator to a MappedRange in |mappings_| that contains
   // |real_addr|. Returns |mappings_.end()| if no range contains |real_addr|.

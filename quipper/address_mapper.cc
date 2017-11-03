@@ -226,27 +226,27 @@ void AddressMapper::DumpToLog() const {
   }
 }
 
-bool AddressMapper::GetMappedAddress(const uint64_t real_addr,
-                                     uint64_t* mapped_addr) const {
+bool AddressMapper::GetMappedAddressAndListIterator(
+    const uint64_t real_addr, uint64_t* mapped_addr,
+    MappingList::const_iterator* iter) const {
   CHECK(mapped_addr);
+  CHECK(iter);
 
-  auto iter = GetRangeContainingAddress(real_addr);
-  if (iter == mappings_.end()) return false;
-  *mapped_addr = iter->mapped_addr + real_addr - iter->real_addr;
+  *iter = GetRangeContainingAddress(real_addr);
+  if (*iter == mappings_.end()) return false;
+  *mapped_addr = (*iter)->mapped_addr + real_addr - (*iter)->real_addr;
   return true;
 }
 
-bool AddressMapper::GetMappedIDAndOffset(const uint64_t real_addr,
-                                         uint64_t* id,
-                                         uint64_t* offset) const {
+void AddressMapper::GetMappedIDAndOffset(
+    const uint64_t real_addr, MappingList::const_iterator real_addr_iter,
+    uint64_t* id, uint64_t* offset) const {
+  CHECK(real_addr_iter != mappings_.end());
   CHECK(id);
   CHECK(offset);
 
-  auto iter = GetRangeContainingAddress(real_addr);
-  if (iter == mappings_.end()) return false;
-  *id = iter->id;
-  *offset = real_addr - iter->real_addr + iter->offset_base;
-  return true;
+  *id = real_addr_iter->id;
+  *offset = real_addr - real_addr_iter->real_addr + real_addr_iter->offset_base;
 }
 
 uint64_t AddressMapper::GetMaxMappedLength() const {

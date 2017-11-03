@@ -558,10 +558,12 @@ bool PerfParser::MapIPAndPidAndGetNameAndOffset(
   // Sometimes the first event we see is a SAMPLE event and we don't have the
   // time to create an address mapper for a process. Example, for pid 0.
   AddressMapper* mapper = GetOrCreateProcessMapper(pidtid.first).first;
-  bool mapped = mapper->GetMappedAddress(ip, &mapped_addr);
+  AddressMapper::MappingList::const_iterator ip_iter;
+  bool mapped =
+      mapper->GetMappedAddressAndListIterator(ip, &mapped_addr, &ip_iter);
   if (mapped) {
     uint64_t id = UINT64_MAX;
-    CHECK(mapper->GetMappedIDAndOffset(ip, &id, &dso_and_offset->offset_));
+    mapper->GetMappedIDAndOffset(ip, ip_iter, &id, &dso_and_offset->offset_);
     // Make sure the ID points to a valid event.
     CHECK_LE(id, parsed_events_.size());
     ParsedEvent& parsed_event = parsed_events_[id];
@@ -648,7 +650,9 @@ bool PerfParser::MapMmapEvent(PerfDataProto_MMapEvent* event, uint64_t id) {
 
   if (options_.do_remap) {
     uint64_t mapped_addr;
-    if (!mapper->GetMappedAddress(start, &mapped_addr)) {
+    AddressMapper::MappingList::const_iterator start_iter;
+    if (!mapper->GetMappedAddressAndListIterator(start, &mapped_addr,
+                                                 &start_iter)) {
       LOG(ERROR) << "Failed to map starting address " << std::hex << start;
       return false;
     }
