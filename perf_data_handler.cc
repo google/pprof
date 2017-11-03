@@ -7,7 +7,6 @@
 
 #include <cstring>
 #include <iomanip>
-#include <map>
 #include <memory>
 #include <sstream>
 #include <unordered_map>
@@ -125,7 +124,7 @@ class Normalizer {
   PidToCommMap pid_to_comm_event_;
 
   // pid_to_mmaps maps a pid to all mmap events that correspond to that pid.
-  std::map<uint64, std::unique_ptr<MMapIntervalMap>> pid_to_mmaps_;
+  std::unordered_map<uint32, std::unique_ptr<MMapIntervalMap>> pid_to_mmaps_;
 
   // pid_to_executable_mmap maps a pid to mmap that most likely contains the
   // filename of the main executable for that pid.
@@ -133,7 +132,7 @@ class Normalizer {
 
   // Use a separate huge pages mapping deducer for each process, to resolve
   // split huge pages mappings into a single mapping.
-  std::map<uint32, ChromeHugePagesMappingDeducer>
+  std::unordered_map<uint32, ChromeHugePagesMappingDeducer>
       pid_to_chrome_mapping_deducer_;
 
   // map filenames to build-ids.
