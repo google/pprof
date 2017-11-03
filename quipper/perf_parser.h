@@ -281,7 +281,7 @@ class PerfParser {
   std::unordered_map<string, DSOInfo> name_to_dso_;
 
   // Maps process ID to an address mapper for that process.
-  std::map<uint32_t, std::unique_ptr<AddressMapper>> process_mappers_;
+  std::unordered_map<uint32_t, std::unique_ptr<AddressMapper>> process_mappers_;
 
   DISALLOW_COPY_AND_ASSIGN(PerfParser);
 };
