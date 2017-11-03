@@ -7,7 +7,7 @@
 
 #include <sys/stat.h>
 
-#include <set>
+#include <unordered_set>
 #include <utility>
 
 #include "compat/string.h"
@@ -27,7 +27,8 @@ struct DSOInfo {
   u32 min = 0;
   u64 ino = 0;
   bool hit = false;  // Have we seen any samples in this DSO?
-  std::set<PidTid> threads;  // Set of pids this DSO had samples in.
+  // unordered_set of pids this DSO had samples in.
+  std::unordered_set<uint64_t> threads;
 };
 
 // Do the |DSOInfo| and |struct stat| refer to the same inode?

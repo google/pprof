@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <algorithm>
 
 #include <memory>
 #include <set>
@@ -256,6 +257,19 @@ class FdCloser {
   int fd_;
 };
 
+// Merges two uint32_t into a uint64_t for hashing in an unordered_set because
+// there is no default hash method for a pair.
+uint64_t mergeTwoU32(uint32_t first, uint32_t second) {
+  return (uint64_t)first << 32 | second;
+}
+
+// Splits a given uint64_t into two uint32_t. This reverts the above merge
+// operation to retrieve the two uint32_t from an unordered_set.
+std::pair<uint32_t, uint32_t> splitU64(uint64_t value) {
+  return std::make_pair(value >> 32,
+                        std::numeric_limits<uint32_t>::max() & value);
+}
+
 bool ReadElfBuildIdIfSameInode(const string& dso_path, const DSOInfo& dso,
                                string* buildid) {
   int fd = open(dso_path.c_str(), O_RDONLY);
@@ -293,9 +307,12 @@ string FindDsoBuildId(const DSOInfo& dso_info) {
   }
   // Try normal files, possibly inside containers.
   u32 last_pid = 0;
-  for (PidTid pidtid : dso_info.threads) {
-    u32 pid, tid;
-    std::tie(pid, tid) = pidtid;
+  std::vector<uint64_t> threads(dso_info.threads.begin(),
+                                dso_info.threads.end());
+  std::sort(threads.begin(), threads.end());
+  for (auto pidtid_it : threads) {
+    uint32_t pid, tid;
+    std::tie(pid, tid) = splitU64(pidtid_it);
     std::stringstream dso_path_stream;
     dso_path_stream << "/proc/" << tid << "/root/" << dso_name;
     string dso_path = dso_path_stream.str();
@@ -557,7 +574,7 @@ bool PerfParser::MapIPAndPidAndGetNameAndOffset(
     dso_and_offset->dso_info_ = &dso_iter->second;
 
     dso_iter->second.hit = true;
-    dso_iter->second.threads.insert(pidtid);
+    dso_iter->second.threads.insert(mergeTwoU32(pidtid.first, pidtid.second));
     ++parsed_event.num_samples_in_mmap_region;
 
     if (options_.do_remap) {

@@ -9,7 +9,7 @@
 #define PERFTOOLS_CHROME_HUGE_PAGES_MAPPING_DEDUCER_H_
 
 #include "base/macros.h"
-#include "quipper/perf_data.pb.h"
+#include "quipper/perf_data.proto.h"
 
 namespace perftools {
 // A state machine that tracks the order of split-up Chrome MMAPs it has seen.
