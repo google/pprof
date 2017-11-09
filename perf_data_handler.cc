@@ -12,7 +12,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "chrome_huge_pages_mapping_deducer.h"
 #include "int_compat.h"
 #include "intervalmap.h"
 #include "path_matching.h"
@@ -129,11 +128,6 @@ class Normalizer {
   // pid_to_executable_mmap maps a pid to mmap that most likely contains the
   // filename of the main executable for that pid.
   PidToMMapMap pid_to_executable_mmap_;
-
-  // Use a separate huge pages mapping deducer for each process, to resolve
-  // split huge pages mappings into a single mapping.
-  std::unordered_map<uint32, ChromeHugePagesMappingDeducer>
-      pid_to_chrome_mapping_deducer_;
 
   // map filenames to build-ids.
   std::unordered_map<string, string> filename_to_build_id_;
@@ -345,15 +339,6 @@ void Normalizer::UpdateMapsWithMMapEvent(
   } else {
     interval_map = it->second.get();
   }
-
-  auto& deducer = pid_to_chrome_mapping_deducer_[pid];
-  deducer.ProcessMmap(*mmap);
-  if (deducer.CombinedMappingAvailable()) {
-    owned_quipper_mappings_.emplace_back(
-        new quipper::PerfDataProto_MMapEvent(deducer.combined_mapping()));
-    mmap = owned_quipper_mappings_.back().get();
-  }
-
   std::unordered_map<string, string>::const_iterator build_id_it;
   if (mmap->filename() != "") {
     build_id_it = filename_to_build_id_.find(mmap->filename());
