@@ -16,7 +16,7 @@ GOOGLETEST = ../third_party/googletest
 
 CXXFLAGS += -std=c++11 -g -Wall -Werror -Wall -Wno-error
 CPPFLAGS += -Imybase \
-            -Icompat/ext \
+            -Icompat/non_cros \
             -I../third_party \
             -I. -I.. $(PC_CFLAGS) $(PROTOBUF_CFLAGS) $(GTEST_INCLUDES)
 LDLIBS += -lpthread -lgcov -lelf $(PC_LIBS) $(PROTOBUF_LIBS)
@@ -26,7 +26,7 @@ PROGRAMS = $(MAIN_SOURCES:.cc=)
 
 LIBRARY_SOURCES = \
 	address_mapper.cc binary_data_utils.cc buffer_reader.cc buffer_writer.cc \
-	conversion_utils.cc compat/ext/detail/log_level.cc data_reader.cc \
+	conversion_utils.cc compat/log_level.cc data_reader.cc \
 	data_writer.cc dso.cc file_reader.cc file_utils.cc \
 	mybase/base/logging.cc perf_option_parser.cc perf_data_utils.cc \
 	perf_parser.cc perf_protobuf_io.cc perf_reader.cc perf_recorder.cc \

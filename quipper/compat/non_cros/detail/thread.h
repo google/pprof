@@ -4,14 +4,12 @@
 
 #ifndef CHROMIUMOS_WIDE_PROFILING_COMPAT_EXT_DETAIL_THREAD_H_
 #define CHROMIUMOS_WIDE_PROFILING_COMPAT_EXT_DETAIL_THREAD_H_
-
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
 
 namespace quipper {
-
 class Thread : public quipper::compat::ThreadInterface {
  public:
   explicit Thread(const string& name_prefix) {}

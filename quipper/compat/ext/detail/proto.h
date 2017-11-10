@@ -1,1 +1,0 @@
-../../cros/detail/proto.h

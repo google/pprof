@@ -21,7 +21,7 @@
         'binary_data_utils.cc',
         'buffer_reader.cc',
         'buffer_writer.cc',
-        'compat/cros/detail/log_level.cc',
+        'compat/log_level.cc',
         'data_reader.cc',
         'data_writer.cc',
         'dso.cc',

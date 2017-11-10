@@ -49,7 +49,7 @@ MAIN_OBJECTS = $(MAIN_SOURCES:%.cc=%.o)
 
 QUIPPER_LIBRARY_SOURCES = \
 	address_mapper.cc binary_data_utils.cc buffer_reader.cc buffer_writer.cc \
-	conversion_utils.cc compat/ext/detail/log_level.cc data_reader.cc \
+	conversion_utils.cc compat/log_level.cc data_reader.cc \
 	data_writer.cc dso.cc file_reader.cc file_utils.cc \
 	mybase/base/logging.cc perf_option_parser.cc perf_data_utils.cc \
 	perf_parser.cc perf_protobuf_io.cc perf_reader.cc perf_recorder.cc \
