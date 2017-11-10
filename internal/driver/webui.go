@@ -81,7 +81,7 @@ type webArgs struct {
 	Top      []report.TextItem
 }
 
-func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) error {
+func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options, wantBrowser bool) error {
 	host, portStr, err := net.SplitHostPort(hostport)
 	if err != nil {
 		return fmt.Errorf("could not split http address: %v", err)
@@ -123,7 +123,9 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) e
 		},
 	}
 
-	go openBrowser("http://"+args.Hostport, o)
+	if wantBrowser {
+		go openBrowser("http://"+args.Hostport, o)
+	}
 	return server(args)
 }
 

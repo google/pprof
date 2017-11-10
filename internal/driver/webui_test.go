@@ -57,7 +57,7 @@ func TestWebInterface(t *testing.T) {
 		Obj:        fakeObjTool{},
 		UI:         &stdUI{},
 		HTTPServer: creator,
-	})
+	}, false)
 	<-serverCreated
 	defer server.Close()
 
