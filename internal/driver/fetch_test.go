@@ -188,7 +188,7 @@ func TestFetch(t *testing.T) {
 		{path + "go.nomappings.crash", "/bin/gotest.exe"},
 		{"http://localhost/profile?file=cppbench.cpu", ""},
 	} {
-		p, _, _, err := grabProfile(&source{ExecName: tc.execName}, tc.source, nil, testObj{}, &proftest.TestUI{T: t})
+		p, _, _, err := grabProfile(&source{ExecName: tc.execName}, tc.source, nil, nil, testObj{}, &proftest.TestUI{T: t})
 		if err != nil {
 			t.Fatalf("%s: %s", tc.source, err)
 		}
@@ -285,13 +285,13 @@ func TestFetchWithBase(t *testing.T) {
 
 			o := setDefaults(nil)
 			o.Flagset = f
-			src, _, err := parseFlags(o)
+			src, tlsParam, _, err := parseFlags(o)
 
 			if err != nil {
 				t.Fatalf("%s: %v", tc.desc, err)
 			}
 
-			p, err := fetchProfiles(src, o)
+			p, err := fetchProfiles(src, tlsParam, o)
 			pprofVariables = baseVars
 			if err != nil {
 				t.Fatal(err)
@@ -331,7 +331,7 @@ func mappingSources(key, source string, start uint64) plugin.MappingSources {
 
 // stubHTTPGet intercepts a call to http.Get and rewrites it to use
 // "file://" to get the profile directly from a file.
-func stubHTTPGet(source string, _ time.Duration) (*http.Response, error) {
+func stubHTTPGet(source string, tlsParam *plugin.TLSParams, _ time.Duration) (*http.Response, error) {
 	url, err := url.Parse(source)
 	if err != nil {
 		return nil, err
@@ -421,7 +421,7 @@ func TestHttpsInsecure(t *testing.T) {
 		UI:  &proftest.TestUI{T: t, AllowRx: rx},
 	}
 	o.Sym = &symbolizer.Symbolizer{Obj: o.Obj, UI: o.UI}
-	p, err := fetchProfiles(s, o)
+	p, err := fetchProfiles(s, &plugin.TLSParams{}, o)
 	if err != nil {
 		t.Fatal(err)
 	}

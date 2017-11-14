@@ -19,6 +19,7 @@ package symbolizer
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -47,7 +48,7 @@ var demangleFunction = Demangle
 // Symbolize attempts to symbolize profile p. First uses binutils on
 // local binaries; if the source is a URL it attempts to get any
 // missed entries using symbolz.
-func (s *Symbolizer) Symbolize(mode string, sources plugin.MappingSources, p *profile.Profile) error {
+func (s *Symbolizer) Symbolize(mode string, tlsParam *plugin.TLSParams, sources plugin.MappingSources, p *profile.Profile) error {
 	remote, local, fast, force, demanglerMode := true, true, false, false, ""
 	for _, o := range strings.Split(strings.ToLower(mode), ":") {
 		switch o {
@@ -85,7 +86,7 @@ func (s *Symbolizer) Symbolize(mode string, sources plugin.MappingSources, p *pr
 		}
 	}
 	if remote {
-		if err = symbolzSymbolize(p, force, sources, postURL, s.UI); err != nil {
+		if err = symbolzSymbolize(p, tlsParam, force, sources, postURL, s.UI); err != nil {
 			return err // Ran out of options.
 		}
 	}
@@ -95,17 +96,35 @@ func (s *Symbolizer) Symbolize(mode string, sources plugin.MappingSources, p *pr
 }
 
 // postURL issues a POST to a URL over HTTP.
-func postURL(source, post string) ([]byte, error) {
+func postURL(source string, tlsParam *plugin.TLSParams, post string) ([]byte, error) {
+	var cert tls.Certificate
+
 	url, err := url.Parse(source)
 	if err != nil {
 		return nil, err
 	}
 
-	var tlsConfig *tls.Config
-	if url.Scheme == "https+insecure" {
-		tlsConfig = &tls.Config{
-			InsecureSkipVerify: true,
+	tlsConfig := &tls.Config{}
+	if tlsParam.HTTPSCert != "" && tlsParam.HTTPSKey != "" {
+		cert, err = tls.LoadX509KeyPair(tlsParam.HTTPSCert, tlsParam.HTTPSKey)
+		if err != nil {
+			return nil, err
 		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
+
+	if tlsParam.HTTPSCA != "" {
+		caCertPool := x509.NewCertPool()
+		caCert, err := ioutil.ReadFile(tlsParam.HTTPSCA)
+		if err != nil {
+			return nil, err
+		}
+		caCertPool.AppendCertsFromPEM(caCert)
+		tlsConfig.RootCAs = caCertPool
+	}
+
+	if url.Scheme == "https+insecure" {
+		tlsConfig.InsecureSkipVerify = true
 		url.Scheme = "https"
 		source = url.String()
 	}

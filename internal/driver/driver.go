@@ -39,12 +39,12 @@ func PProf(eo *plugin.Options) error {
 
 	o := setDefaults(eo)
 
-	src, cmd, err := parseFlags(o)
+	src, tlsParam, cmd, err := parseFlags(o)
 	if err != nil {
 		return err
 	}
 
-	p, err := fetchProfiles(src, o)
+	p, err := fetchProfiles(src, tlsParam, o)
 	if err != nil {
 		return err
 	}

@@ -39,7 +39,7 @@ var (
 // separated by '+') and returns the symbolz output in a string. If
 // force is false, it will only symbolize locations from mappings
 // not already marked as HasFunctions.
-func Symbolize(p *profile.Profile, force bool, sources plugin.MappingSources, syms func(string, string) ([]byte, error), ui plugin.UI) error {
+func Symbolize(p *profile.Profile, tlsParam *plugin.TLSParams, force bool, sources plugin.MappingSources, syms func(string, *plugin.TLSParams, string) ([]byte, error), ui plugin.UI) error {
 	for _, m := range p.Mapping {
 		if !force && m.HasFunctions {
 			// Only check for HasFunctions as symbolz only populates function names.
@@ -51,7 +51,7 @@ func Symbolize(p *profile.Profile, force bool, sources plugin.MappingSources, sy
 		}
 		for _, source := range mappingSources {
 			if symz := symbolz(source.Source); symz != "" {
-				if err := symbolizeMapping(symz, int64(source.Start)-int64(m.Start), syms, m, p); err != nil {
+				if err := symbolizeMapping(symz, tlsParam, int64(source.Start)-int64(m.Start), syms, m, p); err != nil {
 					return err
 				}
 				m.HasFunctions = true
@@ -81,7 +81,7 @@ func symbolz(source string) string {
 // symbolizeMapping symbolizes locations belonging to a Mapping by querying
 // a symbolz handler. An offset is applied to all addresses to take care of
 // normalization occurred for merged Mappings.
-func symbolizeMapping(source string, offset int64, syms func(string, string) ([]byte, error), m *profile.Mapping, p *profile.Profile) error {
+func symbolizeMapping(source string, tlsParam *plugin.TLSParams, offset int64, syms func(string, *plugin.TLSParams, string) ([]byte, error), m *profile.Mapping, p *profile.Profile) error {
 	// Construct query of addresses to symbolize.
 	var a []string
 	for _, l := range p.Location {
@@ -103,7 +103,7 @@ func symbolizeMapping(source string, offset int64, syms func(string, string) ([]
 	lines := make(map[uint64]profile.Line)
 	functions := make(map[string]*profile.Function)
 
-	b, err := syms(source, strings.Join(a, "+"))
+	b, err := syms(source, tlsParam, strings.Join(a, "+"))
 	if err != nil {
 		return err
 	}

@@ -152,7 +152,7 @@ func TestSymbolization(t *testing.T) {
 		},
 	} {
 		prof := testProfile.Copy()
-		if err := s.Symbolize(tc.mode, nil, prof); err != nil {
+		if err := s.Symbolize(tc.mode, nil, nil, prof); err != nil {
 			t.Errorf("symbolize #%d: %v", i, err)
 			continue
 		}
@@ -164,7 +164,7 @@ func TestSymbolization(t *testing.T) {
 	}
 }
 
-func symbolzMock(p *profile.Profile, force bool, sources plugin.MappingSources, syms func(string, string) ([]byte, error), ui plugin.UI) error {
+func symbolzMock(p *profile.Profile, tlsParam *plugin.TLSParams, force bool, sources plugin.MappingSources, syms func(string, *plugin.TLSParams, string) ([]byte, error), ui plugin.UI) error {
 	var args []string
 	if force {
 		args = append(args, "force")

@@ -431,13 +431,13 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 
 type testSymbolizer struct{}
 
-func (testSymbolizer) Symbolize(_ string, _ plugin.MappingSources, _ *profile.Profile) error {
+func (testSymbolizer) Symbolize(_ string, _ *plugin.TLSParams, _ plugin.MappingSources, _ *profile.Profile) error {
 	return nil
 }
 
 type testSymbolizeDemangler struct{}
 
-func (testSymbolizeDemangler) Symbolize(_ string, _ plugin.MappingSources, p *profile.Profile) error {
+func (testSymbolizeDemangler) Symbolize(_ string, _ *plugin.TLSParams, _ plugin.MappingSources, p *profile.Profile) error {
 	for _, fn := range p.Function {
 		if fn.Name == "" || fn.SystemName == fn.Name {
 			fn.Name = fakeDemangler(fn.SystemName)
@@ -446,7 +446,7 @@ func (testSymbolizeDemangler) Symbolize(_ string, _ plugin.MappingSources, p *pr
 	return nil
 }
 
-func testFetchSymbols(source, post string) ([]byte, error) {
+func testFetchSymbols(source string, tlsParam *plugin.TLSParams, post string) ([]byte, error) {
 	var buf bytes.Buffer
 
 	switch source {
@@ -479,8 +479,8 @@ func testFetchSymbols(source, post string) ([]byte, error) {
 
 type testSymbolzSymbolizer struct{}
 
-func (testSymbolzSymbolizer) Symbolize(variables string, sources plugin.MappingSources, p *profile.Profile) error {
-	return symbolz.Symbolize(p, false, sources, testFetchSymbols, nil)
+func (testSymbolzSymbolizer) Symbolize(variables string, tlsParam *plugin.TLSParams, sources plugin.MappingSources, p *profile.Profile) error {
+	return symbolz.Symbolize(p, nil, false, sources, testFetchSymbols, nil)
 }
 
 func fakeDemangler(name string) string {
@@ -1393,7 +1393,7 @@ func TestSymbolzAfterMerge(t *testing.T) {
 	o := setDefaults(nil)
 	o.Flagset = f
 	o.Obj = new(mockObjTool)
-	src, cmd, err := parseFlags(o)
+	src, tlsParams, cmd, err := parseFlags(o)
 	if err != nil {
 		t.Fatalf("parseFlags: %v", err)
 	}
@@ -1404,7 +1404,7 @@ func TestSymbolzAfterMerge(t *testing.T) {
 
 	o.Fetch = testSymbolzMergeFetcher{}
 	o.Sym = testSymbolzSymbolizer{}
-	p, err := fetchProfiles(src, o)
+	p, err := fetchProfiles(src, tlsParams, o)
 	if err != nil {
 		t.Fatalf("fetchProfiles: %v", err)
 	}

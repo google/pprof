@@ -44,6 +44,11 @@ type Options struct {
 	HTTPServer func(args *HTTPServerArgs) error
 }
 
+// TLS Parameters for HTTPS profile and symbol fetch
+type TLSParams struct {
+	HTTPSCert, HTTPSKey, HTTPSCA string
+}
+
 // Writer provides a mechanism to write data under a certain name,
 // typically a filename.
 type Writer interface {
@@ -97,7 +102,7 @@ type Fetcher interface {
 
 // A Symbolizer introduces symbol information into a profile.
 type Symbolizer interface {
-	Symbolize(mode string, srcs MappingSources, prof *profile.Profile) error
+	Symbolize(mode string, tlsParam *TLSParams, srcs MappingSources, prof *profile.Profile) error
 }
 
 // MappingSources map each profile.Mapping to the source of the profile.

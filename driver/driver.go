@@ -111,7 +111,7 @@ type Fetcher interface {
 
 // A Symbolizer introduces symbol information into a profile.
 type Symbolizer interface {
-	Symbolize(mode string, srcs MappingSources, prof *profile.Profile) error
+	Symbolize(mode string, tlsParam *plugin.TLSParams, srcs MappingSources, prof *profile.Profile) error
 }
 
 // MappingSources map each profile.Mapping to the source of the profile.
@@ -272,10 +272,10 @@ type internalSymbolizer struct {
 	Symbolizer
 }
 
-func (s *internalSymbolizer) Symbolize(mode string, srcs plugin.MappingSources, prof *profile.Profile) error {
+func (s *internalSymbolizer) Symbolize(mode string, tlsParam *plugin.TLSParams, srcs plugin.MappingSources, prof *profile.Profile) error {
 	isrcs := MappingSources{}
 	for m, s := range srcs {
 		isrcs[m] = s
 	}
-	return s.Symbolizer.Symbolize(mode, isrcs, prof)
+	return s.Symbolizer.Symbolize(mode, tlsParam, isrcs, prof)
 }

@@ -17,6 +17,7 @@ package driver
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -40,20 +41,22 @@ import (
 // It will merge all the profiles it is able to retrieve, even if
 // there are some failures. It will return an error if it is unable to
 // fetch any profiles.
-func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
+func fetchProfiles(s *source, tlsParam *plugin.TLSParams, o *plugin.Options) (*profile.Profile, error) {
 	sources := make([]profileSource, 0, len(s.Sources))
 	for _, src := range s.Sources {
 		sources = append(sources, profileSource{
-			addr:   src,
-			source: s,
+			addr:     src,
+			source:   s,
+			tlsParam: tlsParam,
 		})
 	}
 
 	bases := make([]profileSource, 0, len(s.Base))
 	for _, src := range s.Base {
 		bases = append(bases, profileSource{
-			addr:   src,
-			source: s,
+			addr:     src,
+			source:   s,
+			tlsParam: tlsParam,
 		})
 	}
 
@@ -77,7 +80,7 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 	}
 
 	// Symbolize the merged profile.
-	if err := o.Sym.Symbolize(s.Symbolize, m, p); err != nil {
+	if err := o.Sym.Symbolize(s.Symbolize, tlsParam, m, p); err != nil {
 		return nil, err
 	}
 	p.RemoveUninteresting()
@@ -207,7 +210,7 @@ func concurrentGrab(sources []profileSource, fetch plugin.Fetcher, obj plugin.Ob
 	for i := range sources {
 		go func(s *profileSource) {
 			defer wg.Done()
-			s.p, s.msrc, s.remote, s.err = grabProfile(s.source, s.addr, fetch, obj, ui)
+			s.p, s.msrc, s.remote, s.err = grabProfile(s.source, s.addr, s.tlsParam, fetch, obj, ui)
 		}(&sources[i])
 	}
 	wg.Wait()
@@ -260,8 +263,9 @@ func combineProfiles(profiles []*profile.Profile, msrcs []plugin.MappingSources)
 }
 
 type profileSource struct {
-	addr   string
-	source *source
+	addr     string
+	source   *source
+	tlsParam *plugin.TLSParams
 
 	p      *profile.Profile
 	msrc   plugin.MappingSources
@@ -307,7 +311,7 @@ const testSourceAddress = "pproftest.local"
 // grabProfile fetches a profile. Returns the profile, sources for the
 // profile mappings, a bool indicating if the profile was fetched
 // remotely, and an error.
-func grabProfile(s *source, source string, fetcher plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (p *profile.Profile, msrc plugin.MappingSources, remote bool, err error) {
+func grabProfile(s *source, source string, tlsParam *plugin.TLSParams, fetcher plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (p *profile.Profile, msrc plugin.MappingSources, remote bool, err error) {
 	var src string
 	duration, timeout := time.Duration(s.Seconds)*time.Second, time.Duration(s.Timeout)*time.Second
 	if fetcher != nil {
@@ -318,7 +322,7 @@ func grabProfile(s *source, source string, fetcher plugin.Fetcher, obj plugin.Ob
 	}
 	if err != nil || p == nil {
 		// Fetch the profile over HTTP or from a file.
-		p, src, err = fetch(source, duration, timeout, ui)
+		p, src, err = fetch(source, tlsParam, duration, timeout, ui)
 		if err != nil {
 			return
 		}
@@ -457,7 +461,7 @@ mapping:
 // fetch fetches a profile from source, within the timeout specified,
 // producing messages through the ui. It returns the profile and the
 // url of the actual source of the profile for remote profiles.
-func fetch(source string, duration, timeout time.Duration, ui plugin.UI) (p *profile.Profile, src string, err error) {
+func fetch(source string, tlsParam *plugin.TLSParams, duration, timeout time.Duration, ui plugin.UI) (p *profile.Profile, src string, err error) {
 	var f io.ReadCloser
 
 	if sourceURL, timeout := adjustURL(source, duration, timeout); sourceURL != "" {
@@ -465,7 +469,7 @@ func fetch(source string, duration, timeout time.Duration, ui plugin.UI) (p *pro
 		if duration > 0 {
 			ui.Print(fmt.Sprintf("Please wait... (%v)", duration))
 		}
-		f, err = fetchURL(sourceURL, timeout)
+		f, err = fetchURL(sourceURL, tlsParam, timeout)
 		src = sourceURL
 	} else if isPerfFile(source) {
 		f, err = convertPerfData(source, ui)
@@ -480,8 +484,8 @@ func fetch(source string, duration, timeout time.Duration, ui plugin.UI) (p *pro
 }
 
 // fetchURL fetches a profile from a URL using HTTP.
-func fetchURL(source string, timeout time.Duration) (io.ReadCloser, error) {
-	resp, err := httpGet(source, timeout)
+func fetchURL(source string, tlsParam *plugin.TLSParams, timeout time.Duration) (io.ReadCloser, error) {
+	resp, err := httpGet(source, tlsParam, timeout)
 	if err != nil {
 		return nil, fmt.Errorf("http fetch: %v", err)
 	}
@@ -580,17 +584,35 @@ func adjustURL(source string, duration, timeout time.Duration) (string, time.Dur
 
 // httpGet is a wrapper around http.Get; it is defined as a variable
 // so it can be redefined during for testing.
-var httpGet = func(source string, timeout time.Duration) (*http.Response, error) {
+var httpGet = func(source string, tlsParam *plugin.TLSParams, timeout time.Duration) (*http.Response, error) {
+	var cert tls.Certificate
+
 	url, err := url.Parse(source)
 	if err != nil {
 		return nil, err
 	}
 
-	var tlsConfig *tls.Config
-	if url.Scheme == "https+insecure" {
-		tlsConfig = &tls.Config{
-			InsecureSkipVerify: true,
+	tlsConfig := &tls.Config{}
+	if tlsParam.HTTPSCert != "" && tlsParam.HTTPSKey != "" {
+		cert, err = tls.LoadX509KeyPair(tlsParam.HTTPSCert, tlsParam.HTTPSKey)
+		if err != nil {
+			return nil, err
 		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
+
+	if tlsParam.HTTPSCA != "" {
+		caCertPool := x509.NewCertPool()
+		caCert, err := ioutil.ReadFile(tlsParam.HTTPSCA)
+		if err != nil {
+			return nil, err
+		}
+		caCertPool.AppendCertsFromPEM(caCert)
+		tlsConfig.RootCAs = caCertPool
+	}
+
+	if url.Scheme == "https+insecure" {
+		tlsConfig.InsecureSkipVerify = true
 		url.Scheme = "https"
 		source = url.String()
 	}

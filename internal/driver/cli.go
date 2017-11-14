@@ -40,7 +40,7 @@ type source struct {
 // Parse parses the command lines through the specified flags package
 // and returns the source of the profile and optionally the command
 // for the kind of report to generate (nil for interactive use).
-func parseFlags(o *plugin.Options) (*source, []string, error) {
+func parseFlags(o *plugin.Options) (*source, *plugin.TLSParams, []string, error) {
 	flag := o.Flagset
 	// Comparisons.
 	flagBase := flag.StringList("base", "", "Source for base profile for comparison")
@@ -61,6 +61,10 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	flagContentions := flag.Bool("contentions", false, "Display number of delays at each region")
 	flagMeanDelay := flag.Bool("mean_delay", false, "Display mean delay at each region")
 	flagTools := flag.String("tools", os.Getenv("PPROF_TOOLS"), "Path for object tool pathnames")
+	// HTTPS TLS parameters for profile and symbol fetch
+	flagCertFile := flag.String("cert", "", "TLS client certificate file for fetching profile and symbols")
+	flagKeyFile := flag.String("key", "", "TLS private key file for fetching profile and symbols")
+	flagCAFile := flag.String("ca", "", "TLS CA certs file for fetching profile and symbols")
 
 	flagHTTP := flag.String("http", "", "Present interactive web based UI at the specified http host:port")
 
@@ -85,7 +89,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 			usageMsgVars)
 	})
 	if len(args) == 0 {
-		return nil, nil, fmt.Errorf("no profile source specified")
+		return nil, nil, nil, fmt.Errorf("no profile source specified")
 	}
 
 	var execName string
@@ -104,15 +108,15 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 
 	// Report conflicting options
 	if err := updateFlags(installedFlags); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	cmd, err := outputFormat(flagCommands, flagParamCommands)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if cmd != nil && *flagHTTP != "" {
-		return nil, nil, fmt.Errorf("-http is not compatible with an output format on the command line")
+		return nil, nil, nil, fmt.Errorf("-http is not compatible with an output format on the command line")
 	}
 
 	si := pprofVariables["sample_index"].value
@@ -140,6 +144,12 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		Comment:      *flagAddComment,
 	}
 
+	tlsParam := &plugin.TLSParams{
+		HTTPSCert: *flagCertFile,
+		HTTPSKey:  *flagKeyFile,
+		HTTPSCA:   *flagCAFile,
+	}
+
 	for _, s := range *flagBase {
 		if *s != "" {
 			source.Base = append(source.Base, *s)
@@ -148,14 +158,14 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 
 	normalize := pprofVariables["normalize"].boolValue()
 	if normalize && len(source.Base) == 0 {
-		return nil, nil, fmt.Errorf("Must have base profile to normalize by")
+		return nil, nil, nil, fmt.Errorf("Must have base profile to normalize by")
 	}
 	source.Normalize = normalize
 
 	if bu, ok := o.Obj.(*binutils.Binutils); ok {
 		bu.SetTools(*flagTools)
 	}
-	return source, cmd, nil
+	return source, tlsParam, cmd, nil
 }
 
 // installFlags creates command line flags for pprof variables.
@@ -280,6 +290,9 @@ var usageMsgSrc = "\n\n" +
 	"  Source options:\n" +
 	"    -seconds              Duration for time-based profile collection\n" +
 	"    -timeout              Timeout in seconds for profile collection\n" +
+	"    -key                  Specify TLS private key for profile collection\n" +
+	"    -cert                 Specify TLS client certificate for profile collection\n" +
+	"    -ca                   Specify CA certs file for profile collection\n" +
 	"    -buildid              Override build id for main binary\n" +
 	"    -add_comment          Free-form annotation to add to the profile\n" +
 	"                          Displayed on some reports or with pprof -comments\n" +

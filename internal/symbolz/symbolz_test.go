@@ -55,7 +55,7 @@ func TestSymbolize(t *testing.T) {
 		for _, force := range []bool{false, true} {
 			p := testProfile(hasFunctions)
 
-			if err := Symbolize(p, force, s, fetchSymbols, &proftest.TestUI{T: t}); err != nil {
+			if err := Symbolize(p, &plugin.TLSParams{}, force, s, fetchSymbols, &proftest.TestUI{T: t}); err != nil {
 				t.Errorf("symbolz: %v", err)
 				continue
 			}
@@ -118,7 +118,7 @@ func checkSymbolized(locs []*profile.Location, wantSymbolized bool) error {
 	return nil
 }
 
-func fetchSymbols(source, post string) ([]byte, error) {
+func fetchSymbols(source string, tlsParam *plugin.TLSParams, post string) ([]byte, error) {
 	var symbolz string
 
 	addresses := strings.Split(post, "+")
