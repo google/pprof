@@ -8,10 +8,10 @@ $ go get github.com/dvyukov/go-fuzz/go-fuzz-build
 ```
 
 Build the test program by calling the following command 
-(assuming you have files for pprof located in github.com/google/pprof within go's src folder)
+(assuming you have files for pprof located in github.com/tdewolff/pprof within go's src folder)
 
 ```
-$ go-fuzz-build github.com/google/pprof/fuzz
+$ go-fuzz-build github.com/tdewolff/pprof/fuzz
 ```
 The above command will produce pprof-fuzz.zip 
 

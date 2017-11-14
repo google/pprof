@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/pprof/driver"
+	"github.com/tdewolff/pprof/driver"
 )
 
 func main() {

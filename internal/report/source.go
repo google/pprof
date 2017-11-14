@@ -27,8 +27,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/pprof/internal/graph"
-	"github.com/google/pprof/internal/plugin"
+	"github.com/tdewolff/pprof/internal/graph"
+	"github.com/tdewolff/pprof/internal/plugin"
 )
 
 // printSource prints an annotated source listing, include all

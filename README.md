@@ -36,11 +36,11 @@ Prerequisites:
 
 To build and install it, use the `go get` tool.
 
-    go get github.com/google/pprof
+    go get github.com/tdewolff/pprof
 
 Remember to set GOPATH to the directory where you want pprof to be
 installed.  The binary will be in `$GOPATH/bin` and the sources under
-`$GOPATH/src/github.com/google/pprof`.
+`$GOPATH/src/github.com/tdewolff/pprof`.
 
 # Basic usage
 
