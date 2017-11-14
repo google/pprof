@@ -14,152 +14,187 @@
 
 package driver
 
-import "html/template"
+import (
+	"html/template"
+)
 
 // addTemplates adds a set of template definitions to templates.
 func addTemplates(templates *template.Template) {
 	template.Must(templates.Parse(`
 {{define "css"}}
 <style type="text/css">
-html {
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html, body {
   height: 100%;
-  min-height: 100%;
-  margin: 0px;
 }
 body {
-  margin: 0px;
-  width: 100%;
-  height: 100%;
-  min-height: 100%;
-  overflow: hidden;
-}
-#graphcontainer {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+  font-size: 13px;
+  line-height: 1.4;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 100%;
+}
+.header {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  min-height: 44px;
+  background-color: #eee;
+  color: #212121;
+  padding: 0 1rem;
+}
+.header > div {
+  margin: 0 0.125em;
+}
+.header .title h1 {
+  font-size: 1.75em;
+  margin-right: 1rem;
+}
+.header .title a {
+  color: #212121;
+  text-decoration: none;
+}
+.header .title a:hover {
+  text-decoration: underline;
+}
+.header .description {
   width: 100%;
-  min-width: 100%;
-  margin: 0px;
+  text-align: right;
 }
-#graph {
-  flex: 1 1 auto;
-  overflow: hidden;
-}
-svg {
-  width: 100%;
-  height: auto;
-}
-button {
-  margin-top: 5px;
-  margin-bottom: 5px;
-}
-#detailtext {
+#detailsbox {
   display: none;
+  z-index: 1;
   position: fixed;
-  top: 20px;
-  right: 10px;
+  top: 40px;
+  right: 20px;
   background-color: #ffffff;
-  min-width: 160px;
-  border: 1px solid #888;
-  box-shadow: 4px 4px 4px 0px rgba(0,0,0,0.2);
-  z-index: 1;
+  box-shadow: 0 1px 5px rgba(0,0,0,.3);
+  line-height: 24px;
+  padding: 1em;
 }
-#closedetails {
+#detailsbox #detailsclose {
   float: right;
-  margin: 2px;
+  text-decoration: none;
 }
-#home {
-  font-size: 14pt;
-  padding-left: 0.5em;
-  padding-right: 0.5em;
-  float: right;
+.header input {
+  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' style='pointer-events:none;display:block;width:100%25;height:100%25;fill:#757575'%3E%3Cpath d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61.0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E") no-repeat 4px center/20px 20px;
+  border: 1px solid #d1d2d3;
+  border-radius: 2px 0 0 2px;
+  padding: 0.25em;
+  padding-left: 28px;
+  margin-left: 1em;
+  font-family: 'Roboto', 'Noto', sans-serif;
+  font-size: 1em;
+  line-height: 24px;
+  color: #212121;
 }
-.menubar {
-  display: inline-block;
-  background-color: #f8f8f8;
-  border: 1px solid #ccc;
-  width: 100%;
+.downArrow {
+  border-top: .36em solid #ccc;
+  border-left: .36em solid transparent;
+  border-right: .36em solid transparent;
+  margin-bottom: .05em;
+  margin-left: .5em;
+  transition: border-top-color 200ms;
 }
-.menu-header {
+.menu-item {
+  height: 100%;
+  text-transform: uppercase;
+  font-family: 'Roboto Medium', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
   position: relative;
-  display: inline-block;
-  padding: 2px 2px;
-  font-size: 14pt;
 }
-.menu {
+.menu-item .menu-name:hover {
+  opacity: 0.75;
+}
+.menu-item .menu-name:hover .downArrow {
+  border-top-color: #666;
+}
+.menu-name {
+  height: 100%;
+  padding: 0 0.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.submenu {
   display: none;
-  position: absolute;
-  background-color: #f8f8f8;
-  border: 1px solid #888;
-  box-shadow: 4px 4px 4px 0px rgba(0,0,0,0.2);
   z-index: 1;
-  margin-top: 2px;
+  margin-top: -4px;
+  min-width: 10em;
+  position: absolute;
   left: 0px;
-  min-width: 5em;
+  background-color: white;
+  box-shadow: 0 1px 5px rgba(0,0,0,.3);
+  font-size: 100%;
+  text-transform: none;
 }
-.menu-header, .menu {
-  cursor: default;
+.menu-item, .submenu {
   user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   -webkit-user-select: none;
 }
-.menu hr {
-  background-color: #fff;
-  margin-top: 0px;
-  margin-bottom: 0px;
+.submenu hr {
+  border: 0;
+  border-top: 2px solid #eee;
 }
-.menu a, .menu button {
+.submenu a {
   display: block;
-  width: 100%;
-  margin: 0px;
-  padding: 2px 0px 2px 0px;
-  text-align: left;
+  padding: .5em 1em;
   text-decoration: none;
-  color: #000;
-  background-color: #f8f8f8;
-  font-size: 12pt;
-  border: none;
+  color: #2a66d9;
 }
-.menu-header:hover {
-  background-color: #ccc;
+.submenu a:hover, .submenu a.active {
+  color: white;
+  background-color: #6b82d6;
 }
-.menu a:hover, .menu button:hover {
-  background-color: #ccc;
-}
-.menu a.disabled {
+.submenu a.disabled {
   color: gray;
   pointer-events: none;
 }
-#searchbox {
-  margin-left: 10pt;
+
+#content {
+  overflow-y: scroll;
+  padding: 1em;
 }
-#bodycontainer {
+#top {
+  overflow-y: scroll;
+}
+#graph {
+  overflow: hidden;
+}
+#graph svg {
   width: 100%;
-  height: 100%;
-  max-height: 100%;
-  overflow: scroll;
-  padding-top: 5px;
+  height: auto;
+}
+#content.source .filename {
+	margin-top: 0;
+	margin-bottom: 1em;
+	font-size: 120%;
+}
+#content.source pre {
+	margin-bottom: 3em;
 }
 #toptable {
   border-spacing: 0px;
   width: 100%;
   padding-bottom: 1em;
+  white-space: nowrap;
+}
+#toptable thead {
+  font-family: 'Roboto Medium', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
 }
 #toptable tr th {
-  border-bottom: 1px solid black;
+  background-color: #ddd;
   text-align: right;
-  padding-left: 1em;
-  padding-top: 0.2em;
-  padding-bottom: 0.2em;
+  padding: .3em .5em;
 }
 #toptable tr td {
-  padding-left: 1em;
-  font: monospace;
+  padding: .3em .5em;
   text-align: right;
-  white-space: nowrap;
-  cursor: default;
 }
 #toptable tr th:nth-child(6),
 #toptable tr th:nth-child(7),
@@ -168,56 +203,68 @@ button {
   text-align: left;
 }
 #toptable tr td:nth-child(6) {
-  max-width: 30em;  // Truncate very long names
+  max-width: 30em;
+  text-overflow: ellipsis;
   overflow: hidden;
 }
 #flathdr1, #flathdr2, #cumhdr1, #cumhdr2, #namehdr {
   cursor: ns-resize;
 }
 .hilite {
-  background-color: #ccf;
+  background-color: #ebf5fb; 
+  font-weight: bold;
 }
 </style>
 {{end}}
 
 {{define "header"}}
-<div id="detailtext">
-<button id="closedetails">Close</button>
-{{range .Legend}}<div>{{.}}</div>{{end}}
+<div id="detailsbox">
+	<a id="detailsclose" href="#">Close</a>
+	{{range .Legend}}<div>{{.}}</div>{{end}}
 </div>
 
-<div class="menubar">
+<div class="header">
+	<div class="title">
+		<h1><a href="/">pprof</a></h1>
+	</div>
 
-<div class="menu-header">
-View
-<div class="menu">
-<a title="{{.Help.top}}"  href="/top" id="topbtn">Top</a>
-<a title="{{.Help.graph}}" href="/" id="graphbtn">Graph</a>
-<a title="{{.Help.peek}}" href="/peek" id="peek">Peek</a>
-<a title="{{.Help.list}}" href="/source" id="list">Source</a>
-<a title="{{.Help.disasm}}" href="/disasm" id="disasm">Disassemble</a>
-<hr>
-<button title="{{.Help.details}}" id="details">Details</button>
+	<div class="menu-item">
+		<div class="menu-name">
+			View
+			<i class="downArrow"></i>
+		</div>
+		<div class="submenu">
+			<a title="{{.Help.top}}"  href="/top" id="topbtn">Top</a>
+			<a title="{{.Help.graph}}" href="/" id="graphbtn">Graph</a>
+			<a title="{{.Help.peek}}" href="/peek" id="peek">Peek</a>
+			<a title="{{.Help.list}}" href="/source" id="list">Source</a>
+			<a title="{{.Help.disasm}}" href="/disasm" id="disasm">Disassemble</a>
+			<hr>
+			<a title="{{.Help.details}}" href="#" id="details">Details</a>
+		</div>
+	</div>
+
+	<div class="menu-item">
+		<div class="menu-name">
+			Refine
+			<i class="downArrow"></i>
+		</div>
+		<div class="submenu">
+			<a title="{{.Help.focus}}" href="{{.BaseURL}}" id="focus">Focus</a>
+			<a title="{{.Help.ignore}}" href="{{.BaseURL}}" id="ignore">Ignore</a>
+			<a title="{{.Help.hide}}" href="{{.BaseURL}}" id="hide">Hide</a>
+			<a title="{{.Help.show}}" href="{{.BaseURL}}" id="show">Show</a>
+			<hr>
+			<a title="{{.Help.reset}}" href="{{.BaseURL}}">Reset</a>
+		</div>
+	</div>
+
+	<div>
+		<input id="search" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
+	</div>
+
+	<div class="description">{{.Title}}</div>
 </div>
-</div>
-
-<div class="menu-header">
-Refine
-<div class="menu">
-<a title="{{.Help.focus}}" href="{{.BaseURL}}" id="focus">Focus</a>
-<a title="{{.Help.ignore}}" href="{{.BaseURL}}" id="ignore">Ignore</a>
-<a title="{{.Help.hide}}" href="{{.BaseURL}}" id="hide">Hide</a>
-<a title="{{.Help.show}}" href="{{.BaseURL}}" id="show">Show</a>
-<hr>
-<a title="{{.Help.reset}}" href="{{.BaseURL}}">Reset</a>
-</div>
-</div>
-
-<input id="searchbox" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
-
-<span id="home">{{.Title}}</span>
-
-</div> <!-- menubar -->
 
 <div id="errors">{{range .Errors}}<div>{{.}}</div>{{end}}</div>
 {{end}}
@@ -225,23 +272,19 @@ Refine
 {{define "graph" -}}
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
-{{template "css" .}}
-</head>
-<body>
-
-{{template "header" .}}
-<div id="graphcontainer">
-<div id="graph">
-{{.HTMLBody}}
-</div>
-
-</div>
-{{template "script" .}}
-<script>viewer({{.BaseURL}}, {{.Nodes}})</script>
-</body>
+  <head>
+	<meta charset="utf-8">
+	<title>{{.Title}}</title>
+	{{template "css" .}}
+  </head>
+  <body>
+	{{template "header" .}}
+	<div id="graph">
+	  {{.HTMLBody}}
+	</div>
+	{{template "script" .}}
+	<script>viewer({{.BaseURL}}, {{.Nodes}})</script>
+  </body>
 </html>
 {{end}}
 
@@ -477,13 +520,13 @@ function initMenus() {
   }
 
   // Set click handlers on every menu header.
-  for (const menu of document.getElementsByClassName("menu")) {
+  for (const menu of document.getElementsByClassName("submenu")) {
     const hdr = menu.parentElement;
     if (hdr == null) return;
     function showMenu(e) {
       // menu is a child of hdr, so this event can fire for clicks
       // inside menu. Ignore such clicks.
-      if (e.target != hdr) return;
+      if (e.target.parentElement != hdr) return;
       activeMenu = menu;
       activeMenuHdr = hdr;
       menu.style.display = "block";
@@ -497,7 +540,7 @@ function initMenus() {
     document.addEventListener(t, (e) => {
       // Note: to avoid unnecessary flicker, if the down event is inside
       // the active menu header, do not retract the menu.
-      if (activeMenuHdr != e.target.closest(".menu-header")) {
+      if (activeMenuHdr != e.target.closest(".menu-item")) {
         cancelActiveMenu();
       }
     }, { passive: true, capture: true });
@@ -505,7 +548,7 @@ function initMenus() {
 
   // If there is an active menu and an up event inside, retract the menu.
   document.addEventListener("mouseup", (e) => {
-    if (activeMenu == e.target.closest(".menu")) {
+    if (activeMenu == e.target.closest(".submenu")) {
       cancelActiveMenu();
     }
   }, { passive: true, capture: true });
@@ -515,7 +558,7 @@ function viewer(baseUrl, nodes) {
   'use strict';
 
   // Elements
-  const search = document.getElementById("searchbox")
+  const search = document.getElementById("search")
   const graph0 = document.getElementById("graph0")
   const svg = (graph0 == null ? null : graph0.parentElement)
   const toptable = document.getElementById("toptable")
@@ -527,13 +570,15 @@ function viewer(baseUrl, nodes) {
   let buttonsEnabled = true
 
   function handleDetails() {
-    const detailsText = document.getElementById("detailtext")
+    const detailsText = document.getElementById("detailsbox")
     if (detailsText != null) detailsText.style.display = "block"
+	return false;
   }
 
   function handleCloseDetails() {
-    const detailsText = document.getElementById("detailtext")
+    const detailsText = document.getElementById("detailsbox")
     if (detailsText != null) detailsText.style.display = "none"
+	return false;
   }
 
   function handleKey(e) {
@@ -782,7 +827,7 @@ function viewer(baseUrl, nodes) {
   }
 
   addAction("details", handleDetails)
-  addAction("closedetails", handleCloseDetails)
+  addAction("detailsclose", handleCloseDetails)
 
   search.addEventListener("input", handleSearch)
   search.addEventListener("keydown", handleKey)
@@ -799,31 +844,31 @@ function viewer(baseUrl, nodes) {
 {{define "top" -}}
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
-{{template "css" .}}
-<style type="text/css">
-</style>
-</head>
-<body>
-
-{{template "header" .}}
-
-<div id="bodycontainer">
-<table id="toptable">
-<tr>
-<th id="flathdr1">Flat
-<th id="flathdr2">Flat%
-<th>Sum%
-<th id="cumhdr1">Cum
-<th id="cumhdr2">Cum%
-<th id="namehdr">Name
-<th>Inlined?</tr>
-<tbody id="rows">
-</tbody>
-</table>
-</div>
+  <head>
+	<meta charset="utf-8">
+	<title>{{.Title}}</title>
+	{{template "css" .}}
+	<style type="text/css">
+	</style>
+  </head>
+  <body>
+	{{template "header" .}}
+	<div id="top">
+	  <table id="toptable">
+	    <thead>
+		  <tr>
+			<th id="flathdr1">Flat</th>
+			<th id="flathdr2">Flat%</th>
+			<th>Sum%</th>
+			<th id="cumhdr1">Cum</th>
+			<th id="cumhdr2">Cum%</th>
+			<th id="namehdr">Name</th>
+			<th>Inlined?</th>
+		  </tr>
+		</thead>
+		<tbody id="rows"></tbody>
+	  </table>
+	</div>
 
 {{template "script" .}}
 <script>
@@ -910,55 +955,50 @@ function makeTopTable(total, entries) {
 viewer({{.BaseURL}}, {{.Nodes}})
 makeTopTable({{.Total}}, {{.Top}})
 </script>
-</body>
+
+	</body>
 </html>
 {{end}}
 
 {{define "sourcelisting" -}}
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
-{{template "css" .}}
-{{template "weblistcss" .}}
-{{template "weblistjs" .}}
-</head>
-<body>
-
-{{template "header" .}}
-
-<div id="bodycontainer">
-{{.HTMLBody}}
-</div>
-
-{{template "script" .}}
-<script>viewer({{.BaseURL}}, null)</script>
-</body>
+  <head>
+	<meta charset="utf-8">
+	<title>{{.Title}}</title>
+	{{template "css" .}}
+	{{template "weblistcss" .}}
+	{{template "weblistjs" .}}
+  </head>
+  <body>
+	{{template "header" .}}
+	<div id="content" class="source">
+	  {{.HTMLBody}}
+	</div>
+	{{template "script" .}}
+	<script>viewer({{.BaseURL}}, null)</script>
+  </body>
 </html>
 {{end}}
 
 {{define "plaintext" -}}
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
-{{template "css" .}}
-</head>
-<body>
-
-{{template "header" .}}
-
-<div id="bodycontainer">
-<pre>
-{{.TextBody}}
-</pre>
-</div>
-
-{{template "script" .}}
-<script>viewer({{.BaseURL}}, null)</script>
-</body>
+  <head>
+	<meta charset="utf-8">
+	<title>{{.Title}}</title>
+	{{template "css" .}}
+  </head>
+  <body>
+	{{template "header" .}}
+	<div id="content">
+	  <pre>
+		{{.TextBody}}
+	  </pre>
+	</div>
+	{{template "script" .}}
+	<script>viewer({{.BaseURL}}, null)</script>
+  </body>
 </html>
 {{end}}
 `))
