@@ -38,6 +38,9 @@ body {
   display: flex;
   flex-direction: column;
 }
+a {
+  color: #2a66d9;
+}
 .header {
   display: flex;
   align-items: center;
@@ -75,10 +78,7 @@ body {
   box-shadow: 0 1px 5px rgba(0,0,0,.3);
   line-height: 24px;
   padding: 1em;
-}
-#detailsbox #detailsclose {
-  float: right;
-  text-decoration: none;
+  text-align: left;
 }
 .header input {
   background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' style='pointer-events:none;display:block;width:100%25;height:100%25;fill:#757575'%3E%3Cpath d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61.0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E") no-repeat 4px center/20px 20px;
@@ -106,11 +106,20 @@ body {
   font-family: 'Roboto Medium', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
   position: relative;
 }
+.menu-item.disabled {
+  opacity: 0.5;
+}
 .menu-item .menu-name:hover {
   opacity: 0.75;
 }
 .menu-item .menu-name:hover .downArrow {
   border-top-color: #666;
+}
+.menu-item.disabled .menu-name:hover {
+  opacity: 1;
+}
+.menu-item.disabled .menu-name:hover .downArrow {
+  border-top-color: #ccc;
 }
 .menu-name {
   height: 100%;
@@ -145,7 +154,6 @@ body {
   display: block;
   padding: .5em 1em;
   text-decoration: none;
-  color: #2a66d9;
 }
 .submenu a:hover, .submenu a.active {
   color: white;
@@ -218,17 +226,12 @@ body {
 {{end}}
 
 {{define "header"}}
-<div id="detailsbox">
-  <a id="detailsclose" href="#">Close</a>
-  {{range .Legend}}<div>{{.}}</div>{{end}}
-</div>
-
 <div class="header">
   <div class="title">
     <h1><a href="/">pprof</a></h1>
   </div>
 
-  <div class="menu-item">
+  <div id="view" class="menu-item">
     <div class="menu-name">
       View
       <i class="downArrow"></i>
@@ -239,12 +242,10 @@ body {
       <a title="{{.Help.peek}}" href="/peek" id="peek">Peek</a>
       <a title="{{.Help.list}}" href="/source" id="list">Source</a>
       <a title="{{.Help.disasm}}" href="/disasm" id="disasm">Disassemble</a>
-      <hr>
-      <a title="{{.Help.details}}" href="#" id="details">Details</a>
     </div>
   </div>
 
-  <div class="menu-item">
+  <div id="refine" class="menu-item disabled">
     <div class="menu-name">
       Refine
       <i class="downArrow"></i>
@@ -263,7 +264,12 @@ body {
     <input id="search" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
   </div>
 
-  <div class="description">{{.Title}}</div>
+  <div class="description">
+    <a title="{{.Help.details}}" href="#" id="details">{{.Title}}</a>
+    <div id="detailsbox">
+      {{range .Legend}}<div>{{.}}</div>{{end}}
+    </div>
+  </div>
 </div>
 
 <div id="errors">{{range .Errors}}<div>{{.}}</div>{{end}}</div>
@@ -523,6 +529,7 @@ function initMenus() {
   for (const menu of document.getElementsByClassName("submenu")) {
     const hdr = menu.parentElement;
     if (hdr == null) return;
+    if (hdr.classList.contains("disabled")) return;
     function showMenu(e) {
       // menu is a child of hdr, so this event can fire for clicks
       // inside menu. Ignore such clicks.
@@ -569,16 +576,16 @@ function viewer(baseUrl, nodes) {
   let searchAlarm = null
   let buttonsEnabled = true
 
-  function handleDetails() {
+  function handleDetails(e) {
+    e.preventDefault()
     const detailsText = document.getElementById("detailsbox")
-    if (detailsText != null) detailsText.style.display = "block"
-      return false;
-  }
-
-  function handleCloseDetails() {
-    const detailsText = document.getElementById("detailsbox")
-    if (detailsText != null) detailsText.style.display = "none"
-      return false;
+    if (detailsText != null) {
+      if (detailsText.style.display === "block") {
+        detailsText.style.display = "none"
+      } else {
+        detailsText.style.display = "block"
+      }
+    }
   }
 
   function handleKey(e) {
@@ -798,6 +805,9 @@ function viewer(baseUrl, nodes) {
         link.classList.toggle("disabled", !enable)
       }
     }
+    if (document.getElementById("graph") !== null) {
+      document.getElementById("refine").classList.remove("disabled")
+    }
   }
 
   // Initialize button states
@@ -827,7 +837,6 @@ function viewer(baseUrl, nodes) {
   }
 
   addAction("details", handleDetails)
-  addAction("detailsclose", handleCloseDetails)
 
   search.addEventListener("input", handleSearch)
   search.addEventListener("keydown", handleKey)
