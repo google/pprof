@@ -67,6 +67,12 @@ a {
 .header .description {
   width: 100%;
   text-align: right;
+  white-space: nowrap;
+}
+@media screen and (max-width: 799px) {
+	.header input {
+		display: none;
+	}
 }
 #detailsbox {
   display: none;
@@ -210,13 +216,11 @@ table tr td {
 #top table tr td:nth-child(7) {
   text-align: left;
 }
-#top table tr th:nth-child(6) {
-  width: 100%;
-}
 #top table tr td:nth-child(6) {
-  max-width: 30em;
+  width: 100%;
   text-overflow: ellipsis;
   overflow: hidden;
+  white-space: nowrap;
 }
 #flathdr1, #flathdr2, #cumhdr1, #cumhdr2, #namehdr {
   cursor: ns-resize;
