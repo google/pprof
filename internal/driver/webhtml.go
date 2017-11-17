@@ -186,31 +186,34 @@ a {
 #content.source pre {
   margin-bottom: 3em;
 }
-#toptable {
+table {
   border-spacing: 0px;
   width: 100%;
   padding-bottom: 1em;
   white-space: nowrap;
 }
-#toptable thead {
+table thead {
   font-family: 'Roboto Medium', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
 }
-#toptable tr th {
+table tr th {
   background-color: #ddd;
   text-align: right;
   padding: .3em .5em;
 }
-#toptable tr td {
+table tr td {
   padding: .3em .5em;
   text-align: right;
 }
-#toptable tr th:nth-child(6),
-#toptable tr th:nth-child(7),
-#toptable tr td:nth-child(6),
-#toptable tr td:nth-child(7) {
+#top table tr th:nth-child(6),
+#top table tr th:nth-child(7),
+#top table tr td:nth-child(6),
+#top table tr td:nth-child(7) {
   text-align: left;
 }
-#toptable tr td:nth-child(6) {
+#top table tr th:nth-child(6) {
+  width: 100%;
+}
+#top table tr td:nth-child(6) {
   max-width: 30em;
   text-overflow: ellipsis;
   overflow: hidden;
