@@ -183,6 +183,7 @@ a {
 #graph svg {
   width: 100%;
   height: auto;
+  padding: 10px;
 }
 #content.source .filename {
   margin-top: 0;
