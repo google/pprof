@@ -66,16 +66,13 @@ func Symbolize(p *profile.Profile, force bool, sources plugin.MappingSources, sy
 // symbolz returns the corresponding symbolz source for a profile URL.
 func symbolz(source string) string {
 	if url, err := url.Parse(source); err == nil && url.Host != "" {
-		if strings.Contains(url.Path, "/") {
-			if dir := path.Dir(url.Path); dir == "/debug/pprof" {
-				// For Go language profile handlers in net/http/pprof package.
-				url.Path = "/debug/pprof/symbol"
-			} else {
-				url.Path = "/symbolz"
-			}
-			url.RawQuery = ""
-			return url.String()
+		if strings.Contains(url.Path, "/debug/pprof/") {
+			url.Path = path.Clean(url.Path + "/../symbol")
+		} else {
+			url.Path = "/symbolz"
 		}
+		url.RawQuery = ""
+		return url.String()
 	}
 
 	return ""
@@ -83,7 +80,7 @@ func symbolz(source string) string {
 
 // symbolizeMapping symbolizes locations belonging to a Mapping by querying
 // a symbolz handler. An offset is applied to all addresses to take care of
-// normalization occured for merged Mappings.
+// normalization occurred for merged Mappings.
 func symbolizeMapping(source string, offset int64, syms func(string, string) ([]byte, error), m *profile.Mapping, p *profile.Profile) error {
 	// Construct query of addresses to symbolize.
 	var a []string

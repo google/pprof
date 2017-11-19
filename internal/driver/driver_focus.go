@@ -28,13 +28,13 @@ import (
 var tagFilterRangeRx = regexp.MustCompile("([[:digit:]]+)([[:alpha:]]+)")
 
 // applyFocus filters samples based on the focus/ignore options
-func applyFocus(prof *profile.Profile, v variables, ui plugin.UI) error {
+func applyFocus(prof *profile.Profile, numLabelUnits map[string]string, v variables, ui plugin.UI) error {
 	focus, err := compileRegexOption("focus", v["focus"].value, nil)
 	ignore, err := compileRegexOption("ignore", v["ignore"].value, err)
 	hide, err := compileRegexOption("hide", v["hide"].value, err)
 	show, err := compileRegexOption("show", v["show"].value, err)
-	tagfocus, err := compileTagFilter("tagfocus", v["tagfocus"].value, ui, err)
-	tagignore, err := compileTagFilter("tagignore", v["tagignore"].value, ui, err)
+	tagfocus, err := compileTagFilter("tagfocus", v["tagfocus"].value, numLabelUnits, ui, err)
+	tagignore, err := compileTagFilter("tagignore", v["tagignore"].value, numLabelUnits, ui, err)
 	prunefrom, err := compileRegexOption("prune_from", v["prune_from"].value, err)
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func compileRegexOption(name, value string, err error) (*regexp.Regexp, error) {
 	return rx, nil
 }
 
-func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profile.Sample) bool, error) {
+func compileTagFilter(name, value string, numLabelUnits map[string]string, ui plugin.UI, err error) (func(*profile.Sample) bool, error) {
 	if value == "" || err != nil {
 		return nil, err
 	}
@@ -87,18 +87,21 @@ func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profil
 
 	if numFilter := parseTagFilterRange(value); numFilter != nil {
 		ui.PrintErr(name, ":Interpreted '", value, "' as range, not regexp")
-		labelFilter := func(vals []int64, key string) bool {
+		labelFilter := func(vals []int64, unit string) bool {
 			for _, val := range vals {
-				if numFilter(val, key) {
+				if numFilter(val, unit) {
 					return true
 				}
 			}
 			return false
 		}
+		numLabelUnit := func(key string) string {
+			return numLabelUnits[key]
+		}
 		if wantKey == "" {
 			return func(s *profile.Sample) bool {
 				for key, vals := range s.NumLabel {
-					if labelFilter(vals, key) {
+					if labelFilter(vals, numLabelUnit(key)) {
 						return true
 					}
 				}
@@ -107,7 +110,7 @@ func compileTagFilter(name, value string, ui plugin.UI, err error) (func(*profil
 		}
 		return func(s *profile.Sample) bool {
 			if vals, ok := s.NumLabel[wantKey]; ok {
-				return labelFilter(vals, wantKey)
+				return labelFilter(vals, numLabelUnit(wantKey))
 			}
 			return false
 		}, nil

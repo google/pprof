@@ -91,7 +91,6 @@ button {
   position: relative;
   display: inline-block;
   padding: 2px 2px;
-  cursor: default;
   font-size: 14pt;
 }
 .menu {
@@ -104,6 +103,13 @@ button {
   margin-top: 2px;
   left: 0px;
   min-width: 5em;
+}
+.menu-header, .menu {
+  cursor: default;
+  user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-select: none;
 }
 .menu hr {
   background-color: #fff;
@@ -124,9 +130,6 @@ button {
 }
 .menu-header:hover {
   background-color: #ccc;
-}
-.menu-header:hover .menu {
-  display: block;
 }
 .menu a:hover, .menu button:hover {
   background-color: #ccc;
@@ -467,6 +470,54 @@ function initPanAndZoom(svg, clickHandler) {
   svg.addEventListener("wheel", handleWheel, true)
 }
 
+function initMenus() {
+  'use strict';
+
+  let activeMenu = null;
+  let activeMenuHdr = null;
+
+  function cancelActiveMenu() {
+    if (activeMenu == null) return;
+    activeMenu.style.display = "none";
+    activeMenu = null;
+    activeMenuHdr = null;
+  }
+
+  // Set click handlers on every menu header.
+  for (const menu of document.getElementsByClassName("menu")) {
+    const hdr = menu.parentElement;
+    if (hdr == null) return;
+    function showMenu(e) {
+      // menu is a child of hdr, so this event can fire for clicks
+      // inside menu. Ignore such clicks.
+      if (e.target != hdr) return;
+      activeMenu = menu;
+      activeMenuHdr = hdr;
+      menu.style.display = "block";
+    }
+    hdr.addEventListener("mousedown", showMenu);
+    hdr.addEventListener("touchstart", showMenu);
+  }
+
+  // If there is an active menu and a down event outside, retract the menu.
+  for (const t of ["mousedown", "touchstart"]) {
+    document.addEventListener(t, (e) => {
+      // Note: to avoid unnecessary flicker, if the down event is inside
+      // the active menu header, do not retract the menu.
+      if (activeMenuHdr != e.target.closest(".menu-header")) {
+        cancelActiveMenu();
+      }
+    }, { passive: true, capture: true });
+  }
+
+  // If there is an active menu and an up event inside, retract the menu.
+  document.addEventListener("mouseup", (e) => {
+    if (activeMenu == e.target.closest(".menu")) {
+      cancelActiveMenu();
+    }
+  }, { passive: true, capture: true });
+}
+
 function viewer(baseUrl, nodes) {
   'use strict';
 
@@ -665,6 +716,8 @@ function viewer(baseUrl, nodes) {
         }
       }
       params.set(param, re)
+    } else {
+      params.delete(param)
     }
 
     return url.toString()
@@ -713,6 +766,7 @@ function viewer(baseUrl, nodes) {
   updateButtons()
 
   // Setup event handlers
+  initMenus()
   if (svg != null) {
     initPanAndZoom(svg, toggleSvgSelect)
   }

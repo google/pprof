@@ -26,13 +26,14 @@ import (
 
 func TestSymbolzURL(t *testing.T) {
 	for try, want := range map[string]string{
-		"http://host:8000/profilez":                        "http://host:8000/symbolz",
-		"http://host:8000/profilez?seconds=5":              "http://host:8000/symbolz",
-		"http://host:8000/profilez?seconds=5&format=proto": "http://host:8000/symbolz",
-		"http://host:8000/heapz?format=legacy":             "http://host:8000/symbolz",
-		"http://host:8000/debug/pprof/profile":             "http://host:8000/debug/pprof/symbol",
-		"http://host:8000/debug/pprof/profile?seconds=10":  "http://host:8000/debug/pprof/symbol",
-		"http://host:8000/debug/pprof/heap":                "http://host:8000/debug/pprof/symbol",
+		"http://host:8000/profilez":                                               "http://host:8000/symbolz",
+		"http://host:8000/profilez?seconds=5":                                     "http://host:8000/symbolz",
+		"http://host:8000/profilez?seconds=5&format=proto":                        "http://host:8000/symbolz",
+		"http://host:8000/heapz?format=legacy":                                    "http://host:8000/symbolz",
+		"http://host:8000/debug/pprof/profile":                                    "http://host:8000/debug/pprof/symbol",
+		"http://host:8000/debug/pprof/profile?seconds=10":                         "http://host:8000/debug/pprof/symbol",
+		"http://host:8000/debug/pprof/heap":                                       "http://host:8000/debug/pprof/symbol",
+		"http://some.host:8080/some/deeper/path/debug/pprof/endpoint?param=value": "http://some.host:8080/some/deeper/path/debug/pprof/symbol",
 	} {
 		if got := symbolz(try); got != want {
 			t.Errorf(`symbolz(%s)=%s, want "%s"`, try, got, want)

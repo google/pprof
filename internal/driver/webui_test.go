@@ -23,13 +23,19 @@ import (
 	"net/url"
 	"os/exec"
 	"regexp"
+	"sync"
 	"testing"
 
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/profile"
+	"runtime"
 )
 
 func TestWebInterface(t *testing.T) {
+	if runtime.GOOS == "nacl" {
+		t.Skip("test assumes tcp available")
+	}
+
 	prof := makeFakeProfile()
 
 	// Custom http server creator
@@ -51,7 +57,7 @@ func TestWebInterface(t *testing.T) {
 		Obj:        fakeObjTool{},
 		UI:         &stdUI{},
 		HTTPServer: creator,
-	})
+	}, false)
 	<-serverCreated
 	defer server.Close()
 
@@ -69,7 +75,7 @@ func TestWebInterface(t *testing.T) {
 		{"/", []string{"F1", "F2", "F3", "testbin", "cpu"}, true},
 		{"/top", []string{`"Name":"F2","InlineLabel":"","Flat":200,"Cum":300,"FlatFormat":"200ms","CumFormat":"300ms"}`}, false},
 		{"/source?f=" + url.QueryEscape("F[12]"),
-			[]string{"F1", "F2", "300ms line1"}, false},
+			[]string{"F1", "F2", "300ms +line1"}, false},
 		{"/peek?f=" + url.QueryEscape("F[12]"),
 			[]string{"300ms.*F1", "200ms.*300ms.*F2"}, false},
 		{"/disasm?f=" + url.QueryEscape("F[12]"),
@@ -102,6 +108,23 @@ func TestWebInterface(t *testing.T) {
 		}
 	}
 
+	// Also fetch all the test case URLs in parallel to test thread
+	// safety when run under the race detector.
+	var wg sync.WaitGroup
+	for _, c := range testcases {
+		if c.needDot && !haveDot {
+			continue
+		}
+		path := server.URL + c.path
+		for count := 0; count < 2; count++ {
+			wg.Add(1)
+			go func() {
+				http.Get(path)
+				wg.Done()
+			}()
+		}
+	}
+	wg.Wait()
 }
 
 // Implement fake object file support.

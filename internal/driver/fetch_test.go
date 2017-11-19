@@ -351,6 +351,13 @@ func stubHTTPGet(source string, _ time.Duration) (*http.Response, error) {
 	return c.Get("file:///" + file)
 }
 
+func closedError() string {
+	if runtime.GOOS == "plan9" {
+		return "listen hungup"
+	}
+	return "use of closed"
+}
+
 func TestHttpsInsecure(t *testing.T) {
 	if runtime.GOOS == "nacl" {
 		t.Skip("test assumes tcp available")
@@ -372,7 +379,7 @@ func TestHttpsInsecure(t *testing.T) {
 		donec <- http.Serve(l, nil)
 	}(donec)
 	defer func() {
-		if got, want := <-donec, "use of closed"; !strings.Contains(got.Error(), want) {
+		if got, want := <-donec, closedError(); !strings.Contains(got.Error(), want) {
 			t.Fatalf("Serve got error %v, want %q", got, want)
 		}
 	}()
@@ -404,9 +411,14 @@ func TestHttpsInsecure(t *testing.T) {
 		Timeout:   10,
 		Symbolize: "remote",
 	}
+	rx := "Saved profile in"
+	if runtime.GOOS == "darwin" && (runtime.GOARCH == "arm" || runtime.GOARCH == "arm64") {
+		// On iOS, $HOME points to the app root directory and is not writable.
+		rx += "|Could not use temp dir"
+	}
 	o := &plugin.Options{
 		Obj: &binutils.Binutils{},
-		UI:  &proftest.TestUI{T: t, IgnoreRx: "Saved profile in"},
+		UI:  &proftest.TestUI{T: t, AllowRx: rx},
 	}
 	o.Sym = &symbolizer.Symbolizer{Obj: o.Obj, UI: o.UI}
 	p, err := fetchProfiles(s, o)
@@ -415,6 +427,16 @@ func TestHttpsInsecure(t *testing.T) {
 	}
 	if len(p.SampleType) == 0 {
 		t.Fatalf("fetchProfiles(%s) got empty profile: len(p.SampleType)==0", address)
+	}
+	switch runtime.GOOS {
+	case "plan9":
+		// CPU profiling is not supported on Plan9; see golang.org/issues/22564.
+		return
+	case "darwin":
+		if runtime.GOARCH == "arm" || runtime.GOARCH == "arm64" {
+			// CPU profiling on iOS os not symbolized; see golang.org/issues/22612.
+			return
+		}
 	}
 	if len(p.Function) == 0 {
 		t.Fatalf("fetchProfiles(%s) got non-symbolized profile: len(p.Function)==0", address)
@@ -429,7 +451,6 @@ func TestHttpsInsecure(t *testing.T) {
 var badSigprofOS = map[string]bool{
 	"darwin": true,
 	"netbsd": true,
-	"plan9":  true,
 }
 
 func checkProfileHasFunction(p *profile.Profile, fname string) error {
