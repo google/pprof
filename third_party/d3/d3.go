@@ -5,10 +5,9 @@
 
 package d3
 
-// D3 returns the d3.js file
-const D3 = `
+// Source returns the d3.js file
+const Source = `
 {{define "d3script"}}
-<script>
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -16918,6 +16917,5 @@ exports.zoomIdentity = identity$8;
 Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
-</script>
 {{end}}
 `

@@ -21,9 +21,9 @@ import "github.com/google/pprof/third_party/d3flamegraph"
 
 // addTemplates adds a set of template definitions to templates.
 func addTemplates(templates *template.Template) {
-	template.Must(templates.Parse(d3.D3))
-	template.Must(templates.Parse(d3tip.D3TIP))
-	template.Must(templates.Parse(d3flamegraph.D3FLAMEGRAPH))
+	template.Must(templates.Parse(d3.Source))
+	template.Must(templates.Parse(d3tip.Source))
+	template.Must(templates.Parse(d3flamegraph.Source))
 	template.Must(templates.Parse(`
 {{define "css"}}
 <style type="text/css">
@@ -976,7 +976,7 @@ makeTopTable({{.Total}}, {{.Top}})
 <meta charset="utf-8">
 <title>{{.Title}}</title>
 {{template "css" .}}
-{{template "d3flamegraphcss" .}}
+<style type="text/css">{{template "d3flamegraphcss" .}}</style>
 <style type="text/css">
 .flamegraph-content {
     width: 90%;
@@ -1002,9 +1002,9 @@ makeTopTable({{.Total}}, {{.Top}})
 </div>
 {{template "script" .}}
 <script>viewer({{.BaseURL}}, {{.Nodes}})</script>
-{{template "d3script" .}}
-{{template "d3tipscript" .}}
-{{template "d3flamegraphscript" .}}
+<script>{{template "d3script" .}}</script>
+<script>{{template "d3tipscript" .}}</script>
+<script>{{template "d3flamegraphscript" .}}</script>
 <script type="text/javascript">
     var data = {{.FlameGraph}};
     var label = function(d) {

@@ -56,6 +56,7 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 	g, config := report.GetDOT(rpt)
 	var nodes []*treeNode
 	nroots := 0
+	rootValue := int64(0)
 	nodeMap := map[*graph.Node]*treeNode{}
 	// Make all nodes and the map, collect the roots.
 	for _, n := range g.Nodes {
@@ -70,6 +71,7 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 		if len(n.In) == 0 {
 			nodes[nroots], nodes[len(nodes)-1] = nodes[len(nodes)-1], nodes[nroots]
 			nroots++
+			rootValue += v
 		}
 		nodeMap[n] = node
 	}
@@ -79,12 +81,6 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 		for child := range n.Out {
 			node.Children = append(node.Children, nodeMap[child])
 		}
-	}
-
-	// Calculate root value
-	rootValue := int64(0)
-	for _, n := range nodes[0:nroots] {
-		rootValue = rootValue + n.Cum
 	}
 
 	rootNode := &treeNode{
