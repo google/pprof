@@ -954,7 +954,7 @@ makeTopTable({{.Total}}, {{.Top}})
 <script type="text/javascript">
     var data = {{.FlameGraph}};
     var label = function(d) {
-        return d.data.n + " (" + d3.format(".3f")(100 * (d.x1 - d.x0), 3) + "%, " + d.data.l + ")";
+        return d.data.n + " (" + d.data.p + ", " + d.data.l + ")";
     };
 
     var width = document.getElementById("chart").clientWidth;
@@ -962,7 +962,7 @@ makeTopTable({{.Total}}, {{.Top}})
     var flameGraph = d3.flameGraph()
         .width(width)
         .cellHeight(18)
-        .minFrameSize(5)
+        .minFrameSize(1)
         .transitionDuration(750)
         .transitionEase(d3.easeCubic)
         .sort(true)

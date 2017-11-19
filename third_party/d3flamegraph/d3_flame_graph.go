@@ -1,6 +1,6 @@
 // A D3.js plugin that produces flame graphs from hierarchical data.
 // https://github.com/spiermar/d3-flame-graph
-// Version 1.0.10
+// Version 1.0.11
 // See LICENSE file for license details
 
 package d3flamegraph
@@ -310,7 +310,7 @@ const D3FLAMEGRAPH = `
           if (children(d)) {
             var c = children(d);
             for (var i = 0; i < c.length; i++) {
-              v -= c[i].value;
+              v -= value(c[i]);
             }
           }
           return v;
@@ -366,7 +366,7 @@ const D3FLAMEGRAPH = `
           .attr("width", width)
           .attr("height", function(d) { return c; })
           .select("div")
-          .attr("class", "label")
+          .attr("class", "d3-flame-graph-label")
           .style("display", function(d) { return (width(d) < 35) ? "none" : "block";})
           .transition()
           .delay(transitionDuration)
@@ -614,7 +614,7 @@ const D3FLAMEGRAPH = `
   cursor: pointer;
 }
 
-.d3-flame-graph .label {
+.d3-flame-graph-label {
   pointer-events: none;
   white-space: nowrap;
   text-overflow: ellipsis;
