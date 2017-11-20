@@ -14,9 +14,7 @@
 
 package driver
 
-import (
-	"html/template"
-)
+import "html/template"
 
 // addTemplates adds a set of template definitions to templates.
 func addTemplates(templates *template.Template) {
