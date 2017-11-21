@@ -15,9 +15,16 @@
 package driver
 
 import "html/template"
+import "github.com/google/pprof/third_party/d3"
+import "github.com/google/pprof/third_party/d3tip"
+import "github.com/google/pprof/third_party/d3flamegraph"
 
 // addTemplates adds a set of template definitions to templates.
 func addTemplates(templates *template.Template) {
+	template.Must(templates.Parse(`{{define "d3script"}}` + d3.JSSource + `{{end}}`))
+	template.Must(templates.Parse(`{{define "d3tipscript"}}` + d3tip.JSSource + `{{end}}`))
+	template.Must(templates.Parse(`{{define "d3flamegraphscript"}}` + d3flamegraph.JSSource + `{{end}}`))
+	template.Must(templates.Parse(`{{define "d3flamegraphcss"}}` + d3flamegraph.CSSSource + `{{end}}`))
 	template.Must(templates.Parse(`
 {{define "css"}}
 <style type="text/css">
@@ -245,6 +252,7 @@ View
 <div class="submenu">
 <a title="{{.Help.top}}"  href="/top" id="topbtn">Top</a>
 <a title="{{.Help.graph}}" href="/" id="graphbtn">Graph</a>
+<a title="{{.Help.flamegraph}}" href="/flamegraph" id="flamegraph">Flame Graph</a>
 <a title="{{.Help.peek}}" href="/peek" id="peek">Peek</a>
 <a title="{{.Help.list}}" href="/source" id="list">Source</a>
 <a title="{{.Help.disasm}}" href="/disasm" id="disasm">Disassemble</a>
@@ -1013,6 +1021,118 @@ makeTopTable({{.Total}}, {{.Top}})
 </div>
 {{template "script" .}}
 <script>viewer({{.BaseURL}}, null)</script>
+</body>
+</html>
+{{end}}
+
+{{define "flamegraph" -}}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{.Title}}</title>
+{{template "css" .}}
+<style type="text/css">{{template "d3flamegraphcss" .}}</style>
+<style type="text/css">
+.flamegraph-content {
+    width: 90%;
+    min-width: 80%;
+    margin-left: 5%;
+}
+.flamegraph-details {
+    height: 1.2em;
+    width: 90%;
+    min-width: 90%;
+    margin-left: 5%;
+    padding-bottom: 41px;
+}
+</style>
+</head>
+<body>
+{{template "header" .}}
+<div id="bodycontainer">
+  <div class="flamegraph-content">
+    <div id="chart"></div>
+  </div>
+  <div id="flamegraphdetails" class="flamegraph-details"></div>
+</div>
+{{template "script" .}}
+<script>viewer({{.BaseURL}}, {{.Nodes}})</script>
+<script>{{template "d3script" .}}</script>
+<script>{{template "d3tipscript" .}}</script>
+<script>{{template "d3flamegraphscript" .}}</script>
+<script type="text/javascript">
+    var data = {{.FlameGraph}};
+    var label = function(d) {
+        return d.data.n + " (" + d.data.p + ", " + d.data.l + ")";
+    };
+
+    var width = document.getElementById("chart").clientWidth;
+
+    var flameGraph = d3.flameGraph()
+        .width(width)
+        .cellHeight(18)
+        .minFrameSize(1)
+        .transitionDuration(750)
+        .transitionEase(d3.easeCubic)
+        .sort(true)
+        .title("")
+        .label(label)
+        .details(document.getElementById("flamegraphdetails"));
+
+    var tip = d3.tip()
+        .direction("s")
+        .offset([8, 0])
+        .attr('class', 'd3-flame-graph-tip')
+        .html(function(d) { return "name: " + d.data.n + ", value: " + d.data.l; });
+
+    flameGraph.tooltip(tip);
+
+    d3.select("#chart")
+        .datum(data)
+        .call(flameGraph);
+
+    function clear() {
+        flameGraph.clear();
+    }
+
+    function resetZoom() {
+        flameGraph.resetZoom();
+    }
+
+    window.addEventListener("resize", function() {
+        var width = document.getElementById("chart").clientWidth;
+        var graphs = document.getElementsByClassName("d3-flame-graph");
+        if (graphs.length > 0) {
+            graphs[0].setAttribute("width", width);
+        }
+        flameGraph.width(width);
+        flameGraph.resetZoom();
+    }, true);
+
+    var searchbox = document.getElementById("searchbox");
+    var searchAlarm = null;
+
+    function selectMatching() {
+      searchAlarm = null;
+
+      if (searchbox.value != "") {
+        flameGraph.search(searchbox.value);
+      } else {
+        flameGraph.clear();
+      }
+    }
+
+    function handleSearch() {
+      // Delay expensive processing so a flurry of key strokes is handled once.
+      if (searchAlarm != null) {
+        clearTimeout(searchAlarm);
+      }
+      searchAlarm = setTimeout(selectMatching, 300);
+    }
+
+    searchbox.addEventListener("input", handleSearch);
+</script>
 </body>
 </html>
 {{end}}
