@@ -47,6 +47,7 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 	var nodes []*treeNode
 	nroots := 0
 	rootValue := int64(0)
+	nodeArr := []string{}
 	nodeMap := map[*graph.Node]*treeNode{}
 	// Make all nodes and the map, collect the roots.
 	for _, n := range g.Nodes {
@@ -64,6 +65,8 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 			rootValue += v
 		}
 		nodeMap[n] = node
+		// Get all node names into an array.
+		nodeArr = append(nodeArr, n.Info.Name)
 	}
 	// Populate the child links.
 	for _, n := range g.Nodes {
@@ -91,5 +94,6 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 
 	ui.render(w, "/flamegraph", "flamegraph", rpt, errList, config.Labels, webArgs{
 		FlameGraph: template.JS(b),
+		Nodes:      nodeArr,
 	})
 }
