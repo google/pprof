@@ -36,7 +36,8 @@ type treeNode struct {
 // flamegraph generates a web page containing a flamegraph.
 func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 	// Force the call tree so that the graph is a tree.
-	rpt, errList := ui.makeReport(w, req, []string{"svg"}, "call_tree", "true")
+	// Also do not trim the tree so that the flame graph contains all functions.
+	rpt, errList := ui.makeReport(w, req, []string{"svg"}, "call_tree", "true", "trim", "false")
 	if rpt == nil {
 		return // error already reported
 	}
