@@ -5,9 +5,8 @@
 
 package d3
 
-// Source returns the d3.js file
-const Source = `
-{{define "d3script"}}
+// JSSource returns the d3.js file
+const JSSource = `
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -4673,5 +4672,4 @@ exports.transition = transition;
 Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
-{{end}}
 `

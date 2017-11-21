@@ -5,9 +5,8 @@
 
 package d3tip
 
-// Source returns the d3-tip.js file
-const Source = `
-{{define "d3tipscript"}}
+// JSSource returns the d3-tip.js file
+const JSSource = `
 (function (root, factory) {
   if (typeof define === 'function' && define.amd) {
     // AMD. Register as an anonymous module with d3 as a dependency.
@@ -326,5 +325,4 @@ const Source = `
   };
 
 }));
-{{end}}
 `

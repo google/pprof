@@ -5,9 +5,8 @@
 
 package d3flamegraph
 
-// Source returns the d3.flameGraph.js file
-const Source = `
-{{define "d3flamegraphscript"}}
+// JSSource returns the d3.flameGraph.js file
+const JSSource = `
 /**!
 *
 *  Copyright 2017 Martin Spier <spiermar@gmail.com>
@@ -613,9 +612,10 @@ const Source = `
     d3.flameGraph = flameGraph;
   }
 })();
-{{end}}
+`
 
-{{define "d3flamegraphcss"}}
+// CSSSource returns the d3.flameGraph.css file
+const CSSSource = `
 .d3-flame-graph rect {
   stroke: #EEEEEE;
   fill-opacity: .8;
@@ -708,5 +708,4 @@ const Source = `
   top: 50%;
   left: 100%;
 }
-{{end}}
 `
