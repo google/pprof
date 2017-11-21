@@ -1,6 +1,6 @@
-The D3.js version distributed with pprof is customized to only include the modules required by pprof.
-
 # Building a customized D3.js bundle
+
+The D3.js version distributed with pprof is customized to only include the modules required by pprof.
 
 ## Dependencies
 
