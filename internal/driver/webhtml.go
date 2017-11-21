@@ -233,49 +233,49 @@ table tr td {
 
 {{define "header"}}
 <div class="header">
-<div class="title">
-<h1><a href="/">pprof</a></h1>
-</div>
+  <div class="title">
+    <h1><a href="/">pprof</a></h1>
+  </div>
 
-<div id="view" class="menu-item">
-<div class="menu-name">
-View
-<i class="downArrow"></i>
-</div>
-<div class="submenu">
-<a title="{{.Help.top}}"  href="/top" id="topbtn">Top</a>
-<a title="{{.Help.graph}}" href="/" id="graphbtn">Graph</a>
-<a title="{{.Help.peek}}" href="/peek" id="peek">Peek</a>
-<a title="{{.Help.list}}" href="/source" id="list">Source</a>
-<a title="{{.Help.disasm}}" href="/disasm" id="disasm">Disassemble</a>
-</div>
-</div>
+  <div id="view" class="menu-item">
+    <div class="menu-name">
+      View
+      <i class="downArrow"></i>
+    </div>
+    <div class="submenu">
+      <a title="{{.Help.top}}"  href="/top" id="topbtn">Top</a>
+      <a title="{{.Help.graph}}" href="/" id="graphbtn">Graph</a>
+      <a title="{{.Help.peek}}" href="/peek" id="peek">Peek</a>
+      <a title="{{.Help.list}}" href="/source" id="list">Source</a>
+      <a title="{{.Help.disasm}}" href="/disasm" id="disasm">Disassemble</a>
+    </div>
+  </div>
 
-<div id="refine" class="menu-item disabled">
-<div class="menu-name">
-Refine
-<i class="downArrow"></i>
-</div>
-<div class="submenu">
-<a title="{{.Help.focus}}" href="{{.BaseURL}}" id="focus">Focus</a>
-<a title="{{.Help.ignore}}" href="{{.BaseURL}}" id="ignore">Ignore</a>
-<a title="{{.Help.hide}}" href="{{.BaseURL}}" id="hide">Hide</a>
-<a title="{{.Help.show}}" href="{{.BaseURL}}" id="show">Show</a>
-<hr>
-<a title="{{.Help.reset}}" href="{{.BaseURL}}">Reset</a>
-</div>
-</div>
+  <div id="refine" class="menu-item disabled">
+    <div class="menu-name">
+      Refine
+      <i class="downArrow"></i>
+    </div>
+    <div class="submenu">
+      <a title="{{.Help.focus}}" href="{{.BaseURL}}" id="focus">Focus</a>
+      <a title="{{.Help.ignore}}" href="{{.BaseURL}}" id="ignore">Ignore</a>
+      <a title="{{.Help.hide}}" href="{{.BaseURL}}" id="hide">Hide</a>
+      <a title="{{.Help.show}}" href="{{.BaseURL}}" id="show">Show</a>
+      <hr>
+      <a title="{{.Help.reset}}" href="{{.BaseURL}}">Reset</a>
+    </div>
+  </div>
 
-<div>
-<input id="search" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
-</div>
+  <div>
+    <input id="search" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
+  </div>
 
-<div class="description">
-<a title="{{.Help.details}}" href="#" id="details">{{.Title}}</a>
-<div id="detailsbox">
-{{range .Legend}}<div>{{.}}</div>{{end}}
-</div>
-</div>
+  <div class="description">
+    <a title="{{.Help.details}}" href="#" id="details">{{.Title}}</a>
+    <div id="detailsbox">
+      {{range .Legend}}<div>{{.}}</div>{{end}}
+    </div>
+  </div>
 </div>
 
 <div id="errors">{{range .Errors}}<div>{{.}}</div>{{end}}</div>
@@ -284,19 +284,19 @@ Refine
 {{define "graph" -}}
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
-{{template "css" .}}
-</head>
-<body>
-{{template "header" .}}
-<div id="graph">
-{{.HTMLBody}}
-</div>
-{{template "script" .}}
-<script>viewer({{.BaseURL}}, {{.Nodes}})</script>
-</body>
+  <head>
+    <meta charset="utf-8">
+    <title>{{.Title}}</title>
+    {{template "css" .}}
+  </head>
+  <body>
+    {{template "header" .}}
+    <div id="graph">
+      {{.HTMLBody}}
+    </div>
+    {{template "script" .}}
+    <script>viewer({{.BaseURL}}, {{.Nodes}})</script>
+  </body>
 </html>
 {{end}}
 
@@ -859,31 +859,31 @@ function viewer(baseUrl, nodes) {
 {{define "top" -}}
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
-{{template "css" .}}
-<style type="text/css">
-</style>
-</head>
-<body>
-{{template "header" .}}
-<div id="top">
-<table id="toptable">
-<thead>
-<tr>
-<th id="flathdr1">Flat</th>
-<th id="flathdr2">Flat%</th>
-<th>Sum%</th>
-<th id="cumhdr1">Cum</th>
-<th id="cumhdr2">Cum%</th>
-<th id="namehdr">Name</th>
-<th>Inlined?</th>
-</tr>
-</thead>
-<tbody id="rows"></tbody>
-</table>
-</div>
+  <head>
+    <meta charset="utf-8">
+    <title>{{.Title}}</title>
+    {{template "css" .}}
+    <style type="text/css">
+    </style>
+  </head>
+  <body>
+    {{template "header" .}}
+    <div id="top">
+      <table id="toptable">
+        <thead>
+          <tr>
+          <th id="flathdr1">Flat</th>
+          <th id="flathdr2">Flat%</th>
+          <th>Sum%</th>
+          <th id="cumhdr1">Cum</th>
+          <th id="cumhdr2">Cum%</th>
+          <th id="namehdr">Name</th>
+          <th>Inlined?</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
 
 {{template "script" .}}
 <script>
@@ -971,49 +971,49 @@ viewer({{.BaseURL}}, {{.Nodes}})
 makeTopTable({{.Total}}, {{.Top}})
 </script>
 
-</body>
+  </body>
 </html>
 {{end}}
 
 {{define "sourcelisting" -}}
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
-{{template "css" .}}
-{{template "weblistcss" .}}
-{{template "weblistjs" .}}
-</head>
-<body>
-{{template "header" .}}
-<div id="content" class="source">
-{{.HTMLBody}}
-</div>
-{{template "script" .}}
-<script>viewer({{.BaseURL}}, null)</script>
-</body>
+  <head>
+    <meta charset="utf-8">
+    <title>{{.Title}}</title>
+    {{template "css" .}}
+    {{template "weblistcss" .}}
+    {{template "weblistjs" .}}
+  </head>
+  <body>
+    {{template "header" .}}
+    <div id="content" class="source">
+      {{.HTMLBody}}
+    </div>
+    {{template "script" .}}
+    <script>viewer({{.BaseURL}}, null)</script>
+  </body>
 </html>
 {{end}}
 
 {{define "plaintext" -}}
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
-{{template "css" .}}
-</head>
-<body>
-{{template "header" .}}
-<div id="content">
-<pre>
-{{.TextBody}}
-</pre>
-</div>
-{{template "script" .}}
-<script>viewer({{.BaseURL}}, null)</script>
-</body>
+  <head>
+    <meta charset="utf-8">
+    <title>{{.Title}}</title>
+    {{template "css" .}}
+  </head>
+  <body>
+    {{template "header" .}}
+    <div id="content">
+      <pre>
+        {{.TextBody}}
+      </pre>
+    </div>
+    {{template "script" .}}
+    <script>viewer({{.BaseURL}}, null)</script>
+  </body>
 </html>
 {{end}}
 `))
