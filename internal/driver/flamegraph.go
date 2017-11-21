@@ -16,13 +16,12 @@ package driver
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
-	"math"
 	"net/http"
 	"strings"
 
 	"github.com/google/pprof/internal/graph"
+	"github.com/google/pprof/internal/measurement"
 	"github.com/google/pprof/internal/report"
 )
 
@@ -32,16 +31,6 @@ type treeNode struct {
 	CumFormat string      `json:"l"`
 	Percent   string      `json:"p"`
 	Children  []*treeNode `json:"c"`
-}
-
-// percentage computes the percentage of total of a value, and encodes
-// it as a string. At least two digits of precision are printed.
-func percentage(value, total int64) string {
-	var ratio float64
-	if total != 0 {
-		ratio = math.Abs(float64(value)/float64(total)) * 100
-	}
-	return fmt.Sprintf("%5.2f%%", ratio)
 }
 
 // flamegraph generates a web page containing a flamegraph.
@@ -65,7 +54,7 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 			Name:      n.Info.PrintableName(),
 			Cum:       v,
 			CumFormat: config.FormatValue(v),
-			Percent:   strings.TrimSpace(percentage(v, config.Total)),
+			Percent:   strings.TrimSpace(measurement.Percentage(v, config.Total)),
 		}
 		nodes = append(nodes, node)
 		if len(n.In) == 0 {
@@ -87,7 +76,7 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 		Name:      "root",
 		Cum:       rootValue,
 		CumFormat: config.FormatValue(rootValue),
-		Percent:   strings.TrimSpace(percentage(rootValue, config.Total)),
+		Percent:   strings.TrimSpace(measurement.Percentage(rootValue, config.Total)),
 		Children:  nodes[0:nroots],
 	}
 
