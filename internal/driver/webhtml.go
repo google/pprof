@@ -290,7 +290,9 @@ Refine
 {{template "css" .}}
 </head>
 <body>
+
 {{template "header" .}}
+
 <div id="graph">
 {{.HTMLBody}}
 </div>
@@ -867,7 +869,9 @@ function viewer(baseUrl, nodes) {
 </style>
 </head>
 <body>
+
 {{template "header" .}}
+
 <div id="top">
 <table id="toptable">
 <thead>
@@ -970,7 +974,6 @@ function makeTopTable(total, entries) {
 viewer({{.BaseURL}}, {{.Nodes}})
 makeTopTable({{.Total}}, {{.Top}})
 </script>
-
 </body>
 </html>
 {{end}}
@@ -986,10 +989,13 @@ makeTopTable({{.Total}}, {{.Top}})
 {{template "weblistjs" .}}
 </head>
 <body>
+
 {{template "header" .}}
+
 <div id="content" class="source">
 {{.HTMLBody}}
 </div>
+
 {{template "script" .}}
 <script>viewer({{.BaseURL}}, null)</script>
 </body>
@@ -1005,12 +1011,15 @@ makeTopTable({{.Total}}, {{.Top}})
 {{template "css" .}}
 </head>
 <body>
+
 {{template "header" .}}
+
 <div id="content">
 <pre>
 {{.TextBody}}
 </pre>
 </div>
+
 {{template "script" .}}
 <script>viewer({{.BaseURL}}, null)</script>
 </body>
