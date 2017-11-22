@@ -71,6 +71,8 @@ class Normalizer {
   void Normalize();
 
  private:
+  // Using a 32-bit type for the PID values as the max PID value on 64-bit
+  // systems is 2^22, see http://man7.org/linux/man-pages/man5/proc.5.html.
   typedef std::unordered_map<uint32, PerfDataHandler::Mapping*> PidToMMapMap;
   typedef std::unordered_map<uint32, const PerfDataProto_CommEvent*>
       PidToCommMap;
