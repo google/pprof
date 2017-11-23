@@ -27,8 +27,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tdewolff/pprof/internal/graph"
-	"github.com/tdewolff/pprof/internal/plugin"
+	"github.com/google/pprof/internal/graph"
+	"github.com/google/pprof/internal/measurement"
+	"github.com/google/pprof/internal/plugin"
 )
 
 // printSource prints an annotated source listing, include all
@@ -99,7 +100,7 @@ func printSource(w io.Writer, rpt *Report) error {
 			fmt.Fprintf(w, "ROUTINE ======================== %s in %s\n", name, filename)
 			fmt.Fprintf(w, "%10s %10s (flat, cum) %s of Total\n",
 				rpt.formatValue(flatSum), rpt.formatValue(cumSum),
-				percentage(cumSum, rpt.total))
+				measurement.Percentage(cumSum, rpt.total))
 
 			if err != nil {
 				fmt.Fprintf(w, " Error: %v\n", err)
@@ -343,7 +344,7 @@ func printFunctionHeader(w io.Writer, name, path string, flatSum, cumSum int64, 
 `,
 		template.HTMLEscapeString(name), template.HTMLEscapeString(path),
 		rpt.formatValue(flatSum), rpt.formatValue(cumSum),
-		percentage(cumSum, rpt.total))
+		measurement.Percentage(cumSum, rpt.total))
 }
 
 // printFunctionSourceLine prints a source line and the corresponding assembly.
