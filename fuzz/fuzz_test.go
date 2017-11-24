@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/tdewolff/pprof/profile"
+	"github.com/google/pprof/profile"
 )
 
 func TestParseData(t *testing.T) {

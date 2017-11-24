@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tdewolff/pprof/internal/plugin"
+	"github.com/google/pprof/internal/plugin"
 )
 
 const (

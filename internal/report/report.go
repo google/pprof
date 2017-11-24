@@ -27,10 +27,10 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/tdewolff/pprof/internal/graph"
-	"github.com/tdewolff/pprof/internal/measurement"
-	"github.com/tdewolff/pprof/internal/plugin"
-	"github.com/tdewolff/pprof/profile"
+	"github.com/google/pprof/internal/graph"
+	"github.com/google/pprof/internal/measurement"
+	"github.com/google/pprof/internal/plugin"
+	"github.com/google/pprof/profile"
 )
 
 // Output formats.

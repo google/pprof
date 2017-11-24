@@ -19,9 +19,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tdewolff/pprof/internal/plugin"
-	"github.com/tdewolff/pprof/internal/proftest"
-	"github.com/tdewolff/pprof/profile"
+	"github.com/google/pprof/internal/plugin"
+	"github.com/google/pprof/internal/proftest"
+	"github.com/google/pprof/profile"
 )
 
 func TestSymbolzURL(t *testing.T) {

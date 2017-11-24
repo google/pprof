@@ -20,9 +20,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tdewolff/pprof/internal/measurement"
-	"github.com/tdewolff/pprof/internal/plugin"
-	"github.com/tdewolff/pprof/profile"
+	"github.com/google/pprof/internal/measurement"
+	"github.com/google/pprof/internal/plugin"
+	"github.com/google/pprof/profile"
 )
 
 var tagFilterRangeRx = regexp.MustCompile("([[:digit:]]+)([[:alpha:]]+)")

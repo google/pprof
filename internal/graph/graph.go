@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tdewolff/pprof/profile"
+	"github.com/google/pprof/profile"
 )
 
 // Graph summarizes a performance profile into a format that is

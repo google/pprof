@@ -7,7 +7,7 @@ before_build:
  - go get github.com/ianlancetaylor/demangle
 
 build_script:
- - go build github.com/tdewolff/pprof
+ - go build github.com/google/pprof
 
 test_script:
   - go test -v ./...

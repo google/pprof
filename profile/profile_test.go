@@ -25,7 +25,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/tdewolff/pprof/internal/proftest"
+	"github.com/google/pprof/internal/proftest"
 )
 
 func TestParse(t *testing.T) {

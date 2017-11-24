@@ -3,7 +3,7 @@
 package pprof
 
 import (
-	"github.com/tdewolff/pprof/profile"
+	"github.com/google/pprof/profile"
 )
 
 // Fuzz can be used with https://github.com/dvyukov/go-fuzz to do fuzz testing on ParseData

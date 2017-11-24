@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tdewolff/pprof/profile"
+	"github.com/google/pprof/profile"
 )
 
 // ScaleProfiles updates the units in a set of profiles to make them

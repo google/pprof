@@ -1,6 +1,6 @@
 language: go
 
-go_import_path: github.com/tdewolff/pprof
+go_import_path: github.com/google/pprof
 
 matrix:
   include:

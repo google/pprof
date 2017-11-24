@@ -19,8 +19,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/tdewolff/pprof/internal/binutils"
-	"github.com/tdewolff/pprof/internal/plugin"
+	"github.com/google/pprof/internal/binutils"
+	"github.com/google/pprof/internal/plugin"
 )
 
 type source struct {
