@@ -240,50 +240,50 @@ table tr td {
 
 {{define "header"}}
 <div class="header">
-<div class="title">
-<h1><a href="/">pprof</a></h1>
-</div>
+  <div class="title">
+    <h1><a href="/">pprof</a></h1>
+  </div>
 
-<div id="view" class="menu-item">
-<div class="menu-name">
-View
-<i class="downArrow"></i>
-</div>
-<div class="submenu">
-<a title="{{.Help.top}}"  href="/top" id="topbtn">Top</a>
-<a title="{{.Help.graph}}" href="/" id="graphbtn">Graph</a>
-<a title="{{.Help.flamegraph}}" href="/flamegraph" id="flamegraph">Flame Graph</a>
-<a title="{{.Help.peek}}" href="/peek" id="peek">Peek</a>
-<a title="{{.Help.list}}" href="/source" id="list">Source</a>
-<a title="{{.Help.disasm}}" href="/disasm" id="disasm">Disassemble</a>
-</div>
-</div>
+  <div id="view" class="menu-item">
+    <div class="menu-name">
+      View
+      <i class="downArrow"></i>
+    </div>
+    <div class="submenu">
+      <a title="{{.Help.top}}"  href="/top" id="topbtn">Top</a>
+      <a title="{{.Help.graph}}" href="/" id="graphbtn">Graph</a>
+			<a title="{{.Help.flamegraph}}" href="/flamegraph" id="flamegraph">Flame Graph</a>
+      <a title="{{.Help.peek}}" href="/peek" id="peek">Peek</a>
+      <a title="{{.Help.list}}" href="/source" id="list">Source</a>
+      <a title="{{.Help.disasm}}" href="/disasm" id="disasm">Disassemble</a>
+    </div>
+  </div>
 
-<div id="refine" class="menu-item disabled">
-<div class="menu-name">
-Refine
-<i class="downArrow"></i>
-</div>
-<div class="submenu">
-<a title="{{.Help.focus}}" href="{{.BaseURL}}" id="focus">Focus</a>
-<a title="{{.Help.ignore}}" href="{{.BaseURL}}" id="ignore">Ignore</a>
-<a title="{{.Help.hide}}" href="{{.BaseURL}}" id="hide">Hide</a>
-<a title="{{.Help.show}}" href="{{.BaseURL}}" id="show">Show</a>
-<hr>
-<a title="{{.Help.reset}}" href="{{.BaseURL}}">Reset</a>
-</div>
-</div>
+  <div id="refine" class="menu-item disabled">
+    <div class="menu-name">
+      Refine
+      <i class="downArrow"></i>
+    </div>
+    <div class="submenu">
+      <a title="{{.Help.focus}}" href="{{.BaseURL}}" id="focus">Focus</a>
+      <a title="{{.Help.ignore}}" href="{{.BaseURL}}" id="ignore">Ignore</a>
+      <a title="{{.Help.hide}}" href="{{.BaseURL}}" id="hide">Hide</a>
+      <a title="{{.Help.show}}" href="{{.BaseURL}}" id="show">Show</a>
+      <hr>
+      <a title="{{.Help.reset}}" href="{{.BaseURL}}">Reset</a>
+    </div>
+  </div>
 
-<div>
-<input id="search" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
-</div>
+  <div>
+    <input id="search" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
+  </div>
 
-<div class="description">
-<a title="{{.Help.details}}" href="#" id="details">{{.Title}}</a>
-<div id="detailsbox">
-{{range .Legend}}<div>{{.}}</div>{{end}}
-</div>
-</div>
+  <div class="description">
+    <a title="{{.Help.details}}" href="#" id="details">{{.Title}}</a>
+    <div id="detailsbox">
+      {{range .Legend}}<div>{{.}}</div>{{end}}
+    </div>
+  </div>
 </div>
 
 <div id="errors">{{range .Errors}}<div>{{.}}</div>{{end}}</div>
@@ -293,17 +293,17 @@ Refine
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
-{{template "css" .}}
+  <meta charset="utf-8">
+  <title>{{.Title}}</title>
+  {{template "css" .}}
 </head>
 <body>
-{{template "header" .}}
-<div id="graph">
-{{.HTMLBody}}
-</div>
-{{template "script" .}}
-<script>viewer({{.BaseURL}}, {{.Nodes}})</script>
+  {{template "header" .}}
+  <div id="graph">
+    {{.HTMLBody}}
+  </div>
+  {{template "script" .}}
+  <script>viewer({{.BaseURL}}, {{.Nodes}})</script>
 </body>
 </html>
 {{end}}
@@ -868,117 +868,115 @@ function viewer(baseUrl, nodes) {
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
-{{template "css" .}}
-<style type="text/css">
-</style>
+  <meta charset="utf-8">
+  <title>{{.Title}}</title>
+  {{template "css" .}}
+  <style type="text/css">
+  </style>
 </head>
 <body>
-{{template "header" .}}
-<div id="top">
-<table id="toptable">
-<thead>
-<tr>
-<th id="flathdr1">Flat</th>
-<th id="flathdr2">Flat%</th>
-<th>Sum%</th>
-<th id="cumhdr1">Cum</th>
-<th id="cumhdr2">Cum%</th>
-<th id="namehdr">Name</th>
-<th>Inlined?</th>
-</tr>
-</thead>
-<tbody id="rows"></tbody>
-</table>
-</div>
+  {{template "header" .}}
+  <div id="top">
+    <table id="toptable">
+      <thead>
+        <tr>
+        <th id="flathdr1">Flat</th>
+        <th id="flathdr2">Flat%</th>
+        <th>Sum%</th>
+        <th id="cumhdr1">Cum</th>
+        <th id="cumhdr2">Cum%</th>
+        <th id="namehdr">Name</th>
+        <th>Inlined?</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  {{template "script" .}}
+  <script>
+    function makeTopTable(total, entries) {
+      const rows = document.getElementById("rows")
+      if (rows == null) return
 
-{{template "script" .}}
-<script>
-function makeTopTable(total, entries) {
-  const rows = document.getElementById("rows")
-  if (rows == null) return
+      // Store initial index in each entry so we have stable node ids for selection.
+      for (let i = 0; i < entries.length; i++) {
+        entries[i].Id = "node" + i
+      }
 
-  // Store initial index in each entry so we have stable node ids for selection.
-  for (let i = 0; i < entries.length; i++) {
-    entries[i].Id = "node" + i
-  }
+      // Which column are we currently sorted by and in what order?
+      let currentColumn = ""
+      let descending = false
+      sortBy("Flat")
 
-  // Which column are we currently sorted by and in what order?
-  let currentColumn = ""
-  let descending = false
-  sortBy("Flat")
+      function sortBy(column) {
+        // Update sort criteria
+        if (column == currentColumn) {
+          descending = !descending  // Reverse order
+        } else {
+          currentColumn = column
+          descending = (column != "Name")
+        }
 
-  function sortBy(column) {
-    // Update sort criteria
-    if (column == currentColumn) {
-      descending = !descending  // Reverse order
-    } else {
-      currentColumn = column
-      descending = (column != "Name")
+        // Sort according to current criteria.
+        function cmp(a, b) {
+          const av = a[currentColumn]
+          const bv = b[currentColumn]
+          if (av < bv) return -1
+          if (av > bv) return +1
+          return 0
+        }
+        entries.sort(cmp)
+        if (descending) entries.reverse()
+
+        function addCell(tr, val) {
+          const td = document.createElement('td')
+          td.textContent = val
+          tr.appendChild(td)
+        }
+
+        function percent(v) {
+          return (v * 100.0 / total).toFixed(2) + "%"
+        }
+
+        // Generate rows
+        const fragment = document.createDocumentFragment()
+        let sum = 0
+        for (const row of entries) {
+          const tr = document.createElement('tr')
+          tr.id = row.Id
+          sum += row.Flat
+          addCell(tr, row.FlatFormat)
+          addCell(tr, percent(row.Flat))
+          addCell(tr, percent(sum))
+          addCell(tr, row.CumFormat)
+          addCell(tr, percent(row.Cum))
+          addCell(tr, row.Name)
+          addCell(tr, row.InlineLabel)
+          fragment.appendChild(tr)
+        }
+
+        rows.textContent = ''  // Remove old rows
+        rows.appendChild(fragment)
+      }
+
+      // Make different column headers trigger sorting.
+      function bindSort(id, column) {
+        const hdr = document.getElementById(id)
+        if (hdr == null) return
+        const fn = function() { sortBy(column) }
+        hdr.addEventListener("click", fn)
+        hdr.addEventListener("touch", fn)
+      }
+      bindSort("flathdr1", "Flat")
+      bindSort("flathdr2", "Flat")
+      bindSort("cumhdr1", "Cum")
+      bindSort("cumhdr2", "Cum")
+      bindSort("namehdr", "Name")
     }
 
-    // Sort according to current criteria.
-    function cmp(a, b) {
-      const av = a[currentColumn]
-      const bv = b[currentColumn]
-      if (av < bv) return -1
-      if (av > bv) return +1
-      return 0
-    }
-    entries.sort(cmp)
-    if (descending) entries.reverse()
-
-    function addCell(tr, val) {
-      const td = document.createElement('td')
-      td.textContent = val
-      tr.appendChild(td)
-    }
-
-    function percent(v) {
-      return (v * 100.0 / total).toFixed(2) + "%"
-    }
-
-    // Generate rows
-    const fragment = document.createDocumentFragment()
-    let sum = 0
-    for (const row of entries) {
-      const tr = document.createElement('tr')
-      tr.id = row.Id
-      sum += row.Flat
-      addCell(tr, row.FlatFormat)
-      addCell(tr, percent(row.Flat))
-      addCell(tr, percent(sum))
-      addCell(tr, row.CumFormat)
-      addCell(tr, percent(row.Cum))
-      addCell(tr, row.Name)
-      addCell(tr, row.InlineLabel)
-      fragment.appendChild(tr)
-    }
-
-    rows.textContent = ''  // Remove old rows
-    rows.appendChild(fragment)
-  }
-
-  // Make different column headers trigger sorting.
-  function bindSort(id, column) {
-    const hdr = document.getElementById(id)
-    if (hdr == null) return
-    const fn = function() { sortBy(column) }
-    hdr.addEventListener("click", fn)
-    hdr.addEventListener("touch", fn)
-  }
-  bindSort("flathdr1", "Flat")
-  bindSort("flathdr2", "Flat")
-  bindSort("cumhdr1", "Cum")
-  bindSort("cumhdr2", "Cum")
-  bindSort("namehdr", "Name")
-}
-
-viewer({{.BaseURL}}, {{.Nodes}})
-makeTopTable({{.Total}}, {{.Top}})
-</script>
-
+    viewer({{.BaseURL}}, {{.Nodes}})
+    makeTopTable({{.Total}}, {{.Top}})
+  </script>
 </body>
 </html>
 {{end}}
@@ -987,19 +985,19 @@ makeTopTable({{.Total}}, {{.Top}})
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
-{{template "css" .}}
-{{template "weblistcss" .}}
-{{template "weblistjs" .}}
+  <meta charset="utf-8">
+  <title>{{.Title}}</title>
+  {{template "css" .}}
+  {{template "weblistcss" .}}
+  {{template "weblistjs" .}}
 </head>
 <body>
-{{template "header" .}}
-<div id="content" class="source">
-{{.HTMLBody}}
-</div>
-{{template "script" .}}
-<script>viewer({{.BaseURL}}, null)</script>
+  {{template "header" .}}
+  <div id="content" class="source">
+    {{.HTMLBody}}
+  </div>
+  {{template "script" .}}
+  <script>viewer({{.BaseURL}}, null)</script>
 </body>
 </html>
 {{end}}
@@ -1008,19 +1006,19 @@ makeTopTable({{.Total}}, {{.Top}})
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
-{{template "css" .}}
+  <meta charset="utf-8">
+  <title>{{.Title}}</title>
+  {{template "css" .}}
 </head>
 <body>
-{{template "header" .}}
-<div id="content">
-<pre>
-{{.TextBody}}
-</pre>
-</div>
-{{template "script" .}}
-<script>viewer({{.BaseURL}}, null)</script>
+  {{template "header" .}}
+  <div id="content">
+    <pre>
+      {{.TextBody}}
+    </pre>
+  </div>
+  {{template "script" .}}
+  <script>viewer({{.BaseURL}}, null)</script>
 </body>
 </html>
 {{end}}
@@ -1029,85 +1027,85 @@ makeTopTable({{.Total}}, {{.Top}})
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>{{.Title}}</title>
-{{template "css" .}}
-<style type="text/css">{{template "d3flamegraphcss" .}}</style>
-<style type="text/css">
-.flamegraph-content {
-    width: 90%;
-    min-width: 80%;
-    margin-left: 5%;
-}
-.flamegraph-details {
-    height: 1.2em;
-    width: 90%;
-    min-width: 90%;
-    margin-left: 5%;
-    padding-bottom: 41px;
-}
-</style>
+  <meta charset="utf-8">
+  <title>{{.Title}}</title>
+  {{template "css" .}}
+  <style type="text/css">{{template "d3flamegraphcss" .}}</style>
+  <style type="text/css">
+    .flamegraph-content {
+      width: 90%;
+      min-width: 80%;
+      margin-left: 5%;
+    }
+    .flamegraph-details {
+      height: 1.2em;
+      width: 90%;
+      min-width: 90%;
+      margin-left: 5%;
+      padding-bottom: 41px;
+    }
+  </style>
 </head>
 <body>
-{{template "header" .}}
-<div id="bodycontainer">
-  <div class="flamegraph-content">
-    <div id="chart"></div>
+  {{template "header" .}}
+  <div id="bodycontainer">
+    <div class="flamegraph-content">
+      <div id="chart"></div>
+    </div>
+    <div id="flamegraphdetails" class="flamegraph-details"></div>
   </div>
-  <div id="flamegraphdetails" class="flamegraph-details"></div>
-</div>
-{{template "script" .}}
-<script>viewer({{.BaseURL}}, {{.Nodes}})</script>
-<script>{{template "d3script" .}}</script>
-<script>{{template "d3tipscript" .}}</script>
-<script>{{template "d3flamegraphscript" .}}</script>
-<script type="text/javascript">
+  {{template "script" .}}
+  <script>viewer({{.BaseURL}}, {{.Nodes}})</script>
+  <script>{{template "d3script" .}}</script>
+  <script>{{template "d3tipscript" .}}</script>
+  <script>{{template "d3flamegraphscript" .}}</script>
+  <script type="text/javascript">
     var data = {{.FlameGraph}};
     var label = function(d) {
-        return d.data.n + " (" + d.data.p + ", " + d.data.l + ")";
+      return d.data.n + " (" + d.data.p + ", " + d.data.l + ")";
     };
 
     var width = document.getElementById("chart").clientWidth;
 
     var flameGraph = d3.flameGraph()
-        .width(width)
-        .cellHeight(18)
-        .minFrameSize(1)
-        .transitionDuration(750)
-        .transitionEase(d3.easeCubic)
-        .sort(true)
-        .title("")
-        .label(label)
-        .details(document.getElementById("flamegraphdetails"));
+      .width(width)
+      .cellHeight(18)
+      .minFrameSize(1)
+      .transitionDuration(750)
+      .transitionEase(d3.easeCubic)
+      .sort(true)
+      .title("")
+      .label(label)
+      .details(document.getElementById("flamegraphdetails"));
 
     var tip = d3.tip()
-        .direction("s")
-        .offset([8, 0])
-        .attr('class', 'd3-flame-graph-tip')
-        .html(function(d) { return "name: " + d.data.n + ", value: " + d.data.l; });
+      .direction("s")
+      .offset([8, 0])
+      .attr('class', 'd3-flame-graph-tip')
+      .html(function(d) { return "name: " + d.data.n + ", value: " + d.data.l; });
 
     flameGraph.tooltip(tip);
 
     d3.select("#chart")
-        .datum(data)
-        .call(flameGraph);
+      .datum(data)
+      .call(flameGraph);
 
     function clear() {
-        flameGraph.clear();
+      flameGraph.clear();
     }
 
     function resetZoom() {
-        flameGraph.resetZoom();
+      flameGraph.resetZoom();
     }
 
     window.addEventListener("resize", function() {
-        var width = document.getElementById("chart").clientWidth;
-        var graphs = document.getElementsByClassName("d3-flame-graph");
-        if (graphs.length > 0) {
-            graphs[0].setAttribute("width", width);
-        }
-        flameGraph.width(width);
-        flameGraph.resetZoom();
+      var width = document.getElementById("chart").clientWidth;
+      var graphs = document.getElementsByClassName("d3-flame-graph");
+      if (graphs.length > 0) {
+        graphs[0].setAttribute("width", width);
+      }
+      flameGraph.width(width);
+      flameGraph.resetZoom();
     }, true);
 
     var searchbox = document.getElementById("searchbox");
@@ -1132,7 +1130,7 @@ makeTopTable({{.Total}}, {{.Top}})
     }
 
     searchbox.addEventListener("input", handleSearch);
-</script>
+  </script>
 </body>
 </html>
 {{end}}
