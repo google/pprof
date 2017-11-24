@@ -20,7 +20,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/google/pprof/internal/plugin"
+	"github.com/tdewolff/pprof/internal/plugin"
 	"github.com/ianlancetaylor/demangle"
 )
 

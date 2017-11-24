@@ -25,7 +25,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/pprof/internal/proftest"
+	"github.com/tdewolff/pprof/internal/proftest"
 )
 
 var updateFlag = flag.Bool("update", false, "Update the golden files")

@@ -27,10 +27,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/pprof/internal/graph"
-	"github.com/google/pprof/internal/plugin"
-	"github.com/google/pprof/internal/report"
-	"github.com/google/pprof/profile"
+	"github.com/tdewolff/pprof/internal/graph"
+	"github.com/tdewolff/pprof/internal/plugin"
+	"github.com/tdewolff/pprof/internal/report"
+	"github.com/tdewolff/pprof/profile"
 )
 
 // webInterface holds the state needed for serving a browser based interface.
@@ -69,16 +69,17 @@ func (ec *errorCatcher) PrintErr(args ...interface{}) {
 
 // webArgs contains arguments passed to templates in webhtml.go.
 type webArgs struct {
-	BaseURL  string
-	Title    string
-	Errors   []string
-	Total    int64
-	Legend   []string
-	Help     map[string]string
-	Nodes    []string
-	HTMLBody template.HTML
-	TextBody string
-	Top      []report.TextItem
+	BaseURL    string
+	Title      string
+	Errors     []string
+	Total      int64
+	Legend     []string
+	Help       map[string]string
+	Nodes      []string
+	HTMLBody   template.HTML
+	TextBody   string
+	Top        []report.TextItem
+	FlameGraph template.JS
 }
 
 func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options, wantBrowser bool) error {
@@ -115,11 +116,12 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options, w
 		Host:     host,
 		Port:     port,
 		Handlers: map[string]http.Handler{
-			"/":       http.HandlerFunc(ui.dot),
-			"/top":    http.HandlerFunc(ui.top),
-			"/disasm": http.HandlerFunc(ui.disasm),
-			"/source": http.HandlerFunc(ui.source),
-			"/peek":   http.HandlerFunc(ui.peek),
+			"/":           http.HandlerFunc(ui.dot),
+			"/top":        http.HandlerFunc(ui.top),
+			"/disasm":     http.HandlerFunc(ui.disasm),
+			"/source":     http.HandlerFunc(ui.source),
+			"/peek":       http.HandlerFunc(ui.peek),
+			"/flamegraph": http.HandlerFunc(ui.flamegraph),
 		},
 	}
 

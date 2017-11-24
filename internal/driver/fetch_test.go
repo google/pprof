@@ -35,11 +35,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/pprof/internal/binutils"
-	"github.com/google/pprof/internal/plugin"
-	"github.com/google/pprof/internal/proftest"
-	"github.com/google/pprof/internal/symbolizer"
-	"github.com/google/pprof/profile"
+	"github.com/tdewolff/pprof/internal/binutils"
+	"github.com/tdewolff/pprof/internal/plugin"
+	"github.com/tdewolff/pprof/internal/proftest"
+	"github.com/tdewolff/pprof/internal/symbolizer"
+	"github.com/tdewolff/pprof/profile"
 )
 
 func TestSymbolizationPath(t *testing.T) {
