@@ -243,6 +243,7 @@ table tr td {
   <div class="title">
     <h1><a href="/">pprof</a></h1>
   </div>
+
   <div id="view" class="menu-item">
     <div class="menu-name">
       View
@@ -251,11 +252,13 @@ table tr td {
     <div class="submenu">
       <a title="{{.Help.top}}"  href="/top" id="topbtn">Top</a>
       <a title="{{.Help.graph}}" href="/" id="graphbtn">Graph</a>
+			<a title="{{.Help.flamegraph}}" href="/flamegraph" id="flamegraph">Flame Graph</a>
       <a title="{{.Help.peek}}" href="/peek" id="peek">Peek</a>
       <a title="{{.Help.list}}" href="/source" id="list">Source</a>
       <a title="{{.Help.disasm}}" href="/disasm" id="disasm">Disassemble</a>
     </div>
   </div>
+
   <div id="refine" class="menu-item disabled">
     <div class="menu-name">
       Refine
@@ -270,9 +273,11 @@ table tr td {
       <a title="{{.Help.reset}}" href="{{.BaseURL}}">Reset</a>
     </div>
   </div>
+
   <div>
     <input id="search" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
   </div>
+
   <div class="description">
     <a title="{{.Help.details}}" href="#" id="details">{{.Title}}</a>
     <div id="detailsbox">
