@@ -75,9 +75,9 @@ a {
   white-space: nowrap;
 }
 @media screen and (max-width: 799px) {
-	.header input {
-		display: none;
-	}
+  .header input {
+    display: none;
+  }
 }
 #detailsbox {
   display: none;
@@ -303,7 +303,7 @@ table tr td {
     {{.HTMLBody}}
   </div>
   {{template "script" .}}
-  <script>viewer({{.BaseURL}}, {{.Nodes}})</script>
+  <script>viewer({{.BaseURL}}, {{.Nodes}});</script>
 </body>
 </html>
 {{end}}
@@ -313,61 +313,61 @@ table tr td {
 // Make svg pannable and zoomable.
 // Call clickHandler(t) if a click event is caught by the pan event handlers.
 function initPanAndZoom(svg, clickHandler) {
-  'use strict';
+  "use strict";
 
   // Current mouse/touch handling mode
-  const IDLE = 0
-  const MOUSEPAN = 1
-  const TOUCHPAN = 2
-  const TOUCHZOOM = 3
-  let mode = IDLE
+  const IDLE = 0;
+  const MOUSEPAN = 1;
+  const TOUCHPAN = 2;
+  const TOUCHZOOM = 3;
+  let mode = IDLE;
 
   // State needed to implement zooming.
-  let currentScale = 1.0
-  const initWidth = svg.viewBox.baseVal.width
-  const initHeight = svg.viewBox.baseVal.height
+  let currentScale = 1.0;
+  const initWidth = svg.viewBox.baseVal.width;
+  const initHeight = svg.viewBox.baseVal.height;
 
   // State needed to implement panning.
-  let panLastX = 0      // Last event X coordinate
-  let panLastY = 0      // Last event Y coordinate
-  let moved = false     // Have we seen significant movement
-  let touchid = null    // Current touch identifier
+  let panLastX = 0;      // Last event X coordinate
+  let panLastY = 0;      // Last event Y coordinate
+  let moved = false;     // Have we seen significant movement
+  let touchid = null;    // Current touch identifier
 
   // State needed for pinch zooming
-  let touchid2 = null     // Second id for pinch zooming
-  let initGap = 1.0       // Starting gap between two touches
-  let initScale = 1.0     // currentScale when pinch zoom started
-  let centerPoint = null  // Center point for scaling
+  let touchid2 = null;     // Second id for pinch zooming
+  let initGap = 1.0;       // Starting gap between two touches
+  let initScale = 1.0;     // currentScale when pinch zoom started
+  let centerPoint = null;  // Center point for scaling
 
   // Convert event coordinates to svg coordinates.
   function toSvg(x, y) {
-    const p = svg.createSVGPoint()
-    p.x = x
-    p.y = y
-    let m = svg.getCTM()
-    if (m == null) m = svg.getScreenCTM()  // Firefox workaround.
-    return p.matrixTransform(m.inverse())
+    const p = svg.createSVGPoint();
+    p.x = x;
+    p.y = y;
+    let m = svg.getCTM();
+    if (m == null) m = svg.getScreenCTM(); // Firefox workaround.
+    return p.matrixTransform(m.inverse());
   }
 
   // Change the scaling for the svg to s, keeping the point denoted
   // by u (in svg coordinates]) fixed at the same screen location.
   function rescale(s, u) {
     // Limit to a good range.
-    if (s < 0.2) s = 0.2
-    if (s > 10.0) s = 10.0
+    if (s < 0.2) s = 0.2;
+    if (s > 10.0) s = 10.0;
 
-    currentScale = s
+    currentScale = s;
 
     // svg.viewBox defines the visible portion of the user coordinate
     // system.  So to magnify by s, divide the visible portion by s,
     // which will then be stretched to fit the viewport.
-    const vb = svg.viewBox
-    const w1 = vb.baseVal.width
-    const w2 = initWidth / s
-    const h1 = vb.baseVal.height
-    const h2 = initHeight / s
-    vb.baseVal.width = w2
-    vb.baseVal.height = h2
+    const vb = svg.viewBox;
+    const w1 = vb.baseVal.width;
+    const w2 = initWidth / s;
+    const h1 = vb.baseVal.height;
+    const h2 = initHeight / s;
+    vb.baseVal.width = w2;
+    vb.baseVal.height = h2;
 
     // We also want to adjust vb.baseVal.x so that u.x remains at same
     // screen X coordinate.  In other words, want to change it from x1 to x2
@@ -376,158 +376,158 @@ function initPanAndZoom(svg, clickHandler) {
     // Simplifying that, we get
     //     (u.x - x1) * (w2 / w1) = u.x - x2
     //     x2 = u.x - (u.x - x1) * (w2 / w1)
-    vb.baseVal.x = u.x - (u.x - vb.baseVal.x) * (w2 / w1)
-    vb.baseVal.y = u.y - (u.y - vb.baseVal.y) * (h2 / h1)
+    vb.baseVal.x = u.x - (u.x - vb.baseVal.x) * (w2 / w1);
+    vb.baseVal.y = u.y - (u.y - vb.baseVal.y) * (h2 / h1);
   }
 
   function handleWheel(e) {
     if (e.deltaY == 0) return
     // Change scale factor by 1.1 or 1/1.1
     rescale(currentScale * (e.deltaY < 0 ? 1.1 : (1/1.1)),
-            toSvg(e.offsetX, e.offsetY))
+            toSvg(e.offsetX, e.offsetY));
   }
 
   function setMode(m) {
-    mode = m
-    touchid = null
-    touchid2 = null
+    mode = m;
+    touchid = null;
+    touchid2 = null;
   }
 
   function panStart(x, y) {
-    moved = false
-    panLastX = x
-    panLastY = y
+    moved = false;
+    panLastX = x;
+    panLastY = y;
   }
 
   function panMove(x, y) {
-    let dx = x - panLastX
-    let dy = y - panLastY
-    if (Math.abs(dx) <= 2 && Math.abs(dy) <= 2) return  // Ignore tiny moves
+    let dx = x - panLastX;
+    let dy = y - panLastY;
+    if (Math.abs(dx) <= 2 && Math.abs(dy) <= 2) return; // Ignore tiny moves
 
-    moved = true
-    panLastX = x
-    panLastY = y
+    moved = true;
+    panLastX = x;
+    panLastY = y;
 
     // Firefox workaround: get dimensions from parentNode.
-    const swidth = svg.clientWidth || svg.parentNode.clientWidth
-    const sheight = svg.clientHeight || svg.parentNode.clientHeight
+    const swidth = svg.clientWidth || svg.parentNode.clientWidth;
+    const sheight = svg.clientHeight || svg.parentNode.clientHeight;
 
     // Convert deltas from screen space to svg space.
-    dx *= (svg.viewBox.baseVal.width / swidth)
-    dy *= (svg.viewBox.baseVal.height / sheight)
+    dx *= (svg.viewBox.baseVal.width / swidth);
+    dy *= (svg.viewBox.baseVal.height / sheight);
 
-    svg.viewBox.baseVal.x -= dx
-    svg.viewBox.baseVal.y -= dy
+    svg.viewBox.baseVal.x -= dx;
+    svg.viewBox.baseVal.y -= dy;
   }
 
   function handleScanStart(e) {
-    if (e.button != 0) return  // Do not catch right-clicks etc.
-    setMode(MOUSEPAN)
-    panStart(e.clientX, e.clientY)
-    e.preventDefault()
-    svg.addEventListener("mousemove", handleScanMove)
+    if (e.button != 0) return; // Do not catch right-clicks etc.
+    setMode(MOUSEPAN);
+    panStart(e.clientX, e.clientY);
+    e.preventDefault();
+    svg.addEventListener("mousemove", handleScanMove);
   }
 
   function handleScanMove(e) {
     if (e.buttons == 0) {
       // Missed an end event, perhaps because mouse moved outside window.
-      setMode(IDLE)
-      svg.removeEventListener("mousemove", handleScanMove)
-      return
+      setMode(IDLE);
+      svg.removeEventListener("mousemove", handleScanMove);
+      return;
     }
-    if (mode == MOUSEPAN) panMove(e.clientX, e.clientY)
+    if (mode == MOUSEPAN) panMove(e.clientX, e.clientY);
   }
 
   function handleScanEnd(e) {
-    if (mode == MOUSEPAN) panMove(e.clientX, e.clientY)
-    setMode(IDLE)
-    svg.removeEventListener("mousemove", handleScanMove)
-    if (!moved) clickHandler(e.target)
+    if (mode == MOUSEPAN) panMove(e.clientX, e.clientY);
+    setMode(IDLE);
+    svg.removeEventListener("mousemove", handleScanMove);
+    if (!moved) clickHandler(e.target);
   }
 
   // Find touch object with specified identifier.
   function findTouch(tlist, id) {
     for (const t of tlist) {
-      if (t.identifier == id) return t
+      if (t.identifier == id) return t;
     }
-    return null
+    return null;
   }
 
- // Return distance between two touch points
+  // Return distance between two touch points
   function touchGap(t1, t2) {
-    const dx = t1.clientX - t2.clientX
-    const dy = t1.clientY - t2.clientY
-    return Math.hypot(dx, dy)
+    const dx = t1.clientX - t2.clientX;
+    const dy = t1.clientY - t2.clientY;
+    return Math.hypot(dx, dy);
   }
 
   function handleTouchStart(e) {
     if (mode == IDLE && e.changedTouches.length == 1) {
       // Start touch based panning
-      const t = e.changedTouches[0]
-      setMode(TOUCHPAN)
-      touchid = t.identifier
-      panStart(t.clientX, t.clientY)
-      e.preventDefault()
+      const t = e.changedTouches[0];
+      setMode(TOUCHPAN);
+      touchid = t.identifier;
+      panStart(t.clientX, t.clientY);
+      e.preventDefault();
     } else if (mode == TOUCHPAN && e.touches.length == 2) {
       // Start pinch zooming
-      setMode(TOUCHZOOM)
-      const t1 = e.touches[0]
-      const t2 = e.touches[1]
-      touchid = t1.identifier
-      touchid2 = t2.identifier
-      initScale = currentScale
-      initGap = touchGap(t1, t2)
+      setMode(TOUCHZOOM);
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      touchid = t1.identifier;
+      touchid2 = t2.identifier;
+      initScale = currentScale;
+      initGap = touchGap(t1, t2);
       centerPoint = toSvg((t1.clientX + t2.clientX) / 2,
-                          (t1.clientY + t2.clientY) / 2)
-      e.preventDefault()
+                          (t1.clientY + t2.clientY) / 2);
+      e.preventDefault();
     }
   }
 
   function handleTouchMove(e) {
     if (mode == TOUCHPAN) {
-      const t = findTouch(e.changedTouches, touchid)
-      if (t == null) return
+      const t = findTouch(e.changedTouches, touchid);
+      if (t == null) return;
       if (e.touches.length != 1) {
-        setMode(IDLE)
-        return
+        setMode(IDLE);
+        return;
       }
-      panMove(t.clientX, t.clientY)
-      e.preventDefault()
+      panMove(t.clientX, t.clientY);
+      e.preventDefault();
     } else if (mode == TOUCHZOOM) {
       // Get two touches; new gap; rescale to ratio.
-      const t1 = findTouch(e.touches, touchid)
-      const t2 = findTouch(e.touches, touchid2)
-      if (t1 == null || t2 == null) return
-      const gap = touchGap(t1, t2)
-      rescale(initScale * gap / initGap, centerPoint)
-      e.preventDefault()
+      const t1 = findTouch(e.touches, touchid);
+      const t2 = findTouch(e.touches, touchid2);
+      if (t1 == null || t2 == null) return;
+      const gap = touchGap(t1, t2);
+      rescale(initScale * gap / initGap, centerPoint);
+      e.preventDefault();
     }
   }
 
   function handleTouchEnd(e) {
     if (mode == TOUCHPAN) {
-      const t = findTouch(e.changedTouches, touchid)
-      if (t == null) return
-      panMove(t.clientX, t.clientY)
-      setMode(IDLE)
-      e.preventDefault()
-      if (!moved) clickHandler(t.target)
+      const t = findTouch(e.changedTouches, touchid);
+      if (t == null) return;
+      panMove(t.clientX, t.clientY);
+      setMode(IDLE);
+      e.preventDefault();
+      if (!moved) clickHandler(t.target);
     } else if (mode == TOUCHZOOM) {
-      setMode(IDLE)
-      e.preventDefault()
+      setMode(IDLE);
+      e.preventDefault();
     }
   }
 
-  svg.addEventListener("mousedown", handleScanStart)
-  svg.addEventListener("mouseup", handleScanEnd)
-  svg.addEventListener("touchstart", handleTouchStart)
-  svg.addEventListener("touchmove", handleTouchMove)
-  svg.addEventListener("touchend", handleTouchEnd)
-  svg.addEventListener("wheel", handleWheel, true)
+  svg.addEventListener("mousedown", handleScanStart);
+  svg.addEventListener("mouseup", handleScanEnd);
+  svg.addEventListener("touchstart", handleTouchStart);
+  svg.addEventListener("touchmove", handleTouchMove);
+  svg.addEventListener("touchend", handleTouchEnd);
+  svg.addEventListener("wheel", handleWheel, true);
 }
 
 function initMenus() {
-  'use strict';
+  "use strict";
 
   let activeMenu = null;
   let activeMenuHdr = null;
@@ -576,289 +576,289 @@ function initMenus() {
 }
 
 function viewer(baseUrl, nodes) {
-  'use strict';
+  "use strict";
 
   // Elements
-  const search = document.getElementById("search")
-  const graph0 = document.getElementById("graph0")
-  const svg = (graph0 == null ? null : graph0.parentElement)
-  const toptable = document.getElementById("toptable")
+  const search = document.getElementById("search");
+  const graph0 = document.getElementById("graph0");
+  const svg = (graph0 == null ? null : graph0.parentElement);
+  const toptable = document.getElementById("toptable");
 
-  let regexpActive = false
-  let selected = new Map()
-  let origFill = new Map()
-  let searchAlarm = null
-  let buttonsEnabled = true
+  let regexpActive = false;
+  let selected = new Map();
+  let origFill = new Map();
+  let searchAlarm = null;
+  let buttonsEnabled = true;
 
   function handleDetails(e) {
-    e.preventDefault()
-    const detailsText = document.getElementById("detailsbox")
+    e.preventDefault();
+    const detailsText = document.getElementById("detailsbox");
     if (detailsText != null) {
       if (detailsText.style.display === "block") {
-        detailsText.style.display = "none"
+        detailsText.style.display = "none";
       } else {
-        detailsText.style.display = "block"
+        detailsText.style.display = "block";
       }
     }
   }
 
   function handleKey(e) {
-    if (e.keyCode != 13) return
+    if (e.keyCode != 13) return;
     window.location.href =
-        updateUrl(new URL({{.BaseURL}}, window.location.href), "f")
-    e.preventDefault()
+        updateUrl(new URL({{.BaseURL}}, window.location.href), "f");
+    e.preventDefault();
   }
 
   function handleSearch() {
     // Delay expensive processing so a flurry of key strokes is handled once.
     if (searchAlarm != null) {
-      clearTimeout(searchAlarm)
+      clearTimeout(searchAlarm);
     }
-    searchAlarm = setTimeout(selectMatching, 300)
+    searchAlarm = setTimeout(selectMatching, 300);
 
-    regexpActive = true
-    updateButtons()
+    regexpActive = true;
+    updateButtons();
   }
 
   function selectMatching() {
-    searchAlarm = null
-    let re = null
+    searchAlarm = null;
+    let re = null;
     if (search.value != "") {
       try {
-        re = new RegExp(search.value)
+        re = new RegExp(search.value);
       } catch (e) {
         // TODO: Display error state in search box
-        return
+        return;
       }
     }
 
     function match(text) {
-      return re != null && re.test(text)
+      return re != null && re.test(text);
     }
 
     // drop currently selected items that do not match re.
     selected.forEach(function(v, n) {
       if (!match(nodes[n])) {
-        unselect(n, document.getElementById("node" + n))
+        unselect(n, document.getElementById("node" + n));
       }
     })
 
     // add matching items that are not currently selected.
     for (let n = 0; n < nodes.length; n++) {
       if (!selected.has(n) && match(nodes[n])) {
-        select(n, document.getElementById("node" + n))
+        select(n, document.getElementById("node" + n));
       }
     }
 
-    updateButtons()
+    updateButtons();
   }
 
   function toggleSvgSelect(elem) {
     // Walk up to immediate child of graph0
     while (elem != null && elem.parentElement != graph0) {
-      elem = elem.parentElement
+      elem = elem.parentElement;
     }
-    if (!elem) return
+    if (!elem) return;
 
     // Disable regexp mode.
-    regexpActive = false
+    regexpActive = false;
 
-    const n = nodeId(elem)
-    if (n < 0) return
+    const n = nodeId(elem);
+    if (n < 0) return;
     if (selected.has(n)) {
-      unselect(n, elem)
+      unselect(n, elem);
     } else {
-      select(n, elem)
+      select(n, elem);
     }
-    updateButtons()
+    updateButtons();
   }
 
   function unselect(n, elem) {
-    if (elem == null) return
-    selected.delete(n)
-    setBackground(elem, false)
+    if (elem == null) return;
+    selected.delete(n);
+    setBackground(elem, false);
   }
 
   function select(n, elem) {
-    if (elem == null) return
-    selected.set(n, true)
-    setBackground(elem, true)
+    if (elem == null) return;
+    selected.set(n, true);
+    setBackground(elem, true);
   }
 
   function nodeId(elem) {
-    const id = elem.id
-    if (!id) return -1
-    if (!id.startsWith("node")) return -1
-    const n = parseInt(id.slice(4), 10)
-    if (isNaN(n)) return -1
-    if (n < 0 || n >= nodes.length) return -1
-    return n
+    const id = elem.id;
+    if (!id) return -1;
+    if (!id.startsWith("node")) return -1;
+    const n = parseInt(id.slice(4), 10);
+    if (isNaN(n)) return -1;
+    if (n < 0 || n >= nodes.length) return -1;
+    return n;
   }
 
   function setBackground(elem, set) {
     // Handle table row highlighting.
     if (elem.nodeName == "TR") {
-      elem.classList.toggle("hilite", set)
-      return
+      elem.classList.toggle("hilite", set);
+      return;
     }
 
     // Handle svg element highlighting.
-    const p = findPolygon(elem)
+    const p = findPolygon(elem);
     if (p != null) {
       if (set) {
-        origFill.set(p, p.style.fill)
-        p.style.fill = "#ccccff"
+        origFill.set(p, p.style.fill);
+        p.style.fill = "#ccccff";
       } else if (origFill.has(p)) {
-        p.style.fill = origFill.get(p)
+        p.style.fill = origFill.get(p);
       }
     }
   }
 
   function findPolygon(elem) {
-    if (elem.localName == "polygon") return elem
+    if (elem.localName == "polygon") return elem;
     for (const c of elem.children) {
-      const p = findPolygon(c)
-      if (p != null) return p
+      const p = findPolygon(c);
+      if (p != null) return p;
     }
-    return null
+    return null;
   }
 
   // convert a string to a regexp that matches that string.
   function quotemeta(str) {
-    return str.replace(/([\\\.?+*\[\](){}|^$])/g, '\\$1')
+    return str.replace(/([\\\.?+*\[\](){}|^$])/g, "\\$1");
   }
 
   // Update id's href to reflect current selection whenever it is
   // liable to be followed.
   function makeLinkDynamic(id) {
-    const elem = document.getElementById(id)
-    if (elem == null) return
+    const elem = document.getElementById(id);
+    if (elem == null) return;
 
     // Most links copy current selection into the "f" parameter,
     // but Refine menu links are different.
-    let param = "f"
-    if (id == "ignore") param = "i"
-    if (id == "hide") param = "h"
-    if (id == "show") param = "s"
+    let param = "f";
+    if (id == "ignore") param = "i";
+    if (id == "hide") param = "h";
+    if (id == "show") param = "s";
 
     // We update on mouseenter so middle-click/right-click work properly.
-    elem.addEventListener("mouseenter", updater)
-    elem.addEventListener("touchstart", updater)
+    elem.addEventListener("mouseenter", updater);
+    elem.addEventListener("touchstart", updater);
 
     function updater() {
-      elem.href = updateUrl(new URL(elem.href), param)
+      elem.href = updateUrl(new URL(elem.href), param);
     }
   }
 
   // Update URL to reflect current selection.
   function updateUrl(url, param) {
-    url.hash = ""
+    url.hash = "";
 
     // The selection can be in one of two modes: regexp-based or
     // list-based.  Construct regular expression depending on mode.
     let re = regexpActive
       ? search.value
-      : Array.from(selected.keys()).map(key => quotemeta(nodes[key])).join("|")
+      : Array.from(selected.keys()).map(key => quotemeta(nodes[key])).join("|");
 
     // Copy params from this page's URL.
-    const params = url.searchParams
+    const params = url.searchParams;
     for (const p of new URLSearchParams(window.location.search)) {
-      params.set(p[0], p[1])
+      params.set(p[0], p[1]);
     }
 
     if (re != "") {
       // For focus/show, forget old parameter.  For others, add to re.
       if (param != "f" && param != "s" && params.has(param)) {
-        const old = params.get(param)
+        const old = params.get(param);
          if (old != "") {
-          re += "|" + old
+          re += "|" + old;
         }
       }
-      params.set(param, re)
+      params.set(param, re);
     } else {
-      params.delete(param)
+      params.delete(param);
     }
 
-    return url.toString()
+    return url.toString();
   }
 
   function handleTopClick(e) {
     // Walk back until we find TR and then get the Name column (index 5)
-    let elem = e.target
+    let elem = e.target;
     while (elem != null && elem.nodeName != "TR") {
-      elem = elem.parentElement
+      elem = elem.parentElement;
     }
-    if (elem == null || elem.children.length < 6) return
+    if (elem == null || elem.children.length < 6) return;
 
-    e.preventDefault()
-    const tr = elem
-    const td = elem.children[5]
-    if (td.nodeName != "TD") return
-    const name = td.innerText
-    const index = nodes.indexOf(name)
-    if (index < 0) return
+    e.preventDefault();
+    const tr = elem;
+    const td = elem.children[5];
+    if (td.nodeName != "TD") return;
+    const name = td.innerText;
+    const index = nodes.indexOf(name);
+    if (index < 0) return;
 
     // Disable regexp mode.
-    regexpActive = false
+    regexpActive = false;
 
     if (selected.has(index)) {
-      unselect(index, elem)
+      unselect(index, elem);
     } else {
-      select(index, elem)
+      select(index, elem);
     }
-    updateButtons()
+    updateButtons();
   }
 
   function updateButtons() {
-    const enable = (search.value != "" || selected.size != 0)
-    if (buttonsEnabled == enable) return
-    buttonsEnabled = enable
+    const enable = (search.value != "" || selected.size != 0);
+    if (buttonsEnabled == enable) return;
+    buttonsEnabled = enable;
     for (const id of ["focus", "ignore", "hide", "show"]) {
-      const link = document.getElementById(id)
+      const link = document.getElementById(id);
       if (link != null) {
-        link.classList.toggle("disabled", !enable)
+        link.classList.toggle("disabled", !enable);
       }
     }
     if (document.getElementById("graph") !== null) {
-      document.getElementById("refine").classList.remove("disabled")
+      document.getElementById("refine").classList.remove("disabled");
     }
   }
 
   // Initialize button states
-  updateButtons()
+  updateButtons();
 
   // Setup event handlers
-  initMenus()
+  initMenus();
   if (svg != null) {
-    initPanAndZoom(svg, toggleSvgSelect)
+    initPanAndZoom(svg, toggleSvgSelect);
   }
   if (toptable != null) {
-    toptable.addEventListener("mousedown", handleTopClick)
-    toptable.addEventListener("touchstart", handleTopClick)
+    toptable.addEventListener("mousedown", handleTopClick);
+    toptable.addEventListener("touchstart", handleTopClick);
   }
 
   const ids = ["topbtn", "graphbtn", "peek", "list", "disasm",
-               "focus", "ignore", "hide", "show"]
-  ids.forEach(makeLinkDynamic)
+               "focus", "ignore", "hide", "show"];
+  ids.forEach(makeLinkDynamic);
 
   // Bind action to button with specified id.
   function addAction(id, action) {
-    const btn = document.getElementById(id)
+    const btn = document.getElementById(id);
     if (btn != null) {
-      btn.addEventListener("click", action)
-      btn.addEventListener("touchstart", action)
+      btn.addEventListener("click", action);
+      btn.addEventListener("touchstart", action);
     }
   }
 
-  addAction("details", handleDetails)
+  addAction("details", handleDetails);
 
-  search.addEventListener("input", handleSearch)
-  search.addEventListener("keydown", handleKey)
+  search.addEventListener("input", handleSearch);
+  search.addEventListener("keydown", handleKey);
 
   // Give initial focus to main container so it can be scrolled using keys.
-  const main = document.getElementById("bodycontainer")
+  const main = document.getElementById("bodycontainer");
   if (main) {
-    main.focus()
+    main.focus();
   }
 }
 </script>
@@ -895,87 +895,87 @@ function viewer(baseUrl, nodes) {
   {{template "script" .}}
   <script>
     function makeTopTable(total, entries) {
-      const rows = document.getElementById("rows")
-      if (rows == null) return
+      const rows = document.getElementById("rows");
+      if (rows == null) return;
 
       // Store initial index in each entry so we have stable node ids for selection.
       for (let i = 0; i < entries.length; i++) {
-        entries[i].Id = "node" + i
+        entries[i].Id = "node" + i;
       }
 
       // Which column are we currently sorted by and in what order?
-      let currentColumn = ""
-      let descending = false
-      sortBy("Flat")
+      let currentColumn = "";
+      let descending = false;
+      sortBy("Flat");
 
       function sortBy(column) {
         // Update sort criteria
         if (column == currentColumn) {
-          descending = !descending  // Reverse order
+          descending = !descending; // Reverse order
         } else {
-          currentColumn = column
-          descending = (column != "Name")
+          currentColumn = column;
+          descending = (column != "Name");
         }
 
         // Sort according to current criteria.
         function cmp(a, b) {
-          const av = a[currentColumn]
-          const bv = b[currentColumn]
-          if (av < bv) return -1
-          if (av > bv) return +1
-          return 0
+          const av = a[currentColumn];
+          const bv = b[currentColumn];
+          if (av < bv) return -1;
+          if (av > bv) return +1;
+          return 0;
         }
-        entries.sort(cmp)
-        if (descending) entries.reverse()
+        entries.sort(cmp);
+        if (descending) entries.reverse();
 
         function addCell(tr, val) {
-          const td = document.createElement('td')
-          td.textContent = val
-          tr.appendChild(td)
+          const td = document.createElement("td");
+          td.textContent = val;
+          tr.appendChild(td);
         }
 
         function percent(v) {
-          return (v * 100.0 / total).toFixed(2) + "%"
+          return (v * 100.0 / total).toFixed(2) + "%";
         }
 
         // Generate rows
-        const fragment = document.createDocumentFragment()
-        let sum = 0
+        const fragment = document.createDocumentFragment();
+        let sum = 0;
         for (const row of entries) {
-          const tr = document.createElement('tr')
-          tr.id = row.Id
-          sum += row.Flat
-          addCell(tr, row.FlatFormat)
-          addCell(tr, percent(row.Flat))
-          addCell(tr, percent(sum))
-          addCell(tr, row.CumFormat)
-          addCell(tr, percent(row.Cum))
-          addCell(tr, row.Name)
-          addCell(tr, row.InlineLabel)
-          fragment.appendChild(tr)
+          const tr = document.createElement("tr");
+          tr.id = row.Id;
+          sum += row.Flat;
+          addCell(tr, row.FlatFormat);
+          addCell(tr, percent(row.Flat));
+          addCell(tr, percent(sum));
+          addCell(tr, row.CumFormat);
+          addCell(tr, percent(row.Cum));
+          addCell(tr, row.Name);
+          addCell(tr, row.InlineLabel);
+          fragment.appendChild(tr);
         }
 
-        rows.textContent = ''  // Remove old rows
-        rows.appendChild(fragment)
+        rows.textContent = ""; // Remove old rows
+        rows.appendChild(fragment);
       }
 
       // Make different column headers trigger sorting.
       function bindSort(id, column) {
-        const hdr = document.getElementById(id)
-        if (hdr == null) return
-        const fn = function() { sortBy(column) }
-        hdr.addEventListener("click", fn)
-        hdr.addEventListener("touch", fn)
+        const hdr = document.getElementById(id);
+        if (hdr == null) return;
+        const fn = function() { sortBy(column) };
+        hdr.addEventListener("click", fn);
+        hdr.addEventListener("touch", fn);
       }
-      bindSort("flathdr1", "Flat")
-      bindSort("flathdr2", "Flat")
-      bindSort("cumhdr1", "Cum")
-      bindSort("cumhdr2", "Cum")
-      bindSort("namehdr", "Name")
+      bindSort("flathdr1", "Flat");
+      bindSort("flathdr2", "Flat");
+      bindSort("cumhdr1", "Cum");
+      bindSort("cumhdr2", "Cum");
+      bindSort("namehdr", "Name");
     }
 
-    viewer({{.BaseURL}}, {{.Nodes}})
-    makeTopTable({{.Total}}, {{.Top}})
+    viewer({{.BaseURL}}, {{.Nodes}});
+    makeTopTable({{.Total}}, {{.Top}});
   </script>
 </body>
 </html>
@@ -997,7 +997,7 @@ function viewer(baseUrl, nodes) {
     {{.HTMLBody}}
   </div>
   {{template "script" .}}
-  <script>viewer({{.BaseURL}}, null)</script>
+  <script>viewer({{.BaseURL}}, null);</script>
 </body>
 </html>
 {{end}}
@@ -1018,7 +1018,7 @@ function viewer(baseUrl, nodes) {
     </pre>
   </div>
   {{template "script" .}}
-  <script>viewer({{.BaseURL}}, null)</script>
+  <script>viewer({{.BaseURL}}, null);</script>
 </body>
 </html>
 {{end}}
@@ -1055,7 +1055,7 @@ function viewer(baseUrl, nodes) {
     <div id="flamegraphdetails" class="flamegraph-details"></div>
   </div>
   {{template "script" .}}
-  <script>viewer({{.BaseURL}}, {{.Nodes}})</script>
+  <script>viewer({{.BaseURL}}, {{.Nodes}});</script>
   <script>{{template "d3script" .}}</script>
   <script>{{template "d3tipscript" .}}</script>
   <script>{{template "d3flamegraphscript" .}}</script>
@@ -1081,7 +1081,7 @@ function viewer(baseUrl, nodes) {
     var tip = d3.tip()
       .direction("s")
       .offset([8, 0])
-      .attr('class', 'd3-flame-graph-tip')
+      .attr("class", "d3-flame-graph-tip")
       .html(function(d) { return "name: " + d.data.n + ", value: " + d.data.l; });
 
     flameGraph.tooltip(tip);
