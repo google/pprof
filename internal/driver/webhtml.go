@@ -381,7 +381,7 @@ function initPanAndZoom(svg, clickHandler) {
   }
 
   function handleWheel(e) {
-    if (e.deltaY == 0) return
+    if (e.deltaY == 0) return;
     // Change scale factor by 1.1 or 1/1.1
     rescale(currentScale * (e.deltaY < 0 ? 1.1 : (1/1.1)),
             toSvg(e.offsetX, e.offsetY));
