@@ -313,7 +313,7 @@ table tr td {
 // Make svg pannable and zoomable.
 // Call clickHandler(t) if a click event is caught by the pan event handlers.
 function initPanAndZoom(svg, clickHandler) {
-  "use strict";
+  'use strict';
 
   // Current mouse/touch handling mode
   const IDLE = 0;
@@ -425,14 +425,14 @@ function initPanAndZoom(svg, clickHandler) {
     setMode(MOUSEPAN);
     panStart(e.clientX, e.clientY);
     e.preventDefault();
-    svg.addEventListener("mousemove", handleScanMove);
+    svg.addEventListener('mousemove', handleScanMove);
   }
 
   function handleScanMove(e) {
     if (e.buttons == 0) {
       // Missed an end event, perhaps because mouse moved outside window.
       setMode(IDLE);
-      svg.removeEventListener("mousemove", handleScanMove);
+      svg.removeEventListener('mousemove', handleScanMove);
       return;
     }
     if (mode == MOUSEPAN) panMove(e.clientX, e.clientY);
@@ -441,7 +441,7 @@ function initPanAndZoom(svg, clickHandler) {
   function handleScanEnd(e) {
     if (mode == MOUSEPAN) panMove(e.clientX, e.clientY);
     setMode(IDLE);
-    svg.removeEventListener("mousemove", handleScanMove);
+    svg.removeEventListener('mousemove', handleScanMove);
     if (!moved) clickHandler(e.target);
   }
 
@@ -518,71 +518,71 @@ function initPanAndZoom(svg, clickHandler) {
     }
   }
 
-  svg.addEventListener("mousedown", handleScanStart);
-  svg.addEventListener("mouseup", handleScanEnd);
-  svg.addEventListener("touchstart", handleTouchStart);
-  svg.addEventListener("touchmove", handleTouchMove);
-  svg.addEventListener("touchend", handleTouchEnd);
-  svg.addEventListener("wheel", handleWheel, true);
+  svg.addEventListener('mousedown', handleScanStart);
+  svg.addEventListener('mouseup', handleScanEnd);
+  svg.addEventListener('touchstart', handleTouchStart);
+  svg.addEventListener('touchmove', handleTouchMove);
+  svg.addEventListener('touchend', handleTouchEnd);
+  svg.addEventListener('wheel', handleWheel, true);
 }
 
 function initMenus() {
-  "use strict";
+  'use strict';
 
   let activeMenu = null;
   let activeMenuHdr = null;
 
   function cancelActiveMenu() {
     if (activeMenu == null) return;
-    activeMenu.style.display = "none";
+    activeMenu.style.display = 'none';
     activeMenu = null;
     activeMenuHdr = null;
   }
 
   // Set click handlers on every menu header.
-  for (const menu of document.getElementsByClassName("submenu")) {
+  for (const menu of document.getElementsByClassName('submenu')) {
     const hdr = menu.parentElement;
     if (hdr == null) return;
-    if (hdr.classList.contains("disabled")) return;
+    if (hdr.classList.contains('disabled')) return;
     function showMenu(e) {
       // menu is a child of hdr, so this event can fire for clicks
       // inside menu. Ignore such clicks.
       if (e.target.parentElement != hdr) return;
       activeMenu = menu;
       activeMenuHdr = hdr;
-      menu.style.display = "block";
+      menu.style.display = 'block';
     }
-    hdr.addEventListener("mousedown", showMenu);
-    hdr.addEventListener("touchstart", showMenu);
+    hdr.addEventListener('mousedown', showMenu);
+    hdr.addEventListener('touchstart', showMenu);
   }
 
   // If there is an active menu and a down event outside, retract the menu.
-  for (const t of ["mousedown", "touchstart"]) {
+  for (const t of ['mousedown', 'touchstart']) {
     document.addEventListener(t, (e) => {
       // Note: to avoid unnecessary flicker, if the down event is inside
       // the active menu header, do not retract the menu.
-      if (activeMenuHdr != e.target.closest(".menu-item")) {
+      if (activeMenuHdr != e.target.closest('.menu-item')) {
         cancelActiveMenu();
       }
     }, { passive: true, capture: true });
   }
 
   // If there is an active menu and an up event inside, retract the menu.
-  document.addEventListener("mouseup", (e) => {
-    if (activeMenu == e.target.closest(".submenu")) {
+  document.addEventListener('mouseup', (e) => {
+    if (activeMenu == e.target.closest('.submenu')) {
       cancelActiveMenu();
     }
   }, { passive: true, capture: true });
 }
 
 function viewer(baseUrl, nodes) {
-  "use strict";
+  'use strict';
 
   // Elements
-  const search = document.getElementById("search");
-  const graph0 = document.getElementById("graph0");
+  const search = document.getElementById('search');
+  const graph0 = document.getElementById('graph0');
   const svg = (graph0 == null ? null : graph0.parentElement);
-  const toptable = document.getElementById("toptable");
+  const toptable = document.getElementById('toptable');
 
   let regexpActive = false;
   let selected = new Map();
@@ -592,12 +592,12 @@ function viewer(baseUrl, nodes) {
 
   function handleDetails(e) {
     e.preventDefault();
-    const detailsText = document.getElementById("detailsbox");
+    const detailsText = document.getElementById('detailsbox');
     if (detailsText != null) {
-      if (detailsText.style.display === "block") {
-        detailsText.style.display = "none";
+      if (detailsText.style.display === 'block') {
+        detailsText.style.display = 'none';
       } else {
-        detailsText.style.display = "block";
+        detailsText.style.display = 'block';
       }
     }
   }
@@ -605,7 +605,7 @@ function viewer(baseUrl, nodes) {
   function handleKey(e) {
     if (e.keyCode != 13) return;
     window.location.href =
-        updateUrl(new URL({{.BaseURL}}, window.location.href), "f");
+        updateUrl(new URL({{.BaseURL}}, window.location.href), 'f');
     e.preventDefault();
   }
 
@@ -623,7 +623,7 @@ function viewer(baseUrl, nodes) {
   function selectMatching() {
     searchAlarm = null;
     let re = null;
-    if (search.value != "") {
+    if (search.value != '') {
       try {
         re = new RegExp(search.value);
       } catch (e) {
@@ -639,14 +639,14 @@ function viewer(baseUrl, nodes) {
     // drop currently selected items that do not match re.
     selected.forEach(function(v, n) {
       if (!match(nodes[n])) {
-        unselect(n, document.getElementById("node" + n));
+        unselect(n, document.getElementById('node' + n));
       }
     })
 
     // add matching items that are not currently selected.
     for (let n = 0; n < nodes.length; n++) {
       if (!selected.has(n) && match(nodes[n])) {
-        select(n, document.getElementById("node" + n));
+        select(n, document.getElementById('node' + n));
       }
     }
 
@@ -688,7 +688,7 @@ function viewer(baseUrl, nodes) {
   function nodeId(elem) {
     const id = elem.id;
     if (!id) return -1;
-    if (!id.startsWith("node")) return -1;
+    if (!id.startsWith('node')) return -1;
     const n = parseInt(id.slice(4), 10);
     if (isNaN(n)) return -1;
     if (n < 0 || n >= nodes.length) return -1;
@@ -697,8 +697,8 @@ function viewer(baseUrl, nodes) {
 
   function setBackground(elem, set) {
     // Handle table row highlighting.
-    if (elem.nodeName == "TR") {
-      elem.classList.toggle("hilite", set);
+    if (elem.nodeName == 'TR') {
+      elem.classList.toggle('hilite', set);
       return;
     }
 
@@ -707,7 +707,7 @@ function viewer(baseUrl, nodes) {
     if (p != null) {
       if (set) {
         origFill.set(p, p.style.fill);
-        p.style.fill = "#ccccff";
+        p.style.fill = '#ccccff';
       } else if (origFill.has(p)) {
         p.style.fill = origFill.get(p);
       }
@@ -715,7 +715,7 @@ function viewer(baseUrl, nodes) {
   }
 
   function findPolygon(elem) {
-    if (elem.localName == "polygon") return elem;
+    if (elem.localName == 'polygon') return elem;
     for (const c of elem.children) {
       const p = findPolygon(c);
       if (p != null) return p;
@@ -725,7 +725,7 @@ function viewer(baseUrl, nodes) {
 
   // convert a string to a regexp that matches that string.
   function quotemeta(str) {
-    return str.replace(/([\\\.?+*\[\](){}|^$])/g, "\\$1");
+    return str.replace(/([\\\.?+*\[\](){}|^$])/g, '\\$1');
   }
 
   // Update id's href to reflect current selection whenever it is
@@ -734,16 +734,16 @@ function viewer(baseUrl, nodes) {
     const elem = document.getElementById(id);
     if (elem == null) return;
 
-    // Most links copy current selection into the "f" parameter,
+    // Most links copy current selection into the 'f' parameter,
     // but Refine menu links are different.
-    let param = "f";
-    if (id == "ignore") param = "i";
-    if (id == "hide") param = "h";
-    if (id == "show") param = "s";
+    let param = 'f';
+    if (id == 'ignore') param = 'i';
+    if (id == 'hide') param = 'h';
+    if (id == 'show') param = 's';
 
     // We update on mouseenter so middle-click/right-click work properly.
-    elem.addEventListener("mouseenter", updater);
-    elem.addEventListener("touchstart", updater);
+    elem.addEventListener('mouseenter', updater);
+    elem.addEventListener('touchstart', updater);
 
     function updater() {
       elem.href = updateUrl(new URL(elem.href), param);
@@ -752,13 +752,13 @@ function viewer(baseUrl, nodes) {
 
   // Update URL to reflect current selection.
   function updateUrl(url, param) {
-    url.hash = "";
+    url.hash = '';
 
     // The selection can be in one of two modes: regexp-based or
     // list-based.  Construct regular expression depending on mode.
     let re = regexpActive
       ? search.value
-      : Array.from(selected.keys()).map(key => quotemeta(nodes[key])).join("|");
+      : Array.from(selected.keys()).map(key => quotemeta(nodes[key])).join('|');
 
     // Copy params from this page's URL.
     const params = url.searchParams;
@@ -766,12 +766,12 @@ function viewer(baseUrl, nodes) {
       params.set(p[0], p[1]);
     }
 
-    if (re != "") {
+    if (re != '') {
       // For focus/show, forget old parameter.  For others, add to re.
-      if (param != "f" && param != "s" && params.has(param)) {
+      if (param != 'f' && param != 's' && params.has(param)) {
         const old = params.get(param);
-         if (old != "") {
-          re += "|" + old;
+         if (old != '') {
+          re += '|' + old;
         }
       }
       params.set(param, re);
@@ -785,7 +785,7 @@ function viewer(baseUrl, nodes) {
   function handleTopClick(e) {
     // Walk back until we find TR and then get the Name column (index 5)
     let elem = e.target;
-    while (elem != null && elem.nodeName != "TR") {
+    while (elem != null && elem.nodeName != 'TR') {
       elem = elem.parentElement;
     }
     if (elem == null || elem.children.length < 6) return;
@@ -793,7 +793,7 @@ function viewer(baseUrl, nodes) {
     e.preventDefault();
     const tr = elem;
     const td = elem.children[5];
-    if (td.nodeName != "TD") return;
+    if (td.nodeName != 'TD') return;
     const name = td.innerText;
     const index = nodes.indexOf(name);
     if (index < 0) return;
@@ -810,17 +810,17 @@ function viewer(baseUrl, nodes) {
   }
 
   function updateButtons() {
-    const enable = (search.value != "" || selected.size != 0);
+    const enable = (search.value != '' || selected.size != 0);
     if (buttonsEnabled == enable) return;
     buttonsEnabled = enable;
-    for (const id of ["focus", "ignore", "hide", "show"]) {
+    for (const id of ['focus', 'ignore', 'hide', 'show']) {
       const link = document.getElementById(id);
       if (link != null) {
-        link.classList.toggle("disabled", !enable);
+        link.classList.toggle('disabled', !enable);
       }
     }
-    if (document.getElementById("graph") !== null) {
-      document.getElementById("refine").classList.remove("disabled");
+    if (document.getElementById('graph') !== null) {
+      document.getElementById('refine').classList.remove('disabled');
     }
   }
 
@@ -833,30 +833,30 @@ function viewer(baseUrl, nodes) {
     initPanAndZoom(svg, toggleSvgSelect);
   }
   if (toptable != null) {
-    toptable.addEventListener("mousedown", handleTopClick);
-    toptable.addEventListener("touchstart", handleTopClick);
+    toptable.addEventListener('mousedown', handleTopClick);
+    toptable.addEventListener('touchstart', handleTopClick);
   }
 
-  const ids = ["topbtn", "graphbtn", "peek", "list", "disasm",
-               "focus", "ignore", "hide", "show"];
+  const ids = ['topbtn', 'graphbtn', 'peek', 'list', 'disasm',
+               'focus', 'ignore', 'hide', 'show'];
   ids.forEach(makeLinkDynamic);
 
   // Bind action to button with specified id.
   function addAction(id, action) {
     const btn = document.getElementById(id);
     if (btn != null) {
-      btn.addEventListener("click", action);
-      btn.addEventListener("touchstart", action);
+      btn.addEventListener('click', action);
+      btn.addEventListener('touchstart', action);
     }
   }
 
-  addAction("details", handleDetails);
+  addAction('details', handleDetails);
 
-  search.addEventListener("input", handleSearch);
-  search.addEventListener("keydown", handleKey);
+  search.addEventListener('input', handleSearch);
+  search.addEventListener('keydown', handleKey);
 
   // Give initial focus to main container so it can be scrolled using keys.
-  const main = document.getElementById("bodycontainer");
+  const main = document.getElementById('bodycontainer');
   if (main) {
     main.focus();
   }
@@ -895,18 +895,18 @@ function viewer(baseUrl, nodes) {
   {{template "script" .}}
   <script>
     function makeTopTable(total, entries) {
-      const rows = document.getElementById("rows");
+      const rows = document.getElementById('rows');
       if (rows == null) return;
 
       // Store initial index in each entry so we have stable node ids for selection.
       for (let i = 0; i < entries.length; i++) {
-        entries[i].Id = "node" + i;
+        entries[i].Id = 'node' + i;
       }
 
       // Which column are we currently sorted by and in what order?
-      let currentColumn = "";
+      let currentColumn = '';
       let descending = false;
-      sortBy("Flat");
+      sortBy('Flat');
 
       function sortBy(column) {
         // Update sort criteria
@@ -914,7 +914,7 @@ function viewer(baseUrl, nodes) {
           descending = !descending; // Reverse order
         } else {
           currentColumn = column;
-          descending = (column != "Name");
+          descending = (column != 'Name');
         }
 
         // Sort according to current criteria.
@@ -929,20 +929,20 @@ function viewer(baseUrl, nodes) {
         if (descending) entries.reverse();
 
         function addCell(tr, val) {
-          const td = document.createElement("td");
+          const td = document.createElement('td');
           td.textContent = val;
           tr.appendChild(td);
         }
 
         function percent(v) {
-          return (v * 100.0 / total).toFixed(2) + "%";
+          return (v * 100.0 / total).toFixed(2) + '%';
         }
 
         // Generate rows
         const fragment = document.createDocumentFragment();
         let sum = 0;
         for (const row of entries) {
-          const tr = document.createElement("tr");
+          const tr = document.createElement('tr');
           tr.id = row.Id;
           sum += row.Flat;
           addCell(tr, row.FlatFormat);
@@ -955,7 +955,7 @@ function viewer(baseUrl, nodes) {
           fragment.appendChild(tr);
         }
 
-        rows.textContent = ""; // Remove old rows
+        rows.textContent = ''; // Remove old rows
         rows.appendChild(fragment);
       }
 
@@ -964,14 +964,14 @@ function viewer(baseUrl, nodes) {
         const hdr = document.getElementById(id);
         if (hdr == null) return;
         const fn = function() { sortBy(column) };
-        hdr.addEventListener("click", fn);
-        hdr.addEventListener("touch", fn);
+        hdr.addEventListener('click', fn);
+        hdr.addEventListener('touch', fn);
       }
-      bindSort("flathdr1", "Flat");
-      bindSort("flathdr2", "Flat");
-      bindSort("cumhdr1", "Cum");
-      bindSort("cumhdr2", "Cum");
-      bindSort("namehdr", "Name");
+      bindSort('flathdr1', 'Flat');
+      bindSort('flathdr2', 'Flat');
+      bindSort('cumhdr1', 'Cum');
+      bindSort('cumhdr2', 'Cum');
+      bindSort('namehdr', 'Name');
     }
 
     viewer({{.BaseURL}}, {{.Nodes}});
@@ -1062,10 +1062,10 @@ function viewer(baseUrl, nodes) {
   <script type="text/javascript">
     var data = {{.FlameGraph}};
     var label = function(d) {
-      return d.data.n + " (" + d.data.p + ", " + d.data.l + ")";
+      return d.data.n + ' (' + d.data.p + ', ' + d.data.l + ')';
     };
 
-    var width = document.getElementById("chart").clientWidth;
+    var width = document.getElementById('chart').clientWidth;
 
     var flameGraph = d3.flameGraph()
       .width(width)
@@ -1074,19 +1074,19 @@ function viewer(baseUrl, nodes) {
       .transitionDuration(750)
       .transitionEase(d3.easeCubic)
       .sort(true)
-      .title("")
+      .title('')
       .label(label)
-      .details(document.getElementById("flamegraphdetails"));
+      .details(document.getElementById('flamegraphdetails'));
 
     var tip = d3.tip()
-      .direction("s")
+      .direction('s')
       .offset([8, 0])
-      .attr("class", "d3-flame-graph-tip")
-      .html(function(d) { return "name: " + d.data.n + ", value: " + d.data.l; });
+      .attr('class', 'd3-flame-graph-tip')
+      .html(function(d) { return 'name: ' + d.data.n + ', value: ' + d.data.l; });
 
     flameGraph.tooltip(tip);
 
-    d3.select("#chart")
+    d3.select('#chart')
       .datum(data)
       .call(flameGraph);
 
@@ -1098,23 +1098,23 @@ function viewer(baseUrl, nodes) {
       flameGraph.resetZoom();
     }
 
-    window.addEventListener("resize", function() {
-      var width = document.getElementById("chart").clientWidth;
-      var graphs = document.getElementsByClassName("d3-flame-graph");
+    window.addEventListener('resize', function() {
+      var width = document.getElementById('chart').clientWidth;
+      var graphs = document.getElementsByClassName('d3-flame-graph');
       if (graphs.length > 0) {
-        graphs[0].setAttribute("width", width);
+        graphs[0].setAttribute('width', width);
       }
       flameGraph.width(width);
       flameGraph.resetZoom();
     }, true);
 
-    var searchbox = document.getElementById("searchbox");
+    var searchbox = document.getElementById('searchbox');
     var searchAlarm = null;
 
     function selectMatching() {
       searchAlarm = null;
 
-      if (searchbox.value != "") {
+      if (searchbox.value != '') {
         flameGraph.search(searchbox.value);
       } else {
         flameGraph.clear();
@@ -1129,7 +1129,7 @@ function viewer(baseUrl, nodes) {
       searchAlarm = setTimeout(selectMatching, 300);
     }
 
-    searchbox.addEventListener("input", handleSearch);
+    searchbox.addEventListener('input', handleSearch);
   </script>
 </body>
 </html>
