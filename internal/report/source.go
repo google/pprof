@@ -215,7 +215,7 @@ func PrintWebList(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFiles int) er
 
 		printFunctionHeader(w, ff.functionName, path, n.Flat, n.Cum, rpt)
 		for _, fn := range fnodes {
-			printFunctionSourceLine(w, fn, asm[fn.Info.Lineno], reader, rpt)
+			printFunctionSourceLine(w, fn, asm[fn.Info.Lineno], reader, n.Cum, rpt)
 		}
 		printFunctionClosing(w)
 	}
@@ -347,20 +347,40 @@ func printFunctionHeader(w io.Writer, name, path string, flatSum, cumSum int64, 
 		measurement.Percentage(cumSum, rpt.total))
 }
 
+func calculatePercentile(partial, sum int64) string {
+	percentile := partial * 100 / sum
+	switch {
+	case percentile > 80:
+		return "percentile_80"
+	case percentile > 60:
+		return "percentile_60"
+	case percentile > 40:
+		return "percentile_40"
+	case percentile > 20:
+		return "percentile_20"
+	case percentile > 10:
+		return "percentile_10"
+	}
+	return "percentile_0"
+}
+
 // printFunctionSourceLine prints a source line and the corresponding assembly.
-func printFunctionSourceLine(w io.Writer, fn *graph.Node, assembly []assemblyInstruction, reader *sourceReader, rpt *Report) {
+func printFunctionSourceLine(w io.Writer, fn *graph.Node, assembly []assemblyInstruction, reader *sourceReader, cumSum int64, rpt *Report) {
+	percentile := calculatePercentile(fn.Cum, cumSum)
 	if len(assembly) == 0 {
 		fmt.Fprintf(w,
-			"<span class=line> %6d</span> <span class=nop>  %10s %10s %8s  %s </span>\n",
+			"<span class=line> %6d</span> <span class=\"nop %s\">  %10s %10s %8s  %s </span>\n",
 			fn.Info.Lineno,
+			percentile,
 			valueOrDot(fn.Flat, rpt), valueOrDot(fn.Cum, rpt),
 			"", template.HTMLEscapeString(fn.Info.Name))
 		return
 	}
 
 	fmt.Fprintf(w,
-		"<span class=line> %6d</span> <span class=deadsrc>  %10s %10s %8s  %s </span>",
+		"<span class=line> %6d</span> <span class=\"deadsrc %s\">  %10s %10s %8s  %s </span>",
 		fn.Info.Lineno,
+		percentile,
 		valueOrDot(fn.Flat, rpt), valueOrDot(fn.Cum, rpt),
 		"", template.HTMLEscapeString(fn.Info.Name))
 	srcIndent := indentation(fn.Info.Name)
