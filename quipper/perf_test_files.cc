@@ -128,9 +128,10 @@ const std::vector<const char*>& GetPerfPipedDataFiles() {
 }
 
 const std::vector<const char*>& GetCorruptedPerfPipedDataFiles()  {
-  static const std::vector<const char*>* files = new std::vector<const char*> {
-    // Has a SAMPLE event with size set to zero. Don't go into an infinite loop!
-    "perf.data.piped.corrupted.zero_size_sample-3.2",
+  static const std::vector<const char*>* files = new std::vector<const char*>{
+      // Has a SAMPLE event with size set to zero. Don't go into an infinite
+      // loop.
+      "perf.data.piped.corrupted.zero_size_sample-3.2",
   };
   return *files;
 }

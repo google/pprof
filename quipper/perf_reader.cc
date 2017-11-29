@@ -246,7 +246,7 @@ bool PerfReader::ReadFromPointer(const char* data, size_t size) {
 
 bool PerfReader::ReadFromData(DataReader* data) {
   if (data->size() == 0) {
-    LOG(ERROR) << "Input data is empty!";
+    LOG(ERROR) << "Input data is empty";
     return false;
   }
   if (!ReadHeader(data))

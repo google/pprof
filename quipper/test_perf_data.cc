@@ -44,7 +44,7 @@ void SwapBitfieldOfBits(u8* field, size_t len) {
 
 ExamplePerfDataFileHeader::ExamplePerfDataFileHeader(
     const unsigned long features) {  
-  CHECK_EQ(112U, sizeof(perf_file_attr)) << "perf_file_attr has changed size!";
+  CHECK_EQ(112U, sizeof(perf_file_attr)) << "perf_file_attr has changed size";
   header_ = {
     .magic = kPerfMagic,
     .size = 104,

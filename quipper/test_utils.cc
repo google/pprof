@@ -176,7 +176,7 @@ bool GetPerfBuildIDMap(const string& filename,
 }
 
 namespace {
-// Running tests while this is true will blindly make tests pass! So, remember
+// Running tests while this is true will blindly make tests pass. So, remember
 // to look at the diffs and explain them before submitting.
 static const bool kWriteNewGoldenFiles = false;
 
@@ -213,11 +213,11 @@ bool CheckPerfDataAgainstBaseline(const string& filename) {
   if (kWriteNewGoldenFiles) {
     string existing_input_pb_text = existing_input_file + ".new";
     if (matches_baseline) {
-      LOG(INFO) << "NOT writing identical golden file! "
-                << existing_input_pb_text;
+      LOG(ERROR) << "Not writing non-identical golden file: "
+                 << existing_input_pb_text;
       return true;
     }
-    LOG(INFO) << "Writing new golden file! " << existing_input_pb_text;
+    LOG(INFO) << "Writing new golden file: " << existing_input_pb_text;
     BufferToFile(existing_input_pb_text, protobuf_representation);
 
     return true;

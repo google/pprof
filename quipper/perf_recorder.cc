@@ -90,7 +90,7 @@ bool PerfRecorder::RunCommandAndGetSerializedOutput(
     const double time_sec,
     string* output_string) {
   if (!ValidatePerfCommandLine(perf_args)) {
-    LOG(ERROR) << "Perf arguments are not safe to run!";
+    LOG(ERROR) << "Perf arguments are not safe to run";
     return false;
   }
 
