@@ -295,8 +295,20 @@ bool PerfSerializer::DeserializeEvent(
       if (DeserializeReadEvent(event_proto.read_event(), event))
         event_deserialized = true;
       break;
-    case PERF_RECORD_MAX:
     default:
+      // User type events are marked as deserialized because they don't
+      // have non-header data in perf.data proto.
+      if (event_proto.header().type() >= PERF_RECORD_USER_TYPE_START &&
+          event_proto.header().type() < PERF_RECORD_HEADER_MAX) {
+        event_deserialized = true;
+        if (event_proto.header().size() != sizeof(perf_event_header)) {
+          LOG(ERROR) << "Size mismatch for header: "
+                     << event_proto.header().type()
+                     << ", expected: " << sizeof(perf_event_header)
+                     << ", actual: " << event_proto.header().size();
+          event_deserialized = false;
+        }
+      }
       break;
   }
   if (!event_deserialized) {
