@@ -12,7 +12,7 @@ package quipper;
 //
 // See $kernel/tools/perf/design.txt for more details.
 
-// Next tag: 15
+// Next tag: 17
 message PerfDataProto {
 
   // Perf event attribute. Stores the event description.
@@ -558,6 +558,33 @@ message PerfDataProto {
     optional uint64 cpu_list_md5_prefix = 5;
   }
 
+  // Next tag: 4
+  message PerfPMUMappingsMetadata {
+    // Mapping type.
+    optional uint32 type = 1;
+
+    // Mapping name.
+    optional string name = 2;
+
+    // Mapping name's md5 prefix.
+    optional uint64 name_md5_prefix = 3;
+  }
+
+  // Next tag: 5
+  message PerfGroupDescMetadata {
+    // Group name.
+    optional string name = 1;
+
+    // Group name's md5 prefix.
+    optional uint64 name_md5_prefix = 2;
+
+    // Group's leader index.
+    optional uint32 leader_idx = 3;
+
+    // Number of members in the group.
+    optional uint32 num_members = 4;
+  }
+
   repeated PerfFileAttr file_attrs = 1;
   repeated PerfEvent events = 2;
 
@@ -586,6 +613,10 @@ message PerfDataProto {
   optional PerfCPUTopologyMetadata cpu_topology = 11;
 
   repeated PerfNodeTopologyMetadata numa_topology = 12;
+
+  repeated PerfPMUMappingsMetadata pmu_mappings = 15;
+
+  repeated PerfGroupDescMetadata group_desc = 16;
 
   // Next tag: 9
   message StringMetadata {

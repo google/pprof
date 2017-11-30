@@ -24,6 +24,8 @@ namespace quipper {
 
 struct ParsedEvent;
 struct PerfFileAttr;
+struct PerfGroupDescMetadata;
+struct PerfPMUMappingsMetadata;
 struct PerfNodeTopologyMetadata;
 struct PerfCPUTopologyMetadata;
 struct PerfEventStats;
@@ -154,6 +156,20 @@ class PerfSerializer {
   bool DeserializeNodeTopologyMetadata(
       const PerfDataProto_PerfNodeTopologyMetadata& proto_metadata,
       PerfNodeTopologyMetadata* metadata) const;
+
+  bool SerializePMUMappingsMetadata(
+      const PerfPMUMappingsMetadata& metadata,
+      PerfDataProto_PerfPMUMappingsMetadata* proto_metadata) const;
+  bool DeserializePMUMappingsMetadata(
+      const PerfDataProto_PerfPMUMappingsMetadata& proto_metadata,
+      PerfPMUMappingsMetadata* metadata) const;
+
+  bool SerializeGroupDescMetadata(
+      const PerfGroupDescMetadata& metadata,
+      PerfDataProto_PerfGroupDescMetadata* proto_metadata) const;
+  bool DeserializeGroupDescMetadata(
+      const PerfDataProto_PerfGroupDescMetadata& proto_metadata,
+      PerfGroupDescMetadata* metadata) const;
 
   static void SerializeParserStats(const PerfEventStats& stats,
                                    PerfDataProto* perf_data_proto);

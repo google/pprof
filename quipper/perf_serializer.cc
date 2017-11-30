@@ -917,6 +917,42 @@ bool PerfSerializer::DeserializeNodeTopologyMetadata(
   return true;
 }
 
+bool PerfSerializer::SerializePMUMappingsMetadata(
+    const PerfPMUMappingsMetadata& metadata,
+    PerfDataProto_PerfPMUMappingsMetadata* proto_metadata) const {
+  proto_metadata->set_type(metadata.type);
+  proto_metadata->set_name(metadata.name);
+  proto_metadata->set_name_md5_prefix(Md5Prefix(metadata.name));
+  return true;
+}
+
+bool PerfSerializer::DeserializePMUMappingsMetadata(
+    const PerfDataProto_PerfPMUMappingsMetadata& proto_metadata,
+    PerfPMUMappingsMetadata* metadata) const {
+  metadata->type = proto_metadata.type();
+  metadata->name = proto_metadata.name();
+  return true;
+}
+
+bool PerfSerializer::SerializeGroupDescMetadata(
+    const PerfGroupDescMetadata& metadata,
+    PerfDataProto_PerfGroupDescMetadata* proto_metadata) const {
+  proto_metadata->set_name(metadata.name);
+  proto_metadata->set_name_md5_prefix(Md5Prefix(metadata.name));
+  proto_metadata->set_leader_idx(metadata.leader_idx);
+  proto_metadata->set_num_members(metadata.num_members);
+  return true;
+}
+
+bool PerfSerializer::DeserializeGroupDescMetadata(
+    const PerfDataProto_PerfGroupDescMetadata& proto_metadata,
+    PerfGroupDescMetadata* metadata) const {
+  metadata->name = proto_metadata.name();
+  metadata->leader_idx = proto_metadata.leader_idx();
+  metadata->num_members = proto_metadata.num_members();
+  return true;
+}
+
 // static
 void PerfSerializer::SerializeParserStats(const PerfEventStats& stats,
                                           PerfDataProto* perf_data_proto) {

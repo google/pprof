@@ -50,24 +50,22 @@ typedef u32 event_desc_num_unique_ids;
 // The type of the number of nodes field in NUMA topology.
 typedef u32 numa_topology_num_nodes_type;
 
+// The type of the number of mappings in pmu mappings.
+typedef u32 pmu_mappings_num_mappings_type;
+
+// The type of the number of groups in group desc.
+typedef u32 group_desc_num_groups_type;
+
 // A mask that is applied to |metadata_mask()| in order to get a mask for
 // only the metadata supported by quipper.
 const uint32_t kSupportedMetadataMask =
-    1 << HEADER_TRACING_DATA |
-    1 << HEADER_BUILD_ID |
-    1 << HEADER_HOSTNAME |
-    1 << HEADER_OSRELEASE |
-    1 << HEADER_VERSION |
-    1 << HEADER_ARCH |
-    1 << HEADER_NRCPUS |
-    1 << HEADER_CPUDESC |
-    1 << HEADER_CPUID |
-    1 << HEADER_TOTAL_MEM |
-    1 << HEADER_CMDLINE |
-    1 << HEADER_EVENT_DESC |
-    1 << HEADER_CPU_TOPOLOGY |
-    1 << HEADER_NUMA_TOPOLOGY |
-    1 << HEADER_BRANCH_STACK;
+    1 << HEADER_TRACING_DATA | 1 << HEADER_BUILD_ID | 1 << HEADER_HOSTNAME |
+    1 << HEADER_OSRELEASE | 1 << HEADER_VERSION | 1 << HEADER_ARCH |
+    1 << HEADER_NRCPUS | 1 << HEADER_CPUDESC | 1 << HEADER_CPUID |
+    1 << HEADER_TOTAL_MEM | 1 << HEADER_CMDLINE | 1 << HEADER_EVENT_DESC |
+    1 << HEADER_CPU_TOPOLOGY | 1 << HEADER_NUMA_TOPOLOGY |
+    1 << HEADER_BRANCH_STACK | 1 << HEADER_PMU_MAPPINGS |
+    1 << HEADER_GROUP_DESC;
 
 // By default, the build ID event has PID = -1.
 const uint32_t kDefaultBuildIDEventPid = static_cast<uint32_t>(-1);
@@ -375,6 +373,8 @@ size_t PerfReader::GetSize() const {
   total_size += GetEventDescMetadataSize();
   total_size += GetCPUTopologyMetadataSize();
   total_size += GetNUMATopologyMetadataSize();
+  total_size += GetPMUMappingsMetadataSize();
+  total_size += GetGroupDescMetadataSize();
   return total_size;
 }
 
@@ -942,18 +942,21 @@ bool PerfReader::ReadMetadata(DataReader* data) {
         return false;
       break;
     case HEADER_EVENT_DESC:
-      if (!ReadEventDescMetadata(data, type, size))
-        return false;
+      if (!ReadEventDescMetadata(data)) return false;
       break;
     case HEADER_CPU_TOPOLOGY:
-      if (!ReadCPUTopologyMetadata(data, type, size))
-        return false;
+      if (!ReadCPUTopologyMetadata(data)) return false;
       break;
     case HEADER_NUMA_TOPOLOGY:
-      if (!ReadNUMATopologyMetadata(data, type, size))
-        return false;
+      if (!ReadNUMATopologyMetadata(data)) return false;
       break;
     case HEADER_BRANCH_STACK:
+      break;
+    case HEADER_PMU_MAPPINGS:
+      if (!ReadPMUMappingsMetadata(data, size)) return false;
+      break;
+    case HEADER_GROUP_DESC:
+      if (!ReadGroupDescMetadata(data)) return false;
       break;
     default:
       LOG(INFO) << "Unsupported metadata type, skipping: " << type;
@@ -1097,8 +1100,7 @@ bool PerfReader::ReadUint64Metadata(DataReader* data, u32 type, size_t size) {
                                             proto_->add_uint64_metadata());
   return true;
 }
-bool PerfReader::ReadEventDescMetadata(DataReader* data, u32 type,
-                                       size_t size) {
+bool PerfReader::ReadEventDescMetadata(DataReader* data) {
   // Structure:
   // u32 nr_events
   // u32 sizeof(perf_event_attr)
@@ -1154,8 +1156,7 @@ bool PerfReader::ReadEventDescMetadata(DataReader* data, u32 type,
   return true;
 }
 
-bool PerfReader::ReadCPUTopologyMetadata(DataReader* data, u32 type,
-                                         size_t size) {
+bool PerfReader::ReadCPUTopologyMetadata(DataReader* data) {
   num_siblings_type num_core_siblings;
   if (!data->ReadUint32(&num_core_siblings)) {
     LOG(ERROR) << "Error reading num core siblings.";
@@ -1186,9 +1187,7 @@ bool PerfReader::ReadCPUTopologyMetadata(DataReader* data, u32 type,
   return true;
 }
 
-bool PerfReader::ReadNUMATopologyMetadata(DataReader* data,
-                                          u32 type,
-                                          size_t size) {
+bool PerfReader::ReadNUMATopologyMetadata(DataReader* data) {
   numa_topology_num_nodes_type num_nodes;
   if (!data->ReadUint32(&num_nodes)) {
     LOG(ERROR) << "Error reading NUMA topology num nodes.";
@@ -1206,6 +1205,62 @@ bool PerfReader::ReadNUMATopologyMetadata(DataReader* data,
     }
     serializer_.SerializeNodeTopologyMetadata(node,
                                               proto_->add_numa_topology());
+  }
+  return true;
+}
+
+bool PerfReader::ReadPMUMappingsMetadata(DataReader* data, size_t size) {
+  pmu_mappings_num_mappings_type num_mappings;
+  auto begin_offset = data->Tell();
+  if (!data->ReadUint32(&num_mappings)) {
+    LOG(ERROR) << "Error reading the number of PMU mappings.";
+    return false;
+  }
+
+  // Check size of the data read in addition to the iteration based on the
+  // number of PMU mappings because the number of pmu mappings is always zero
+  // in piped perf.data file.
+  //
+  // The number of PMU mappings is initialized to zero and after all the
+  // mappings are wirtten to the perf.data files, this value is set to the
+  // number of PMU mappings written. This logic doesn't work in pipe mode. So,
+  // the number of PMU mappings is always zero.
+  // Fix to write the number of PMU mappings before writing the actual PMU
+  // mappings landed upstream in 4.14. But the check for size is required as
+  // long as there are machines with older version of perf.
+  for (u32 i = 0; i < num_mappings || data->Tell() - begin_offset < size; ++i) {
+    PerfPMUMappingsMetadata mapping;
+    if (!data->ReadUint32(&mapping.type) ||
+        !data->ReadStringWithSizeFromData(&mapping.name)) {
+      LOG(ERROR) << "Error reading PMU mapping info for mapping #" << i;
+      return false;
+    }
+    serializer_.SerializePMUMappingsMetadata(mapping,
+                                             proto_->add_pmu_mappings());
+  }
+  if (data->Tell() - begin_offset != size) {
+    LOG(ERROR) << "Size from the header doesn't match the read size";
+    return false;
+  }
+  return true;
+}
+
+bool PerfReader::ReadGroupDescMetadata(DataReader* data) {
+  group_desc_num_groups_type num_groups;
+  if (!data->ReadUint32(&num_groups)) {
+    LOG(ERROR) << "Error reading group desc num groups.";
+    return false;
+  }
+
+  for (u32 i = 0; i < num_groups; ++i) {
+    PerfGroupDescMetadata group;
+    if (!data->ReadStringWithSizeFromData(&group.name) ||
+        !data->ReadUint32(&group.leader_idx) ||
+        !data->ReadUint32(&group.num_members)) {
+      LOG(ERROR) << "Error reading group desc info for group #" << i;
+      return false;
+    }
+    serializer_.SerializeGroupDescMetadata(group, proto_->add_group_desc());
   }
   return true;
 }
@@ -1275,8 +1330,7 @@ bool PerfReader::ReadPipedData(DataReader* data) {
       break;
     case PERF_RECORD_HEADER_EVENT_DESC:
       set_metadata_mask_bit(HEADER_EVENT_DESC);
-      result = ReadEventDescMetadata(data, HEADER_EVENT_DESC,
-                                     size_without_header);
+      result = ReadEventDescMetadata(data);
       break;
     case PERF_RECORD_HEADER_TRACING_DATA:
       set_metadata_mask_bit(HEADER_TRACING_DATA);
@@ -1352,13 +1406,22 @@ bool PerfReader::ReadPipedData(DataReader* data) {
       break;
     case PERF_RECORD_HEADER_CPU_TOPOLOGY:
       set_metadata_mask_bit(HEADER_CPU_TOPOLOGY);
-      result = ReadCPUTopologyMetadata(data, HEADER_CPU_TOPOLOGY,
-                                       size_without_header);
+      result = ReadCPUTopologyMetadata(data);
       break;
     case PERF_RECORD_HEADER_NUMA_TOPOLOGY:
       set_metadata_mask_bit(HEADER_NUMA_TOPOLOGY);
-      result = ReadNUMATopologyMetadata(data, HEADER_NUMA_TOPOLOGY,
-                                        size_without_header);
+      result = ReadNUMATopologyMetadata(data);
+      break;
+    case PERF_RECORD_HEADER_PMU_MAPPINGS:
+      set_metadata_mask_bit(HEADER_PMU_MAPPINGS);
+      result = ReadPMUMappingsMetadata(data, size_without_header);
+      break;
+    case PERF_RECORD_HEADER_GROUP_DESC:
+      // This case is not tested as we could not generate perf.data in piped
+      // mode with group desc until perf 4.4. So, use this metadata with
+      // caution.
+      set_metadata_mask_bit(HEADER_GROUP_DESC);
+      result = ReadGroupDescMetadata(data);
       break;
     default:
       // For unsupported event types, log a warning only if the type is an
@@ -1523,18 +1586,21 @@ bool PerfReader::WriteMetadata(const struct perf_file_header& header,
         return false;
       break;
     case HEADER_EVENT_DESC:
-      if (!WriteEventDescMetadata(type, data))
-        return false;
+      if (!WriteEventDescMetadata(data)) return false;
       break;
     case HEADER_CPU_TOPOLOGY:
-      if (!WriteCPUTopologyMetadata(type, data))
-        return false;
+      if (!WriteCPUTopologyMetadata(data)) return false;
       break;
     case HEADER_NUMA_TOPOLOGY:
-      if (!WriteNUMATopologyMetadata(type, data))
-        return false;
+      if (!WriteNUMATopologyMetadata(data)) return false;
       break;
     case HEADER_BRANCH_STACK:
+      break;
+    case HEADER_PMU_MAPPINGS:
+      if (!WritePMUMappingsMetadata(data)) return false;
+      break;
+    case HEADER_GROUP_DESC:
+      if (!WriteGroupDescMetadata(data)) return false;
       break;
     default: LOG(ERROR) << "Unsupported metadata type: " << type;
       return false;
@@ -1630,7 +1696,7 @@ bool PerfReader::WriteUint64Metadata(u32 type, DataWriter* data) const {
   return false;
 }
 
-bool PerfReader::WriteEventDescMetadata(u32 type, DataWriter* data) const {
+bool PerfReader::WriteEventDescMetadata(DataWriter* data) const {
   CheckNoPerfEventAttrPadding();
 
   if (attrs().size() > event_types().size()) {
@@ -1679,7 +1745,7 @@ bool PerfReader::WriteEventDescMetadata(u32 type, DataWriter* data) const {
   return true;
 }
 
-bool PerfReader::WriteCPUTopologyMetadata(u32 type, DataWriter* data) const {
+bool PerfReader::WriteCPUTopologyMetadata(DataWriter* data) const {
   PerfCPUTopologyMetadata cpu_topology;
   serializer_.DeserializeCPUTopologyMetadata(proto_->cpu_topology(),
                                              &cpu_topology);
@@ -1705,7 +1771,7 @@ bool PerfReader::WriteCPUTopologyMetadata(u32 type, DataWriter* data) const {
   return true;
 }
 
-bool PerfReader::WriteNUMATopologyMetadata(u32 type, DataWriter* data) const {
+bool PerfReader::WriteNUMATopologyMetadata(DataWriter* data) const {
   numa_topology_num_nodes_type num_nodes = proto_->numa_topology().size();
   if (!data->WriteDataValue(&num_nodes, sizeof(num_nodes), "num nodes"))
     return false;
@@ -1720,6 +1786,45 @@ bool PerfReader::WriteNUMATopologyMetadata(u32 type, DataWriter* data) const {
         !data->WriteDataValue(&node.free_memory, sizeof(node.free_memory),
                               "node free memory") ||
         !data->WriteStringWithSizeToData(node.cpu_list)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool PerfReader::WritePMUMappingsMetadata(DataWriter* data) const {
+  pmu_mappings_num_mappings_type num_mappings = proto_->pmu_mappings().size();
+  if (!data->WriteDataValue(&num_mappings, sizeof(num_mappings),
+                            "num mappings"))
+    return false;
+
+  for (const auto& mapping_proto : proto_->pmu_mappings()) {
+    PerfPMUMappingsMetadata mapping;
+    serializer_.DeserializePMUMappingsMetadata(mapping_proto, &mapping);
+
+    if (!data->WriteDataValue(&mapping.type, sizeof(mapping.type),
+                              "mapping type") ||
+        !data->WriteStringWithSizeToData(mapping.name)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool PerfReader::WriteGroupDescMetadata(DataWriter* data) const {
+  group_desc_num_groups_type num_groups = proto_->group_desc().size();
+  if (!data->WriteDataValue(&num_groups, sizeof(num_groups), "num groups"))
+    return false;
+
+  for (const auto& group_proto : proto_->group_desc()) {
+    PerfGroupDescMetadata group;
+    serializer_.DeserializeGroupDescMetadata(group_proto, &group);
+
+    if (!data->WriteStringWithSizeToData(group.name) ||
+        !data->WriteDataValue(&group.leader_idx, sizeof(group.leader_idx),
+                              "group leader index") ||
+        !data->WriteDataValue(&group.num_members, sizeof(group.num_members),
+                              "group num members")) {
       return false;
     }
   }
@@ -1908,6 +2013,25 @@ size_t PerfReader::GetNUMATopologyMetadataSize() const {
     size += sizeof(node.id());
     size += sizeof(node.total_memory()) + sizeof(node.free_memory());
     size += ExpectedStorageSizeOf(node.cpu_list());
+  }
+  return size;
+}
+
+size_t PerfReader::GetPMUMappingsMetadataSize() const {
+  size_t size = sizeof(pmu_mappings_num_mappings_type);
+  for (const auto& node : proto_->pmu_mappings()) {
+    size += sizeof(node.type());
+    size += ExpectedStorageSizeOf(node.name());
+  }
+  return size;
+}
+
+size_t PerfReader::GetGroupDescMetadataSize() const {
+  size_t size = sizeof(group_desc_num_groups_type);
+  for (const auto& group : proto_->group_desc()) {
+    size += ExpectedStorageSizeOf(group.name());
+    size += sizeof(group.leader_idx());
+    size += sizeof(group.num_members());
   }
   return size;
 }

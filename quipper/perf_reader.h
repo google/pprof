@@ -176,9 +176,11 @@ class PerfReader {
 
   bool ReadUint32Metadata(DataReader* data, u32 type, size_t size);
   bool ReadUint64Metadata(DataReader* data, u32 type, size_t size);
-  bool ReadCPUTopologyMetadata(DataReader* data, u32 type, size_t size);
-  bool ReadNUMATopologyMetadata(DataReader* data, u32 type, size_t size);
-  bool ReadEventDescMetadata(DataReader* data, u32 type, size_t size);
+  bool ReadCPUTopologyMetadata(DataReader* data);
+  bool ReadNUMATopologyMetadata(DataReader* data);
+  bool ReadPMUMappingsMetadata(DataReader* data, size_t size);
+  bool ReadGroupDescMetadata(DataReader* data);
+  bool ReadEventDescMetadata(DataReader* data);
 
   // Read perf data from piped perf output data.
   bool ReadPipedData(DataReader* data);
@@ -213,9 +215,11 @@ class PerfReader {
       DataWriter* data) const;
   bool WriteUint32Metadata(u32 type, DataWriter* data) const;
   bool WriteUint64Metadata(u32 type, DataWriter* data) const;
-  bool WriteEventDescMetadata(u32 type, DataWriter* data) const;
-  bool WriteCPUTopologyMetadata(u32 type, DataWriter* data) const;
-  bool WriteNUMATopologyMetadata(u32 type, DataWriter* data) const;
+  bool WriteEventDescMetadata(DataWriter* data) const;
+  bool WriteCPUTopologyMetadata(DataWriter* data) const;
+  bool WriteNUMATopologyMetadata(DataWriter* data) const;
+  bool WritePMUMappingsMetadata(DataWriter* data) const;
+  bool WriteGroupDescMetadata(DataWriter* data) const;
 
   // For reading event blocks within piped perf data.
   bool ReadAttrEventBlock(DataReader* data, size_t size);
@@ -235,6 +239,8 @@ class PerfReader {
   size_t GetEventDescMetadataSize() const;
   size_t GetCPUTopologyMetadataSize() const;
   size_t GetNUMATopologyMetadataSize() const;
+  size_t GetPMUMappingsMetadataSize() const;
+  size_t GetGroupDescMetadataSize() const;
 
   // Returns true if we should write the number of strings for the string
   // metadata of type |type|.

@@ -43,6 +43,17 @@ struct PerfNodeTopologyMetadata {
   string cpu_list;
 };
 
+struct PerfPMUMappingsMetadata {
+  uint32_t type;
+  string name;
+};
+
+struct PerfGroupDescMetadata {
+  string name;
+  uint32_t leader_idx;
+  uint32_t num_members;
+};
+
 }  // namespace quipper
 
 #endif  // CHROMIUMOS_WIDE_PROFILING_PERF_DATA_STRUCTURES_H_

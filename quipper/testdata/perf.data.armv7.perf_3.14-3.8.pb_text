@@ -53806,3 +53806,23 @@ string_metadata {
     value_md5_prefix: 16946228718730193367
   }
 }
+pmu_mappings {
+  type: 1
+  name: "software"
+  name_md5_prefix: 18012728053178608889
+}
+pmu_mappings {
+  type: 4
+  name: "ARMv7 Cortex-A15"
+  name_md5_prefix: 244378043367055190
+}
+pmu_mappings {
+  type: 2
+  name: "tracepoint"
+  name_md5_prefix: 1021014226246753557
+}
+pmu_mappings {
+  type: 5
+  name: "breakpoint"
+  name_md5_prefix: 15231791590021874039
+}
