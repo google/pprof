@@ -361,7 +361,7 @@ func calculatePercentile(partial, sum int64) string {
 	case percentile > 10:
 		return "percentile_10"
 	}
-	return "percentile_0"
+	return ""
 }
 
 // printFunctionSourceLine prints a source line and the corresponding assembly.
