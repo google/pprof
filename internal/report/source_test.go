@@ -4,14 +4,57 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/google/pprof/internal/binutils"
+	"github.com/google/pprof/internal/graph"
 	"github.com/google/pprof/profile"
 )
+
+func TestCalculatePercentiles(t *testing.T) {
+	for _, testCase := range []struct {
+		fnodes graph.Nodes
+		output map[float64]float64
+	}{
+		{
+			fnodes: []*graph.Node{},
+			output: nil,
+		},
+		{
+			fnodes: []*graph.Node{
+				&graph.Node{
+					Cum: 0,
+				},
+				&graph.Node{
+					Cum: 8,
+				},
+			},
+			output: map[float64]float64{10: 0, 20: 0, 40: 0, 60: 8, 80: 8},
+		},
+		{
+			fnodes: []*graph.Node{
+				&graph.Node{
+					Cum: 10,
+				},
+				&graph.Node{
+					Cum: 5,
+				},
+				&graph.Node{
+					Cum: 8,
+				},
+			},
+			output: map[float64]float64{10: 5, 20: 5, 40: 8, 60: 8, 80: 10},
+		},
+	} {
+		if percentiles := calculatePercentiles(testCase.fnodes); !reflect.DeepEqual(percentiles, testCase.output) {
+			t.Errorf("%v is not equal to %v", percentiles, testCase.output)
+		}
+	}
+}
 
 func TestWebList(t *testing.T) {
 	if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
