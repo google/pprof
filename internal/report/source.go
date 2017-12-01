@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -214,12 +215,71 @@ func PrintWebList(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFiles int) er
 		}
 
 		printFunctionHeader(w, ff.functionName, path, n.Flat, n.Cum, rpt)
+		percentiles := calculatePercentiles(fnodes)
 		for _, fn := range fnodes {
-			printFunctionSourceLine(w, fn, asm[fn.Info.Lineno], reader, n.Cum, rpt)
+			printFunctionSourceLine(w, fn, asm[fn.Info.Lineno], reader, getPercentileString(float64(fn.Cum), percentiles), rpt)
 		}
 		printFunctionClosing(w)
 	}
 	return nil
+}
+
+func getPercentileString(cumSum float64, percentiles map[float64]float64) string {
+	if cumSum == 0 {
+		return ""
+	}
+	switch {
+	case cumSum >= percentiles[80]:
+		return " percentile_80"
+	case cumSum >= percentiles[60]:
+		return " percentile_60"
+	case cumSum >= percentiles[40]:
+		return " percentile_40"
+	case cumSum >= percentiles[20]:
+		return " percentile_20"
+	case cumSum >= percentiles[10]:
+		return " percentile_10"
+	}
+	return ""
+}
+
+// calculate percentile expects cumSums to be sorted and
+// to contain unique elements. It also expects the percentile to be between 0 and 99.
+func calculatePercentile(percentile float64, cumSums []float64) float64 {
+	rank := percentile / 100 * float64(len(cumSums))
+	return cumSums[int64(rank)]
+}
+
+func getSetOfCumValues(fnodes graph.Nodes) []float64 {
+	mapOfCumValues := make(map[int64]bool)
+
+	for _, fn := range fnodes {
+		if _, ok := mapOfCumValues[fn.Cum]; !ok {
+			mapOfCumValues[fn.Cum] = true
+		}
+	}
+
+	setOfCumValues := make([]float64, 0, len(mapOfCumValues))
+	for key, _ := range mapOfCumValues {
+		setOfCumValues = append(setOfCumValues, float64(key))
+	}
+	return setOfCumValues
+}
+
+// calculatePercentiles returns nil when the fnodes is 0
+// because its result will never be used in such a case.
+func calculatePercentiles(fnodes graph.Nodes) map[float64]float64 {
+	if len(fnodes) == 0 {
+		return nil
+	}
+	setOfCumValues := getSetOfCumValues(fnodes)
+	percentiles := map[float64]float64{80: 0, 60: 0, 40: 0, 20: 0, 10: 0}
+	sort.Float64s(setOfCumValues)
+	for key, _ := range percentiles {
+		percentiles[key] = calculatePercentile(key, setOfCumValues)
+	}
+
+	return percentiles
 }
 
 // sourceCoordinates returns the lowest and highest line numbers from
@@ -347,40 +407,22 @@ func printFunctionHeader(w io.Writer, name, path string, flatSum, cumSum int64, 
 		measurement.Percentage(cumSum, rpt.total))
 }
 
-func calculatePercentile(partial, sum int64) string {
-	percentile := partial * 100 / sum
-	switch {
-	case percentile > 80:
-		return "percentile_80"
-	case percentile > 60:
-		return "percentile_60"
-	case percentile > 40:
-		return "percentile_40"
-	case percentile > 20:
-		return "percentile_20"
-	case percentile > 10:
-		return "percentile_10"
-	}
-	return ""
-}
-
 // printFunctionSourceLine prints a source line and the corresponding assembly.
-func printFunctionSourceLine(w io.Writer, fn *graph.Node, assembly []assemblyInstruction, reader *sourceReader, cumSum int64, rpt *Report) {
-	percentile := calculatePercentile(fn.Cum, cumSum)
+func printFunctionSourceLine(w io.Writer, fn *graph.Node, assembly []assemblyInstruction, reader *sourceReader, percentileString string, rpt *Report) {
 	if len(assembly) == 0 {
 		fmt.Fprintf(w,
-			"<span class=line> %6d</span> <span class=\"nop %s\">  %10s %10s %8s  %s </span>\n",
+			"<span class=line> %6d</span> <span class=\"nop%s\">  %10s %10s %8s  %s </span>\n",
 			fn.Info.Lineno,
-			percentile,
+			percentileString,
 			valueOrDot(fn.Flat, rpt), valueOrDot(fn.Cum, rpt),
 			"", template.HTMLEscapeString(fn.Info.Name))
 		return
 	}
 
 	fmt.Fprintf(w,
-		"<span class=line> %6d</span> <span class=\"deadsrc %s\">  %10s %10s %8s  %s </span>",
+		"<span class=line> %6d</span> <span class=\"deadsrc%s\">  %10s %10s %8s  %s </span>",
 		fn.Info.Lineno,
-		percentile,
+		percentileString,
 		valueOrDot(fn.Flat, rpt), valueOrDot(fn.Cum, rpt),
 		"", template.HTMLEscapeString(fn.Info.Name))
 	srcIndent := indentation(fn.Info.Name)
