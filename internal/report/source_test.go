@@ -26,10 +26,10 @@ func TestCalculatePercentiles(t *testing.T) {
 		},
 		{
 			fnodes: []*graph.Node{
-				&graph.Node{
+				{
 					Cum: 0,
 				},
-				&graph.Node{
+				{
 					Cum: 8,
 				},
 			},
@@ -37,13 +37,13 @@ func TestCalculatePercentiles(t *testing.T) {
 		},
 		{
 			fnodes: []*graph.Node{
-				&graph.Node{
+				{
 					Cum: 10,
 				},
-				&graph.Node{
+				{
 					Cum: 5,
 				},
-				&graph.Node{
+				{
 					Cum: 8,
 				},
 			},

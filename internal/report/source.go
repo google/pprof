@@ -260,7 +260,7 @@ func getSetOfCumValues(fnodes graph.Nodes) []float64 {
 	}
 
 	setOfCumValues := make([]float64, 0, len(mapOfCumValues))
-	for key, _ := range mapOfCumValues {
+	for key := range mapOfCumValues {
 		setOfCumValues = append(setOfCumValues, float64(key))
 	}
 	return setOfCumValues
@@ -275,7 +275,7 @@ func calculatePercentiles(fnodes graph.Nodes) map[float64]float64 {
 	setOfCumValues := getSetOfCumValues(fnodes)
 	percentiles := map[float64]float64{80: 0, 60: 0, 40: 0, 20: 0, 10: 0}
 	sort.Float64s(setOfCumValues)
-	for key, _ := range percentiles {
+	for key := range percentiles {
 		percentiles[key] = calculatePercentile(key, setOfCumValues)
 	}
 
