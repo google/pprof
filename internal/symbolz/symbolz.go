@@ -66,7 +66,7 @@ func Symbolize(p *profile.Profile, force bool, sources plugin.MappingSources, sy
 // symbolz returns the corresponding symbolz source for a profile URL.
 func symbolz(source string) string {
 	if url, err := url.Parse(source); err == nil && url.Host != "" {
-		if strings.Contains(url.Path, "/debug/pprof/") {
+		if strings.Contains(url.Path, "/debug/pprof/") || strings.HasSuffix(url.Path, "/pprof/profile") || strings.HasSuffix(url.Path, "/pprof/heap") {
 			url.Path = path.Clean(url.Path + "/../symbol")
 		} else {
 			url.Path = "/symbolz"
