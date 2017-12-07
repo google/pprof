@@ -212,6 +212,16 @@ void CheckFilenameAndBuildIDMethods(PerfReader* reader,
   EXPECT_EQ(expected_map, perf_build_id_map);
 }
 
+void CopyActualEvents(const std::vector<ParsedEvent> &events,
+                      PerfDataProto *out) {
+  for (const auto &ev : events) {
+    if (ev.event_ptr == nullptr) {
+      continue;
+    }
+    *out->add_events() = *ev.event_ptr;
+  }
+}
+
 }  // namespace
 
 TEST(PerfParserTest, TestDSOAndOffsetConstructor) {
@@ -1457,7 +1467,6 @@ TEST(PerfParserTest, HandlesFinishedRoundEventsAndSortsByTime) {
       testing::SampleInfo().Tid(1001).Time(12300010)).WriteTo(&input);
   // becomes: 0x0000, 0x1000, 0
 
-
   // PERF_RECORD_SAMPLE
   testing::ExamplePerfSampleEvent(                                // 1
       testing::SampleInfo().Ip(0x00000000001c1000).Tid(1001).Time(12300020))
@@ -1547,7 +1556,6 @@ TEST(PerfParserTest, MmapCoversEntireAddressSpace) {
   testing::ExamplePerfSampleEvent(
       testing::SampleInfo().Ip(0xffffffff8100cafe).Tid(1234, 1235))
       .WriteTo(&input);
-
 
   //
   // Parse input.
@@ -1916,9 +1924,6 @@ TEST(PerfParserTest, Regression62446346_Perf3_12_0_11) {
   EXPECT_EQ(0, parser.stats().num_sample_events);
   EXPECT_EQ(0, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
-
-  {
     PerfDataProto expected;
     {
       auto* ev = expected.add_events();
@@ -1930,17 +1935,9 @@ TEST(PerfParserTest, Regression62446346_Perf3_12_0_11) {
     }
 
     PerfDataProto actual;
-    for (const auto& ev : events) {
-      if (ev.event_ptr == nullptr) {
-        continue;
-      }
-
-      *actual.add_events() = *ev.event_ptr;
-    }
-
+    CopyActualEvents(parser.parsed_events(), &actual);
     EXPECT_TRUE(PartiallyEqualsProto(actual, expected));
-  }
-  ASSERT_EQ(1, events.size());
+    ASSERT_EQ(1, parser.parsed_events().size());
 }
 
 TEST(PerfParserTest, Regression62446346_Perf3_12_0_14) {
@@ -2005,7 +2002,6 @@ TEST(PerfParserTest, Regression62446346_Perf3_12_0_14) {
   EXPECT_EQ(0, parser.stats().num_sample_events);
   EXPECT_EQ(0, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
   PerfDataProto expected;
   {
     auto* ev = expected.add_events();
@@ -2017,16 +2013,9 @@ TEST(PerfParserTest, Regression62446346_Perf3_12_0_14) {
   }
 
   PerfDataProto actual;
-  for (const auto& ev : events) {
-    if (ev.event_ptr == nullptr) {
-      continue;
-    }
-
-    *actual.add_events() = *ev.event_ptr;
-  }
-
+  CopyActualEvents(parser.parsed_events(), &actual);
   EXPECT_TRUE(PartiallyEqualsProto(actual, expected));
-  ASSERT_EQ(1, events.size());
+  EXPECT_EQ(1, parser.parsed_events().size());
 }
 
 TEST(PerfParserTest, DiscontiguousMappings) {
@@ -2071,7 +2060,6 @@ TEST(PerfParserTest, DiscontiguousMappings) {
   EXPECT_EQ(0, parser.stats().num_sample_events);
   EXPECT_EQ(0, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
   // The first two mappings should have been combined.  The third should not.
   PerfDataProto expected;
   {
@@ -2092,16 +2080,9 @@ TEST(PerfParserTest, DiscontiguousMappings) {
   }
 
   PerfDataProto actual;
-  for (const auto& ev : events) {
-    if (ev.event_ptr == nullptr) {
-      continue;
-    }
-
-    *actual.add_events() = *ev.event_ptr;
-  }
+  CopyActualEvents(parser.parsed_events(), &actual);
 
   EXPECT_TRUE(PartiallyEqualsProto(actual, expected));
-  ASSERT_EQ(2, events.size());
+  EXPECT_EQ(2, parser.parsed_events().size());
 }
-
 }  // namespace quipper

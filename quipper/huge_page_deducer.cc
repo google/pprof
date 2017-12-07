@@ -2,6 +2,8 @@
 
 #include "perf_data_utils.h"
 
+#include "base/logging.h"
+
 using PerfEvent = quipper::PerfDataProto::PerfEvent;
 using MMapEvent = quipper::PerfDataProto::MMapEvent;
 
@@ -11,6 +13,22 @@ namespace {
 const char kAnonFilename[] = "//anon";
 const size_t kHugepageSize = 1 << 21;
 
+bool IsAnon(const MMapEvent& event) {
+  return event.filename() == kAnonFilename;
+}
+
+// Helper to correctly update a filename on a PerfEvent that contains an
+// MMapEvent.
+void SetMmapFilename(PerfEvent* event, const string& new_filename,
+                     uint64_t new_filename_md5_prefix) {
+  CHECK(event->has_mmap_event());
+  event->mutable_header()->set_size(
+      event->header().size() + GetUint64AlignedStringLength(new_filename) -
+      GetUint64AlignedStringLength(event->mmap_event().filename()));
+
+  event->mutable_mmap_event()->set_filename(new_filename);
+  event->mutable_mmap_event()->set_filename_md5_prefix(new_filename_md5_prefix);
+}
 }  // namespace
 
 void DeduceHugePages(RepeatedPtrField<PerfEvent>* events) {
@@ -33,17 +51,15 @@ void DeduceHugePages(RepeatedPtrField<PerfEvent>* events) {
     MMapEvent* prev_mmap = prev_event->mutable_mmap_event();
 
     const bool pid_match = prev_mmap->pid() == mmap->pid();
-    const bool tid_match = prev_mmap->tid() == mmap->tid();
 
     // perf attributes neighboring anonymous mappings under the nearby
     // filename rather than "//anon".
     const bool file_match = prev_mmap->filename() == mmap->filename() ||
-                            prev_mmap->filename() == kAnonFilename ||
-                            mmap->filename() == kAnonFilename;
+                            IsAnon(*prev_mmap) || IsAnon(*mmap);
     const bool address_contiguous =
-        prev_mmap->start() + prev_mmap->len() == mmap->start();
+        pid_match && (prev_mmap->start() + prev_mmap->len() == mmap->start());
 
-    if (!(pid_match && tid_match && file_match && address_contiguous)) {
+    if (!(file_match && address_contiguous)) {
       prev_event = event;
       continue;
     }
@@ -63,14 +79,9 @@ void DeduceHugePages(RepeatedPtrField<PerfEvent>* events) {
       }
 
       // Replace "//anon" with a regular name if possible.
-      if (prev_mmap->filename() == kAnonFilename) {
-        prev_event->mutable_header()->set_size(
-            prev_event->header().size() +
-            GetUint64AlignedStringLength(mmap->filename()) -
-            GetUint64AlignedStringLength(prev_mmap->filename()));
-
-        prev_mmap->set_filename(mmap->filename());
-        prev_mmap->set_filename_md5_prefix(mmap->filename_md5_prefix());
+      if (IsAnon(*prev_mmap)) {
+        SetMmapFilename(prev_event, mmap->filename(),
+                        mmap->filename_md5_prefix());
       }
     }
 
@@ -82,14 +93,9 @@ void DeduceHugePages(RepeatedPtrField<PerfEvent>* events) {
       }
 
       // Replace "//anon" with a regular name if possible.
-      if (mmap->filename() == kAnonFilename) {
-        event->mutable_header()->set_size(
-            event->header().size() +
-            GetUint64AlignedStringLength(prev_mmap->filename()) -
-            GetUint64AlignedStringLength(mmap->filename()));
-
-        mmap->set_filename(prev_mmap->filename());
-        mmap->set_filename_md5_prefix(prev_mmap->filename_md5_prefix());
+      if (IsAnon(*mmap)) {
+        SetMmapFilename(event, prev_mmap->filename(),
+                        prev_mmap->filename_md5_prefix());
       }
     }
 
@@ -126,17 +132,13 @@ void CombineMappings(RepeatedPtrField<PerfEvent>* events) {
     MMapEvent* prev_mmap = new_events[prev].mutable_mmap_event();
 
     const bool pid_match = prev_mmap->pid() == mmap.pid();
-    const bool tid_match = prev_mmap->tid() == mmap.tid();
-
     const bool file_match = prev_mmap->filename() == mmap.filename();
     const bool address_contiguous =
-        prev_mmap->start() + prev_mmap->len() == mmap.start();
+        pid_match && (prev_mmap->start() + prev_mmap->len() == mmap.start());
     const bool pgoff_contiguous =
-        prev_mmap->pgoff() + prev_mmap->len() == mmap.pgoff();
+        file_match && (prev_mmap->pgoff() + prev_mmap->len() == mmap.pgoff());
 
-    const bool combine_mappings =
-        pid_match && tid_match && file_match &&
-        address_contiguous && pgoff_contiguous;
+    const bool combine_mappings = address_contiguous && pgoff_contiguous;
     if (!combine_mappings) {
       new_events.Add()->Swap(event);
       prev++;
