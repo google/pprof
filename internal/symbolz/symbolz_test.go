@@ -34,6 +34,9 @@ func TestSymbolzURL(t *testing.T) {
 		"http://host:8000/debug/pprof/profile?seconds=10":                         "http://host:8000/debug/pprof/symbol",
 		"http://host:8000/debug/pprof/heap":                                       "http://host:8000/debug/pprof/symbol",
 		"http://some.host:8080/some/deeper/path/debug/pprof/endpoint?param=value": "http://some.host:8080/some/deeper/path/debug/pprof/symbol",
+		"http://host:8000/pprof/profile":                                          "http://host:8000/pprof/symbol",
+		"http://host:8000/pprof/profile?seconds=15":                               "http://host:8000/pprof/symbol",
+		"http://host:8000/pprof/heap":                                             "http://host:8000/pprof/symbol",
 	} {
 		if got := symbolz(try); got != want {
 			t.Errorf(`symbolz(%s)=%s, want "%s"`, try, got, want)
