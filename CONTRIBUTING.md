@@ -17,13 +17,13 @@ Make sure `GOPATH` is set in your current shell. The common way is to have
 something like `export GOPATH=$HOME/gocode` in your `.bashrc` file so that it's
 automatically set in all console sessions.
 
-To get the source code run
+To get the source code, run
 
 ```
 go get github.com/google/pprof
 ```
 
-To run the tests do
+To run the tests, do
 
 ```
 cd $GOPATH/src/github.com/google/pprof
@@ -47,7 +47,8 @@ git commit -a -m "Add new feature."
 git push aalexand
 ```
 
-where `aalexand` is your Github user ID.
+where `aalexand` is your Github user ID. Then proceed to the Github UI to send a
+code review.
 
 # Code reviews
 
