@@ -65,7 +65,7 @@ func Symbolize(p *profile.Profile, force bool, sources plugin.MappingSources, sy
 
 // Check whether path ends with one of the suffixes listed in
 // pprof_remote_servers.html from the gperftools distribution
-func hasLegacySuffix(path string) bool {
+func hasGperftoolsSuffix(path string) bool {
 	var suffixes = [...]string{
 		"/pprof/heap",
 		"/pprof/growth",
@@ -84,8 +84,8 @@ func hasLegacySuffix(path string) bool {
 // symbolz returns the corresponding symbolz source for a profile URL.
 func symbolz(source string) string {
 	if url, err := url.Parse(source); err == nil && url.Host != "" {
-		// All paths in the net/http/pprof Go package start with /debug/pprof/
-		if strings.Contains(url.Path, "/debug/pprof/") || hasLegacySuffix(url.Path) {
+		// All paths in the net/http/pprof Go package contain /debug/pprof/
+		if strings.Contains(url.Path, "/debug/pprof/") || hasGperftoolsSuffix(url.Path) {
 			url.Path = path.Clean(url.Path + "/../symbol")
 		} else {
 			url.Path = "/symbolz"
