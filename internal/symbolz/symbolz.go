@@ -66,7 +66,7 @@ func Symbolize(p *profile.Profile, force bool, sources plugin.MappingSources, sy
 // Check whether path ends with one of the suffixes listed in
 // pprof_remote_servers.html from the gperftools distribution
 func hasGperftoolsSuffix(path string) bool {
-	var suffixes = [...]string{
+	suffixes := []string{
 		"/pprof/heap",
 		"/pprof/growth",
 		"/pprof/profile",
