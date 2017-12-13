@@ -287051,7 +287051,7 @@ stats {
   num_sample_events_mapped: 14980
   did_remap: false
 }
-metadata_mask: 16380
+metadata_mask: 81916
 build_ids {
   misc: 1
   pid: 4294967295
@@ -287337,4 +287337,34 @@ string_metadata {
     value: "/usr/sbin/perf record -a -e cycles,instructions -c 10000 -- sleep 2"
     value_md5_prefix: 4010693432416926084
   }
+}
+pmu_mappings {
+  type: 4
+  name: "cpu"
+  name_md5_prefix: 15669287738006486457
+}
+pmu_mappings {
+  type: 1
+  name: "software"
+  name_md5_prefix: 18012728053178608889
+}
+pmu_mappings {
+  type: 2
+  name: "tracepoint"
+  name_md5_prefix: 1021014226246753557
+}
+pmu_mappings {
+  type: 6
+  name: "uncore_cbox_0"
+  name_md5_prefix: 1137124233652450800
+}
+pmu_mappings {
+  type: 7
+  name: "uncore_cbox_1"
+  name_md5_prefix: 15013062577747304375
+}
+pmu_mappings {
+  type: 5
+  name: "breakpoint"
+  name_md5_prefix: 15231791590021874039
 }
