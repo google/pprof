@@ -112,16 +112,16 @@ const std::vector<const char*>& GetPerfDataFiles() {
 
 const std::vector<const char*>& GetPerfPipedDataFiles() {
   static const std::vector<const char*>* files = new std::vector<const char*>{
-      "perf.data.piped.host-3.2",
       "perf.data.piped.target-3.4",
       "perf.data.piped.target.throttled-3.4",
       "perf.data.piped.target-3.8",
 
-      // Piped data that contains hardware and software events.
-      // Command:
-      //    perf record -a -c 1000000 -e cycles,branch-misses,cpu-clock -o - \
-    //    -- sleep 2
-      // HW events are cycles and branch-misses, SW event is cpu-clock.
+      /* Piped data that contains hardware and software events.
+       * Command:
+       *    perf record -a -c 1000000 -e cycles,branch-misses,cpu-clock -o - \
+       *    -- sleep 2
+       * HW events are cycles and branch-misses, SW event is cpu-clock.
+       */
       "perf.data.piped.hw_and_sw-3.4",
 
       // Piped data with extra data at end.

@@ -1024,44 +1024,6 @@ TEST(PerfReaderTest, ReadsAllAvailableMetadataTypes) {
   EXPECT_EQ("arch", string_metadata.architecture().value());
 }
 
-// Regression test for http://crbug.com/493533
-TEST(PerfReaderTest, ReadsAllAvailableMetadataTypesPiped) {
-  std::stringstream input;
-
-  // pipe header
-  testing::ExamplePipedPerfDataFileHeader().WriteTo(&input);
-
-  // metadata
-
-  // Provide these out of order. Order should not matter to the PerfReader, but
-  // this tests whether the reader is capable of skipping an unsupported type.
-  testing::ExampleStringMetadataEvent(PERF_RECORD_HEADER_HOSTNAME, "hostname")
-      .WriteTo(&input);
-  testing::ExampleStringMetadataEvent(PERF_RECORD_HEADER_OSRELEASE, "osrelease")
-      .WriteTo(&input);
-  testing::ExampleStringMetadataEvent(PERF_RECORD_HEADER_MAX, "*unsupported*")
-      .WriteTo(&input);
-  testing::ExampleStringMetadataEvent(PERF_RECORD_HEADER_VERSION, "version")
-      .WriteTo(&input);
-  testing::ExampleStringMetadataEvent(PERF_RECORD_HEADER_ARCH, "arch")
-      .WriteTo(&input);
-
-  //
-  // Parse input.
-  //
-
-  PerfReader pr;
-  ASSERT_TRUE(pr.ReadFromString(input.str()));
-
-  // The dummy metadata should not have prevented the reading of the other
-  // metadata.
-  const auto& string_metadata = pr.string_metadata();
-  EXPECT_EQ("hostname", string_metadata.hostname().value());
-  EXPECT_EQ("osrelease", string_metadata.kernel_version().value());
-  EXPECT_EQ("version", string_metadata.perf_version().value());
-  EXPECT_EQ("arch", string_metadata.architecture().value());
-}
-
 TEST(PerfReaderTest, AttrsWithDifferentSampleTypes) {
   std::stringstream input;
 

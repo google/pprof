@@ -182,6 +182,9 @@ class PerfReader {
   bool ReadGroupDescMetadata(DataReader* data);
   bool ReadEventDescMetadata(DataReader* data);
 
+  // Read perf data from file perf output data.
+  bool ReadFileData(DataReader* data);
+
   // Read perf data from piped perf output data.
   bool ReadPipedData(DataReader* data);
 

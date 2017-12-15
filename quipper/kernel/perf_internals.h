@@ -292,29 +292,14 @@ struct build_id_event {
 #undef BUILD_ID_SIZE
 
 enum perf_user_event_type { /* above any possible kernel type */
-	PERF_RECORD_USER_TYPE_START		= 64,
-	PERF_RECORD_HEADER_ATTR			= 64,
-	PERF_RECORD_HEADER_EVENT_TYPE		= 65, /* depreceated */
-	PERF_RECORD_HEADER_TRACING_DATA		= 66,
-	PERF_RECORD_HEADER_BUILD_ID		= 67,
-	PERF_RECORD_FINISHED_ROUND		= 68,
-	/* Google-added pipe-mode event types: */
-	PERF_RECORD_HEADER_HOSTNAME		= 69,
-	PERF_RECORD_HEADER_OSRELEASE		= 70,
-	PERF_RECORD_HEADER_VERSION		= 71,
-	PERF_RECORD_HEADER_ARCH			= 72,
-	PERF_RECORD_HEADER_NRCPUS		= 73,
-	PERF_RECORD_HEADER_CPUDESC		= 74,
-	PERF_RECORD_HEADER_CPUID		= 75,
-	PERF_RECORD_HEADER_TOTAL_MEM		= 76,
-	PERF_RECORD_HEADER_CMDLINE		= 77,
-	PERF_RECORD_HEADER_EVENT_DESC		= 78,
-	PERF_RECORD_HEADER_CPU_TOPOLOGY		= 79,
-	PERF_RECORD_HEADER_NUMA_TOPOLOGY	= 80,
-	PERF_RECORD_HEADER_BRANCH_STACK		= 81,
-	PERF_RECORD_HEADER_PMU_MAPPINGS		= 82,
-	PERF_RECORD_HEADER_GROUP_DESC		= 83,
-	PERF_RECORD_HEADER_MAX
+                            PERF_RECORD_USER_TYPE_START = 64,
+                            PERF_RECORD_HEADER_ATTR = 64,
+                            PERF_RECORD_HEADER_EVENT_TYPE =
+                                65, /* depreceated */
+                            PERF_RECORD_HEADER_TRACING_DATA = 66,
+                            PERF_RECORD_HEADER_BUILD_ID = 67,
+                            PERF_RECORD_FINISHED_ROUND = 68,
+                            PERF_RECORD_HEADER_MAX,
 };
 
 struct attr_event {

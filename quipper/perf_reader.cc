@@ -253,49 +253,7 @@ bool PerfReader::ReadFromData(DataReader* data) {
   // Check if it is normal perf data.
   if (header_.size == sizeof(header_)) {
     DVLOG(1) << "Perf data is in normal format.";
-
-    // Make sure sections are within the size of the file. This check prevents
-    // more obscure messages later when attempting to read from one of these
-    // sections.
-    if (header_.attrs.offset + header_.attrs.size > data->size()) {
-      LOG(ERROR) << "Header says attrs section ends at "
-                 << header_.attrs.offset + header_.attrs.size
-                 << " bytes, which is larger than perf data size of "
-                 << data->size() << " bytes.";
-      return false;
-    }
-    if (header_.data.offset + header_.data.size > data->size()) {
-      LOG(ERROR) << "Header says data section ends at "
-                 << header_.data.offset + header_.data.size
-                 << " bytes, which is larger than perf data size of "
-                 << data->size() << " bytes.";
-      return false;
-    }
-    if (header_.event_types.offset + header_.event_types.size > data->size()) {
-      LOG(ERROR) << "Header says event_types section ends at "
-                 << header_.event_types.offset + header_.event_types.size
-                 << " bytes, which is larger than perf data size of "
-                 << data->size() << " bytes.";
-      return false;
-    }
-
-    if (!get_metadata_mask_bit(HEADER_EVENT_DESC)) {
-      // Prefer to read attrs and event names from HEADER_EVENT_DESC metadata if
-      // available. event_types section of perf.data is obsolete, but use it as
-      // a fallback:
-      if (!(ReadAttrsSection(data) && ReadEventTypesSection(data)))
-        return false;
-    }
-
-    if (!(ReadMetadata(data) && ReadDataSection(data)))
-      return false;
-
-    // We can construct HEADER_EVENT_DESC from attrs and event types.
-    // NB: Can't set this before ReadMetadata(), or it may misread the metadata.
-    if (!event_types().empty())
-      set_metadata_mask_bit(HEADER_EVENT_DESC);
-
-    return true;
+    return ReadFileData(data);
   }
 
   // Otherwise it is piped data.
@@ -1274,6 +1232,48 @@ bool PerfReader::ReadTracingMetadata(DataReader* data, size_t size) {
   return true;
 }
 
+bool PerfReader::ReadFileData(DataReader* data) {
+  // Make sure sections are within the size of the file. This check prevents
+  // more obscure messages later when attempting to read from one of these
+  // sections.
+  if (header_.attrs.offset + header_.attrs.size > data->size()) {
+    LOG(ERROR) << "Header says attrs section ends at "
+               << header_.attrs.offset + header_.attrs.size
+               << " bytes, which is larger than perf data size of "
+               << data->size() << " bytes.";
+    return false;
+  }
+  if (header_.data.offset + header_.data.size > data->size()) {
+    LOG(ERROR) << "Header says data section ends at "
+               << header_.data.offset + header_.data.size
+               << " bytes, which is larger than perf data size of "
+               << data->size() << " bytes.";
+    return false;
+  }
+  if (header_.event_types.offset + header_.event_types.size > data->size()) {
+    LOG(ERROR) << "Header says event_types section ends at "
+               << header_.event_types.offset + header_.event_types.size
+               << " bytes, which is larger than perf data size of "
+               << data->size() << " bytes.";
+    return false;
+  }
+
+  if (!get_metadata_mask_bit(HEADER_EVENT_DESC)) {
+    // Prefer to read attrs and event names from HEADER_EVENT_DESC metadata if
+    // available. event_types section of perf.data is obsolete, but use it as
+    // a fallback:
+    if (!(ReadAttrsSection(data) && ReadEventTypesSection(data))) return false;
+  }
+
+  if (!(ReadMetadata(data) && ReadDataSection(data))) return false;
+
+  // We can construct HEADER_EVENT_DESC from attrs and event types.
+  // NB: Can't set this before ReadMetadata(), or it may misread the metadata.
+  if (!event_types().empty()) set_metadata_mask_bit(HEADER_EVENT_DESC);
+
+  return true;
+}
+
 bool PerfReader::ReadPipedData(DataReader* data) {
   // The piped data comes right after the file header.
   CHECK_EQ(piped_header_.size, data->Tell());
@@ -1321,123 +1321,43 @@ bool PerfReader::ReadPipedData(DataReader* data) {
       continue;
     }
 
-    switch (header.type) {
-    case PERF_RECORD_HEADER_ATTR:
-      result = ReadAttrEventBlock(data, size_without_header);
-      break;
-    case PERF_RECORD_HEADER_EVENT_TYPE:
-      result = ReadEventType(data, num_event_types++, header.size);
-      break;
-    case PERF_RECORD_HEADER_EVENT_DESC:
-      set_metadata_mask_bit(HEADER_EVENT_DESC);
-      result = ReadEventDescMetadata(data);
-      break;
-    case PERF_RECORD_HEADER_TRACING_DATA:
-      set_metadata_mask_bit(HEADER_TRACING_DATA);
-      {
-        // TRACING_DATA's header.size is a lie. It is the size of only the event
-        // struct. The size of the data is in the event struct, and followed
-        // immediately by the tracing header data.
-        decltype(tracing_data_event::size) size = 0;
-        if (!data->ReadUint32(&size)) {
-          LOG(ERROR) << "Error reading tracing data size.";
-          return false;
-        }
-        result = ReadTracingMetadata(data, size);
+    result = [&] {
+      switch (header.type) {
+        case PERF_RECORD_HEADER_ATTR:
+          return ReadAttrEventBlock(data, size_without_header);
+        case PERF_RECORD_HEADER_EVENT_TYPE:
+          return ReadEventType(data, num_event_types++, header.size);
+        case PERF_RECORD_HEADER_TRACING_DATA:
+          set_metadata_mask_bit(HEADER_TRACING_DATA);
+          {
+            // TRACING_DATA's header.size is a lie. It is the size of only the
+            // event struct. The size of the data is in the event struct, and
+            // followed immediately by the tracing header data.
+            decltype(tracing_data_event::size) size = 0;
+            if (!data->ReadUint32(&size)) {
+              LOG(ERROR) << "Error reading tracing data size.";
+              return false;
+            }
+            return ReadTracingMetadata(data, size);
+          }
+        case PERF_RECORD_HEADER_BUILD_ID:
+          set_metadata_mask_bit(HEADER_BUILD_ID);
+          return ReadBuildIDMetadataWithoutHeader(data, header);
+        default:
+          // For unsupported event types, log a warning only if the type is an
+          // unknown type.
+          if (header.type < PERF_RECORD_USER_TYPE_START ||
+              header.type >= PERF_RECORD_HEADER_MAX) {
+            LOG(WARNING) << "Unknown event type: " << header.type;
+          }
+          // Skip over the data in this event.
+          data->SeekSet(data->Tell() + size_without_header);
+          return true;
       }
-      break;
-    case PERF_RECORD_HEADER_BUILD_ID:
-      set_metadata_mask_bit(HEADER_BUILD_ID);
-      result = ReadBuildIDMetadataWithoutHeader(data, header);
-      break;
-    case PERF_RECORD_HEADER_HOSTNAME:
-      set_metadata_mask_bit(HEADER_HOSTNAME);
-      result = ReadSingleStringMetadata(
-          data, size_without_header,
-          proto_->mutable_string_metadata()->mutable_hostname());
-      break;
-    case PERF_RECORD_HEADER_OSRELEASE:
-      set_metadata_mask_bit(HEADER_OSRELEASE);
-      result = ReadSingleStringMetadata(
-          data, size_without_header,
-          proto_->mutable_string_metadata()->mutable_kernel_version());
-      break;
-    case PERF_RECORD_HEADER_VERSION:
-      set_metadata_mask_bit(HEADER_VERSION);
-      result = ReadSingleStringMetadata(
-          data, size_without_header,
-          proto_->mutable_string_metadata()->mutable_perf_version());
-      break;
-    case PERF_RECORD_HEADER_ARCH:
-      set_metadata_mask_bit(HEADER_ARCH);
-      result = ReadSingleStringMetadata(
-          data, size_without_header,
-          proto_->mutable_string_metadata()->mutable_architecture());
-      break;
-    case PERF_RECORD_HEADER_CPUDESC:
-      set_metadata_mask_bit(HEADER_CPUDESC);
-      result = ReadSingleStringMetadata(
-          data, size_without_header,
-          proto_->mutable_string_metadata()->mutable_cpu_description());
-      break;
-    case PERF_RECORD_HEADER_CPUID:
-      set_metadata_mask_bit(HEADER_CPUID);
-      result = ReadSingleStringMetadata(
-          data, size_without_header,
-          proto_->mutable_string_metadata()->mutable_cpu_id());
-      break;
-    case PERF_RECORD_HEADER_CMDLINE:
-    {
-      set_metadata_mask_bit(HEADER_CMDLINE);
-      auto* string_metadata = proto_->mutable_string_metadata();
-      result = ReadRepeatedStringMetadata(
-                   data, size_without_header,
-                   string_metadata->mutable_perf_command_line_token(),
-                   string_metadata->mutable_perf_command_line_whole());
-      break;
-    }
-    case PERF_RECORD_HEADER_NRCPUS:
-      set_metadata_mask_bit(HEADER_NRCPUS);
-      result = ReadUint32Metadata(data, HEADER_NRCPUS, size_without_header);
-      break;
-    case PERF_RECORD_HEADER_TOTAL_MEM:
-      set_metadata_mask_bit(HEADER_TOTAL_MEM);
-      result = ReadUint64Metadata(data, HEADER_TOTAL_MEM, size_without_header);
-      break;
-    case PERF_RECORD_HEADER_CPU_TOPOLOGY:
-      set_metadata_mask_bit(HEADER_CPU_TOPOLOGY);
-      result = ReadCPUTopologyMetadata(data);
-      break;
-    case PERF_RECORD_HEADER_NUMA_TOPOLOGY:
-      set_metadata_mask_bit(HEADER_NUMA_TOPOLOGY);
-      result = ReadNUMATopologyMetadata(data);
-      break;
-    case PERF_RECORD_HEADER_PMU_MAPPINGS:
-      set_metadata_mask_bit(HEADER_PMU_MAPPINGS);
-      result = ReadPMUMappingsMetadata(data, size_without_header);
-      break;
-    case PERF_RECORD_HEADER_GROUP_DESC:
-      // This case is not tested as we could not generate perf.data in piped
-      // mode with group desc until perf 4.4. So, use this metadata with
-      // caution.
-      set_metadata_mask_bit(HEADER_GROUP_DESC);
-      result = ReadGroupDescMetadata(data);
-      break;
-    default:
-      // For unsupported event types, log a warning only if the type is an
-      // unknown type.
-      if (header.type < PERF_RECORD_USER_TYPE_START ||
-          header.type >= PERF_RECORD_HEADER_MAX) {
-        LOG(WARNING) << "Unknown event type: " << header.type;
-      }
-      // Skip over the data in this event.
-      data->SeekSet(data->Tell() + size_without_header);
-      break;
-    }
+    }();
   }
 
-  if (!result)
-    return false;
+  if (!result) return false;
 
   // The PERF_RECORD_HEADER_EVENT_TYPE events are obsolete, but if present
   // and PERF_RECORD_HEADER_EVENT_DESC metadata events are not, we should use
