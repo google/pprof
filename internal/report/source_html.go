@@ -58,20 +58,11 @@ background-color: #eeeeee;
 color: #008800;
 display: none;
 }
-.percentile_80 {
+.ptile_95 {
 background-color: #fe5252
 }
-.percentile_60 {
-background-color: #e09764
-}
-.percentile_40 {
-background-color: #d1b96d
-}
-.percentile_20 {
-background-color: #c3dc76
-}
-.percentile_10 {
-background-color: #b3ff80
+.ptile_80 {
+background-color: #ffb6c1
 }
 </style>`
 

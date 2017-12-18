@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -15,43 +16,73 @@ import (
 	"github.com/google/pprof/profile"
 )
 
-func TestCalculatePercentiles(t *testing.T) {
+type prettyNodes graph.Nodes
+
+func (nodes prettyNodes) String() string {
+	strs := make([]string, 0, len(nodes)+2)
+	strs = append(strs, "[")
+	for _, node := range nodes {
+		strs = append(strs, "Cum: "+strconv.FormatInt(node.Cum, 10))
+	}
+	strs = append(strs, "]")
+	return strings.Join(strs, " ")
+}
+
+func TestCalculatePtiles(t *testing.T) {
 	for _, testCase := range []struct {
-		fnodes graph.Nodes
-		output map[float64]float64
+		nodes graph.Nodes
+		want  map[int64]int64
 	}{
 		{
-			fnodes: []*graph.Node{},
-			output: nil,
+			nodes: nil,
+			want:  nil,
 		},
 		{
-			fnodes: []*graph.Node{
-				{
-					Cum: 0,
-				},
-				{
-					Cum: 8,
-				},
+			nodes: []*graph.Node{
+				{Cum: 0},
+				{Cum: 8},
 			},
-			output: map[float64]float64{10: 0, 20: 0, 40: 0, 60: 8, 80: 8},
+			want: map[int64]int64{80: 8, 95: 8},
 		},
 		{
-			fnodes: []*graph.Node{
-				{
-					Cum: 10,
-				},
-				{
-					Cum: 5,
-				},
-				{
-					Cum: 8,
-				},
+			nodes: []*graph.Node{
+				{Cum: 10},
+				{Cum: 5},
+				{Cum: 8},
 			},
-			output: map[float64]float64{10: 5, 20: 5, 40: 8, 60: 8, 80: 10},
+			want: map[int64]int64{80: 10, 95: 10},
+		},
+		{
+			nodes: []*graph.Node{
+				{Cum: 0},
+				{Cum: 0},
+				{Cum: 0},
+				{Cum: 0},
+				{Cum: 11},
+				{Cum: 2},
+				{Cum: 9},
+				{Cum: 4},
+				{Cum: 8},
+				{Cum: 2},
+				{Cum: 16},
+				{Cum: 22},
+				{Cum: 13},
+			},
+			want: map[int64]int64{80: 13, 95: 22},
+		},
+		{
+			nodes: []*graph.Node{
+				{Cum: 10},
+				{Cum: 10},
+				{Cum: 10},
+				{Cum: 10},
+				{Cum: 10},
+			},
+			want: map[int64]int64{80: 10, 95: 10},
 		},
 	} {
-		if percentiles := calculatePercentiles(testCase.fnodes); !reflect.DeepEqual(percentiles, testCase.output) {
-			t.Errorf("%v is not equal to %v", percentiles, testCase.output)
+		if ptiles := calculatePtiles(testCase.nodes); !reflect.DeepEqual(ptiles, testCase.want) {
+			t.Errorf("calculatePtiles(%v) = %v; want %v", prettyNodes(testCase.nodes), ptiles, testCase.want)
 		}
 	}
 }

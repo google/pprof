@@ -38,20 +38,11 @@ background-color: #eeeeee;
 color: #008800;
 display: none;
 }
-.percentile_80 {
+.ptile_95 {
 background-color: #fe5252
 }
-.percentile_60 {
-background-color: #e09764
-}
-.percentile_40 {
-background-color: #d1b96d
-}
-.percentile_20 {
-background-color: #c3dc76
-}
-.percentile_10 {
-background-color: #b3ff80
+.ptile_80 {
+background-color: #ffb6c1
 }
 </style>
 <script type="text/javascript">
@@ -79,7 +70,7 @@ Type: cpu<br>
 Duration: 10s, Total samples = 1.12s (11.20%)<br>Total: 1.12s</div><h2>line1000</h2><p class="filename">testdata/file1000.src</p>
 <pre onClick="pprof_toggle_asm(event)">
   Total:       1.10s      1.10s (flat, cum) 98.21%
-<span class=line>      1</span> <span class="deadsrc percentile_80">       1.10s      1.10s           line1 </span><span class=asm>               1.10s      1.10s     1000:     instruction one                                                              <span class=unimportant>file1000.src:1</span>
+<span class=line>      1</span> <span class="deadsrc ptile_80">       1.10s      1.10s           line1 </span><span class=asm>               1.10s      1.10s     1000:     instruction one                                                              <span class=unimportant>file1000.src:1</span>
                    .          .     1001:     instruction two                                                              <span class=unimportant>file1000.src:1</span>
                                      ⋮
                    .          .     1003:     instruction four                                                             <span class=unimportant>file1000.src:1</span>
@@ -100,11 +91,11 @@ Duration: 10s, Total samples = 1.12s (11.20%)<br>Total: 1.12s</div><h2>line1000<
 <span class=line>      3</span> <span class="nop">           .          .           line3 </span>
 <span class=line>      4</span> <span class="nop">           .          .           line4 </span>
 <span class=line>      5</span> <span class="nop">           .          .           line5 </span>
-<span class=line>      6</span> <span class="deadsrc percentile_80">        10ms      1.01s           line6 </span><span class=asm>                10ms      1.01s     3000:     instruction one                                                              <span class=unimportant>file3000.src:6</span>
+<span class=line>      6</span> <span class="deadsrc ptile_80">        10ms      1.01s           line6 </span><span class=asm>                10ms      1.01s     3000:     instruction one                                                              <span class=unimportant>file3000.src:6</span>
 </span>
 <span class=line>      7</span> <span class="nop">           .          .           line7 </span>
 <span class=line>      8</span> <span class="nop">           .          .           line8 </span>
-<span class=line>      9</span> <span class="deadsrc percentile_60">           .      110ms           line9 </span><span class=asm>                   .      100ms     3001:     instruction two                                                              <span class=unimportant>file3000.src:9</span>
+<span class=line>      9</span> <span class="deadsrc ptile_80">           .      110ms           line9 </span><span class=asm>                   .      100ms     3001:     instruction two                                                              <span class=unimportant>file3000.src:9</span>
                    .       10ms     3002:     instruction three                                                            <span class=unimportant>file3000.src:9</span>
                    .          .     3003:     instruction four                                                             <span class=unimportant></span>
                    .          .     3004:     instruction five                                                             <span class=unimportant></span>
