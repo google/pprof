@@ -117,20 +117,11 @@ a {
   font-family: 'Roboto Medium', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
   position: relative;
 }
-.menu-item.disabled {
-  opacity: 0.5;
-}
 .menu-item .menu-name:hover {
   opacity: 0.75;
 }
 .menu-item .menu-name:hover .downArrow {
   border-top-color: #666;
-}
-.menu-item.disabled .menu-name:hover {
-  opacity: 1;
-}
-.menu-item.disabled .menu-name:hover .downArrow {
-  border-top-color: #ccc;
 }
 .menu-name {
   height: 100%;
@@ -259,7 +250,7 @@ table tr td {
     </div>
   </div>
 
-  <div id="refine" class="menu-item disabled">
+  <div id="refine" class="menu-item">
     <div class="menu-name">
       Refine
       <i class="downArrow"></i>
@@ -818,9 +809,6 @@ function viewer(baseUrl, nodes) {
       if (link != null) {
         link.classList.toggle('disabled', !enable);
       }
-    }
-    if (document.getElementById('graph') !== null) {
-      document.getElementById('refine').classList.remove('disabled');
     }
   }
 
