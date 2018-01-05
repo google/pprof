@@ -1096,14 +1096,14 @@ function viewer(baseUrl, nodes) {
       flameGraph.resetZoom();
     }, true);
 
-    var searchbox = document.getElementById('searchbox');
+    var search = document.getElementById('search');
     var searchAlarm = null;
 
     function selectMatching() {
       searchAlarm = null;
 
-      if (searchbox.value != '') {
-        flameGraph.search(searchbox.value);
+      if (search.value != '') {
+        flameGraph.search(search.value);
       } else {
         flameGraph.clear();
       }
@@ -1117,7 +1117,7 @@ function viewer(baseUrl, nodes) {
       searchAlarm = setTimeout(selectMatching, 300);
     }
 
-    searchbox.addEventListener('input', handleSearch);
+    search.addEventListener('input', handleSearch);
   </script>
 </body>
 </html>
