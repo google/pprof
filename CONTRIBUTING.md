@@ -47,13 +47,13 @@ git commit -a -m "Add new feature."
 git push aalexand
 ```
 
-where `aalexand` is your Github user ID. Then proceed to the Github UI to send a
+where `aalexand` is your GitHub user ID. Then proceed to the GitHub UI to send a
 code review.
 
 # Code reviews
 
 All submissions, including submissions by project members, require review.
-We use Github pull requests for this purpose.
+We use GitHub pull requests for this purpose.
 
 The pprof source code is in Go with a bit of JavaScript, CSS and HTML. If you
 are new to Go, read [Effective Go](https://golang.org/doc/effective_go.html) and
