@@ -53,18 +53,6 @@ func Merge(srcs []*Profile) (*Profile, error) {
 		mappings:  make(map[mappingKey]*Mapping, len(srcs[0].Mapping)),
 	}
 
-	// The Mapping list has the property that the first mapping
-	// represents the main binary. Take the first Mapping we see,
-	// otherwise the operations below will add mappings in an
-	// arbitrary order.
-	var mapping []*Mapping
-	for _, src := range srcs {
-		if len(pm.mappings) == 0 && len(src.Mapping) > 0 {
-			mapping = src.Mapping
-			break
-		}
-	}
-
 	for _, src := range srcs {
 		// Clear the profile-specific hash tables
 		pm.locationsByID = make(map[uint64]*Location, len(src.Location))
@@ -72,7 +60,11 @@ func Merge(srcs []*Profile) (*Profile, error) {
 		pm.mappingsByID = make(map[uint64]mapInfo, len(src.Mapping))
 
 		if len(pm.mappings) == 0 && len(src.Mapping) > 0 {
-			pm.mapMapping(mapping[0])
+			// The Mapping list has the property that the first mapping
+			// represents the main binary. Take the first Mapping we see,
+			// otherwise the operations below will add mappings in an
+			// arbitrary order.
+			pm.mapMapping(src.Mapping[0])
 		}
 
 		for _, s := range src.Sample {
