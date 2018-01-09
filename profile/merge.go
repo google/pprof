@@ -64,7 +64,7 @@ func Merge(srcs []*Profile) (*Profile, error) {
 			// represents the main binary. Take the first Mapping we see,
 			// otherwise the operations below will add mappings in an
 			// arbitrary order.
-			pm.mapMapping(srcs[0].Mapping[0])
+			pm.mapMapping(src.Mapping[0])
 		}
 
 		for _, s := range src.Sample {

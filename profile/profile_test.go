@@ -330,6 +330,60 @@ var testProfile1 = &Profile{
 	Mapping:  cpuM,
 }
 
+var testProfile1NoMapping = &Profile{
+	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
+	Period:        1,
+	DurationNanos: 10e9,
+	SampleType: []*ValueType{
+		{Type: "samples", Unit: "count"},
+		{Type: "cpu", Unit: "milliseconds"},
+	},
+	Sample: []*Sample{
+		{
+			Location: []*Location{cpuL[0]},
+			Value:    []int64{1000, 1000},
+			Label: map[string][]string{
+				"key1": {"tag1"},
+				"key2": {"tag1"},
+			},
+		},
+		{
+			Location: []*Location{cpuL[1], cpuL[0]},
+			Value:    []int64{100, 100},
+			Label: map[string][]string{
+				"key1": {"tag2"},
+				"key3": {"tag2"},
+			},
+		},
+		{
+			Location: []*Location{cpuL[2], cpuL[0]},
+			Value:    []int64{10, 10},
+			Label: map[string][]string{
+				"key1": {"tag3"},
+				"key2": {"tag2"},
+			},
+		},
+		{
+			Location: []*Location{cpuL[3], cpuL[0]},
+			Value:    []int64{10000, 10000},
+			Label: map[string][]string{
+				"key1": {"tag4"},
+				"key2": {"tag1"},
+			},
+		},
+		{
+			Location: []*Location{cpuL[4], cpuL[0]},
+			Value:    []int64{1, 1},
+			Label: map[string][]string{
+				"key1": {"tag4"},
+				"key2": {"tag1"},
+			},
+		},
+	},
+	Location: cpuL,
+	Function: cpuF,
+}
+
 var testProfile2 = &Profile{
 	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
 	Period:        1,
@@ -681,6 +735,40 @@ func TestNumLabelMerge(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestEmptyMappingMerge(t *testing.T) {
+	// Aggregate a profile with itself and once again with a factor of
+	// -2. Should end up with an empty profile (all samples for a
+	// location should add up to 0).
+
+	prof1 := testProfile1.Copy()
+	prof2 := testProfile1NoMapping.Copy()
+	p1, err := Merge([]*Profile{prof2, prof1})
+	if err != nil {
+		t.Errorf("merge error: %v", err)
+	}
+	prof2.Scale(-2)
+	prof, err := Merge([]*Profile{p1, prof2})
+	if err != nil {
+		t.Errorf("merge error: %v", err)
+	}
+
+	// Use aggregation to merge locations at function granularity.
+	if err := prof.Aggregate(false, true, false, false, false); err != nil {
+		t.Errorf("aggregating after merge: %v", err)
+	}
+
+	samples := make(map[string]int64)
+	for _, s := range prof.Sample {
+		tb := locationHash(s)
+		samples[tb] = samples[tb] + s.Value[0]
+	}
+	for s, v := range samples {
+		if v != 0 {
+			t.Errorf("nonzero value for sample %s: %d", s, v)
+		}
 	}
 }
 
