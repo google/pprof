@@ -42,6 +42,12 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 	interactiveMode = true
 	shortcuts := profileShortcuts(p)
 
+	// Get all groups in pprofVariables to allow for clearer error messages.
+	groups := make(map[string]bool)
+	for _, option := range pprofVariables {
+		groups[option.group] = true
+	}
+
 	greetings(p, o.UI)
 	for {
 		input, err := o.UI.ReadLine("(pprof) ")
@@ -82,9 +88,13 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 					continue
 				}
 				// Allow group=variable syntax by converting into variable="".
-				if v := pprofVariables[value]; v != nil && v.group == name {
-					if err := pprofVariables.set(value, ""); err != nil {
-						o.UI.PrintErr(err)
+				if groups[name] {
+					if v := pprofVariables[value]; v != nil && v.group == name {
+						if err := pprofVariables.set(value, ""); err != nil {
+							o.UI.PrintErr(err)
+						}
+					} else {
+						o.UI.PrintErr(fmt.Errorf("Unrecognized value for %s: %q", name, value))
 					}
 					continue
 				}

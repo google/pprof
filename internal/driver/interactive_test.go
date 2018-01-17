@@ -70,6 +70,17 @@ func TestShell(t *testing.T) {
 		t.Error("second shortcut attempt:", err)
 	}
 
+	// Group with invalid value
+	pprofVariables = testVariables(savedVariables)
+	o.UI = &testUI{
+		t:       t,
+		input:   []string{"cumulative=this"},
+		wantErr: `[Unrecognized value for cumulative: "this"]`,
+	}
+	if err := interactive(p, o); err != nil {
+		t.Error("invalid group value:", err)
+	}
+
 	// Verify propagation of IO errors
 	pprofVariables = testVariables(savedVariables)
 	o.UI = newUI(t, []string{"**error**"})
@@ -151,9 +162,10 @@ func newUI(t *testing.T, input []string) plugin.UI {
 }
 
 type testUI struct {
-	t     *testing.T
-	input []string
-	index int
+	t       *testing.T
+	input   []string
+	index   int
+	wantErr string
 }
 
 func (ui *testUI) ReadLine(_ string) (string, error) {
@@ -173,8 +185,12 @@ func (ui *testUI) Print(args ...interface{}) {
 
 func (ui *testUI) PrintErr(args ...interface{}) {
 	output := fmt.Sprint(args)
-	if output != "" {
-		ui.t.Error(output)
+	if output != ui.wantErr {
+		if ui.wantErr == "" {
+			ui.t.Error(output)
+		} else {
+			ui.t.Errorf("got PrintErr(%q), want PrintError(%q)", output, ui.wantErr)
+		}
 	}
 }
 
