@@ -16,12 +16,12 @@ package driver
 
 import (
 	"fmt"
-	"io"
 	"math/rand"
 	"strings"
 	"testing"
 
 	"github.com/google/pprof/internal/plugin"
+	"github.com/google/pprof/internal/proftest"
 	"github.com/google/pprof/internal/report"
 	"github.com/google/pprof/profile"
 )
@@ -72,15 +72,19 @@ func TestShell(t *testing.T) {
 
 	// Group with invalid value
 	pprofVariables = testVariables(savedVariables)
-	o.UI = &testUI{
-		t:       t,
-		input:   []string{"cumulative=this"},
-		wantErr: `[Unrecognized value for cumulative: "this"]`,
+	ui := &proftest.TestUI{
+		T:       t,
+		Input:   []string{"cumulative=this"},
+		AllowRx: `Unrecognized value for cumulative: "this". Recognized values are cum, flat`,
 	}
+	o.UI = ui
 	if err := interactive(p, o); err != nil {
 		t.Error("invalid group value:", err)
 	}
-
+	// Confirm error message written out once.
+	if ui.NumAllowRxMatches != 1 {
+		t.Errorf("want error message to be longed 1 time, got %v", ui.NumAllowRxMatches)
+	}
 	// Verify propagation of IO errors
 	pprofVariables = testVariables(savedVariables)
 	o.UI = newUI(t, []string{"**error**"})
@@ -155,50 +159,10 @@ func makeShortcuts(input []string, seed int) (shortcuts, []string) {
 }
 
 func newUI(t *testing.T, input []string) plugin.UI {
-	return &testUI{
-		t:     t,
-		input: input,
+	return &proftest.TestUI{
+		T:     t,
+		Input: input,
 	}
-}
-
-type testUI struct {
-	t       *testing.T
-	input   []string
-	index   int
-	wantErr string
-}
-
-func (ui *testUI) ReadLine(_ string) (string, error) {
-	if ui.index >= len(ui.input) {
-		return "", io.EOF
-	}
-	input := ui.input[ui.index]
-	if input == "**error**" {
-		return "", fmt.Errorf("Error: %s", input)
-	}
-	ui.index++
-	return input, nil
-}
-
-func (ui *testUI) Print(args ...interface{}) {
-}
-
-func (ui *testUI) PrintErr(args ...interface{}) {
-	output := fmt.Sprint(args)
-	if output != ui.wantErr {
-		if ui.wantErr == "" {
-			ui.t.Error(output)
-		} else {
-			ui.t.Errorf("got PrintErr(%q), want PrintError(%q)", output, ui.wantErr)
-		}
-	}
-}
-
-func (ui *testUI) IsTerminal() bool {
-	return false
-}
-
-func (ui *testUI) SetAutoComplete(func(string) string) {
 }
 
 func checkValue(p *profile.Profile, cmd []string, vars variables, o *plugin.Options) error {
