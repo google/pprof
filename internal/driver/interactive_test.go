@@ -75,7 +75,7 @@ func TestShell(t *testing.T) {
 	ui := &proftest.TestUI{
 		T:       t,
 		Input:   []string{"cumulative=this"},
-		AllowRx: `Unrecognized value for cumulative: "this". Recognized values are cum, flat`,
+		AllowRx: `Unrecognized value for cumulative: "this". Use one of cum, flat`,
 	}
 	o.UI = ui
 	if err := interactive(p, o); err != nil {
@@ -83,7 +83,7 @@ func TestShell(t *testing.T) {
 	}
 	// Confirm error message written out once.
 	if ui.NumAllowRxMatches != 1 {
-		t.Errorf("want error message to be longed 1 time, got %v", ui.NumAllowRxMatches)
+		t.Errorf("want error message to be printed 1 time, got %v", ui.NumAllowRxMatches)
 	}
 	// Verify propagation of IO errors
 	pprofVariables = testVariables(savedVariables)

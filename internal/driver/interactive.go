@@ -47,11 +47,8 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 	for name, option := range pprofVariables {
 		group := option.group
 		if group != "" {
-			if groupValues := groups[group]; groupValues != nil {
-				groups[group] = append(groupValues, name)
-			} else {
-				groups[group] = []string{name}
-			}
+			groupValues := groups[group]
+			groups[group] = append(groupValues, name)
 		}
 	}
 
@@ -95,17 +92,18 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 					continue
 				}
 				// Allow group=variable syntax by converting into variable="".
-				if okValues := groups[name]; okValues != nil {
-					if v := pprofVariables[value]; v != nil && v.group == name {
-						if err := pprofVariables.set(value, ""); err != nil {
-							o.UI.PrintErr(err)
-						}
-					} else {
-						sort.Strings(okValues)
-						recognizedValues := strings.Join(okValues, ", ")
-						o.UI.PrintErr(fmt.Errorf("Unrecognized value for %s: %q. Recognized values are %s", name, value, recognizedValues))
+				if v := pprofVariables[value]; v != nil && v.group == name {
+					if err := pprofVariables.set(value, ""); err != nil {
+						o.UI.PrintErr(err)
 					}
 					continue
+				} else {
+					if okValues := groups[name]; okValues != nil {
+						sort.Strings(okValues)
+						okValuesStr := strings.Join(okValues, ", ")
+						o.UI.PrintErr(fmt.Errorf("Unrecognized value for %s: %q. Use one of %s", name, value, okValuesStr))
+						continue
+					}
 				}
 			}
 
