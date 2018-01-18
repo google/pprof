@@ -90,11 +90,9 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 						o.UI.PrintErr(err)
 					}
 					continue
-				} else {
-					if okValues := groups[name]; okValues != nil {
-						o.UI.PrintErr(fmt.Errorf("Unrecognized value for %s: %q. Use one of %s", name, value, strings.Join(okValues, ", ")))
-						continue
-					}
+				} else if okValues := groups[name]; okValues != nil {
+					o.UI.PrintErr(fmt.Errorf("Unrecognized value for %s: %q. Use one of %s", name, value, strings.Join(okValues, ", ")))
+					continue
 				}
 			}
 
