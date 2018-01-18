@@ -42,16 +42,6 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 	interactiveMode = true
 	shortcuts := profileShortcuts(p)
 
-	// Get all groups in pprofVariables to allow for clearer error messages.
-	groups := make(map[string][]string)
-	for name, option := range pprofVariables {
-		group := option.group
-		if group != "" {
-			groupValues := groups[group]
-			groups[group] = append(groupValues, name)
-		}
-	}
-
 	greetings(p, o.UI)
 	for {
 		input, err := o.UI.ReadLine("(pprof) ")
@@ -63,6 +53,9 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 				return nil
 			}
 		}
+
+		// Get all groups in pprofVariables to allow for clearer error messages.
+		groups := groupOptions()
 
 		for _, input := range shortcuts.expand(input) {
 			// Process assignments of the form variable=value
@@ -99,9 +92,7 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 					continue
 				} else {
 					if okValues := groups[name]; okValues != nil {
-						sort.Strings(okValues)
-						okValuesStr := strings.Join(okValues, ", ")
-						o.UI.PrintErr(fmt.Errorf("Unrecognized value for %s: %q. Use one of %s", name, value, okValuesStr))
+						o.UI.PrintErr(fmt.Errorf("Unrecognized value for %s: %q. Use one of %s", name, value, strings.Join(okValues, ", ")))
 						continue
 					}
 				}
@@ -133,6 +124,23 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 			}
 		}
 	}
+}
+
+// groupOptions returns an map containing all non-empty groups
+// mapped to an array of the option names in that group in
+// sorted order.
+func groupOptions() map[string][]string {
+	groups := make(map[string][]string)
+	for name, option := range pprofVariables {
+		group := option.group
+		if group != "" {
+			groups[group] = append(groups[group], name)
+		}
+	}
+	for _, names := range groups {
+		sort.Strings(names)
+	}
+	return groups
 }
 
 var generateReportWrapper = generateReport // For testing purposes.
