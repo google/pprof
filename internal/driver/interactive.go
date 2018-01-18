@@ -42,6 +42,9 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 	interactiveMode = true
 	shortcuts := profileShortcuts(p)
 
+	// Get all groups in pprofVariables to allow for clearer error messages.
+	groups := groupOptions(pprofVariables)
+
 	greetings(p, o.UI)
 	for {
 		input, err := o.UI.ReadLine("(pprof) ")
@@ -53,9 +56,6 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 				return nil
 			}
 		}
-
-		// Get all groups in pprofVariables to allow for clearer error messages.
-		groups := groupOptions()
 
 		for _, input := range shortcuts.expand(input) {
 			// Process assignments of the form variable=value
@@ -126,12 +126,12 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 	}
 }
 
-// groupOptions returns an map containing all non-empty groups
+// groupOptions returns a map containing all non-empty groups
 // mapped to an array of the option names in that group in
 // sorted order.
-func groupOptions() map[string][]string {
+func groupOptions(vars variables) map[string][]string {
 	groups := make(map[string][]string)
-	for name, option := range pprofVariables {
+	for name, option := range vars {
 		group := option.group
 		if group != "" {
 			groups[group] = append(groups[group], name)
