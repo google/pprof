@@ -106,6 +106,9 @@ const std::vector<const char*>& GetPerfDataFiles() {
       // This is sample with a frequency higher than the max frequency, so it
       // has throttle and unthrottle events.
       "perf.data.throttle-3.8",
+
+      // File mode perf data from perf_4.13
+      "perf.data-4.13",
   };
   return *files;
 }
@@ -127,6 +130,9 @@ const std::vector<const char*>& GetPerfPipedDataFiles() {
       // Piped data with extra data at end.
       "perf.data.piped.extrabyte-3.4",
       "perf.data.piped.extradata-3.4",
+
+      // Piped data from perf_4.13
+      "perf.data.piped-4.13",
   };
   return *files;
 }

@@ -31,7 +31,6 @@ using BranchStackEntry = PerfDataProto_BranchStackEntry;
 using CommEvent = PerfDataProto_CommEvent;
 using ForkEvent = PerfDataProto_ForkEvent;
 using MMapEvent = PerfDataProto_MMapEvent;
-using PerfEvent = PerfDataProto_PerfEvent;
 using SampleEvent = PerfDataProto_SampleEvent;
 
 namespace {
@@ -129,6 +128,12 @@ bool PerfParser::ParseRawEvents() {
   return true;
 }
 
+bool PerfParser::ProcessUserEvents(PerfEvent& event) {
+  // New user events from PERF-4.13 is not yet supported
+  VLOG(1) << "Unsupported event type: " << event.header().type();
+  return true;
+}
+
 bool PerfParser::ProcessEvents() {
   stats_ = {0};
 
@@ -146,6 +151,15 @@ bool PerfParser::ProcessEvents() {
   for (size_t i = 0; i < parsed_events_.size(); ++i) {
     ParsedEvent& parsed_event = parsed_events_[i];
     PerfEvent& event = *parsed_event.event_ptr;
+
+    // Process user events
+    if (event.header().type() >= PERF_RECORD_USER_TYPE_START) {
+      if (!ProcessUserEvents(event)) {
+        return false;
+      }
+      continue;
+    }
+
     switch (event.header().type()) {
       case PERF_RECORD_SAMPLE:
         // SAMPLE doesn't have any fields to log at a fixed,
@@ -209,9 +223,17 @@ bool PerfParser::ProcessEvents() {
       case PERF_RECORD_THROTTLE:
       case PERF_RECORD_UNTHROTTLE:
       case PERF_RECORD_READ:
-      case PERF_RECORD_MAX:
         VLOG(1) << "Parsed event type: " << event.header().type()
                 << ". Doing nothing.";
+        break;
+      case PERF_RECORD_AUX:
+      case PERF_RECORD_ITRACE_START:
+      case PERF_RECORD_LOST_SAMPLES:
+      case PERF_RECORD_SWITCH:
+      case PERF_RECORD_SWITCH_CPU_WIDE:
+      case PERF_RECORD_NAMESPACES:
+        VLOG(1) << "Parsed event type: " << event.header().type()
+                << ". Not yet supported.";
         break;
       default:
         LOG(ERROR) << "Unknown event type: " << event.header().type();

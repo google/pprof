@@ -25,6 +25,8 @@
 
 namespace quipper {
 
+using PerfEvent = PerfDataProto_PerfEvent;
+
 // PID associated with the kernel mmap event.
 const uint32_t kKernelPid = static_cast<uint32_t>(-1);
 
@@ -200,6 +202,9 @@ class PerfParser {
  private:
   // Used for processing events.  e.g. remapping with synthetic addresses.
   bool ProcessEvents();
+
+  // Used for processing user events.
+  bool ProcessUserEvents(PerfEvent& event);
 
   // Looks up build IDs for all DSOs present in |reader_| by direct lookup using
   // functions in dso.h. If there is a DSO with both an existing build ID and a
