@@ -109,10 +109,11 @@ type Mapping struct {
 
 // Location corresponds to Profile.Location
 type Location struct {
-	ID      uint64
-	Mapping *Mapping
-	Address uint64
-	Line    []Line
+	ID       uint64
+	Mapping  *Mapping
+	Address  uint64
+	Line     []Line
+	IsFolded bool
 
 	mappingIDX uint64
 }
