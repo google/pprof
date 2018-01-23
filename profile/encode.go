@@ -494,7 +494,7 @@ var locationDecoder = []decoder{
 		pp.Line = append(pp.Line, Line{})
 		return decodeMessage(b, &pp.Line[n])
 	},
-	func(b *buffer, m message) error { return decodeBool(b, &m.(*Location).IsFolded) },
+	func(b *buffer, m message) error { return decodeBool(b, &m.(*Location).IsFolded) }, // optional bool is_folded = 5;
 }
 
 func (p *Line) decoder() []decoder {
