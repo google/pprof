@@ -592,6 +592,9 @@ func (l *Location) string() string {
 	if m := l.Mapping; m != nil {
 		locStr = locStr + fmt.Sprintf("M=%d ", m.ID)
 	}
+	if l.IsFolded {
+		locStr = locStr + "(folded) "
+	}
 	if len(l.Line) == 0 {
 		ss = append(ss, locStr)
 	}

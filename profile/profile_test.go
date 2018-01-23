@@ -275,6 +275,53 @@ var cpuL = []*Location{
 	},
 }
 
+var cpuLFolded = []*Location{
+	{
+		ID:      1000,
+		Mapping: cpuM[1],
+		Address: 0x1000,
+		Line: []Line{
+			{Function: cpuF[0], Line: 1},
+		},
+	},
+	{
+		ID:      2000,
+		Mapping: cpuM[0],
+		Address: 0x2000,
+		Line: []Line{
+			{Function: cpuF[1], Line: 2},
+			{Function: cpuF[2], Line: 1},
+		},
+		IsFolded: true,
+	},
+	{
+		ID:      3000,
+		Mapping: cpuM[0],
+		Address: 0x3000,
+		Line: []Line{
+			{Function: cpuF[1], Line: 2},
+			{Function: cpuF[2], Line: 1},
+		},
+		IsFolded: true,
+	},
+	{
+		ID:      3001,
+		Mapping: cpuM[0],
+		Address: 0x3001,
+		Line: []Line{
+			{Function: cpuF[2], Line: 2},
+		},
+	},
+	{
+		ID:      3002,
+		Mapping: cpuM[0],
+		Address: 0x3002,
+		Line: []Line{
+			{Function: cpuF[2], Line: 3},
+		},
+	},
+}
+
 var testProfile1 = &Profile{
 	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
 	Period:        1,
@@ -382,6 +429,61 @@ var testProfile1NoMapping = &Profile{
 	},
 	Location: cpuL,
 	Function: cpuF,
+}
+
+var testProfile1Folded = &Profile{
+	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
+	Period:        1,
+	DurationNanos: 10e9,
+	SampleType: []*ValueType{
+		{Type: "samples", Unit: "count"},
+		{Type: "cpu", Unit: "milliseconds"},
+	},
+	Sample: []*Sample{
+		{
+			Location: []*Location{cpuLFolded[0]},
+			Value:    []int64{1000, 1000},
+			Label: map[string][]string{
+				"key1": {"tag1"},
+				"key2": {"tag1"},
+			},
+		},
+		{
+			Location: []*Location{cpuLFolded[1], cpuLFolded[0]},
+			Value:    []int64{100, 100},
+			Label: map[string][]string{
+				"key1": {"tag2"},
+				"key3": {"tag2"},
+			},
+		},
+		{
+			Location: []*Location{cpuLFolded[2], cpuLFolded[0]},
+			Value:    []int64{10, 10},
+			Label: map[string][]string{
+				"key1": {"tag3"},
+				"key2": {"tag2"},
+			},
+		},
+		{
+			Location: []*Location{cpuLFolded[3], cpuLFolded[0]},
+			Value:    []int64{10000, 10000},
+			Label: map[string][]string{
+				"key1": {"tag4"},
+				"key2": {"tag1"},
+			},
+		},
+		{
+			Location: []*Location{cpuLFolded[4], cpuL[0]},
+			Value:    []int64{1, 1},
+			Label: map[string][]string{
+				"key1": {"tag4"},
+				"key2": {"tag1"},
+			},
+		},
+	},
+	Location: cpuLFolded,
+	Function: cpuF,
+	Mapping:  cpuM,
 }
 
 var testProfile2 = &Profile{
@@ -678,6 +780,35 @@ func TestMergeAll(t *testing.T) {
 		if samples[tb] != s.Value[0]*10 {
 			t.Errorf("merge got wrong value at %s : %d instead of %d", tb, samples[tb], s.Value[0]*10)
 		}
+	}
+}
+
+func TestIsFoldedMerge(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		profs           []*Profile
+		wantLocationLen int
+	}{
+		{
+			name:            "folded and non-folded locations not merged",
+			profs:           []*Profile{testProfile1.Copy(), testProfile1Folded.Copy()},
+			wantLocationLen: 7,
+		},
+		{
+			name:            "identical folded locations are merged",
+			profs:           []*Profile{testProfile1Folded.Copy(), testProfile1Folded.Copy()},
+			wantLocationLen: 5,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prof, err := Merge(tc.profs)
+			if err != nil {
+				t.Fatalf("merge error: %v", err)
+			}
+			if got, want := len(prof.Location), tc.wantLocationLen; got != want {
+				t.Fatalf("got %d locations, want %d locations", got, want)
+			}
+		})
 	}
 }
 
