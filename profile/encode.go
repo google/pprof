@@ -480,6 +480,7 @@ func (p *Location) encode(b *buffer) {
 	for i := range p.Line {
 		encodeMessage(b, 4, &p.Line[i])
 	}
+	encodeBoolOpt(b, 5, p.IsFolded)
 }
 
 var locationDecoder = []decoder{
@@ -493,6 +494,7 @@ var locationDecoder = []decoder{
 		pp.Line = append(pp.Line, Line{})
 		return decodeMessage(b, &pp.Line[n])
 	},
+	func(b *buffer, m message) error { return decodeBool(b, &m.(*Location).IsFolded) }, // optional bool is_folded = 5;
 }
 
 func (p *Line) decoder() []decoder {

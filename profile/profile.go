@@ -109,10 +109,11 @@ type Mapping struct {
 
 // Location corresponds to Profile.Location
 type Location struct {
-	ID      uint64
-	Mapping *Mapping
-	Address uint64
-	Line    []Line
+	ID       uint64
+	Mapping  *Mapping
+	Address  uint64
+	Line     []Line
+	IsFolded bool
 
 	mappingIDX uint64
 }
@@ -590,6 +591,9 @@ func (l *Location) string() string {
 	locStr := fmt.Sprintf("%6d: %#x ", l.ID, l.Address)
 	if m := l.Mapping; m != nil {
 		locStr = locStr + fmt.Sprintf("M=%d ", m.ID)
+	}
+	if l.IsFolded {
+		locStr = locStr + "[F] "
 	}
 	if len(l.Line) == 0 {
 		ss = append(ss, locStr)

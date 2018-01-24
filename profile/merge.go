@@ -234,10 +234,11 @@ func (pm *profileMerger) mapLocation(src *Location) *Location {
 
 	mi := pm.mapMapping(src.Mapping)
 	l := &Location{
-		ID:      uint64(len(pm.p.Location) + 1),
-		Mapping: mi.m,
-		Address: uint64(int64(src.Address) + mi.offset),
-		Line:    make([]Line, len(src.Line)),
+		ID:       uint64(len(pm.p.Location) + 1),
+		Mapping:  mi.m,
+		Address:  uint64(int64(src.Address) + mi.offset),
+		Line:     make([]Line, len(src.Line)),
+		IsFolded: src.IsFolded,
 	}
 	for i, ln := range src.Line {
 		l.Line[i] = pm.mapLine(ln)
@@ -258,7 +259,8 @@ func (pm *profileMerger) mapLocation(src *Location) *Location {
 // key generates locationKey to be used as a key for maps.
 func (l *Location) key() locationKey {
 	key := locationKey{
-		addr: l.Address,
+		addr:     l.Address,
+		isFolded: l.IsFolded,
 	}
 	if l.Mapping != nil {
 		// Normalizes address to handle address space randomization.
@@ -279,6 +281,7 @@ func (l *Location) key() locationKey {
 type locationKey struct {
 	addr, mappingID uint64
 	lines           string
+	isFolded        bool
 }
 
 func (pm *profileMerger) mapMapping(src *Mapping) mapInfo {

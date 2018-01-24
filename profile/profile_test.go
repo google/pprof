@@ -681,6 +681,39 @@ func TestMergeAll(t *testing.T) {
 	}
 }
 
+func TestIsFoldedMerge(t *testing.T) {
+	testProfile1Folded := testProfile1.Copy()
+	testProfile1Folded.Location[0].IsFolded = true
+	testProfile1Folded.Location[1].IsFolded = true
+
+	for _, tc := range []struct {
+		name            string
+		profs           []*Profile
+		wantLocationLen int
+	}{
+		{
+			name:            "folded and non-folded locations not merged",
+			profs:           []*Profile{testProfile1.Copy(), testProfile1Folded.Copy()},
+			wantLocationLen: 7,
+		},
+		{
+			name:            "identical folded locations are merged",
+			profs:           []*Profile{testProfile1Folded.Copy(), testProfile1Folded.Copy()},
+			wantLocationLen: 5,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prof, err := Merge(tc.profs)
+			if err != nil {
+				t.Fatalf("merge error: %v", err)
+			}
+			if got, want := len(prof.Location), tc.wantLocationLen; got != want {
+				t.Fatalf("got %d locations, want %d locations", got, want)
+			}
+		})
+	}
+}
+
 func TestNumLabelMerge(t *testing.T) {
 	for _, tc := range []struct {
 		name          string
