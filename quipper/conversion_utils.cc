@@ -78,16 +78,18 @@ bool WriteOutput(const FormatAndFile& output,
                  const PerfParserOptions& options,
                  PerfReader* reader) {
   LOG(INFO) << "Writing output.";
+
+  // Apply use PerfParser to modify data in reader, applying hacks all hacks,
+  // regardless of output format.
+  PerfParser parser(reader, options);
+  if (!parser.ParseRawEvents()) return false;
+
   string output_string;
   if (output.format == kPerfFormat) {
     return reader->WriteFile(output.filename);
   }
 
   if (output.format == kProtoTextFormat) {
-    PerfParser parser(reader, options);
-    if (!parser.ParseRawEvents())
-      return false;
-
     PerfDataProto perf_data_proto;
     reader->Serialize(&perf_data_proto);
 
