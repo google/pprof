@@ -143,9 +143,18 @@ func (f fakeObj) SourceLine(addr uint64) ([]plugin.Frame, error) {
 }
 func (f fakeObj) Symbols(r *regexp.Regexp, addr uint64) ([]*plugin.Sym, error) {
 	return []*plugin.Sym{
-		{[]string{"F1"}, fakeSource, addrBase, addrBase + 10},
-		{[]string{"F2"}, fakeSource, addrBase + 10, addrBase + 20},
-		{[]string{"F3"}, fakeSource, addrBase + 20, addrBase + 30},
+		{
+			Name: []string{"F1"}, File: fakeSource,
+			Start: addrBase, End: addrBase + 10,
+		},
+		{
+			Name: []string{"F2"}, File: fakeSource,
+			Start: addrBase + 10, End: addrBase + 20,
+		},
+		{
+			Name: []string{"F3"}, File: fakeSource,
+			Start: addrBase + 20, End: addrBase + 30,
+		},
 	}, nil
 }
 
