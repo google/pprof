@@ -108,6 +108,22 @@ func TestParseError(t *testing.T) {
 	}
 }
 
+func TestParseConcatentated(t *testing.T) {
+	prof := testProfile1.Copy()
+	prof.TimeNanos = 10000
+	// Write the profile twice to buffer to create concatented profile.
+	buf := bytes.NewBuffer(nil)
+	prof.Write(buf)
+	prof.Write(buf)
+	_, err := Parse(buf)
+	if err == nil {
+		t.Fatalf("got nil, want error")
+	}
+	if got, want := err.Error(), "parsing profile: concatenated profiles detected"; want != got {
+		t.Fatalf("got error %q, want error %q", got, want)
+	}
+}
+
 func TestCheckValid(t *testing.T) {
 	const path = "testdata/java.cpu"
 

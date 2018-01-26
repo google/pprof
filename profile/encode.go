@@ -214,7 +214,12 @@ var profileDecoder = []decoder{
 	// int64 keep_frames = 8
 	func(b *buffer, m message) error { return decodeInt64(b, &m.(*Profile).keepFramesX) },
 	// int64 time_nanos = 9
-	func(b *buffer, m message) error { return decodeInt64(b, &m.(*Profile).TimeNanos) },
+	func(b *buffer, m message) error {
+		if m.(*Profile).TimeNanos != 0 {
+			return ErrConcatProfile
+		}
+		return decodeInt64(b, &m.(*Profile).TimeNanos)
+	},
 	// int64 duration_nanos = 10
 	func(b *buffer, m message) error { return decodeInt64(b, &m.(*Profile).DurationNanos) },
 	// ValueType period_type = 11
