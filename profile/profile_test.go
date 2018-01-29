@@ -631,6 +631,7 @@ func TestMerge(t *testing.T) {
 	// location should add up to 0).
 
 	prof := testProfile1.Copy()
+	prof.Comments = []string{"comment1"}
 	p1, err := Merge([]*Profile{prof, prof})
 	if err != nil {
 		t.Errorf("merge error: %v", err)
@@ -639,6 +640,9 @@ func TestMerge(t *testing.T) {
 	prof, err = Merge([]*Profile{p1, prof})
 	if err != nil {
 		t.Errorf("merge error: %v", err)
+	}
+	if got, want := len(prof.Comments), 1; got != want {
+		t.Errorf("len(prof.Comments) = %d, want %d", got, want)
 	}
 
 	// Use aggregation to merge locations at function granularity.
