@@ -23,12 +23,12 @@ import (
 	"net/url"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"sync"
 	"testing"
 
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/profile"
-	"runtime"
 )
 
 func TestWebInterface(t *testing.T) {
