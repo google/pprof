@@ -215,7 +215,7 @@ func (b *binrep) openELF(name string, start, limit, offset uint64) (plugin.ObjFi
 		}
 	}
 
-	base, err := elfexec.GetBase(&ef.FileHeader, nil, stextOffset, start, limit, offset)
+	base, err := elfexec.GetBase(&ef.FileHeader, elfexec.FindTextProgHeader(ef), stextOffset, start, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("Could not identify base for %s: %v", name, err)
 	}

@@ -201,40 +201,57 @@ func TestDisasm(t *testing.T) {
 
 func TestObjFile(t *testing.T) {
 	skipUnlessLinuxAmd64(t)
-	bu := &Binutils{}
-	f, err := bu.Open(filepath.Join("testdata", "hello"), 0, math.MaxUint64, 0)
-	if err != nil {
-		t.Fatalf("Open: unexpected error %v", err)
-	}
-	defer f.Close()
-	syms, err := f.Symbols(regexp.MustCompile("main"), 0)
-	if err != nil {
-		t.Fatalf("Symbols: unexpected error %v", err)
-	}
+	for _, tc := range []struct {
+		desc                 string
+		start, limit, offset uint64
+		addr                 uint64
+	}{
+		{"fake mapping", 0, math.MaxUint64, 0, 0x40052d},
+		{"fixed load address", 0x400000, 0x4006fc, 0, 0x40052d},
+		// True user-mode ASLR binaries are ET_DYN rather than ET_EXEC so this case
+		// is a bit artificial except that it approximates the
+		// vmlinux-with-kernel-ASLR case where the binary *is* ET_EXEC.
+		{"simulated ASLR address", 0x500000, 0x5006fc, 0, 0x50052d},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			bu := &Binutils{}
+			f, err := bu.Open(filepath.Join("testdata", "hello"), tc.start, tc.limit, tc.offset)
+			if err != nil {
+				t.Fatalf("Open: unexpected error %v", err)
+			}
+			defer f.Close()
+			syms, err := f.Symbols(regexp.MustCompile("main"), 0)
+			if err != nil {
+				t.Fatalf("Symbols: unexpected error %v", err)
+			}
 
-	find := func(name string) *plugin.Sym {
-		for _, s := range syms {
-			for _, n := range s.Name {
-				if n == name {
-					return s
+			find := func(name string) *plugin.Sym {
+				for _, s := range syms {
+					for _, n := range s.Name {
+						if n == name {
+							return s
+						}
+					}
+				}
+				return nil
+			}
+			m := find("main")
+			if m == nil {
+				t.Fatalf("Symbols: did not find main")
+			}
+			for _, addr := range []uint64{m.Start + f.Base(), tc.addr} {
+				gotFrames, err := f.SourceLine(addr)
+				if err != nil {
+					t.Fatalf("SourceLine: unexpected error %v", err)
+				}
+				wantFrames := []plugin.Frame{
+					{Func: "main", File: "/tmp/hello.c", Line: 3},
+				}
+				if !reflect.DeepEqual(gotFrames, wantFrames) {
+					t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, wantFrames)
 				}
 			}
-		}
-		return nil
-	}
-	m := find("main")
-	if m == nil {
-		t.Fatalf("Symbols: did not find main")
-	}
-	frames, err := f.SourceLine(m.Start)
-	if err != nil {
-		t.Fatalf("SourceLine: unexpected error %v", err)
-	}
-	expect := []plugin.Frame{
-		{Func: "main", File: "/tmp/hello.c", Line: 3},
-	}
-	if !reflect.DeepEqual(frames, expect) {
-		t.Fatalf("SourceLine for main: expect %v; got %v\n", expect, frames)
+		})
 	}
 }
 
