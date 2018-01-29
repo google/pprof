@@ -2,7 +2,9 @@ language: go
 
 go_import_path: github.com/google/pprof
 
-env: SKIP_GRAPHVIZ=0
+env: 
+ - SKIP_GRAPHVIZ=0
+ - TCP_AVAILABLE=true
 
 matrix:
   include:
