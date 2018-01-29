@@ -31,6 +31,7 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -359,7 +360,7 @@ func closedError() string {
 }
 
 func TestHttpsInsecure(t *testing.T) {
-	if runtime.GOOS == "nacl" {
+	if tcpAvailable, err := strconv.ParseBool(os.Getenv("TCP_AVAILABLE")); err == nil && tcpAvailable {
 		t.Skip("test assumes tcp available")
 	}
 

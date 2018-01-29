@@ -10,4 +10,5 @@ build_script:
  - go build github.com/google/pprof
 
 test_script:
+  - cmd: set TCP_AVAILABLE="true"
   - go test -v ./...
