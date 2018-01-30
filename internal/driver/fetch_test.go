@@ -362,6 +362,14 @@ func TestHttpsInsecure(t *testing.T) {
 	if runtime.GOOS == "nacl" {
 		t.Skip("test assumes tcp available")
 	}
+	saveHome := os.Getenv(homeEnv())
+	tempdir, err := ioutil.TempDir("", "home")
+	if err != nil {
+		t.Fatal("creating temp dir: ", err)
+	}
+	defer os.RemoveAll(tempdir)
+	os.Setenv(homeEnv(), tempdir)
+	defer os.Setenv(homeEnv(), saveHome)
 
 	baseVars := pprofVariables
 	pprofVariables = baseVars.makeCopy()
