@@ -110,7 +110,6 @@ func TestParseError(t *testing.T) {
 
 func TestParseConcatentated(t *testing.T) {
 	prof := testProfile1.Copy()
-	prof.TimeNanos = 10000
 	// Write the profile twice to buffer to create concatented profile.
 	buf := bytes.NewBuffer(nil)
 	prof.Write(buf)
@@ -292,6 +291,7 @@ var cpuL = []*Location{
 }
 
 var testProfile1 = &Profile{
+	TimeNanos:     10000,
 	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
 	Period:        1,
 	DurationNanos: 10e9,
