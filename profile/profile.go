@@ -164,7 +164,7 @@ func ParseData(data []byte) (*Profile, error) {
 			return nil, fmt.Errorf("decompressing profile: %v", err)
 		}
 	}
-	if p, err = ParseUncompressed(data); err != nil && err != errNoData && err != ErrConcatProfile {
+	if p, err = ParseUncompressed(data); err != nil && err != errNoData && err != errConcatProfile {
 		p, err = parseLegacy(data)
 	}
 
@@ -181,9 +181,7 @@ func ParseData(data []byte) (*Profile, error) {
 var errUnrecognized = fmt.Errorf("unrecognized profile format")
 var errMalformed = fmt.Errorf("malformed profile format")
 var errNoData = fmt.Errorf("empty input file")
-
-// ErrConcatProfile is the error returned when a concatenated profile is detected.
-var ErrConcatProfile = fmt.Errorf("concatenated profiles detected")
+var errConcatProfile = fmt.Errorf("concatenated profiles detected")
 
 func parseLegacy(data []byte) (*Profile, error) {
 	parsers := []func([]byte) (*Profile, error){

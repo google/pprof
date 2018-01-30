@@ -216,7 +216,7 @@ var profileDecoder = []decoder{
 	// int64 time_nanos = 9
 	func(b *buffer, m message) error {
 		if m.(*Profile).TimeNanos != 0 {
-			return ErrConcatProfile
+			return errConcatProfile
 		}
 		return decodeInt64(b, &m.(*Profile).TimeNanos)
 	},
