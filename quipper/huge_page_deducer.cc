@@ -120,7 +120,7 @@ void CombineMappings(RepeatedPtrField<PerfEvent>* events) {
 
     const MMapEvent& mmap = event->mmap_event();
     // Try to merge mmap with |new_events[prev]|.
-    while (prev < new_events.size() && !new_events[prev].has_mmap_event()) {
+    while (prev < new_events.size() && !new_events.Get(prev).has_mmap_event()) {
       prev++;
     }
 
@@ -129,7 +129,7 @@ void CombineMappings(RepeatedPtrField<PerfEvent>* events) {
       continue;
     }
 
-    MMapEvent* prev_mmap = new_events[prev].mutable_mmap_event();
+    MMapEvent* prev_mmap = new_events.Mutable(prev)->mutable_mmap_event();
 
     const bool pid_match = prev_mmap->pid() == mmap.pid();
     const bool file_match = prev_mmap->filename() == mmap.filename();
