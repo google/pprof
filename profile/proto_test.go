@@ -151,9 +151,9 @@ var all = &Profile{
 
 func TestMarshalUnmarshal(t *testing.T) {
 	// Write the profile, parse it, and ensure they're equal.
-	buf := bytes.NewBuffer(nil)
-	all.Write(buf)
-	all2, err := Parse(buf)
+	var buf bytes.Buffer
+	all.Write(&buf)
+	all2, err := Parse(&buf)
 	if err != nil {
 		t.Fatal(err)
 	}
