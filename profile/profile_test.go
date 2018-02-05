@@ -73,11 +73,11 @@ func TestParse(t *testing.T) {
 		}
 
 		// Reencode and decode.
-		bw := bytes.NewBuffer(nil)
-		if err := p.Write(bw); err != nil {
+		var bw bytes.Buffer
+		if err := p.Write(&bw); err != nil {
 			t.Fatalf("%s: %v", source, err)
 		}
-		if p, err = Parse(bw); err != nil {
+		if p, err = Parse(&bw); err != nil {
 			t.Fatalf("%s: %v", source, err)
 		}
 		js2 := p.String()
@@ -111,10 +111,10 @@ func TestParseError(t *testing.T) {
 func TestParseConcatentated(t *testing.T) {
 	prof := testProfile1.Copy()
 	// Write the profile twice to buffer to create concatented profile.
-	buf := bytes.NewBuffer(nil)
-	prof.Write(buf)
-	prof.Write(buf)
-	_, err := Parse(buf)
+	var buf bytes.Buffer
+	prof.Write(&buf)
+	prof.Write(&buf)
+	_, err := Parse(&buf)
 	if err == nil {
 		t.Fatalf("got nil, want error")
 	}
