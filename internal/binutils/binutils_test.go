@@ -177,14 +177,20 @@ func TestSetFastSymbolization(t *testing.T) {
 
 func skipUnlessLinuxAmd64(t *testing.T) {
 	if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
-		t.Skip("Disasm only tested on x86-64 linux")
+		t.Skip("This test only works on x86-64 Linux")
+	}
+}
+
+func skipUnlessDarwinAmd64(t *testing.T) {
+	if runtime.GOOS != "darwin" || runtime.GOARCH != "amd64" {
+		t.Skip("This test only works on x86-64 Mac")
 	}
 }
 
 func TestDisasm(t *testing.T) {
 	skipUnlessLinuxAmd64(t)
 	bu := &Binutils{}
-	insts, err := bu.Disasm(filepath.Join("testdata", "hello"), 0, math.MaxUint64)
+	insts, err := bu.Disasm(filepath.Join("testdata", "exe_linux_64"), 0, math.MaxUint64)
 	if err != nil {
 		t.Fatalf("Disasm: unexpected error %v", err)
 	}
@@ -215,7 +221,7 @@ func TestObjFile(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			bu := &Binutils{}
-			f, err := bu.Open(filepath.Join("testdata", "hello"), tc.start, tc.limit, tc.offset)
+			f, err := bu.Open(filepath.Join("testdata", "exe_linux_64"), tc.start, tc.limit, tc.offset)
 			if err != nil {
 				t.Fatalf("Open: unexpected error %v", err)
 			}
@@ -250,6 +256,73 @@ func TestObjFile(t *testing.T) {
 				if !reflect.DeepEqual(gotFrames, wantFrames) {
 					t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, wantFrames)
 				}
+			}
+		})
+	}
+}
+
+func TestMachoFiles(t *testing.T) {
+	skipUnlessDarwinAmd64(t)
+
+	// Load `file`, pretending it was mapped at `start`. Then get the symbol
+	// table. Check that it contains the symbol `sym` and that the address
+	// `addr` gives the `expected` stack trace.
+	for _, tc := range []struct {
+		desc                 string
+		file                 string
+		start, limit, offset uint64
+		addr                 uint64
+		sym                  string
+		expected             []plugin.Frame
+	}{
+		{"normal mapping", "exe_mac_64", 0x100000000, math.MaxUint64, 0,
+			0x100000f50, "_main",
+			[]plugin.Frame{
+				{Func: "main", File: "/tmp/hello.c", Line: 3},
+			}},
+		{"other mapping", "exe_mac_64", 0x200000000, math.MaxUint64, 0,
+			0x200000f50, "_main",
+			[]plugin.Frame{
+				{Func: "main", File: "/tmp/hello.c", Line: 3},
+			}},
+		{"lib normal mapping", "lib_mac_64", 0, math.MaxUint64, 0,
+			0xfa0, "_bar",
+			[]plugin.Frame{
+				{Func: "bar", File: "/tmp/lib.c", Line: 6},
+			}},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			bu := &Binutils{}
+			f, err := bu.Open(filepath.Join("testdata", tc.file), tc.start, tc.limit, tc.offset)
+			if err != nil {
+				t.Fatalf("Open: unexpected error %v", err)
+			}
+			defer f.Close()
+			syms, err := f.Symbols(nil, 0)
+			if err != nil {
+				t.Fatalf("Symbols: unexpected error %v", err)
+			}
+
+			find := func(name string) *plugin.Sym {
+				for _, s := range syms {
+					for _, n := range s.Name {
+						if n == name {
+							return s
+						}
+					}
+				}
+				return nil
+			}
+			m := find(tc.sym)
+			if m == nil {
+				t.Fatalf("Symbols: could not find symbol %v", tc.sym)
+			}
+			gotFrames, err := f.SourceLine(tc.addr)
+			if err != nil {
+				t.Fatalf("SourceLine: unexpected error %v", err)
+			}
+			if !reflect.DeepEqual(gotFrames, tc.expected) {
+				t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, tc.expected)
 			}
 		})
 	}

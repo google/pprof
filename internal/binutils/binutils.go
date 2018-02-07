@@ -172,21 +172,6 @@ func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFi
 	return nil, fmt.Errorf("unrecognized binary: %s", name)
 }
 
-// Base address of the __TEXT section. Usually 0 for shared libraries
-// of 0x100000000 for executables. You can check this value by
-// running `objdump -private-headers <file>`.
-func getTextAddress(of *macho.File) uint64 {
-	for _, ld := range of.Loads {
-		switch s := ld.(type) {
-		case *macho.Segment:
-			if s.Name == "__TEXT" {
-				return s.Addr
-			}
-		}
-	}
-	return 0
-}
-
 func (b *binrep) openMachO(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
 	of, err := macho.Open(name)
 	if err != nil {
@@ -194,7 +179,15 @@ func (b *binrep) openMachO(name string, start, limit, offset uint64) (plugin.Obj
 	}
 	defer of.Close()
 
-	base := start - getTextAddress(of)
+	base := start
+
+	// Subtract the load address of the __TEXT section. Usually 0 for shared
+	// libraries or 0x100000000 for executables. You can check this value by
+	// running `objdump -private-headers <file>`.
+	textSegment := of.Segment("__TEXT")
+	if textSegment != nil {
+		base -= textSegment.Addr
+	}
 
 	if b.fast || (!b.addr2lineFound && !b.llvmSymbolizerFound) {
 		return &fileNM{file: file{b: b, name: name, base: base}}, nil

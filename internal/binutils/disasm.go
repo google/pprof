@@ -37,6 +37,7 @@ func findSymbols(syms []byte, file string, r *regexp.Regexp, address uint64) ([]
 	var symbols []*plugin.Sym
 	names, start := []string{}, uint64(0)
 	buf := bytes.NewBuffer(syms)
+	symAddr := uint64(0)
 	for symAddr, name, err := nextSymbol(buf); err == nil; symAddr, name, err = nextSymbol(buf) {
 		if err != nil {
 			return nil, err
@@ -51,6 +52,12 @@ func findSymbols(syms []byte, file string, r *regexp.Regexp, address uint64) ([]
 		names, start = []string{name}, symAddr
 	}
 
+	if len(names) != 0 {
+		if match := matchSymbol(names, start, symAddr-1, r, address); match != nil {
+			symbols = append(symbols, &plugin.Sym{Name: match, File: file, Start: start, End: symAddr - 1})
+		}
+	}
+
 	return symbols, nil
 }
 
@@ -62,7 +69,7 @@ func matchSymbol(names []string, start, end uint64, r *regexp.Regexp, address ui
 		return names
 	}
 	for _, name := range names {
-		if r.MatchString(name) {
+		if r == nil || r.MatchString(name) {
 			return []string{name}
 		}
 
