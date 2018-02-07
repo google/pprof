@@ -83,18 +83,10 @@ type webArgs struct {
 }
 
 func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options, wantBrowser bool) error {
-	host, portStr, err := net.SplitHostPort(hostport)
+	host, port, err := getHostAndPort(hostport)
 	if err != nil {
-		return fmt.Errorf("could not split http address: %v", err)
+		return err
 	}
-	port, err := strconv.Atoi(portStr)
-	if err != nil {
-		return fmt.Errorf("invalid port number: %v", err)
-	}
-	if host == "" {
-		host = "localhost"
-	}
-
 	interactiveMode = true
 	ui := makeWebInterface(p, o)
 	for n, c := range pprofCommands {
@@ -112,7 +104,7 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options, w
 		server = defaultWebServer
 	}
 	args := &plugin.HTTPServerArgs{
-		Hostport: net.JoinHostPort(host, portStr),
+		Hostport: net.JoinHostPort(host, strconv.Itoa(port)),
 		Host:     host,
 		Port:     port,
 		Handlers: map[string]http.Handler{
@@ -131,6 +123,34 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options, w
 	return server(args)
 }
 
+func getHostAndPort(hostport string) (string, int, error) {
+	host, portStr, err := net.SplitHostPort(hostport)
+	if err != nil {
+		return "", 0, fmt.Errorf("could not split http address: %v", err)
+	}
+	if host == "" {
+		host = "localhost"
+	}
+	var port int
+	if portStr == "" {
+		ln, err := net.Listen("tcp", net.JoinHostPort(host, "0"))
+		if err != nil {
+			return "", 0, fmt.Errorf("could not generate random port: %v", err)
+		}
+		port = ln.Addr().(*net.TCPAddr).Port
+		err = ln.Close()
+		if err != nil {
+			return "", 0, fmt.Errorf("could not generate random port: %v", err)
+		}
+		fmt.Printf("\n%v\n", port)
+	} else {
+		port, err = strconv.Atoi(portStr)
+		if err != nil {
+			return "", 0, fmt.Errorf("invalid port number: %v", err)
+		}
+	}
+	return host, port, nil
+}
 func defaultWebServer(args *plugin.HTTPServerArgs) error {
 	ln, err := net.Listen("tcp", args.Hostport)
 	if err != nil {

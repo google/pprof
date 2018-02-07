@@ -228,6 +228,41 @@ func makeFakeProfile() *profile.Profile {
 	}
 }
 
+func TestGetHostAndPort(t *testing.T) {
+	if runtime.GOOS == "nacl" {
+		t.Skip("test assumes tcp available")
+	}
+
+	type testCase struct {
+		hostport       string
+		wantHost       string
+		wantPort       int
+		wantRandomPort bool
+	}
+
+	testCases := []testCase{
+		{":", "localhost", 0, true},
+		{":4681", "localhost", 4681, false},
+		{"localhost:4681", "localhost", 4681, false},
+	}
+	for _, tc := range testCases {
+		host, port, err := getHostAndPort(tc.hostport)
+		if err != nil {
+			t.Errorf("could not get host and port for %q: %v", tc.hostport, err)
+		}
+		if got, want := host, tc.wantHost; got != want {
+			t.Errorf("for %s, got host %s, want %s", tc.hostport, got, want)
+			continue
+		}
+		if !tc.wantRandomPort {
+			if got, want := port, tc.wantPort; got != want {
+				t.Errorf("for %s, got port %d, want %d", tc.hostport, got, want)
+				continue
+			}
+		}
+	}
+}
+
 func TestIsLocalHost(t *testing.T) {
 	for _, s := range []string{"localhost:10000", "[::1]:10000", "127.0.0.1:10000"} {
 		host, _, err := net.SplitHostPort(s)
