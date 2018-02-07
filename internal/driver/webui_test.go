@@ -119,7 +119,10 @@ func TestWebInterface(t *testing.T) {
 		for count := 0; count < 2; count++ {
 			wg.Add(1)
 			go func() {
-				http.Get(path)
+				res, err := http.Get(path)
+				if err == nil {
+					ioutil.ReadAll(res.Body)
+				}
 				wg.Done()
 			}()
 		}
