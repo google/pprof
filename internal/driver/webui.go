@@ -142,7 +142,6 @@ func getHostAndPort(hostport string) (string, int, error) {
 		if err != nil {
 			return "", 0, fmt.Errorf("could not generate random port: %v", err)
 		}
-		fmt.Printf("\n%v\n", port)
 	} else {
 		port, err = strconv.Atoi(portStr)
 		if err != nil {
