@@ -37,13 +37,6 @@ using PerfEvent = PerfDataProto_PerfEvent;
 
 namespace {
 
-// Any run of perf should have MMAPs with the following substrings.
-const char* kExpectedFilenameSubstrings[] = {
-  "perf",
-  "kernel",
-  "libc",
-};
-
 void CheckChronologicalOrderOfEvents(const PerfReader& reader) {
   if (reader.events().empty())
     return;
@@ -60,16 +53,6 @@ void CheckNoDuplicates(const std::vector<string>& list) {
   std::set<string> list_as_set(list.begin(), list.end());
   if (list.size() != list_as_set.size())
     ADD_FAILURE() << "Given list has at least one duplicate";
-}
-
-void CheckForElementWithSubstring(string substring_to_find,
-                                  const std::vector<string>& list) {
-  std::vector<string>::const_iterator iter;
-  for (iter = list.begin(); iter != list.end(); ++iter)
-    if (iter->find(substring_to_find) != string::npos)
-      return;
-  ADD_FAILURE() << substring_to_find
-                << " is not present in any of the elements of the given list";
 }
 
 void CreateFilenameToBuildIDMap(
@@ -100,8 +83,6 @@ void CheckFilenameAndBuildIDMethods(PerfReader* reader,
 
   ASSERT_FALSE(filenames.empty());
   CheckNoDuplicates(filenames);
-  for (const char* substring : kExpectedFilenameSubstrings)
-    CheckForElementWithSubstring(substring, filenames);
 
   std::set<string> filename_set;
   reader->GetFilenamesAsSet(&filename_set);
