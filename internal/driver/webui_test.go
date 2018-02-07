@@ -119,16 +119,15 @@ func TestWebInterface(t *testing.T) {
 		for count := 0; count < 2; count++ {
 			wg.Add(1)
 			go func() {
+				defer wg.Done()
 				res, err := http.Get(path)
 				if err != nil {
 					t.Error("could not fetch", c.path, err)
-					wg.Done()
 					return
 				}
 				if _, err = ioutil.ReadAll(res.Body); err != nil {
 					t.Error("could not read response", c.path, err)
 				}
-				wg.Done()
 			}()
 		}
 	}
