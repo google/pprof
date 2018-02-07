@@ -120,8 +120,13 @@ func TestWebInterface(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				res, err := http.Get(path)
-				if err == nil {
-					ioutil.ReadAll(res.Body)
+				if err != nil {
+					t.Error("could not fetch", c.path, err)
+					wg.Done()
+					return
+				}
+				if _, err = ioutil.ReadAll(res.Body); err != nil {
+					t.Error("could not read response", c.path, err)
 				}
 				wg.Done()
 			}()
