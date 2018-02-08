@@ -43,6 +43,13 @@ using SampleInfo = PerfDataProto_SampleInfo;
 
 namespace {
 
+// Set up some parameterized fixtures for test cases that should run
+// against multiple files.
+class PerfDataFiles : public ::testing::TestWithParam<const char*> {};
+class PerfPipedDataFiles : public ::testing::TestWithParam<const char*> {};
+class AllPerfDataFiles : public ::testing::TestWithParam<const char*> {};
+class PerfDataProtoFiles : public ::testing::TestWithParam<const char*> {};
+
 // Gets the timestamp from an event field in PerfDataProto.
 const uint64_t GetSampleTimestampFromEventProto(
     const PerfDataProto_PerfEvent& event) {
@@ -173,7 +180,7 @@ void SerializeToFileAndBack(const string& input, const string& output) {
 
 }  // namespace
 
-TEST(PerfSerializerTest, Test1Cycle) {
+TEST_P(PerfDataFiles, Test1Cycle) {
   ScopedTempDir output_dir;
   ASSERT_FALSE(output_dir.path().empty());
   string output_path = output_dir.path();
@@ -181,14 +188,15 @@ TEST(PerfSerializerTest, Test1Cycle) {
   // Read perf data using the PerfReader class.
   // Dump it to a protobuf.
   // Read the protobuf, and reconstruct the perf data.
-  for (const char* test_file : perf_test_files::GetPerfDataFiles()) {
     PerfReader input_perf_reader, output_perf_reader, output_perf_reader1,
         output_perf_reader2;
     PerfDataProto perf_data_proto, perf_data_proto1;
 
-    string input_perf_data = GetTestInputFilePath(test_file);
-    string output_perf_data = output_path + test_file + ".serialized.out";
-    string output_perf_data1 = output_path + test_file + ".serialized.1.out";
+    const string test_file = GetParam();
+    const string input_perf_data = GetTestInputFilePath(test_file);
+    const string output_perf_data = output_path + test_file + ".serialized.out";
+    const string output_perf_data1 =
+        output_path + test_file + ".serialized.1.out";
 
     LOG(INFO) << "Testing " << input_perf_data;
     ASSERT_TRUE(input_perf_reader.ReadFile(input_perf_data));
@@ -231,169 +239,155 @@ TEST(PerfSerializerTest, Test1Cycle) {
     EXPECT_TRUE(ComparePerfBuildIDLists(input_perf_data, output_perf_data));
     EXPECT_TRUE(CheckPerfDataAgainstBaseline(output_perf_data2));
     EXPECT_TRUE(ComparePerfBuildIDLists(output_perf_data, output_perf_data2));
-  }
 }
 
-TEST(PerfSerializerTest, TestRemap) {
+TEST_P(AllPerfDataFiles, TestRemap) {
   ScopedTempDir output_dir;
   ASSERT_FALSE(output_dir.path().empty());
-  string output_path = output_dir.path();
+  const string output_path = output_dir.path();
 
   // Read perf data using the PerfReader class with address remapping.
   // Dump it to a protobuf.
   // Read the protobuf, and reconstruct the perf data.
-  for (const char* test_file : perf_test_files::GetPerfDataFiles()) {
-    const string input_perf_data = GetTestInputFilePath(test_file);
-    LOG(INFO) << "Testing " << input_perf_data;
-    const string output_perf_data = output_path + test_file + ".ser.remap.out";
-    SerializeAndDeserialize(input_perf_data, output_perf_data, true, true);
-  }
-
-  for (const char* test_file : perf_test_files::GetPerfPipedDataFiles()) {
-    const string input_perf_data = GetTestInputFilePath(test_file);
-    LOG(INFO) << "Testing " << input_perf_data;
-    const string output_perf_data = output_path + test_file + ".ser.remap.out";
-    SerializeAndDeserialize(input_perf_data, output_perf_data, true, true);
-  }
+  const string test_file = GetParam();
+  const string input_perf_data = GetTestInputFilePath(test_file);
+  LOG(INFO) << "Testing " << input_perf_data;
+  const string output_perf_data = output_path + test_file + ".ser.remap.out";
+  SerializeAndDeserialize(input_perf_data, output_perf_data, true, true);
 }
 
-TEST(PerfSerializerTest, TestCommMd5s) {
+TEST_P(PerfDataFiles, TestCommMd5s) {
   ScopedTempDir output_dir;
   ASSERT_FALSE(output_dir.path().empty());
   string output_path = output_dir.path();
 
   // Replace command strings with their Md5sums.  Test size adjustment for
   // command strings.
-  for (const char* test_file : perf_test_files::GetPerfDataFiles()) {
-    const string input_perf_data = GetTestInputFilePath(test_file);
-    LOG(INFO) << "Testing COMM Md5sum for " << input_perf_data;
+  const string test_file = GetParam();
+  const string input_perf_data = GetTestInputFilePath(test_file);
+  LOG(INFO) << "Testing COMM Md5sum for " << input_perf_data;
 
-    PerfDataProto perf_data_proto;
-    EXPECT_TRUE(SerializeFromFile(input_perf_data, &perf_data_proto));
+  PerfDataProto perf_data_proto;
+  EXPECT_TRUE(SerializeFromFile(input_perf_data, &perf_data_proto));
 
-    // Need to get file attrs to construct a SampleInfoReader within
-    // |serializer|.
-    ASSERT_GT(perf_data_proto.file_attrs().size(), 0U);
-    ASSERT_TRUE(perf_data_proto.file_attrs(0).has_attr());
-    PerfSerializer serializer;
-    PerfFileAttr attr;
-    const auto& proto_attr = perf_data_proto.file_attrs(0);
-    ASSERT_TRUE(serializer.DeserializePerfFileAttr(proto_attr, &attr));
-    serializer.CreateSampleInfoReader(attr, false /* read_cross_endian */);
+  // Need to get file attrs to construct a SampleInfoReader within
+  // |serializer|.
+  ASSERT_GT(perf_data_proto.file_attrs().size(), 0U);
+  ASSERT_TRUE(perf_data_proto.file_attrs(0).has_attr());
+  PerfSerializer serializer;
+  PerfFileAttr attr;
+  const auto& proto_attr = perf_data_proto.file_attrs(0);
+  ASSERT_TRUE(serializer.DeserializePerfFileAttr(proto_attr, &attr));
+  serializer.CreateSampleInfoReader(attr, false /* read_cross_endian */);
 
-    for (int j = 0; j < perf_data_proto.events_size(); ++j) {
-      PerfDataProto_PerfEvent& event = *perf_data_proto.mutable_events(j);
-      if (event.header().type() != PERF_RECORD_COMM) continue;
-      CHECK(event.has_comm_event());
+  for (int j = 0; j < perf_data_proto.events_size(); ++j) {
+    PerfDataProto_PerfEvent& event = *perf_data_proto.mutable_events(j);
+    if (event.header().type() != PERF_RECORD_COMM) continue;
+    CHECK(event.has_comm_event());
 
-      string comm_md5_string =
-          UintToString(event.comm_event().comm_md5_prefix());
-      // Make sure it fits in the comm string array, accounting for the null
-      // terminator.
-      struct comm_event dummy;
-      if (comm_md5_string.size() > arraysize(dummy.comm) - 1)
-        comm_md5_string.resize(arraysize(dummy.comm) - 1);
-      int64_t string_len_diff =
-          GetUint64AlignedStringLength(comm_md5_string) -
-          GetUint64AlignedStringLength(event.comm_event().comm());
-      event.mutable_comm_event()->set_comm(comm_md5_string);
+    string comm_md5_string = UintToString(event.comm_event().comm_md5_prefix());
+    // Make sure it fits in the comm string array, accounting for the null
+    // terminator.
+    struct comm_event dummy;
+    if (comm_md5_string.size() > arraysize(dummy.comm) - 1)
+      comm_md5_string.resize(arraysize(dummy.comm) - 1);
+    int64_t string_len_diff =
+        GetUint64AlignedStringLength(comm_md5_string) -
+        GetUint64AlignedStringLength(event.comm_event().comm());
+    event.mutable_comm_event()->set_comm(comm_md5_string);
 
-      // Update with the new size.
-      event.mutable_header()->set_size(event.header().size() + string_len_diff);
+    // Update with the new size.
+    event.mutable_header()->set_size(event.header().size() + string_len_diff);
     }
 
     const string output_perf_data = output_path + test_file + ".ser.comm.out";
     EXPECT_TRUE(DeserializeToFile(perf_data_proto, output_perf_data));
     EXPECT_TRUE(CheckPerfDataAgainstBaseline(output_perf_data));
-  }
 }
 
-TEST(PerfSerializerTest, TestMmapMd5s) {
+TEST_P(PerfDataFiles, TestMmapMd5s) {
   ScopedTempDir output_dir;
   ASSERT_FALSE(output_dir.path().empty());
   string output_path = output_dir.path();
 
   // Replace MMAP filename strings with their Md5sums.  Test size adjustment for
   // MMAP filename strings.
-  for (const char* test_file : perf_test_files::GetPerfDataFiles()) {
-    const string input_perf_data = GetTestInputFilePath(test_file);
-    LOG(INFO) << "Testing MMAP Md5sum for " << input_perf_data;
+  const string test_file = GetParam();
+  const string input_perf_data = GetTestInputFilePath(test_file);
+  LOG(INFO) << "Testing MMAP Md5sum for " << input_perf_data;
 
-    PerfDataProto perf_data_proto;
-    EXPECT_TRUE(SerializeFromFile(input_perf_data, &perf_data_proto));
+  PerfDataProto perf_data_proto;
+  EXPECT_TRUE(SerializeFromFile(input_perf_data, &perf_data_proto));
 
-    // Need to get file attrs to construct a SampleInfoReader within
-    // |serializer|.
-    ASSERT_GT(perf_data_proto.file_attrs().size(), 0U);
-    ASSERT_TRUE(perf_data_proto.file_attrs(0).has_attr());
-    PerfSerializer serializer;
-    PerfFileAttr attr;
-    const auto& proto_attr = perf_data_proto.file_attrs(0);
-    ASSERT_TRUE(serializer.DeserializePerfFileAttr(proto_attr, &attr));
-    serializer.CreateSampleInfoReader(attr, false /* read_cross_endian */);
+  // Need to get file attrs to construct a SampleInfoReader within
+  // |serializer|.
+  ASSERT_GT(perf_data_proto.file_attrs().size(), 0U);
+  ASSERT_TRUE(perf_data_proto.file_attrs(0).has_attr());
+  PerfSerializer serializer;
+  PerfFileAttr attr;
+  const auto& proto_attr = perf_data_proto.file_attrs(0);
+  ASSERT_TRUE(serializer.DeserializePerfFileAttr(proto_attr, &attr));
+  serializer.CreateSampleInfoReader(attr, false /* read_cross_endian */);
 
-    for (int j = 0; j < perf_data_proto.events_size(); ++j) {
-      PerfDataProto_PerfEvent& event = *perf_data_proto.mutable_events(j);
-      if (event.header().type() != PERF_RECORD_MMAP) continue;
-      ASSERT_TRUE(event.has_mmap_event());
+  for (int j = 0; j < perf_data_proto.events_size(); ++j) {
+    PerfDataProto_PerfEvent& event = *perf_data_proto.mutable_events(j);
+    if (event.header().type() != PERF_RECORD_MMAP) continue;
+    ASSERT_TRUE(event.has_mmap_event());
 
-      string filename_md5_string =
-          UintToString(event.mmap_event().filename_md5_prefix());
-      struct mmap_event dummy;
-      // Make sure the Md5 prefix string can fit in the filename buffer,
-      // including the null terminator
-      if (filename_md5_string.size() > arraysize(dummy.filename) - 1)
-        filename_md5_string.resize(arraysize(dummy.filename) - 1);
+    string filename_md5_string =
+        UintToString(event.mmap_event().filename_md5_prefix());
+    struct mmap_event dummy;
+    // Make sure the Md5 prefix string can fit in the filename buffer,
+    // including the null terminator
+    if (filename_md5_string.size() > arraysize(dummy.filename) - 1)
+      filename_md5_string.resize(arraysize(dummy.filename) - 1);
 
-      int64_t string_len_diff =
-          GetUint64AlignedStringLength(filename_md5_string) -
-          GetUint64AlignedStringLength(event.mmap_event().filename());
-      event.mutable_mmap_event()->set_filename(filename_md5_string);
+    int64_t string_len_diff =
+        GetUint64AlignedStringLength(filename_md5_string) -
+        GetUint64AlignedStringLength(event.mmap_event().filename());
+    event.mutable_mmap_event()->set_filename(filename_md5_string);
 
-      // Update with the new size.
-      event.mutable_header()->set_size(event.header().size() + string_len_diff);
+    // Update with the new size.
+    event.mutable_header()->set_size(event.header().size() + string_len_diff);
     }
 
     const string output_perf_data = output_path + test_file + ".ser.mmap.out";
     // Make sure the data can be deserialized after replacing the filenames with
     // Md5sum prefixes.  No need to check the output.
     EXPECT_TRUE(DeserializeToFile(perf_data_proto, output_perf_data));
-  }
 }
 
-TEST(PerfSerializerTest, TestProtoFiles) {
-  for (const char* test_file : perf_test_files::GetPerfDataProtoFiles()) {
-    string perf_data_proto_file = GetTestInputFilePath(test_file);
-    LOG(INFO) << "Testing " << perf_data_proto_file;
-    std::vector<char> data;
-    ASSERT_TRUE(FileToBuffer(perf_data_proto_file, &data));
-    string text(data.begin(), data.end());
+TEST_P(PerfDataProtoFiles, TestProtoFiles) {
+  const string test_file = GetParam();
+  string perf_data_proto_file = GetTestInputFilePath(test_file);
+  LOG(INFO) << "Testing " << perf_data_proto_file;
+  std::vector<char> data;
+  ASSERT_TRUE(FileToBuffer(perf_data_proto_file, &data));
+  string text(data.begin(), data.end());
 
-    PerfDataProto perf_data_proto;
-    ASSERT_TRUE(TextFormat::ParseFromString(text, &perf_data_proto));
+  PerfDataProto perf_data_proto;
+  ASSERT_TRUE(TextFormat::ParseFromString(text, &perf_data_proto));
 
-    // Test deserializing.
-    PerfReader deserializer;
-    EXPECT_TRUE(deserializer.Deserialize(perf_data_proto));
-  }
+  // Test deserializing.
+  PerfReader deserializer;
+  EXPECT_TRUE(deserializer.Deserialize(perf_data_proto));
 }
 
-TEST(PerfSerializerTest, TestBuildIDs) {
-  for (const char* test_file : perf_test_files::GetPerfDataFiles()) {
-    string perf_data_file = GetTestInputFilePath(test_file);
-    LOG(INFO) << "Testing " << perf_data_file;
+TEST_P(PerfDataFiles, TestBuildIDs) {
+  const string test_file = GetParam();
+  string perf_data_file = GetTestInputFilePath(test_file);
+  LOG(INFO) << "Testing " << perf_data_file;
 
-    // Serialize into a protobuf.
-    PerfDataProto perf_data_proto;
-    EXPECT_TRUE(SerializeFromFile(perf_data_file, &perf_data_proto));
+  // Serialize into a protobuf.
+  PerfDataProto perf_data_proto;
+  EXPECT_TRUE(SerializeFromFile(perf_data_file, &perf_data_proto));
 
-    // Test a file with build ID filenames removed.
-    for (int i = 0; i < perf_data_proto.build_ids_size(); ++i) {
-      perf_data_proto.mutable_build_ids(i)->clear_filename();
-    }
-    PerfReader deserializer;
-    EXPECT_TRUE(deserializer.Deserialize(perf_data_proto));
+  // Test a file with build ID filenames removed.
+  for (int i = 0; i < perf_data_proto.build_ids_size(); ++i) {
+    perf_data_proto.mutable_build_ids(i)->clear_filename();
   }
+  PerfReader deserializer;
+  EXPECT_TRUE(deserializer.Deserialize(perf_data_proto));
 }
 
 TEST(PerfSerializerTest, SerializesAndDeserializesTraceMetadata) {
@@ -807,4 +801,26 @@ TEST(PerfSerializerTest, DeserializeLegacyExitEvents) {
   EXPECT_EQ(433ULL * 1000000000, sample_info.sample_time_ns());
 }
 
+namespace {
+std::vector<const char*> AllPerfData() {
+  const auto& files = perf_test_files::GetPerfDataFiles();
+  const auto& piped = perf_test_files::GetPerfPipedDataFiles();
+
+  std::vector<const char*> ret(std::begin(files), std::end(files));
+  ret.insert(std::end(ret), std::begin(piped), std::end(piped));
+  return ret;
+}
+}  // namespace
+
+INSTANTIATE_TEST_CASE_P(
+    PerfSerializerTest, PerfDataFiles,
+    ::testing::ValuesIn(perf_test_files::GetPerfDataFiles()));
+INSTANTIATE_TEST_CASE_P(
+    PerfSerializerTest, PerfPipedDataFiles,
+    ::testing::ValuesIn(perf_test_files::GetPerfPipedDataFiles()));
+INSTANTIATE_TEST_CASE_P(PerfSerializerTest, AllPerfDataFiles,
+                        ::testing::ValuesIn(AllPerfData()));
+INSTANTIATE_TEST_CASE_P(
+    PerfSerializerTest, PerfDataProtoFiles,
+    ::testing::ValuesIn(perf_test_files::GetPerfDataProtoFiles()));
 }  // namespace quipper

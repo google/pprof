@@ -208,137 +208,144 @@ TEST(PerfParserTest, TestDSOAndOffsetConstructor) {
   EXPECT_TRUE(dso_and_offset.dso_name().empty());
 }
 
-TEST(PerfParserTest, NormalPerfData) {
+class PerfDataFiles : public ::testing::TestWithParam<const char *> {};
+class PerfPipedDataFiles : public ::testing::TestWithParam<const char *> {};
+
+TEST_P(PerfDataFiles, NormalPerfData) {
   ScopedTempDir output_dir;
   ASSERT_FALSE(output_dir.path().empty());
   string output_path = output_dir.path();
 
   int seed = 0;
-  for (const char *test_file : perf_test_files::GetPerfDataFiles()) {
-    string input_perf_data = GetTestInputFilePath(test_file);
-    LOG(INFO) << "Testing " << input_perf_data;
+  string test_file = GetParam();
+  string input_perf_data = GetTestInputFilePath(test_file);
+  LOG(INFO) << "Testing " << input_perf_data;
 
-    PerfReader reader;
-    ASSERT_TRUE(reader.ReadFile(input_perf_data));
+  PerfReader reader;
+  ASSERT_TRUE(reader.ReadFile(input_perf_data));
 
-    // Test the PerfReader stage of the processing before continuing.
-    string pr_output_perf_data = output_path + test_file + ".pr.out";
-    ASSERT_TRUE(reader.WriteFile(pr_output_perf_data));
-    EXPECT_TRUE(CheckPerfDataAgainstBaseline(pr_output_perf_data));
+  // Test the PerfReader stage of the processing before continuing.
+  string pr_output_perf_data = output_path + test_file + ".pr.out";
+  ASSERT_TRUE(reader.WriteFile(pr_output_perf_data));
+  EXPECT_TRUE(CheckPerfDataAgainstBaseline(pr_output_perf_data));
 
-    // Run it through PerfParser.
-    PerfParserOptions options = GetTestOptions();
-    options.sort_events_by_time = true;
-    PerfParser parser(&reader, options);
-    ASSERT_TRUE(parser.ParseRawEvents());
+  // Run it through PerfParser.
+  PerfParserOptions options = GetTestOptions();
+  options.sort_events_by_time = true;
+  PerfParser parser(&reader, options);
+  ASSERT_TRUE(parser.ParseRawEvents());
 
-    CHECK_GT(parser.parsed_events().size(), 0U);
-    CheckChronologicalOrderOfEvents(reader);
+  CHECK_GT(parser.parsed_events().size(), 0U);
+  CheckChronologicalOrderOfEvents(reader);
 
-    // Check perf event stats.
-    const PerfEventStats &stats = parser.stats();
-    EXPECT_GT(stats.num_sample_events, 0U);
-    EXPECT_GT(stats.num_mmap_events, 0U);
-    EXPECT_GT(stats.num_sample_events_mapped, 0U);
-    EXPECT_FALSE(stats.did_remap);
+  // Check perf event stats.
+  const PerfEventStats &stats = parser.stats();
+  EXPECT_GT(stats.num_sample_events, 0U);
+  EXPECT_GT(stats.num_mmap_events, 0U);
+  EXPECT_GT(stats.num_sample_events_mapped, 0U);
+  EXPECT_FALSE(stats.did_remap);
 
-    string parsed_perf_data = output_path + test_file + ".parse.out";
-    ASSERT_TRUE(reader.WriteFile(parsed_perf_data));
+  string parsed_perf_data = output_path + test_file + ".parse.out";
+  ASSERT_TRUE(reader.WriteFile(parsed_perf_data));
 
-    EXPECT_TRUE(CheckPerfDataAgainstBaseline(parsed_perf_data));
-    EXPECT_TRUE(ComparePerfBuildIDLists(input_perf_data, parsed_perf_data));
+  EXPECT_TRUE(CheckPerfDataAgainstBaseline(parsed_perf_data));
+  EXPECT_TRUE(ComparePerfBuildIDLists(input_perf_data, parsed_perf_data));
 
-    // Run the event parsing again, this time with remapping.
-    options = PerfParserOptions();
-    options.do_remap = true;
-    parser.set_options(options);
-    ASSERT_TRUE(parser.ParseRawEvents());
+  // Run the event parsing again, this time with remapping.
+  options = PerfParserOptions();
+  options.do_remap = true;
+  parser.set_options(options);
+  ASSERT_TRUE(parser.ParseRawEvents());
 
-    // Check perf event stats.
-    EXPECT_GT(stats.num_sample_events, 0U);
-    EXPECT_GT(stats.num_mmap_events, 0U);
-    EXPECT_GT(stats.num_sample_events_mapped, 0U);
-    EXPECT_TRUE(stats.did_remap);
+  // Check perf event stats.
+  EXPECT_GT(stats.num_sample_events, 0U);
+  EXPECT_GT(stats.num_mmap_events, 0U);
+  EXPECT_GT(stats.num_sample_events_mapped, 0U);
+  EXPECT_TRUE(stats.did_remap);
 
-    // Remapped addresses should not match the original addresses.
-    string remapped_perf_data = output_path + test_file + ".parse.remap.out";
-    ASSERT_TRUE(reader.WriteFile(remapped_perf_data));
-    EXPECT_TRUE(CheckPerfDataAgainstBaseline(remapped_perf_data));
+  // Remapped addresses should not match the original addresses.
+  string remapped_perf_data = output_path + test_file + ".parse.remap.out";
+  ASSERT_TRUE(reader.WriteFile(remapped_perf_data));
+  EXPECT_TRUE(CheckPerfDataAgainstBaseline(remapped_perf_data));
 
-    // Remapping again should produce the same addresses.
-    LOG(INFO) << "Reading in remapped data: " << remapped_perf_data;
-    PerfReader remap_reader;
-    ASSERT_TRUE(remap_reader.ReadFile(remapped_perf_data));
+  // Remapping again should produce the same addresses.
+  LOG(INFO) << "Reading in remapped data: " << remapped_perf_data;
+  PerfReader remap_reader;
+  ASSERT_TRUE(remap_reader.ReadFile(remapped_perf_data));
 
-    PerfParser remap_parser(&remap_reader, options);
-    ASSERT_TRUE(remap_parser.ParseRawEvents());
+  PerfParser remap_parser(&remap_reader, options);
+  ASSERT_TRUE(remap_parser.ParseRawEvents());
 
-    const PerfEventStats &remap_stats = remap_parser.stats();
-    EXPECT_GT(remap_stats.num_sample_events, 0U);
-    EXPECT_GT(remap_stats.num_mmap_events, 0U);
-    EXPECT_GT(remap_stats.num_sample_events_mapped, 0U);
-    EXPECT_TRUE(remap_stats.did_remap);
+  const PerfEventStats &remap_stats = remap_parser.stats();
+  EXPECT_GT(remap_stats.num_sample_events, 0U);
+  EXPECT_GT(remap_stats.num_mmap_events, 0U);
+  EXPECT_GT(remap_stats.num_sample_events_mapped, 0U);
+  EXPECT_TRUE(remap_stats.did_remap);
 
-    ASSERT_EQ(stats.num_sample_events, remap_stats.num_sample_events);
-    ASSERT_EQ(stats.num_mmap_events, remap_stats.num_mmap_events);
-    ASSERT_EQ(stats.num_sample_events_mapped,
-              remap_stats.num_sample_events_mapped);
+  ASSERT_EQ(stats.num_sample_events, remap_stats.num_sample_events);
+  ASSERT_EQ(stats.num_mmap_events, remap_stats.num_mmap_events);
+  ASSERT_EQ(stats.num_sample_events_mapped,
+            remap_stats.num_sample_events_mapped);
 
-    string remapped_perf_data2 = output_path + test_file + ".parse.remap2.out";
-    ASSERT_TRUE(remap_reader.WriteFile(remapped_perf_data2));
+  string remapped_perf_data2 = output_path + test_file + ".parse.remap2.out";
+  ASSERT_TRUE(remap_reader.WriteFile(remapped_perf_data2));
 
-    // No need to call CheckPerfDataAgainstBaseline again. Just compare
-    // ParsedEvents.
-    const auto &parser_events = parser.parsed_events();
-    const auto &remap_parser_events = remap_parser.parsed_events();
-    EXPECT_EQ(parser_events.size(), remap_parser_events.size());
-    EXPECT_TRUE(std::equal(parser_events.begin(), parser_events.end(),
-                           remap_parser_events.begin()));
-    EXPECT_TRUE(
-        ComparePerfBuildIDLists(remapped_perf_data, remapped_perf_data2));
+  // No need to call CheckPerfDataAgainstBaseline again. Just compare
+  // ParsedEvents.
+  const auto &parser_events = parser.parsed_events();
+  const auto &remap_parser_events = remap_parser.parsed_events();
+  EXPECT_EQ(parser_events.size(), remap_parser_events.size());
+  EXPECT_TRUE(std::equal(parser_events.begin(), parser_events.end(),
+                         remap_parser_events.begin()));
+  EXPECT_TRUE(ComparePerfBuildIDLists(remapped_perf_data, remapped_perf_data2));
 
-    // This must be called when |reader| is no longer going to be used, as it
-    // modifies the contents of |reader|.
-    CheckFilenameAndBuildIDMethods(&reader, output_path + test_file, seed);
-    ++seed;
-  }
+  // This must be called when |reader| is no longer going to be used, as it
+  // modifies the contents of |reader|.
+  CheckFilenameAndBuildIDMethods(&reader, output_path + test_file, seed);
+  ++seed;
 }
 
-TEST(PerfParserTest, PipedModePerfData) {
+TEST_P(PerfPipedDataFiles, PipedModePerfData) {
   ScopedTempDir output_dir;
   ASSERT_FALSE(output_dir.path().empty());
   string output_path = output_dir.path();
 
   int seed = 0;
-  for (const char *test_file : perf_test_files::GetPerfPipedDataFiles()) {
-    string input_perf_data = GetTestInputFilePath(test_file);
-    LOG(INFO) << "Testing " << input_perf_data;
-    string output_perf_data = output_path + test_file + ".pr.out";
+  const string test_file = GetParam();
+  string input_perf_data = GetTestInputFilePath(test_file);
+  LOG(INFO) << "Testing " << input_perf_data;
+  string output_perf_data = output_path + test_file + ".pr.out";
 
-    PerfReader reader;
-    ASSERT_TRUE(reader.ReadFile(input_perf_data));
+  PerfReader reader;
+  ASSERT_TRUE(reader.ReadFile(input_perf_data));
 
-    // Check results from the PerfReader stage.
-    ASSERT_TRUE(reader.WriteFile(output_perf_data));
-    EXPECT_TRUE(CheckPerfDataAgainstBaseline(output_perf_data));
+  // Check results from the PerfReader stage.
+  ASSERT_TRUE(reader.WriteFile(output_perf_data));
+  EXPECT_TRUE(CheckPerfDataAgainstBaseline(output_perf_data));
 
-    PerfParserOptions options = GetTestOptions();
-    options.do_remap = true;
-    options.sort_events_by_time = true;
-    PerfParser parser(&reader, options);
-    ASSERT_TRUE(parser.ParseRawEvents());
+  PerfParserOptions options = GetTestOptions();
+  options.do_remap = true;
+  options.sort_events_by_time = true;
+  PerfParser parser(&reader, options);
+  ASSERT_TRUE(parser.ParseRawEvents());
 
-    EXPECT_GT(parser.stats().num_sample_events, 0U);
-    EXPECT_GT(parser.stats().num_mmap_events, 0U);
-    EXPECT_GT(parser.stats().num_sample_events_mapped, 0U);
-    EXPECT_TRUE(parser.stats().did_remap);
+  EXPECT_GT(parser.stats().num_sample_events, 0U);
+  EXPECT_GT(parser.stats().num_mmap_events, 0U);
+  EXPECT_GT(parser.stats().num_sample_events_mapped, 0U);
+  EXPECT_TRUE(parser.stats().did_remap);
 
-    // This must be called when |reader| is no longer going to be used, as it
-    // modifies the contents of |reader|.
-    CheckFilenameAndBuildIDMethods(&reader, output_path + test_file, seed);
-    ++seed;
-  }
+  // This must be called when |reader| is no longer going to be used, as it
+  // modifies the contents of |reader|.
+  CheckFilenameAndBuildIDMethods(&reader, output_path + test_file, seed);
+  ++seed;
 }
+
+INSTANTIATE_TEST_CASE_P(
+    PerfParserTest, PerfDataFiles,
+    ::testing::ValuesIn(perf_test_files::GetPerfDataFiles()));
+INSTANTIATE_TEST_CASE_P(
+    PerfParserTest, PerfPipedDataFiles,
+    ::testing::ValuesIn(perf_test_files::GetPerfPipedDataFiles()));
 
 TEST(PerfParserTest, MapsSampleEventIp) {
   std::stringstream input;

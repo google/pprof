@@ -13,27 +13,31 @@
 
 namespace quipper {
 
-TEST(ConversionUtilsTest, TestTextOutput) {
+class PerfFile : public ::testing::TestWithParam<const char*> {};
+
+TEST_P(PerfFile, TextOutput) {
   ScopedTempDir output_dir;
   ASSERT_FALSE(output_dir.path().empty());
-  string output_path = output_dir.path();
+  const string output_path = output_dir.path();
 
+  const string test_file = GetParam();
 
-  for (const char* test_file : perf_test_files::GetPerfDataFiles()) {
-    FormatAndFile input, output;
+  FormatAndFile input, output;
 
-    input.filename = GetTestInputFilePath(test_file);
-    input.format = kPerfFormat;
-    output.filename = output_path + test_file + ".pb_text";
-    output.format = kProtoTextFormat;
-    EXPECT_TRUE(ConvertFile(input, output));
+  input.filename = GetTestInputFilePath(test_file);
+  input.format = kPerfFormat;
+  output.filename = output_path + test_file + ".pb_text";
+  output.format = kProtoTextFormat;
+  EXPECT_TRUE(ConvertFile(input, output));
 
-    string golden_file = GetTestInputFilePath(string(test_file) + ".pb_text");
-    LOG(INFO) << "golden: " << golden_file;
-    LOG(INFO) << "output: " << output.filename;
+  string golden_file = GetTestInputFilePath(string(test_file) + ".pb_text");
+  LOG(INFO) << "golden: " << golden_file;
+  LOG(INFO) << "output: " << output.filename;
 
-    CompareTextProtoFiles<PerfDataProto>(output.filename, golden_file);
-  }
+  CompareTextProtoFiles<PerfDataProto>(output.filename, golden_file);
 }
 
+INSTANTIATE_TEST_CASE_P(
+    ConversionUtilsTest, PerfFile,
+    ::testing::ValuesIn(perf_test_files::GetPerfDataFiles()));
 }  // namespace quipper
