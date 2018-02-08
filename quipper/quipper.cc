@@ -23,15 +23,13 @@ int StringToInt(const string& s) {
   return r;
 }
 
-bool ParseArguments(int argc, char* argv[],
-                    std::vector<string>* perf_args,
+bool ParseArguments(int argc, char* argv[], std::vector<string>* perf_args,
                     int* duration) {
   if (argc < 3) {
     LOG(ERROR) << "Invalid command line.";
-    LOG(ERROR) << "Usage: " << argv[0] <<
-               " <duration in seconds>" <<
-               " <path to perf>" <<
-               " <perf arguments>";
+    LOG(ERROR) << "Usage: " << argv[0] << " <duration in seconds>"
+               << " <path to perf>"
+               << " <perf arguments>";
     return false;
   }
 
@@ -51,19 +49,16 @@ int main(int argc, char* argv[]) {
   std::vector<string> perf_args;
   int perf_duration;
 
-  if (!ParseArguments(argc, argv, &perf_args, &perf_duration))
-    return 1;
+  if (!ParseArguments(argc, argv, &perf_args, &perf_duration)) return 1;
 
   quipper::PerfRecorder perf_recorder;
   string output_string;
-  if (!perf_recorder.RunCommandAndGetSerializedOutput(perf_args,
-                                                      perf_duration,
+  if (!perf_recorder.RunCommandAndGetSerializedOutput(perf_args, perf_duration,
                                                       &output_string)) {
     return 1;
   }
 
-  if (!quipper::BufferToFile(kDefaultOutputFile, output_string))
-    return 1;
+  if (!quipper::BufferToFile(kDefaultOutputFile, output_string)) return 1;
 
   return 0;
 }

@@ -19,7 +19,7 @@ void WriteElfWithMultipleBuildids(
     string filename,
     const std::vector<std::pair<string, string>> section_buildids);
 
-}
-}
+}  // namespace testing
+}  // namespace quipper
 
 #endif  // CHROMIUMOS_WIDE_PROFILING_DSO_TEST_UTILS_H_

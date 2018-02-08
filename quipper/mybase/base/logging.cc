@@ -14,16 +14,10 @@ int g_min_log_level = INFO;
 
 }  // namespace
 
-void SetMinLogLevel(int level) {
-  g_min_log_level = level;
-}
+void SetMinLogLevel(int level) { g_min_log_level = level; }
 
-int GetMinLogLevel() {
-  return g_min_log_level;
-}
+int GetMinLogLevel() { return g_min_log_level; }
 
-int GetVlogVerbosity() {
-  return -g_min_log_level;
-}
+int GetVlogVerbosity() { return -g_min_log_level; }
 
 }  // namespace logging

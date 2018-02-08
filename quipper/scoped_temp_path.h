@@ -19,11 +19,11 @@ class ScopedTempPath {
   ScopedTempPath() {}
   // The temporary path will be removed when the object is destroyed.
   virtual ~ScopedTempPath();
-  const string& path() const {
-    return path_;
-  }
+  const string& path() const { return path_; }
+
  protected:
   string path_;
+
  private:
   DISALLOW_COPY_AND_ASSIGN(ScopedTempPath);
 };

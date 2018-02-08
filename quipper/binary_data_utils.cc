@@ -25,9 +25,8 @@ const int kNumHexDigitsInByte = 2;
 
 namespace quipper {
 
-static uint64_t Md5Prefix(
-    const unsigned char* data,
-    unsigned long length) { 
+static uint64_t Md5Prefix(const unsigned char* data,
+                          unsigned long length) {  
   uint64_t digest_prefix = 0;
   unsigned char digest[MD5_DIGEST_LENGTH + 1];
 
@@ -66,8 +65,8 @@ string RawDataToHexString(const u8* array, size_t length) {
 }
 
 string RawDataToHexString(const string& str) {
-  return
-      RawDataToHexString(reinterpret_cast<const u8*>(str.data()), str.size());
+  return RawDataToHexString(reinterpret_cast<const u8*>(str.data()),
+                            str.size());
 }
 
 bool HexStringToRawData(const string& str, u8* array, size_t length) {
@@ -75,13 +74,11 @@ bool HexStringToRawData(const string& str, u8* array, size_t length) {
   char* err;
   // Loop through kNumHexDigitsInByte characters at a time (to get one byte)
   // Stop when there are no more characters, or the array has been filled.
-  for (size_t i = 0;
-       (i + 1) * kNumHexDigitsInByte <= str.size() && i < length;
+  for (size_t i = 0; (i + 1) * kNumHexDigitsInByte <= str.size() && i < length;
        ++i) {
     string one_byte = str.substr(i * kNumHexDigitsInByte, kNumHexDigitsInByte);
     array[i] = strtol(one_byte.c_str(), &err, kHexRadix);
-    if (*err)
-      return false;
+    if (*err) return false;
   }
   return true;
 }

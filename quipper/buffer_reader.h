@@ -14,18 +14,13 @@ class BufferReader : public DataReader {
  public:
   // The data source is indicated by |buffer| and is |size| bytes long.
   BufferReader(const void* buffer, size_t size)
-      : buffer_(reinterpret_cast<const char*>(buffer)),
-        offset_(0) {
+      : buffer_(reinterpret_cast<const char*>(buffer)), offset_(0) {
     size_ = size;
   }
 
-  void SeekSet(size_t offset) override {
-    offset_ = offset;
-  }
+  void SeekSet(size_t offset) override { offset_ = offset; }
 
-  size_t Tell() const override {
-    return offset_;
-  }
+  size_t Tell() const override { return offset_; }
 
   bool ReadData(const size_t size, void* dest) override;
 

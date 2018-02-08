@@ -160,16 +160,14 @@ class PerfReader {
   // Reads a singular string metadata field (with preceding size field) from
   // |data| and writes the string and its Md5sum prefix into |dest|.
   bool ReadSingleStringMetadata(
-      DataReader* data,
-      size_t max_readable_size,
+      DataReader* data, size_t max_readable_size,
       PerfDataProto_StringMetadata_StringAndMd5sumPrefix* dest) const;
   // Reads a string metadata with multiple string fields (each with preceding
   // size field) from |data|. Writes each string field and its Md5sum prefix
   // into |dest_array|. Writes the combined string fields (joined into one
   // string into |dest_single|.
   bool ReadRepeatedStringMetadata(
-      DataReader* data,
-      size_t max_readable_size,
+      DataReader* data, size_t max_readable_size,
       RepeatedPtrField<PerfDataProto_StringMetadata_StringAndMd5sumPrefix>*
           dest_array,
       PerfDataProto_StringMetadata_StringAndMd5sumPrefix* dest_single) const;

@@ -177,8 +177,8 @@ TEST(BufferReaderTest, ReadString) {
   // Read the full string plus the null pointer.
   BufferReader full_null_reader(input.data(), input.size() + 1);
   string full_null_reader_output;
-  EXPECT_TRUE(full_null_reader.ReadString(input.size() + 1,
-                                          &full_null_reader_output));
+  EXPECT_TRUE(
+      full_null_reader.ReadString(input.size() + 1, &full_null_reader_output));
   EXPECT_EQ(input.size() + 1, full_null_reader.Tell());
   EXPECT_EQ(input, full_null_reader_output);
 
@@ -192,8 +192,8 @@ TEST(BufferReaderTest, ReadString) {
   // Attempt to read past the end of the string.
   BufferReader past_end_reader(input.data(), input.size());
   string past_end_reader_output;
-  EXPECT_FALSE(past_end_reader.ReadString(input.size() + 2,
-               &past_end_reader_output));
+  EXPECT_FALSE(
+      past_end_reader.ReadString(input.size() + 2, &past_end_reader_output));
 
   // Create a vector with some extra padding behind it. The padding should be
   // all zeroes. Read from this vector, with a size that encompasses the
@@ -203,8 +203,8 @@ TEST(BufferReaderTest, ReadString) {
 
   BufferReader vector_reader(input_vector.data(), input_vector.size());
   string vector_reader_output;
-  EXPECT_TRUE(vector_reader.ReadString(input_vector.size(),
-                                       &vector_reader_output));
+  EXPECT_TRUE(
+      vector_reader.ReadString(input_vector.size(), &vector_reader_output));
   // The reader should have read past the padding too.
   EXPECT_EQ(input_vector.size(), vector_reader.Tell());
   EXPECT_EQ(input, vector_reader_output);

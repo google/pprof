@@ -41,10 +41,8 @@ class AddressMapper {
   // collide with the new range in real address space, indicating it has been
   // unmapped.
   // Returns true if mapping was successful.
-  bool MapWithID(const uint64_t real_addr,
-                 const uint64_t length,
-                 const uint64_t id,
-                 const uint64_t offset_base,
+  bool MapWithID(const uint64_t real_addr, const uint64_t size,
+                 const uint64_t id, const uint64_t offset_base,
                  bool remove_existing_mappings);
 
   // Looks up |real_addr| and returns the mapped address and MappingList
@@ -61,14 +59,10 @@ class AddressMapper {
                             uint64_t* id, uint64_t* offset) const;
 
   // Returns true if there are no mappings.
-  bool IsEmpty() const {
-    return mappings_.empty();
-  }
+  bool IsEmpty() const { return mappings_.empty(); }
 
   // Returns the number of address ranges that are currently mapped.
-  size_t GetNumMappedRanges() const {
-    return mappings_.size();
-  }
+  size_t GetNumMappedRanges() const { return mappings_.size(); }
 
   // Returns the maximum length of quipper space containing mapped areas.
   // There may be gaps in between blocks.
@@ -82,8 +76,7 @@ class AddressMapper {
   // undefined behavior.
   void set_page_alignment(uint64_t alignment) {
     // This also includes the case of 0.
-    if ((alignment & (alignment - 1)) == 0)
-      page_alignment_ = alignment;
+    if ((alignment & (alignment - 1)) == 0) page_alignment_ = alignment;
   }
 
   // Dumps the state of the address mapper to logs. Useful for debugging.

@@ -37,8 +37,7 @@ bool FileReader::ReadData(const size_t size, void* dest) {
 }
 
 bool FileReader::ReadString(const size_t size, string* str) {
-  if (!ReadDataString(size, str))
-    return false;
+  if (!ReadDataString(size, str)) return false;
 
   // Truncate anything after a terminating null.
   size_t actual_length = strnlen(str->data(), size);

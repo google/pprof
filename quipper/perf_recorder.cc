@@ -82,12 +82,10 @@ bool ParsePerfStatFileToString(const string& filename,
 PerfRecorder::PerfRecorder() : PerfRecorder({"/usr/bin/perf"}) {}
 
 PerfRecorder::PerfRecorder(const std::vector<string>& perf_binary_command)
-    : perf_binary_command_(perf_binary_command) {
-}
+    : perf_binary_command_(perf_binary_command) {}
 
 bool PerfRecorder::RunCommandAndGetSerializedOutput(
-    const std::vector<string>& perf_args,
-    const double time_sec,
+    const std::vector<string>& perf_args, const double time_sec,
     string* output_string) {
   if (!ValidatePerfCommandLine(perf_args)) {
     LOG(ERROR) << "Perf arguments are not safe to run";
@@ -119,8 +117,7 @@ bool PerfRecorder::RunCommandAndGetSerializedOutput(
   full_perf_args.insert(full_perf_args.end(), {"-o", output_file.path()});
 
   // The perf stat output parser requires raw data from verbose output.
-  if (perf_type == kPerfStatCommand)
-    full_perf_args.emplace_back("-v");
+  if (perf_type == kPerfStatCommand) full_perf_args.emplace_back("-v");
 
   // Append the sleep command to run perf for |time_sec| seconds.
   std::stringstream time_string;
@@ -139,8 +136,7 @@ bool PerfRecorder::RunCommandAndGetSerializedOutput(
     return ParsePerfDataFileToString(output_file.path(), output_string);
 
   // Otherwise, parse as perf stat output.
-  return ParsePerfStatFileToString(output_file.path(),
-                                   full_perf_args,
+  return ParsePerfStatFileToString(output_file.path(), full_perf_args,
                                    output_string);
 }
 

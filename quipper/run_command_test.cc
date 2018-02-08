@@ -27,8 +27,8 @@ TEST(RunCommandTest, RunsFromPath) {
 
 TEST(RunCommandTest, LargeStdout) {
   std::vector<char> output;
-  EXPECT_EQ(0, RunCommand({"dd", "if=/dev/zero", "bs=5", "count=4096"},
-                          &output));
+  EXPECT_EQ(0,
+            RunCommand({"dd", "if=/dev/zero", "bs=5", "count=4096"}, &output));
   EXPECT_EQ(5 * 4096, output.size());
   EXPECT_EQ('\0', output[0]);
   EXPECT_EQ('\0', output[1]);
@@ -41,8 +41,8 @@ TEST(RunCommandTest, StdoutToDevnull) {
 
 TEST(RunCommandTest, StderrIsNotStored) {
   std::vector<char> output;
-  EXPECT_EQ(0, RunCommand({"/bin/sh", "-c", "echo 'Hello, void!' >&2"},
-                          &output));
+  EXPECT_EQ(0,
+            RunCommand({"/bin/sh", "-c", "echo 'Hello, void!' >&2"}, &output));
   EXPECT_EQ(0, output.size());
 }
 

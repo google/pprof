@@ -15,8 +15,7 @@ namespace quipper {
 void TrimWhitespace(string* str);
 
 // Splits a character array by |delimiter| into a vector of strings tokens.
-void SplitString(const string& str,
-                 char delimiter,
+void SplitString(const string& str, char delimiter,
                  std::vector<string>* tokens);
 
 }  // namespace quipper

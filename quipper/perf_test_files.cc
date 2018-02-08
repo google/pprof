@@ -137,7 +137,7 @@ const std::vector<const char*>& GetPerfPipedDataFiles() {
   return *files;
 }
 
-const std::vector<const char*>& GetCorruptedPerfPipedDataFiles()  {
+const std::vector<const char*>& GetCorruptedPerfPipedDataFiles() {
   static const std::vector<const char*>* files = new std::vector<const char*>{
       // Has a SAMPLE event with size set to zero. Don't go into an infinite
       // loop.
@@ -146,9 +146,9 @@ const std::vector<const char*>& GetCorruptedPerfPipedDataFiles()  {
   return *files;
 }
 
-const std::vector<const char*>& GetPerfDataProtoFiles()  {
-  static const std::vector<const char*>* files = new std::vector<const char*> {
-    "perf.callgraph.pb_text",
+const std::vector<const char*>& GetPerfDataProtoFiles() {
+  static const std::vector<const char*>* files = new std::vector<const char*>{
+      "perf.callgraph.pb_text",
   };
   return *files;
 }

@@ -14,18 +14,13 @@ class BufferWriter : public DataWriter {
  public:
   // The destination buffer is indicated by |buffer| and is |size| bytes long.
   BufferWriter(void* buffer, size_t size)
-      : buffer_(reinterpret_cast<char*>(buffer)),
-        offset_(0) {
+      : buffer_(reinterpret_cast<char*>(buffer)), offset_(0) {
     size_ = size;
   }
 
-  void SeekSet(size_t offset) override {
-    offset_ = offset;
-  }
+  void SeekSet(size_t offset) override { offset_ = offset; }
 
-  size_t Tell() const override {
-    return offset_;
-  }
+  size_t Tell() const override { return offset_; }
 
   bool WriteData(const void* src, const size_t size) override;
 

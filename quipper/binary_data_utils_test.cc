@@ -20,24 +20,23 @@ TEST(BinaryDataUtilsTest, MD5) {
 }
 
 TEST(BinaryDataUtilsTest, Align) {
-  EXPECT_EQ(12,  Align<4>(10));
-  EXPECT_EQ(12,  Align<4>(12));
-  EXPECT_EQ(16,  Align<4>(13));
+  EXPECT_EQ(12, Align<4>(10));
+  EXPECT_EQ(12, Align<4>(12));
+  EXPECT_EQ(16, Align<4>(13));
   EXPECT_EQ(100, Align<4>(97));
   EXPECT_EQ(100, Align<4>(100));
   EXPECT_EQ(104, Align<8>(100));
   EXPECT_EQ(112, Align<8>(108));
   EXPECT_EQ(112, Align<8>(112));
 
-  EXPECT_EQ(12,  Align<uint32_t>(10));
+  EXPECT_EQ(12, Align<uint32_t>(10));
   EXPECT_EQ(112, Align<uint64_t>(112));
 }
 
 TEST(BinaryDataUtilsTest, RawDataToHexString) {
   u8 hex_number[kHexArraySize];
   // Generate a sequence of bytes and check its hex string representation.
-  for (size_t i = 0; i < arraysize(hex_number); ++i)
-    hex_number[i] = i << i;
+  for (size_t i = 0; i < arraysize(hex_number); ++i) hex_number[i] = i << i;
   EXPECT_EQ("0002081840a08080",
             RawDataToHexString(hex_number, arraysize(hex_number)));
 
@@ -52,10 +51,9 @@ TEST(BinaryDataUtilsTest, StringToHex) {
   u8 output[kHexArraySize], expected[kHexArraySize];
 
   // Use the same tests as in RawDataToHexString, except reversed.
-  for (size_t i = 0; i < arraysize(expected); ++i)
-    expected[i] = i << i;
-  EXPECT_TRUE(HexStringToRawData("0002081840a08080", output,
-                                 arraysize(output)));
+  for (size_t i = 0; i < arraysize(expected); ++i) expected[i] = i << i;
+  EXPECT_TRUE(
+      HexStringToRawData("0002081840a08080", output, arraysize(output)));
   for (size_t i = 0; i < arraysize(expected); ++i)
     EXPECT_EQ(expected[i], output[i]);
 

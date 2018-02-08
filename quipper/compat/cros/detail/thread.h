@@ -15,17 +15,11 @@ class Thread : public quipper::compat::ThreadInterface,
  public:
   explicit Thread(const string& name_prefix) : thread_(this, name_prefix) {}
 
-  void Start() override {
-    thread_.Start();
-  }
+  void Start() override { thread_.Start(); }
 
-  void Join() override {
-    thread_.Join();
-  }
+  void Join() override { thread_.Join(); }
 
-  pid_t tid() override {
-    return thread_.tid();
-  }
+  pid_t tid() override { return thread_.tid(); }
 
  protected:
   void Run() override = 0;
@@ -36,21 +30,16 @@ class Thread : public quipper::compat::ThreadInterface,
 
 class Notification : public quipper::compat::NotificationInterface {
  public:
-  Notification() : event_(true /* manual_reset */,
-                          false /* initially_signaled */) {
-  }
+  Notification()
+      : event_(true /* manual_reset */, false /* initially_signaled */) {}
 
-  void Wait() override {
-    event_.Wait();
-  }
+  void Wait() override { event_.Wait(); }
 
   bool WaitWithTimeout(int timeout_ms) override {
     return event_.TimedWait(base::TimeDelta::FromMilliseconds(timeout_ms));
   }
 
-  void Notify() override {
-    event_.Signal();
-  }
+  void Notify() override { event_.Signal(); }
 
  private:
   base::WaitableEvent event_;

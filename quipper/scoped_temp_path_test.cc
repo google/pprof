@@ -58,7 +58,7 @@ int PopulateDirectoryWithFiles(const string& dir, int num_files) {
     ++num_files_created;
     close(fd);
   }
-  delete [] path_template;
+  delete[] path_template;
 
   return num_files_created;
 }
@@ -137,7 +137,7 @@ TEST(ScopedTempPathTest, CustomDirTemplate) {
     EXPECT_TRUE(PathExists(path)) << path;
     EXPECT_EQ('/', path.back()) << "Should append a slash";
     // Check prefix matches:
-    EXPECT_EQ(prefix.size()+kTemplateSuffixSize+1, path.size());
+    EXPECT_EQ(prefix.size() + kTemplateSuffixSize + 1, path.size());
     EXPECT_EQ(prefix, path.substr(0, prefix.size()));
   }
   EXPECT_FALSE(PathExists(path)) << path;

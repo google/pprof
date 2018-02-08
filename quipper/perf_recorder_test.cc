@@ -20,21 +20,22 @@ namespace quipper {
 // This should also cover the availability of "perf stat", which is a simpler
 // way to get information from the counters.
 bool IsPerfRecordAvailable() {
-  return RunCommand(
-      {"perf", "record", "-a", "-o", "-", "--", "sleep", "0.01"}, NULL) == 0;
+  return RunCommand({"perf", "record", "-a", "-o", "-", "--", "sleep", "0.01"},
+                    NULL) == 0;
 }
 
 // Runs "perf mem record" to see if the command is available on the current
 // system.
 bool IsPerfMemRecordAvailable() {
-  return RunCommand(
-      {"perf", "mem", "record", "-a", "-e", "cycles", "--", "sleep", "0.01"},
-      NULL) == 0;
+  return RunCommand({"perf", "mem", "record", "-a", "-e", "cycles", "--",
+                     "sleep", "0.01"},
+                    NULL) == 0;
 }
 
 class PerfRecorderTest : public ::testing::Test {
  public:
   PerfRecorderTest() : perf_recorder_({"sudo", GetPerfPath()}) {}
+
  protected:
   PerfRecorder perf_recorder_;
 };
@@ -80,8 +81,7 @@ TEST_F(PerfRecorderTest, StatToProtobuf) {
 }
 
 TEST_F(PerfRecorderTest, MemRecordToProtobuf) {
-  if (!IsPerfMemRecordAvailable())
-    return;
+  if (!IsPerfMemRecordAvailable()) return;
 
   // Run perf mem record and verify output.
   string output_string;
@@ -96,8 +96,7 @@ TEST_F(PerfRecorderTest, MemRecordToProtobuf) {
 TEST_F(PerfRecorderTest, StatSingleEvent) {
   string output_string;
   ASSERT_TRUE(perf_recorder_.RunCommandAndGetSerializedOutput(
-      {"perf", "stat", "-a", "-e", "cycles"},
-      0.2, &output_string));
+      {"perf", "stat", "-a", "-e", "cycles"}, 0.2, &output_string));
 
   EXPECT_GT(output_string.size(), 0);
 
@@ -121,11 +120,8 @@ TEST_F(PerfRecorderTest, StatSingleEvent) {
 TEST_F(PerfRecorderTest, StatMultipleEvents) {
   string output_string;
   ASSERT_TRUE(perf_recorder_.RunCommandAndGetSerializedOutput(
-      { "perf", "stat", "-a",
-        "-e", "cycles",
-        "-e", "instructions",
-        "-e", "branches",
-        "-e", "branch-misses" },
+      {"perf", "stat", "-a", "-e", "cycles", "-e", "instructions", "-e",
+       "branches", "-e", "branch-misses"},
       0.2, &output_string));
 
   EXPECT_GT(output_string.size(), 0);
@@ -133,14 +129,14 @@ TEST_F(PerfRecorderTest, StatMultipleEvents) {
   quipper::PerfStatProto stat;
   ASSERT_TRUE(stat.ParseFromString(output_string));
   // Replace the placeholder "perf" with the actual perf path.
-  string command_line =
-      string("sudo ") + GetPerfPath() + " stat -a "
-          "-e cycles "
-          "-e instructions "
-          "-e branches "
-          "-e branch-misses "
-          "-v "
-          "-- sleep 0.2";
+  string command_line = string("sudo ") + GetPerfPath() +
+                        " stat -a "
+                        "-e cycles "
+                        "-e instructions "
+                        "-e branches "
+                        "-e branch-misses "
+                        "-v "
+                        "-- sleep 0.2";
   EXPECT_TRUE(stat.has_command_line());
   EXPECT_EQ(command_line, stat.command_line());
 
@@ -179,11 +175,11 @@ TEST_F(PerfRecorderTest, StatMultipleEvents) {
 TEST_F(PerfRecorderTest, DontAllowCommands) {
   string output_string;
   EXPECT_FALSE(perf_recorder_.RunCommandAndGetSerializedOutput(
-      {"perf", "record", "--", "sh", "-c", "echo 'malicious'"},
-      0.2, &output_string));
+      {"perf", "record", "--", "sh", "-c", "echo 'malicious'"}, 0.2,
+      &output_string));
   EXPECT_FALSE(perf_recorder_.RunCommandAndGetSerializedOutput(
-      {"perf", "stat", "--", "sh", "-c", "echo 'malicious'"},
-      0.2, &output_string));
+      {"perf", "stat", "--", "sh", "-c", "echo 'malicious'"}, 0.2,
+      &output_string));
 }
 
 TEST(PerfRecorderNoPerfTest, FailsIfPerfDoesntExist) {
@@ -197,7 +193,6 @@ TEST(PerfRecorderNoPerfTest, FailsIfPerfDoesntExist) {
 
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
-  if (!quipper::IsPerfRecordAvailable())
-    return 0;
+  if (!quipper::IsPerfRecordAvailable()) return 0;
   return RUN_ALL_TESTS();
 }

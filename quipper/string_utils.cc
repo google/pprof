@@ -20,13 +20,11 @@ void TrimWhitespace(string* str) {
   }
 }
 
-void SplitString(const string& str,
-                 char delimiter,
+void SplitString(const string& str, char delimiter,
                  std::vector<string>* tokens) {
   std::stringstream ss(str);
   string token;
-  while (std::getline(ss, token, delimiter))
-    tokens->push_back(token);
+  while (std::getline(ss, token, delimiter)) tokens->push_back(token);
 }
 
 }  // namespace quipper

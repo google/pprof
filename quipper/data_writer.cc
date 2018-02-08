@@ -14,8 +14,7 @@ namespace quipper {
 
 bool DataWriter::WriteDataValue(const void* src, const size_t size,
                                 const string& value_name) {
-  if (WriteData(src, size))
-    return true;
+  if (WriteData(src, size)) return true;
   LOG(ERROR) << "Unable to write " << value_name << ". Requested " << size
              << " bytes, " << size_ - Tell() << " bytes remaining.";
   return false;

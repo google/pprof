@@ -13,13 +13,11 @@ namespace quipper {
 
 bool FileToBuffer(const string& filename, std::vector<char>* contents) {
   FileReader reader(filename);
-  if (!reader.IsOpen())
-    return false;
+  if (!reader.IsOpen()) return false;
   size_t file_size = reader.size();
   contents->resize(file_size);
   // Do not read anything if the file exists but is empty.
-  if (file_size > 0 &&
-      !reader.ReadData(file_size, contents->data())) {
+  if (file_size > 0 && !reader.ReadData(file_size, contents->data())) {
     LOG(ERROR) << "Failed to read " << file_size << " bytes from file "
                << filename << ", only read " << reader.Tell();
     return false;

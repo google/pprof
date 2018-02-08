@@ -37,12 +37,12 @@ bool SameInode(const DSOInfo& dso, const struct stat* s);
 // Must be called at least once before using libelf.
 void InitializeLibelf();
 // Read buildid from an ELF file using libelf.
-bool ReadElfBuildId(string filename, string* buildid);
+bool ReadElfBuildId(const string& filename, string* buildid);
 bool ReadElfBuildId(int fd, string* buildid);
 
 // Read buildid from /sys/module/<module_name>/notes/.note.gnu.build-id
 // (Does not use libelf.)
-bool ReadModuleBuildId(string module_name, string* buildid);
+bool ReadModuleBuildId(const string& module_name, string* buildid);
 // Read builid from Elf note data section.
 bool ReadBuildIdNote(DataReader* data, string* buildid);
 

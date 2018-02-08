@@ -25,9 +25,7 @@ const size_t kBuildIDStringLength = kBuildIDArraySize * 2;
 
 // Used by malloced_unique_ptr.
 struct FreeDeleter {
-  inline void operator()(void* pointer) {
-    free(pointer);
-  }
+  inline void operator()(void* pointer) { free(pointer); }
 };
 
 // A modified version of std::unique_ptr that holds a pointer allocated by

@@ -54,14 +54,13 @@ void ReadFromFd(int fd, std::vector<char>* output) {
 
 }  // namespace
 
-int RunCommand(const std::vector<string>& command,
-               std::vector<char>* output) {
-  std::vector<char *> c_str_cmd;
+int RunCommand(const std::vector<string>& command, std::vector<char>* output) {
+  std::vector<char*> c_str_cmd;
   c_str_cmd.reserve(command.size() + 1);
   for (const auto& c : command) {
     // This cast is safe: POSIX states that exec shall not modify argv nor the
     // strings pointed to by argv.
-    c_str_cmd.push_back(const_cast<char *>(c.c_str()));
+    c_str_cmd.push_back(const_cast<char*>(c.c_str()));
   }
   c_str_cmd.push_back(nullptr);
 
@@ -80,8 +79,7 @@ int RunCommand(const std::vector<string>& command,
     PLOG(ERROR) << "pipe for errno";
     return -1;
   }
-  if (!CloseFdOnExec(errno_pipefd[1]))
-    return -1;
+  if (!CloseFdOnExec(errno_pipefd[1])) return -1;
 
   const pid_t child = fork();
   if (child == 0) {
@@ -136,8 +134,8 @@ int RunCommand(const std::vector<string>& command,
   int child_exec_errno;
   int read_errno_res;
   do {
-    read_errno_res = read(errno_pipefd[0], &child_exec_errno,
-                          sizeof(child_exec_errno));
+    read_errno_res =
+        read(errno_pipefd[0], &child_exec_errno, sizeof(child_exec_errno));
   } while (read_errno_res < 0 && errno == EINTR);
   if (read_errno_res < 0) {
     PLOG(FATAL) << "read errno";
@@ -148,7 +146,8 @@ int RunCommand(const std::vector<string>& command,
 
   if (read_errno_res > 0) {
     // exec failed in the child.
-    while (waitpid(child, nullptr, 0) < 0 && errno == EINTR) {}
+    while (waitpid(child, nullptr, 0) < 0 && errno == EINTR) {
+    }
     errno = child_exec_errno;
     return -1;
   }
@@ -163,10 +162,10 @@ int RunCommand(const std::vector<string>& command,
 
   // Wait for child.
   int exit_status;
-  while (waitpid(child, &exit_status, 0) < 0 && errno == EINTR) {}
+  while (waitpid(child, &exit_status, 0) < 0 && errno == EINTR) {
+  }
   errno = 0;
-  if (WIFEXITED(exit_status))
-    return WEXITSTATUS(exit_status);
+  if (WIFEXITED(exit_status)) return WEXITSTATUS(exit_status);
   return -1;
 }
 

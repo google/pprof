@@ -46,14 +46,15 @@ class LogBase {
  public:
   virtual ~LogBase() {}
 
-  template <class T> LogBase& operator <<(const T& x) {
+  template <class T>
+  LogBase& operator<<(const T& x) {
     ss_ << x;
     return *this;
   }
 
  protected:
   LogBase(const std::string label, const char* file, int line) {
-    ss_ << "[" << label << ":"<< file << ":" << line << "] ";
+    ss_ << "[" << label << ":" << file << ":" << line << "] ";
   }
 
   // Accumulates the contents to be printed.
@@ -69,10 +70,8 @@ class Log : public LogBase {
   }
 
   ~Log() {
-    if (level_ >= GetMinLogLevel())
-      std::cerr << ss_.str() << std::endl;
-    if (level_ >= FATAL)
-      exit(EXIT_FAILURE);
+    if (level_ >= GetMinLogLevel()) std::cerr << ss_.str() << std::endl;
+    if (level_ >= FATAL) exit(EXIT_FAILURE);
   }
 
  protected:
@@ -99,13 +98,12 @@ class PLog : public Log {
 class VLog : public LogBase {
  public:
   VLog(int vlog_level, const char* file, int line)
-      : LogBase(std::string("VLOG(") + std::to_string(vlog_level) + ")",
-                file, line),
+      : LogBase(std::string("VLOG(") + std::to_string(vlog_level) + ")", file,
+                line),
         vlog_level_(vlog_level) {}
 
   ~VLog() {
-    if (vlog_level_ <= GetVlogVerbosity())
-      std::cerr << ss_.str() << std::endl;
+    if (vlog_level_ <= GetVlogVerbosity()) std::cerr << ss_.str() << std::endl;
   }
 
  private:
@@ -122,16 +120,18 @@ class VLog : public LogBase {
 #define VLOG(level) logging::VLog(level, __FILE__, __LINE__)
 
 // Some macros from libbase that we use.
-#define CHECK(x) if (!(x)) LOG(FATAL) << #x
-#define CHECK_GT(x, y) if (!(x > y)) LOG(FATAL) << #x << " > " << #y << "failed"
-#define CHECK_GE(x, y) if (!(x >= y)) LOG(FATAL) << #x << " >= " << #y \
-                                                 << "failed"
-#define CHECK_LE(x, y) if (!(x <= y)) LOG(FATAL) << #x << " <= " << #y \
-                                                 << "failed"
-#define CHECK_NE(x, y) if (!(x != y)) LOG(FATAL) << #x << " != " << #y \
-                                                 << "failed"
-#define CHECK_EQ(x, y) if (!(x == y)) LOG(FATAL) << #x << " == " << #y \
-                                                 << "failed"
+#define CHECK(x) \
+  if (!(x)) LOG(FATAL) << #x
+#define CHECK_GT(x, y) \
+  if (!(x > y)) LOG(FATAL) << #x << " > " << #y << "failed"
+#define CHECK_GE(x, y) \
+  if (!(x >= y)) LOG(FATAL) << #x << " >= " << #y << "failed"
+#define CHECK_LE(x, y) \
+  if (!(x <= y)) LOG(FATAL) << #x << " <= " << #y << "failed"
+#define CHECK_NE(x, y) \
+  if (!(x != y)) LOG(FATAL) << #x << " != " << #y << "failed"
+#define CHECK_EQ(x, y) \
+  if (!(x == y)) LOG(FATAL) << #x << " == " << #y << "failed"
 #define DLOG(x) LOG(x)
 #define DVLOG(x) VLOG(x)
 #define DCHECK(x) CHECK(x)

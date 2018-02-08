@@ -37,29 +37,20 @@ class StreamWriteable {
   // Do not call MaybeSwap() directly. The syntax of test data structure
   // initialization makes data sizes ambiguous, so these force the caller to
   // explicitly specify value sizes.
-  uint16_t MaybeSwap16(uint16_t value) const {
-    return MaybeSwap(value);
-  }
-  uint32_t MaybeSwap32(uint32_t value) const {
-    return MaybeSwap(value);
-  }
-  uint64_t MaybeSwap64(uint64_t value) const {
-    return MaybeSwap(value);
-  }
+  uint16_t MaybeSwap16(uint16_t value) const { return MaybeSwap(value); }
+  uint32_t MaybeSwap32(uint32_t value) const { return MaybeSwap(value); }
+  uint64_t MaybeSwap64(uint64_t value) const { return MaybeSwap(value); }
 
  protected:
   // Derived classes can call this to determine the cross-endianness. However,
   // the actual implementation of cross-endianness is up to the derived class,
   // if it supports it at all.
-  bool is_cross_endian() const {
-    return is_cross_endian_;
-  }
+  bool is_cross_endian() const { return is_cross_endian_; }
 
  private:
   template <typename T>
   T MaybeSwap(T value) const {
-    if (is_cross_endian())
-      ByteSwap(&value);
+    if (is_cross_endian()) ByteSwap(&value);
     return value;
   }
 
@@ -79,16 +70,12 @@ class ExamplePerfDataFileHeader : public StreamWriteable {
   // Used for testing compatibility w.r.t. sizeof(perf_event_attr)
   SelfT& WithCustomPerfEventAttrSize(size_t sz);
 
-  const struct perf_file_header& header() const {
-    return header_;
-  }
+  const struct perf_file_header& header() const { return header_; }
 
   u64 data_end_offset() const {
     return header_.data.offset + header_.data.size;
   }
-  ssize_t data_end() const {
-    return static_cast<ssize_t>(data_end_offset());
-  }
+  ssize_t data_end() const { return static_cast<ssize_t>(data_end_offset()); }
 
   void WriteTo(std::ostream* out) const override;
 
@@ -119,13 +106,24 @@ class ExamplePerfEventAttrEvent_Hardware : public StreamWriteable {
         sample_type_(sample_type),
         read_format_(0),
         sample_id_all_(sample_id_all),
-        config_(0) {
+        config_(0) {}
+  SelfT& WithConfig(u64 config) {
+    config_ = config;
+    return *this;
   }
-  SelfT& WithConfig(u64 config) { config_ = config; return *this; }
-  SelfT& WithAttrSize(u32 size) { attr_size_ = size; return *this; }
-  SelfT& WithReadFormat(u64 format) { read_format_ = format; return *this; }
+  SelfT& WithAttrSize(u32 size) {
+    attr_size_ = size;
+    return *this;
+  }
+  SelfT& WithReadFormat(u64 format) {
+    read_format_ = format;
+    return *this;
+  }
 
-  SelfT& WithId(u64 id) { ids_.push_back(id); return *this; }
+  SelfT& WithId(u64 id) {
+    ids_.push_back(id);
+    return *this;
+  }
   SelfT& WithIds(std::initializer_list<u64> ids) {
     ids_.insert(ids_.end(), ids.begin(), ids.end());
     return *this;
@@ -149,13 +147,14 @@ class AttrIdsSection : public StreamWriteable {
   perf_file_section AddIds(std::initializer_list<u64> ids) {
     ids_.insert(ids_.end(), ids.begin(), ids.end());
     perf_file_section s = {
-      .offset = offset_,
-      .size = ids.size() * sizeof(decltype(ids)::value_type),
+        .offset = offset_,
+        .size = ids.size() * sizeof(decltype(ids)::value_type),
     };
     offset_ += s.size;
     return s;
   }
   void WriteTo(std::ostream* out) const override;
+
  private:
   u64 offset_;
   std::vector<u64> ids_;
@@ -171,15 +170,21 @@ class ExamplePerfFileAttr_Hardware : public StreamWriteable {
         sample_type_(sample_type),
         sample_id_all_(sample_id_all),
         config_(0),
-        ids_section_({.offset = MaybeSwap64(104), .size = MaybeSwap64(0)}) {
+        ids_section_({.offset = MaybeSwap64(104), .size = MaybeSwap64(0)}) {}
+  SelfT& WithAttrSize(u32 size) {
+    attr_size_ = size;
+    return *this;
   }
-  SelfT& WithAttrSize(u32 size) { attr_size_ = size; return *this; }
-  SelfT& WithConfig(u64 config) { config_ = config; return *this; }
+  SelfT& WithConfig(u64 config) {
+    config_ = config;
+    return *this;
+  }
   SelfT& WithIds(const perf_file_section& section) {
     ids_section_ = section;
     return *this;
   }
   void WriteTo(std::ostream* out) const override;
+
  private:
   u32 attr_size_;
   const u64 sample_type_;
@@ -195,6 +200,7 @@ class ExamplePerfFileAttr_Tracepoint : public StreamWriteable {
   explicit ExamplePerfFileAttr_Tracepoint(const u64 tracepoint_event_id)
       : tracepoint_event_id_(tracepoint_event_id) {}
   void WriteTo(std::ostream* out) const override;
+
  private:
   const u64 tracepoint_event_id_;
 };
@@ -224,7 +230,7 @@ class SampleInfo {
   }
 
   const char* data() const {
-    return reinterpret_cast<const char *>(fields_.data());
+    return reinterpret_cast<const char*>(fields_.data());
   }
   const size_t size() const {
     return fields_.size() * sizeof(decltype(fields_)::value_type);
@@ -249,10 +255,10 @@ class ExampleMmapEvent : public StreamWriteable {
         len_(len),
         pgoff_(pgoff),
         filename_(filename),
-        sample_id_(sample_id) {
-  }
+        sample_id_(sample_id) {}
   size_t GetSize() const;
   void WriteTo(std::ostream* out) const override;
+
  private:
   const u32 pid_;
   const u64 start_;
@@ -267,8 +273,8 @@ class ExampleMmap2Event : public StreamWriteable {
  public:
   typedef ExampleMmap2Event SelfT;
   // pid is used as both pid and tid.
-  ExampleMmap2Event(u32 pid, u64 start, u64 len, u64 pgoff,
-                    string filename, const SampleInfo& sample_id)
+  ExampleMmap2Event(u32 pid, u64 start, u64 len, u64 pgoff, string filename,
+                    const SampleInfo& sample_id)
       : ExampleMmap2Event(pid, pid, start, len, pgoff, filename, sample_id) {}
   ExampleMmap2Event(u32 pid, u32 tid, u64 start, u64 len, u64 pgoff,
                     string filename, const SampleInfo& sample_id)
@@ -281,8 +287,7 @@ class ExampleMmap2Event : public StreamWriteable {
         min_(7),
         ino_(8),
         filename_(filename),
-        sample_id_(sample_id) {
-  }
+        sample_id_(sample_id) {}
 
   SelfT& WithDeviceInfo(u32 maj, u32 min, u64 ino) {
     maj_ = maj;
@@ -311,15 +316,18 @@ class ExampleMmap2Event : public StreamWriteable {
 class ExampleForkExitEvent : public StreamWriteable {
  public:
   void WriteTo(std::ostream* out) const override;
+
  protected:
   ExampleForkExitEvent(u32 type, u32 pid, u32 ppid, u32 tid, u32 ptid, u64 time,
                        const SampleInfo& sample_id)
       : type_(type),
-        pid_(pid), ppid_(ppid),
-        tid_(tid), ptid_(ptid),
+        pid_(pid),
+        ppid_(ppid),
+        tid_(tid),
+        ptid_(ptid),
         time_(time),
         sample_id_(sample_id) {}
-  const u32 type_;    // Either PERF_RECORD_FORK or PERF_RECORD_EXIT.
+  const u32 type_;  // Either PERF_RECORD_FORK or PERF_RECORD_EXIT.
  private:
   const u32 pid_;
   const u32 ppid_;
@@ -358,10 +366,10 @@ class FinishedRoundEvent : public StreamWriteable {
 class ExamplePerfSampleEvent : public StreamWriteable {
  public:
   explicit ExamplePerfSampleEvent(const SampleInfo& sample_info)
-      : sample_info_(sample_info) {
-  }
+      : sample_info_(sample_info) {}
   size_t GetSize() const;
   void WriteTo(std::ostream* out) const override;
+
  private:
   const SampleInfo sample_info_;
 };
@@ -384,14 +392,15 @@ class ExamplePerfSampleEvent_Tracepoint : public StreamWriteable {
 class MetadataIndexEntry : public StreamWriteable {
  public:
   MetadataIndexEntry(u64 offset, u64 size)
-    : index_entry_{.offset = offset, .size = size} {}
+      : index_entry_{.offset = offset, .size = size} {}
   void WriteTo(std::ostream* out) const override {
     struct perf_file_section entry = {
-      .offset = MaybeSwap64(index_entry_.offset),
-      .size = MaybeSwap64(index_entry_.size),
+        .offset = MaybeSwap64(index_entry_.offset),
+        .size = MaybeSwap64(index_entry_.size),
     };
     out->write(reinterpret_cast<const char*>(&entry), sizeof(entry));
   }
+
  public:
   const perf_file_section index_entry_;
 };
@@ -402,16 +411,13 @@ class ExampleStringMetadata : public StreamWriteable {
   // The input string gets zero-padded/truncated to |kStringAlignSize| bytes if
   // it is shorter/longer, respectively.
   explicit ExampleStringMetadata(const string& data, size_t offset)
-      : data_(data),
-        index_entry_(offset, sizeof(u32) + kStringAlignSize) {
+      : data_(data), index_entry_(offset, sizeof(u32) + kStringAlignSize) {
     data_.resize(kStringAlignSize);
   }
   void WriteTo(std::ostream* out) const override;
 
   const MetadataIndexEntry& index_entry() { return index_entry_; }
-  size_t size() const {
-    return sizeof(u32) + data_.size();
-  }
+  size_t size() const { return sizeof(u32) + data_.size(); }
 
   StreamWriteable& WithCrossEndianness(bool value) override {
     // Set index_entry_'s endianness since it is owned by this class.
@@ -463,8 +469,8 @@ class ExampleTracingMetadata {
   explicit ExampleTracingMetadata(size_t offset)
       : data_(this), index_entry_(offset, data_.value().size()) {}
 
-  const Data &data() { return data_; }
-  const MetadataIndexEntry &index_entry() { return index_entry_; }
+  const Data& data() { return data_; }
+  const MetadataIndexEntry& index_entry() { return index_entry_; }
 
  private:
   friend class Data;

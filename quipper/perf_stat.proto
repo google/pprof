@@ -21,7 +21,7 @@ message PerfStatProto {
 
   // Represents one line of "perf stat" output.
   // Next tag: 4
-  message PerfStatLine{
+  message PerfStatLine {
     // Time since the start of the "perf stat" command, in milliseconds.
     //
     // When running "perf stat" and printing the counters at the end, this is

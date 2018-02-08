@@ -35,32 +35,17 @@ struct Range {
 // Some address ranges to map.  It is important that none of these overlap with
 // each other, nor are any two of them contiguous.
 const Range kMapRanges[] = {
-  Range(0xff000000,   0x100000, 0xdeadbeef, 0),
-  Range(0x00a00000,    0x10000, 0xcafebabe, 0),
-  Range(0x0c000000,  0x1000000, 0x900df00d, 0),
-  Range(0x00001000,    0x30000, 0x9000091e, 0),
+    Range(0xff000000, 0x100000, 0xdeadbeef, 0),
+    Range(0x00a00000, 0x10000, 0xcafebabe, 0),
+    Range(0x0c000000, 0x1000000, 0x900df00d, 0),
+    Range(0x00001000, 0x30000, 0x9000091e, 0),
 };
 
 // List of real addresses that are not in the above ranges.
 const uint64_t kAddressesNotInRanges[] = {
-  0x00000000,
-  0x00000100,
-  0x00038000,
-  0x00088888,
-  0x00100000,
-  0x004fffff,
-  0x00a20000,
-  0x00cc0000,
-  0x00ffffff,
-  0x03e00000,
-  0x0b000000,
-  0x0d100000,
-  0x0fffffff,
-  0x1fffffff,
-  0x7ffffff0,
-  0xdffffff0,
-  0xfe000000,
-  0xffffffff,
+    0x00000000, 0x00000100, 0x00038000, 0x00088888, 0x00100000, 0x004fffff,
+    0x00a20000, 0x00cc0000, 0x00ffffff, 0x03e00000, 0x0b000000, 0x0d100000,
+    0x0fffffff, 0x1fffffff, 0x7ffffff0, 0xdffffff0, 0xfe000000, 0xffffffff,
 };
 
 // Number of regularly-spaced intervals within a mapped range to test.
@@ -73,12 +58,10 @@ uint64_t GetMappedAddressFromRanges(const Range* ranges,
                                     const uint64_t addr) {
   unsigned int i;
   uint64_t mapped_range_addr;
-  for (i = 0, mapped_range_addr = 0;
-       i < num_ranges;
+  for (i = 0, mapped_range_addr = 0; i < num_ranges;
        mapped_range_addr += ranges[i].size, ++i) {
     const Range& range = ranges[i];
-    if (range.contains(addr))
-      return (addr - range.addr) + mapped_range_addr;
+    if (range.contains(addr)) return (addr - range.addr) + mapped_range_addr;
   }
   return static_cast<uint64_t>(-1);
 }
@@ -91,9 +74,7 @@ class AddressMapperTest : public ::testing::Test {
   AddressMapperTest() {}
   ~AddressMapperTest() {}
 
-  virtual void SetUp() {
-    mapper_.reset(new AddressMapper);
-  }
+  virtual void SetUp() { mapper_.reset(new AddressMapper); }
 
  protected:
   // Maps a range using the AddressMapper and makes sure that it was successful.
@@ -181,10 +162,8 @@ TEST_F(AddressMapperTest, MapAll) {
   uint64_t mapped_addr;
   AddressMapper::MappingList::const_iterator iter;
   for (const Range& range : kMapRanges) {
-    TestMappedRange(range,
-                    GetMappedAddressFromRanges(kMapRanges,
-                                               arraysize(kMapRanges),
-                                               range.addr));
+    TestMappedRange(range, GetMappedAddressFromRanges(
+                               kMapRanges, arraysize(kMapRanges), range.addr));
 
     // Check addresses before and after the mapped range, should be invalid.
     EXPECT_FALSE(mapper_->GetMappedAddressAndListIterator(range.addr - 1,
@@ -216,18 +195,15 @@ TEST_F(AddressMapperTest, MapAllWithIDsAndOffsets) {
   // For each mapped range, test addresses at the start, middle, and end.
   // Also test the address right before and after each range.
   for (const Range& range : kMapRanges) {
-    TestMappedRange(range,
-                    GetMappedAddressFromRanges(kMapRanges,
-                                               arraysize(kMapRanges),
-                                               range.addr));
+    TestMappedRange(range, GetMappedAddressFromRanges(
+                               kMapRanges, arraysize(kMapRanges), range.addr));
   }
 }
 
 // Test overlap detection.
 TEST_F(AddressMapperTest, OverlapSimple) {
   // Map all the ranges first.
-  for (const Range& range : kMapRanges)
-    ASSERT_TRUE(MapRange(range, false));
+  for (const Range& range : kMapRanges) ASSERT_TRUE(MapRange(range, false));
 
   // Attempt to re-map each range, but offset by size / 2.
   for (const Range& range : kMapRanges) {
@@ -250,10 +226,9 @@ TEST_F(AddressMapperTest, OverlapSimple) {
 
     // The range is shifted in real space but should still be the same in
     // quipper space.
-    TestMappedRange(new_range,
-                    GetMappedAddressFromRanges(kMapRanges,
-                                               arraysize(kMapRanges),
-                                               range.addr));
+    TestMappedRange(
+        new_range, GetMappedAddressFromRanges(kMapRanges, arraysize(kMapRanges),
+                                              range.addr));
   }
 }
 
@@ -263,8 +238,7 @@ TEST_F(AddressMapperTest, OverlapBig) {
   const Range kBigRegion(0xa00, 0xff000000, 0x1234, 0);
 
   // Map all the ranges first.
-  for (const Range& range : kMapRanges)
-    ASSERT_TRUE(MapRange(range, false));
+  for (const Range& range : kMapRanges) ASSERT_TRUE(MapRange(range, false));
 
   // Make sure overlap is detected before removing old ranges.
   ASSERT_FALSE(MapRange(kBigRegion, false));
@@ -293,8 +267,7 @@ TEST_F(AddressMapperTest, OverlapBig) {
   // same addresses if they fall within |kBigRegion|, and don't map at all if
   // they are not within |kBigRegion|.
   for (const Range& range : kMapRanges) {
-    for (uint64_t addr = range.addr;
-         addr < range.addr + range.size;
+    for (uint64_t addr = range.addr; addr < range.addr + range.size;
          addr += range.size / kNumRangeTestIntervals) {
       uint64_t mapped_addr = UINT64_MAX;
       AddressMapper::MappingList::const_iterator addr_iter;
@@ -404,10 +377,10 @@ TEST_F(AddressMapperTest, NotPageAligned) {
 
   // Some address ranges that do not begin on a page boundary.
   const Range kUnalignedRanges[] = {
-    Range(0xff000100,   0x1fff00, 0xdeadbeef,  0x100),
-    Range(0x00a00180,    0x10000, 0xcafebabe,  0x180),
-    Range(0x0c000300,  0x1000800, 0x900df00d, 0x4300),
-    Range(0x000017f0,    0x30000, 0x9000091e,  0x7f0),
+      Range(0xff000100, 0x1fff00, 0xdeadbeef, 0x100),
+      Range(0x00a00180, 0x10000, 0xcafebabe, 0x180),
+      Range(0x0c000300, 0x1000800, 0x900df00d, 0x4300),
+      Range(0x000017f0, 0x30000, 0x9000091e, 0x7f0),
   };
 
   // Map the ranges.

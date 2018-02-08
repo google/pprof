@@ -14,8 +14,7 @@ bool BufferWriter::WriteData(const void* src, const size_t size) {
   // Do not write anything if the write needs to be truncated to avoid writing
   // past the end of the file. The extra conditions here are in case of integer
   // overflow.
-  if (offset_ + size > size_ || offset_ >= size_ || size > size_)
-    return false;
+  if (offset_ + size > size_ || offset_ >= size_ || size > size_) return false;
   memcpy(buffer_ + offset_, src, size);
   offset_ += size;
   return true;

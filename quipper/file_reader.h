@@ -17,17 +17,11 @@ class FileReader : public DataReader {
   explicit FileReader(const string& filename);
   virtual ~FileReader();
 
-  bool IsOpen() const {
-    return infile_;
-  }
+  bool IsOpen() const { return infile_; }
 
-  void SeekSet(size_t offset) override {
-    fseek(infile_, offset, SEEK_SET);
-  }
+  void SeekSet(size_t offset) override { fseek(infile_, offset, SEEK_SET); }
 
-  size_t Tell() const override {
-    return ftell(infile_);
-  }
+  size_t Tell() const override { return ftell(infile_); }
 
   bool ReadData(const size_t size, void* dest) override;
 

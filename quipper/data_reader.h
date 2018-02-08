@@ -26,9 +26,7 @@ class DataReader {
   // of the data.
   virtual size_t Tell() const = 0;
 
-  virtual size_t size() const {
-    return size_;
-  }
+  virtual size_t size() const { return size_; }
 
   // Reads raw data into |dest|. Returns true if it managed to read |size|
   // bytes.
@@ -42,15 +40,9 @@ class DataReader {
                              void* dest);
 
   // Read integers with endian swapping.
-  bool ReadUint16(uint16_t* value) {
-    return ReadIntValue(value);
-  }
-  bool ReadUint32(uint32_t* value) {
-    return ReadIntValue(value);
-  }
-  bool ReadUint64(uint64_t* value) {
-    return ReadIntValue(value);
-  }
+  bool ReadUint16(uint16_t* value) { return ReadIntValue(value); }
+  bool ReadUint32(uint32_t* value) { return ReadIntValue(value); }
+  bool ReadUint64(uint64_t* value) { return ReadIntValue(value); }
 
   // Read a string. Returns true if it managed to read |size| bytes (excluding
   // null terminator). The actual string may be shorter than the number of bytes
@@ -63,13 +55,9 @@ class DataReader {
   // data, and not necessarily the same as the size field in the data.
   bool ReadStringWithSizeFromData(string* dest);
 
-  bool is_cross_endian() const {
-    return is_cross_endian_;
-  }
+  bool is_cross_endian() const { return is_cross_endian_; }
 
-  void set_is_cross_endian(bool value) {
-    is_cross_endian_ = value;
-  }
+  void set_is_cross_endian(bool value) { is_cross_endian_ = value; }
 
  protected:
   // Size of the data source.
@@ -81,8 +69,7 @@ class DataReader {
   // For type-safety this one private and let public member functions call it.
   template <typename T>
   bool ReadIntValue(T* dest) {
-    if (!ReadData(sizeof(T), dest))
-      return false;
+    if (!ReadData(sizeof(T), dest)) return false;
     *dest = MaybeSwap(*dest, is_cross_endian_);
     return true;
   }

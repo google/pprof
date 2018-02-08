@@ -53,14 +53,11 @@ struct ParsedEvent {
 
   // Accessor for command string.
   const string command() const {
-    if (command_)
-      return *command_;
+    if (command_) return *command_;
     return string();
   }
 
-  void set_command(const string* command) {
-    command_ = command;
-  }
+  void set_command(const string* command) { command_ = command; }
 
   // A struct that contains a DSO + offset pair.
   struct DSOAndOffset {
@@ -69,23 +66,18 @@ struct ParsedEvent {
 
     // Accessor methods.
     const string dso_name() const {
-      if (dso_info_)
-        return dso_info_->name;
+      if (dso_info_) return dso_info_->name;
       return string();
     }
     const string build_id() const {
-      if (dso_info_)
-        return dso_info_->build_id;
+      if (dso_info_) return dso_info_->build_id;
       return string();
     }
-    uint64_t offset() const {
-      return offset_;
-    }
+    uint64_t offset() const { return offset_; }
 
-    DSOAndOffset() : dso_info_(NULL),
-                     offset_(0) {}
+    DSOAndOffset() : dso_info_(NULL), offset_(0) {}
 
-    bool operator == (const DSOAndOffset& other) const {
+    bool operator==(const DSOAndOffset& other) const {
       return offset_ == other.offset_ &&
              !dso_name().compare(other.dso_name()) &&
              !build_id().compare(other.build_id());
@@ -101,16 +93,15 @@ struct ParsedEvent {
     DSOAndOffset from;
     DSOAndOffset to;
 
-    bool operator == (const BranchEntry& other) const {
-      return predicted == other.predicted &&
-             from == other.from &&
+    bool operator==(const BranchEntry& other) const {
+      return predicted == other.predicted && from == other.from &&
              to == other.to;
     }
   };
   std::vector<BranchEntry> branch_stack;
 
   // For comparing ParsedEvents.
-  bool operator == (const ParsedEvent& other) const {
+  bool operator==(const ParsedEvent& other) const {
     return dso_and_offset == other.dso_and_offset &&
            std::equal(callchain.begin(), callchain.end(),
                       other.callchain.begin()) &&
@@ -176,9 +167,7 @@ class PerfParser {
   explicit PerfParser(PerfReader* reader, const PerfParserOptions& options);
 
   // Pass in a struct containing various options.
-  void set_options(const PerfParserOptions& options) {
-    options_ = options;
-  }
+  void set_options(const PerfParserOptions& options) { options_ = options; }
 
   // Gets parsed event/sample info from raw event data. Stores pointers to the
   // raw events in an array of ParsedEvents. Does not own the raw events. It is
@@ -190,14 +179,10 @@ class PerfParser {
     return parsed_events_;
   }
 
-  const PerfEventStats& stats() const {
-    return stats_;
-  }
+  const PerfEventStats& stats() const { return stats_; }
 
   // Use with caution. Deserialization uses this to restore stats from proto.
-  PerfEventStats* mutable_stats() {
-    return &stats_;
-  }
+  PerfEventStats* mutable_stats() { return &stats_; }
 
  private:
   // Used for processing events.  e.g. remapping with synthetic addresses.
@@ -220,8 +205,7 @@ class PerfParser {
   bool MapSampleEvent(ParsedEvent* parsed_event);
 
   // Calls MapIPAndPidAndGetNameAndOffset() on the callchain of a sample event.
-  bool MapCallchain(const uint64_t ip,
-                    const PidTid pidtid,
+  bool MapCallchain(const uint64_t ip, const PidTid pidtid,
                     uint64_t original_event_addr,
                     RepeatedField<uint64>* callchain,
                     ParsedEvent* parsed_event);
@@ -238,9 +222,7 @@ class PerfParser {
   // change in the future, and we don't want derived classes to be stuck with an
   // obsolete API.
   bool MapIPAndPidAndGetNameAndOffset(
-      uint64_t ip,
-      const PidTid pidtid,
-      uint64_t* new_ip,
+      uint64_t ip, const PidTid pidtid, uint64_t* new_ip,
       ParsedEvent::DSOAndOffset* dso_and_offset);
 
   // Parses a MMAP event. Adds the mapping to the AddressMapper of the event's

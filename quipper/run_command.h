@@ -16,9 +16,8 @@ namespace quipper {
 // stdout is stored in |output|, and to /dev/null otherwise. Returns the exit
 // status of the command if it exited normally, or -1 otherwise. If the call
 // to exec failed, then errno is set accordingly.
-int RunCommand(const std::vector<string>& command,
-                std::vector<char>* output);
+int RunCommand(const std::vector<string>& command, std::vector<char>* output);
 
-}  // nampspace quipper
+}  // namespace quipper
 
 #endif  // CHROMIUMOS_WIDE_PROFILING_RUN_COMMAND_H_

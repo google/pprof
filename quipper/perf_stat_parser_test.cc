@@ -17,33 +17,33 @@ namespace quipper {
 namespace {
 
 const char kInvalidInput[] =
-"PerfDataProto\n"
-"Attr: Even Count BuildID\n"
-"1.234 1234.5 time seconds\n";
+    "PerfDataProto\n"
+    "Attr: Even Count BuildID\n"
+    "1.234 1234.5 time seconds\n";
 
 const char kSmallInput[] =
-"/uncore/reads/: 711983 1002113142 1002111143\n"
-"/uncore/writes/: 140867 1002113864 1002113864\n"
-"    \n";  // Test parsing an empty line
+    "/uncore/reads/: 711983 1002113142 1002111143\n"
+    "/uncore/writes/: 140867 1002113864 1002113864\n"
+    "    \n";  // Test parsing an empty line
 
 // From a Peppy running:
 // 'perf stat -v -a -e cycles -e L1-dcache-loads -e bus-cycles -e r02c4 --'
 // ' sleep 2'
 const char kFullInput[] =
-"cycles: 19062079 4002390292 4002381587\n"
-"L1-dcache-loads: 2081375 4002517554 4002511235\n"
-"bus-cycles: 2259169 4002527446 4002523976\n"
-"r02c4: 201584 4002518485 4002518485\n"
-"\n"
-" Performance counter stats for 'system wide':\n"
-"\n"
-"          19062079      cycles                    [100.00%]\n"
-"           2081375      L1-dcache-loads           [100.00%]\n"
-"           2259169      bus-cycles                [100.00%]\n"
-"            201584      r02c4   \n"
-"\n"
-"       2.001402976 seconds time elapsed\n"
-"\n";
+    "cycles: 19062079 4002390292 4002381587\n"
+    "L1-dcache-loads: 2081375 4002517554 4002511235\n"
+    "bus-cycles: 2259169 4002527446 4002523976\n"
+    "r02c4: 201584 4002518485 4002518485\n"
+    "\n"
+    " Performance counter stats for 'system wide':\n"
+    "\n"
+    "          19062079      cycles                    [100.00%]\n"
+    "           2081375      L1-dcache-loads           [100.00%]\n"
+    "           2259169      bus-cycles                [100.00%]\n"
+    "            201584      r02c4   \n"
+    "\n"
+    "       2.001402976 seconds time elapsed\n"
+    "\n";
 
 }  // namespace
 

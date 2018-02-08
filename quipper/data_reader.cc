@@ -26,10 +26,9 @@ bool DataReader::ReadDataString(const size_t size, string* dest) {
 
 bool DataReader::ReadDataValue(const size_t size, const string& value_name,
                                void* dest) {
-  if (ReadData(size, dest))
-    return true;
-  LOG(ERROR)  << "Unable to read " << value_name << ". Requested " << size
-               << " bytes, " << size_ - Tell() << " bytes remaining.";
+  if (ReadData(size, dest)) return true;
+  LOG(ERROR) << "Unable to read " << value_name << ". Requested " << size
+             << " bytes, " << size_ - Tell() << " bytes remaining.";
   return false;
 }
 

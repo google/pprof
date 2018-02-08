@@ -34,7 +34,7 @@ class ElfStringTable {
   // Returns the index to use in place of the string.
   GElf_Word Add(string value) {
     GElf_Word ret = table_.size();
-    table_.append(value.data(), value.size()+1);  // Include the '\0'.
+    table_.append(value.data(), value.size() + 1);  // Include the '\0'.
     return ret;
   }
 
@@ -74,21 +74,20 @@ class ElfDataCache {
 }  // namespace
 
 void WriteElfWithBuildid(string filename, string section_name, string buildid) {
-  std::vector<std::pair<string, string>> section_name_to_buildid {
-    std::make_pair(section_name, buildid)
-  };
+  std::vector<std::pair<string, string>> section_name_to_buildid{
+      std::make_pair(section_name, buildid)};
   WriteElfWithMultipleBuildids(filename, section_name_to_buildid);
 }
 
 void WriteElfWithMultipleBuildids(
     string filename,
     const std::vector<std::pair<string, string>> section_buildids) {
-  int fd = open(filename.data(), O_WRONLY|O_CREAT|O_TRUNC, 0660);
+  int fd = open(filename.data(), O_WRONLY | O_CREAT | O_TRUNC, 0660);
   CHECK_GE(fd, 0) << strerror(errno);
 
   Elf *elf = elf_begin(fd, ELF_C_WRITE, nullptr);
   CHECK(elf) << elf_errmsg(-1);
-  Elf64_Ehdr* elf_header = elf64_newehdr(elf);
+  Elf64_Ehdr *elf_header = elf64_newehdr(elf);
   CHECK(elf_header) << elf_errmsg(-1);
   elf_header->e_ident[EI_DATA] = ELFDATA2LSB;
   elf_header->e_machine = EM_X86_64;
@@ -99,9 +98,9 @@ void WriteElfWithMultipleBuildids(
   ElfDataCache data_cache;
 
   // Note section(s)
-  for (const auto& entry : section_buildids) {
-    const string& section_name = entry.first;
-    const string& buildid = entry.second;
+  for (const auto &entry : section_buildids) {
+    const string &section_name = entry.first;
+    const string &buildid = entry.second;
     Elf_Scn *section = elf_newscn(elf);
     CHECK(section) << elf_errmsg(-1);
     GElf_Shdr section_header;
@@ -116,7 +115,8 @@ void WriteElfWithMultipleBuildids(
     note_header.n_descsz = Align<4>(buildid.size());
     note_header.n_type = NT_GNU_BUILD_ID;
     string data_str;
-    data_str.append(reinterpret_cast<char*>(&note_header), sizeof(note_header));
+    data_str.append(reinterpret_cast<char *>(&note_header),
+                    sizeof(note_header));
     data_str.append(note_name);
     data_str.append(string(note_header.n_namesz - note_name.size(), '\0'));
     data_str.append(buildid);

@@ -75,10 +75,10 @@ TEST(DsoTest, ReadsBuildId_PrefersGnuBuildid) {
   const string buildid_notes = "\xc0\xde\xf0\x0d";
   const string buildid_note = "\xfe\xed\xba\xad";
 
-  std::vector<std::pair<string, string>> section_buildids {
-    std::make_pair(".notes", buildid_notes),
-    std::make_pair(".note", buildid_note),
-    std::make_pair(".note.gnu.build-id", buildid_gnu),
+  std::vector<std::pair<string, string>> section_buildids{
+      std::make_pair(".notes", buildid_notes),
+      std::make_pair(".note", buildid_note),
+      std::make_pair(".note.gnu.build-id", buildid_gnu),
   };
   testing::WriteElfWithMultipleBuildids(elf.path(), section_buildids);
 
@@ -88,8 +88,8 @@ TEST(DsoTest, ReadsBuildId_PrefersGnuBuildid) {
 
   // Also prefer ".notes" over ".note"
   section_buildids = {
-    std::make_pair(".note", buildid_note),
-    std::make_pair(".notes", buildid_notes),
+      std::make_pair(".note", buildid_note),
+      std::make_pair(".notes", buildid_notes),
   };
   testing::WriteElfWithMultipleBuildids(elf.path(), section_buildids);
 
@@ -102,17 +102,17 @@ TEST(DsoTest, ReadsSysfsModuleBuildidNote) {
   const size_t namesz = 4;
   const size_t descsz = 0x14;
   const GElf_Nhdr note_header = {
-    .n_namesz = namesz,
-    .n_descsz = descsz,
-    .n_type = NT_GNU_BUILD_ID,
+      .n_namesz = namesz,
+      .n_descsz = descsz,
+      .n_type = NT_GNU_BUILD_ID,
   };
 
   const char note_name[namesz] = ELF_NOTE_GNU;
-  const char note_desc[descsz] {
-    // Note \0 here. This is not null-terminated.
-    '\x1c', '\0',   '\x69', '\x27', '\x15', '\x26', '\x6b', '\xe7',
-    '\xcc', '\x69', '\x2c', '\x12', '\xe8', '\x09', '\x20', '\x18',
-    '\x03', '\x5b', '\xb6', '\x4f',
+  const char note_desc[descsz]{
+      // Note \0 here. This is not null-terminated.
+      '\x1c', '\0',   '\x69', '\x27', '\x15', '\x26', '\x6b',
+      '\xe7', '\xcc', '\x69', '\x2c', '\x12', '\xe8', '\x09',
+      '\x20', '\x18', '\x03', '\x5b', '\xb6', '\x4f',
   };
 
   string data;

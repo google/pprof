@@ -59,8 +59,7 @@ PerfParser::PerfParser(PerfReader* reader) : reader_(reader) {}
 PerfParser::~PerfParser() {}
 
 PerfParser::PerfParser(PerfReader* reader, const PerfParserOptions& options)
-    : reader_(reader),
-      options_(options) {}
+    : reader_(reader), options_(options) {}
 
 bool PerfParser::ParseRawEvents() {
   if (options_.sort_events_by_time) {
@@ -101,8 +100,7 @@ bool PerfParser::ParseRawEvents() {
 
   ProcessEvents();
 
-  if (!options_.discard_unused_events)
-    return true;
+  if (!options_.discard_unused_events) return true;
 
   // Some MMAP/MMAP2 events' mapped regions will not have any samples. These
   // MMAP/MMAP2 events should be dropped. |parsed_events_| should be
@@ -115,8 +113,7 @@ bool PerfParser::ParseRawEvents() {
         event.num_samples_in_mmap_region == 0) {
       continue;
     }
-    if (read_index != write_index)
-      parsed_events_[write_index] = event;
+    if (read_index != write_index) parsed_events_[write_index] = event;
     ++write_index;
   }
   CHECK_LE(write_index, parsed_events_.size());
@@ -137,7 +134,7 @@ bool PerfParser::ProcessUserEvents(PerfEvent& event) {
 bool PerfParser::ProcessEvents() {
   stats_ = {0};
 
-  stats_.did_remap = false;   // Explicitly clear the remap flag.
+  stats_.did_remap = false;  // Explicitly clear the remap flag.
 
   // Pid 0 is called the swapper process. Even though perf does not record a
   // COMM event for pid 0, we act like we did receive a COMM event for it. Perf
@@ -166,12 +163,10 @@ bool PerfParser::ProcessEvents() {
         // previously-endian-swapped location. This used to log ip.
         VLOG(1) << "SAMPLE";
         ++stats_.num_sample_events;
-        if (MapSampleEvent(&parsed_event))
-          ++stats_.num_sample_events_mapped;
+        if (MapSampleEvent(&parsed_event)) ++stats_.num_sample_events_mapped;
         break;
       case PERF_RECORD_MMAP:
-      case PERF_RECORD_MMAP2:
-      {
+      case PERF_RECORD_MMAP2: {
         const char* mmap_type_name =
             event.header().type() == PERF_RECORD_MMAP ? "MMAP" : "MMAP2";
         VLOG(1) << mmap_type_name << ": " << event.mmap_event().filename();
@@ -192,29 +187,35 @@ bool PerfParser::ProcessEvents() {
         break;
       }
       case PERF_RECORD_FORK:
+        // clang-format off
         VLOG(1) << "FORK: " << event.fork_event().ppid()
                 << ":" << event.fork_event().ptid()
                 << " -> " << event.fork_event().pid()
                 << ":" << event.fork_event().tid();
+        // clang-format on
         ++stats_.num_fork_events;
         CHECK(MapForkEvent(event.fork_event())) << "Unable to map FORK event!";
         break;
       case PERF_RECORD_EXIT:
         // EXIT events have the same structure as FORK events.
+        // clang-format off
         VLOG(1) << "EXIT: " << event.fork_event().ppid()
                 << ":" << event.fork_event().ptid();
+        // clang-format on
         ++stats_.num_exit_events;
         break;
       case PERF_RECORD_COMM:
       {
+        // clang-format off
         VLOG(1) << "COMM: " << event.comm_event().pid()
                 << ":" << event.comm_event().tid() << ": "
                 << event.comm_event().comm();
+        // clang-format on
         ++stats_.num_comm_events;
         CHECK(MapCommEvent(event.comm_event()));
         commands_.insert(event.comm_event().comm());
-        const PidTid pidtid = std::make_pair(event.comm_event().pid(),
-                                             event.comm_event().tid());
+        const PidTid pidtid =
+            std::make_pair(event.comm_event().pid(), event.comm_event().tid());
         pidtid_to_comm_map_[pidtid] =
             &(*commands_.find(event.comm_event().comm()));
         break;
@@ -240,10 +241,10 @@ bool PerfParser::ProcessEvents() {
         return false;
     }
   }
-  if (!FillInDsoBuildIds())
-    return false;
+  if (!FillInDsoBuildIds()) return false;
 
   // Print stats collected from parsing.
+  // clang-format off
   LOG(INFO) << "Parser processed: "
             << stats_.num_mmap_events << " MMAP/MMAP2 events, "
             << stats_.num_comm_events << " COMM events, "
@@ -251,6 +252,7 @@ bool PerfParser::ProcessEvents() {
             << stats_.num_exit_events << " EXIT events, "
             << stats_.num_sample_events << " SAMPLE events, "
             << stats_.num_sample_events_mapped << " of these were mapped";
+  // clang-format on
 
   float sample_mapping_percentage =
       static_cast<float>(stats_.num_sample_events_mapped) /
@@ -271,7 +273,10 @@ namespace {
 class FdCloser {
  public:
   explicit FdCloser(int fd) : fd_(fd) {}
-  ~FdCloser() { if (fd_ != -1) close(fd_); }
+  ~FdCloser() {
+    if (fd_ != -1) close(fd_);
+  }
+
  private:
   FdCloser() = delete;
   FdCloser(FdCloser&) = delete;
@@ -297,16 +302,14 @@ bool ReadElfBuildIdIfSameInode(const string& dso_path, const DSOInfo& dso,
   int fd = open(dso_path.c_str(), O_RDONLY);
   FdCloser fd_closer(fd);
   if (fd == -1) {
-    if (errno != ENOENT)
-      LOG(ERROR) << "Failed to open ELF file: " << dso_path;
+    if (errno != ENOENT) LOG(ERROR) << "Failed to open ELF file: " << dso_path;
     return false;
   }
 
   struct stat s;
   CHECK_GE(fstat(fd, &s), 0);
   // Only reject based on inode if we actually have device info (from MMAP2).
-  if (dso.maj != 0 && dso.min != 0 && !SameInode(dso, &s))
-    return false;
+  if (dso.maj != 0 && dso.min != 0 && !SameInode(dso, &s)) return false;
 
   return ReadElfBuildId(fd, buildid);
 }
@@ -317,14 +320,12 @@ bool ReadElfBuildIdIfSameInode(const string& dso_path, const DSOInfo& dso,
 string FindDsoBuildId(const DSOInfo& dso_info) {
   string buildid_bin;
   const string& dso_name = dso_info.name;
-  if (IsKernelNonModuleName(dso_name))
-    return buildid_bin;  // still empty
+  if (IsKernelNonModuleName(dso_name)) return buildid_bin;  // still empty
   // Does this look like a kernel module?
   if (dso_name.size() >= 2 && dso_name[0] == '[' && dso_name.back() == ']') {
     // This may not be successful, but either way, just return. buildid_bin
     // will be empty if the module was not found.
-    ReadModuleBuildId(dso_name.substr(1, dso_name.size() - 2),
-                      &buildid_bin);
+    ReadModuleBuildId(dso_name.substr(1, dso_name.size() - 2), &buildid_bin);
     return buildid_bin;
   }
   // Try normal files, possibly inside containers.
@@ -343,8 +344,7 @@ string FindDsoBuildId(const DSOInfo& dso_info) {
     }
     // Avoid re-trying the parent process if it's the same for multiple threads.
     // dso_info.threads is sorted, so threads in a process should be adjacent.
-    if (pid == last_pid || pid == tid)
-      continue;
+    if (pid == last_pid || pid == tid) continue;
     last_pid = pid;
     // Try the parent process:
     std::stringstream parent_dso_path_stream;
@@ -386,8 +386,7 @@ bool PerfParser::FillInDsoBuildIds() {
     }
   }
 
-  if (new_buildids.empty())
-    return true;
+  if (new_buildids.empty()) return true;
   return reader_->InjectBuildIDs(new_buildids);
 }
 
@@ -411,8 +410,7 @@ bool PerfParser::MapSampleEvent(ParsedEvent* parsed_event) {
 
   const PerfEvent& event = *parsed_event->event_ptr;
   if (!event.has_sample_event() ||
-      !(event.sample_event().has_ip() &&
-        event.sample_event().has_pid() &&
+      !(event.sample_event().has_ip() && event.sample_event().has_pid() &&
         event.sample_event().has_tid())) {
     return false;
   }
@@ -428,8 +426,7 @@ bool PerfParser::MapSampleEvent(ParsedEvent* parsed_event) {
   uint64_t remapped_event_ip = 0;
 
   // Map the event IP itself.
-  if (!MapIPAndPidAndGetNameAndOffset(sample_info.ip(),
-                                      pidtid,
+  if (!MapIPAndPidAndGetNameAndOffset(sample_info.ip(), pidtid,
                                       &remapped_event_ip,
                                       &parsed_event->dso_and_offset)) {
     mapping_failed = true;
@@ -438,17 +435,13 @@ bool PerfParser::MapSampleEvent(ParsedEvent* parsed_event) {
   }
 
   if (sample_info.callchain_size() &&
-      !MapCallchain(sample_info.ip(),
-                    pidtid,
-                    unmapped_event_ip,
-                    sample_info.mutable_callchain(),
-                    parsed_event)) {
+      !MapCallchain(sample_info.ip(), pidtid, unmapped_event_ip,
+                    sample_info.mutable_callchain(), parsed_event)) {
     mapping_failed = true;
   }
 
   if (sample_info.branch_stack_size() &&
-      !MapBranchStack(pidtid,
-                      sample_info.mutable_branch_stack(),
+      !MapBranchStack(pidtid, sample_info.mutable_branch_stack(),
                       parsed_event)) {
     mapping_failed = true;
   }
@@ -456,8 +449,7 @@ bool PerfParser::MapSampleEvent(ParsedEvent* parsed_event) {
   return !mapping_failed;
 }
 
-bool PerfParser::MapCallchain(const uint64_t ip,
-                              const PidTid pidtid,
+bool PerfParser::MapCallchain(const uint64_t ip, const PidTid pidtid,
                               const uint64_t original_event_addr,
                               RepeatedField<uint64>* callchain,
                               ParsedEvent* parsed_event) {
@@ -468,9 +460,8 @@ bool PerfParser::MapCallchain(const uint64_t ip,
 
   bool mapping_failed = false;
 
-  // If the callchain's length is 0, there is no work to do.
-  if (callchain->size() == 0)
-    return true;
+  // If the callchain is empty, there is no work to do.
+  if (callchain->empty()) return true;
 
   // Keeps track of whether the current entry is kernel or user.
   parsed_event->callchain.resize(callchain->size());
@@ -488,9 +479,7 @@ bool PerfParser::MapCallchain(const uint64_t ip,
     }
     uint64_t mapped_addr = 0;
     if (!MapIPAndPidAndGetNameAndOffset(
-            entry,
-            pidtid,
-            &mapped_addr,
+            entry, pidtid, &mapped_addr,
             &parsed_event->callchain[num_entries_mapped++])) {
       mapping_failed = true;
     } else {
@@ -505,8 +494,7 @@ bool PerfParser::MapCallchain(const uint64_t ip,
 }
 
 bool PerfParser::MapBranchStack(
-    const PidTid pidtid,
-    RepeatedPtrField<BranchStackEntry>* branch_stack,
+    const PidTid pidtid, RepeatedPtrField<BranchStackEntry>* branch_stack,
     ParsedEvent* parsed_event) {
   if (!branch_stack) {
     LOG(ERROR) << "NULL branch stack data.";
@@ -517,8 +505,7 @@ bool PerfParser::MapBranchStack(
   size_t trimmed_size = 0;
   for (const BranchStackEntry& entry : *branch_stack) {
     // Count the number of non-null entries before the first null entry.
-    if (IsNullBranchStackEntry(entry))
-      break;
+    if (IsNullBranchStackEntry(entry)) break;
     ++trimmed_size;
   }
 
@@ -541,18 +528,14 @@ bool PerfParser::MapBranchStack(
     ParsedEvent::BranchEntry& parsed_entry = parsed_event->branch_stack[i];
 
     uint64_t from_mapped = 0;
-    if (!MapIPAndPidAndGetNameAndOffset(entry->from_ip(),
-                                        pidtid,
-                                        &from_mapped,
+    if (!MapIPAndPidAndGetNameAndOffset(entry->from_ip(), pidtid, &from_mapped,
                                         &parsed_entry.from)) {
       return false;
     }
     entry->set_from_ip(from_mapped);
 
     uint64_t to_mapped = 0;
-    if (!MapIPAndPidAndGetNameAndOffset(entry->to_ip(),
-                                        pidtid,
-                                        &to_mapped,
+    if (!MapIPAndPidAndGetNameAndOffset(entry->to_ip(), pidtid, &to_mapped,
                                         &parsed_entry.to)) {
       return false;
     }
@@ -565,9 +548,7 @@ bool PerfParser::MapBranchStack(
 }
 
 bool PerfParser::MapIPAndPidAndGetNameAndOffset(
-    uint64_t ip,
-    PidTid pidtid,
-    uint64_t* new_ip,
+    uint64_t ip, PidTid pidtid, uint64_t* new_ip,
     ParsedEvent::DSOAndOffset* dso_and_offset) {
   DCHECK(dso_and_offset);
   // Attempt to find the synthetic address of the IP sample in this order:
@@ -710,8 +691,7 @@ bool PerfParser::MapForkEvent(const PerfDataProto_ForkEvent& event) {
 
   // If the parent and child pids are the same, this is just a new thread
   // within the same process, so don't do anything.
-  if (event.ppid() == pid)
-    return true;
+  if (event.ppid() == pid) return true;
 
   if (!GetOrCreateProcessMapper(pid, event.ppid()).second) {
     DVLOG(1) << "Found an existing process mapper with pid: " << pid;

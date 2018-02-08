@@ -81,10 +81,8 @@ void CheckChronologicalOrderOfSerializedEvents(const PerfDataProto& proto) {
   }
 }
 
-void SerializeAndDeserialize(const string& input,
-                             const string& output,
-                             bool do_remap,
-                             bool discard_unused_events) {
+void SerializeAndDeserialize(const string& input, const string& output,
+                             bool do_remap, bool discard_unused_events) {
   PerfDataProto perf_data_proto;
   PerfParserOptions options;
   options.do_remap = do_remap;
@@ -132,14 +130,14 @@ void SerializeToFileAndBack(const string& input, const string& output) {
   options.sort_events_by_time = true;
   options.deduce_huge_page_mappings = false;
   options.combine_mappings = false;
-  EXPECT_TRUE(SerializeFromFileWithOptions(input, options,
-                                           &input_perf_data_proto));
+  EXPECT_TRUE(
+      SerializeFromFileWithOptions(input, options, &input_perf_data_proto));
   CheckChronologicalOrderOfSerializedEvents(input_perf_data_proto);
 
   input_perf_data_proto.Clear();
   options.sort_events_by_time = false;
-  EXPECT_TRUE(SerializeFromFileWithOptions(input, options,
-                                           &input_perf_data_proto));
+  EXPECT_TRUE(
+      SerializeFromFileWithOptions(input, options, &input_perf_data_proto));
 
   // Make sure the timestamp_sec was properly recorded.
   EXPECT_TRUE(input_perf_data_proto.has_timestamp_sec());
@@ -185,7 +183,7 @@ TEST(PerfSerializerTest, Test1Cycle) {
   // Read the protobuf, and reconstruct the perf data.
   for (const char* test_file : perf_test_files::GetPerfDataFiles()) {
     PerfReader input_perf_reader, output_perf_reader, output_perf_reader1,
-               output_perf_reader2;
+        output_perf_reader2;
     PerfDataProto perf_data_proto, perf_data_proto1;
 
     string input_perf_data = GetTestInputFilePath(test_file);
@@ -284,10 +282,8 @@ TEST(PerfSerializerTest, TestCommMd5s) {
     serializer.CreateSampleInfoReader(attr, false /* read_cross_endian */);
 
     for (int j = 0; j < perf_data_proto.events_size(); ++j) {
-      PerfDataProto_PerfEvent& event =
-          *perf_data_proto.mutable_events(j);
-      if (event.header().type() != PERF_RECORD_COMM)
-        continue;
+      PerfDataProto_PerfEvent& event = *perf_data_proto.mutable_events(j);
+      if (event.header().type() != PERF_RECORD_COMM) continue;
       CHECK(event.has_comm_event());
 
       string comm_md5_string =
@@ -337,10 +333,8 @@ TEST(PerfSerializerTest, TestMmapMd5s) {
     serializer.CreateSampleInfoReader(attr, false /* read_cross_endian */);
 
     for (int j = 0; j < perf_data_proto.events_size(); ++j) {
-      PerfDataProto_PerfEvent& event =
-          *perf_data_proto.mutable_events(j);
-      if (event.header().type() != PERF_RECORD_MMAP)
-        continue;
+      PerfDataProto_PerfEvent& event = *perf_data_proto.mutable_events(j);
+      if (event.header().type() != PERF_RECORD_MMAP) continue;
       ASSERT_TRUE(event.has_mmap_event());
 
       string filename_md5_string =
@@ -410,11 +404,9 @@ TEST(PerfSerializerTest, SerializesAndDeserializesTraceMetadata) {
 
   // header
   testing::ExamplePerfDataFileHeader file_header(1 << HEADER_TRACING_DATA);
-  file_header
-      .WithAttrCount(1)
-      .WithDataSize(data_size);
+  file_header.WithAttrCount(1).WithDataSize(data_size);
   file_header.WriteTo(&input);
-  const perf_file_header &header = file_header.header();
+  const perf_file_header& header = file_header.header();
   // attrs
   testing::ExamplePerfFileAttr_Tracepoint(73).WriteTo(&input);
   // data
@@ -425,7 +417,7 @@ TEST(PerfSerializerTest, SerializesAndDeserializesTraceMetadata) {
   const unsigned int metadata_count = 1;
   // HEADER_TRACING_DATA
   testing::ExampleTracingMetadata tracing_metadata(
-      file_header.data_end() + metadata_count*sizeof(perf_file_section));
+      file_header.data_end() + metadata_count * sizeof(perf_file_section));
   tracing_metadata.index_entry().WriteTo(&input);
   tracing_metadata.data().WriteTo(&input);
 
@@ -459,20 +451,19 @@ TEST(PerfSerializerTest, SerializesAndDeserializesMmapEvents) {
   // data
 
   // PERF_RECORD_HEADER_ATTR
-  testing::ExamplePerfEventAttrEvent_Hardware(PERF_SAMPLE_IP |
-                                              PERF_SAMPLE_TID,
+  testing::ExamplePerfEventAttrEvent_Hardware(PERF_SAMPLE_IP | PERF_SAMPLE_TID,
                                               true /*sample_id_all*/)
       .WriteTo(&input);
 
   // PERF_RECORD_MMAP
-  testing::ExampleMmapEvent(
-      1001, 0x1c1000, 0x1000, 0, "/usr/lib/foo.so",
-      testing::SampleInfo().Tid(1001)).WriteTo(&input);
+  testing::ExampleMmapEvent(1001, 0x1c1000, 0x1000, 0, "/usr/lib/foo.so",
+                            testing::SampleInfo().Tid(1001))
+      .WriteTo(&input);
 
   // PERF_RECORD_MMAP2
-  testing::ExampleMmap2Event(
-      1002, 0x2c1000, 0x2000, 0x3000, "/usr/lib/bar.so",
-      testing::SampleInfo().Tid(1002)).WriteTo(&input);
+  testing::ExampleMmap2Event(1002, 0x2c1000, 0x2000, 0x3000, "/usr/lib/bar.so",
+                             testing::SampleInfo().Tid(1002))
+      .WriteTo(&input);
 
   // Parse and Serialize
 
@@ -513,7 +504,7 @@ TEST(PerfSerializerTest, SerializesAndDeserializesMmapEvents) {
     EXPECT_EQ(7, mmap.min());
     EXPECT_EQ(8, mmap.ino());
     EXPECT_EQ(9, mmap.ino_generation());
-    EXPECT_EQ(1|2, mmap.prot());
+    EXPECT_EQ(1 | 2, mmap.prot());
     EXPECT_EQ(2, mmap.flags());
   }
 }
@@ -528,9 +519,8 @@ TEST(PerfSerializerTest, SerializesAndDeserializesBuildIDs) {
   // no data
 
   // PERF_RECORD_HEADER_ATTR
-  testing::ExamplePerfEventAttrEvent_Hardware(PERF_SAMPLE_TID |
-                                              PERF_SAMPLE_TIME,
-                                              true /*sample_id_all*/)
+  testing::ExamplePerfEventAttrEvent_Hardware(
+      PERF_SAMPLE_TID | PERF_SAMPLE_TIME, true /*sample_id_all*/)
       .WriteTo(&input);
 
   PerfReader reader;
@@ -602,8 +592,8 @@ TEST(PerfSerializerTest, SerializesAndDeserializesBuildIDs) {
   const auto& build_ids = out_reader.build_ids();
   ASSERT_EQ(9, build_ids.size());
 
-  std::vector<malloced_unique_ptr<build_id_event>>
-      raw_build_ids(build_ids.size());
+  std::vector<malloced_unique_ptr<build_id_event>> raw_build_ids(
+      build_ids.size());
 
   // Convert the build IDs back to raw build ID events.
   PerfSerializer serializer;
@@ -660,22 +650,21 @@ TEST(PerfSerializerTest, SerializesAndDeserializesForkAndExitEvents) {
   // data
 
   // PERF_RECORD_HEADER_ATTR
-  testing::ExamplePerfEventAttrEvent_Hardware(PERF_SAMPLE_TID |
-                                              PERF_SAMPLE_TIME,
-                                              true /*sample_id_all*/)
+  testing::ExamplePerfEventAttrEvent_Hardware(
+      PERF_SAMPLE_TID | PERF_SAMPLE_TIME, true /*sample_id_all*/)
       .WriteTo(&input);
 
   // PERF_RECORD_FORK
   testing::ExampleForkEvent(
       1010, 1020, 1030, 1040, 355ULL * 1000000000,
       testing::SampleInfo().Tid(2010, 2020).Time(356ULL * 1000000000))
-          .WriteTo(&input);
+      .WriteTo(&input);
 
   // PERF_RECORD_EXIT
   testing::ExampleExitEvent(
       3010, 3020, 3030, 3040, 432ULL * 1000000000,
       testing::SampleInfo().Tid(4010, 4020).Time(433ULL * 1000000000))
-          .WriteTo(&input);
+      .WriteTo(&input);
 
   // Parse and serialize.
   PerfReader reader;
@@ -771,16 +760,15 @@ TEST(PerfSerializerTest, DeserializeLegacyExitEvents) {
   // data
 
   // PERF_RECORD_HEADER_ATTR
-  testing::ExamplePerfEventAttrEvent_Hardware(PERF_SAMPLE_TID |
-                                              PERF_SAMPLE_TIME,
-                                              true /*sample_id_all*/)
+  testing::ExamplePerfEventAttrEvent_Hardware(
+      PERF_SAMPLE_TID | PERF_SAMPLE_TIME, true /*sample_id_all*/)
       .WriteTo(&input);
 
   // PERF_RECORD_EXIT
   testing::ExampleExitEvent(
       3010, 3020, 3030, 3040, 432ULL * 1000000000,
       testing::SampleInfo().Tid(4010, 4020).Time(433ULL * 1000000000))
-          .WriteTo(&input);
+      .WriteTo(&input);
 
   // Parse and serialize.
   PerfReader reader;
@@ -812,7 +800,6 @@ TEST(PerfSerializerTest, DeserializeLegacyExitEvents) {
   EXPECT_EQ(3030, event.fork_event().tid());
   EXPECT_EQ(3040, event.fork_event().ptid());
   EXPECT_EQ(432ULL * 1000000000, event.fork_event().fork_time_ns());
-
 
   const SampleInfo& sample_info = event.fork_event().sample_info();
   EXPECT_EQ(4010, sample_info.pid());

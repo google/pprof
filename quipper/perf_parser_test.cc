@@ -37,10 +37,9 @@ using PerfEvent = PerfDataProto_PerfEvent;
 
 namespace {
 
-void CheckChronologicalOrderOfEvents(const PerfReader& reader) {
-  if (reader.events().empty())
-    return;
-  const auto& events = reader.events();
+void CheckChronologicalOrderOfEvents(const PerfReader &reader) {
+  if (reader.events().empty()) return;
+  const auto &events = reader.events();
   uint64_t prev_time = GetTimeFromPerfEvent(events.Get(0));
   for (int i = 1; i < events.size(); ++i) {
     uint64_t new_time = GetTimeFromPerfEvent(events.Get(i));
@@ -49,22 +48,20 @@ void CheckChronologicalOrderOfEvents(const PerfReader& reader) {
   }
 }
 
-void CheckNoDuplicates(const std::vector<string>& list) {
+void CheckNoDuplicates(const std::vector<string> &list) {
   std::set<string> list_as_set(list.begin(), list.end());
   if (list.size() != list_as_set.size())
     ADD_FAILURE() << "Given list has at least one duplicate";
 }
 
 void CreateFilenameToBuildIDMap(
-    const std::vector<string>& filenames,
-    unsigned int seed,
-    std::map<string, string>* filenames_to_build_ids) {
+    const std::vector<string> &filenames, unsigned int seed,
+    std::map<string, string> *filenames_to_build_ids) {
   srand(seed);
   // Only use every other filename, so that half the filenames are unused.
   for (size_t i = 0; i < filenames.size(); i += 2) {
     u8 build_id[kBuildIDArraySize];
-    for (size_t j = 0; j < kBuildIDArraySize; ++j)
-      build_id[j] = rand_r(&seed);
+    for (size_t j = 0; j < kBuildIDArraySize; ++j) build_id[j] = rand_r(&seed);
 
     (*filenames_to_build_ids)[filenames[i]] =
         RawDataToHexString(build_id, kBuildIDArraySize);
@@ -74,8 +71,8 @@ void CreateFilenameToBuildIDMap(
 // Given a PerfReader that has already consumed an input perf data file, inject
 // new build IDs for the MMAP'd files in the perf data and check that they have
 // been correctly injected.
-void CheckFilenameAndBuildIDMethods(PerfReader* reader,
-                                    const string& output_perf_data_prefix,
+void CheckFilenameAndBuildIDMethods(PerfReader *reader,
+                                    const string &output_perf_data_prefix,
                                     unsigned int seed) {
   // Check filenames.
   std::vector<string> filenames;
@@ -88,10 +85,10 @@ void CheckFilenameAndBuildIDMethods(PerfReader* reader,
   reader->GetFilenamesAsSet(&filename_set);
 
   // Make sure all MMAP filenames are in the set.
-  for (const auto& event : reader->events()) {
+  for (const auto &event : reader->events()) {
     if (event.header().type() == PERF_RECORD_MMAP) {
       EXPECT_TRUE(filename_set.find(event.mmap_event().filename()) !=
-                                    filename_set.end())
+                  filename_set.end())
           << event.mmap_event().filename()
           << " is not present in the filename set";
     }
@@ -107,8 +104,7 @@ void CheckFilenameAndBuildIDMethods(PerfReader* reader,
 
   // Reader should now correctly populate the filenames to build ids map.
   std::map<string, string>::const_iterator it;
-  for (it = filenames_to_build_ids.begin();
-       it != filenames_to_build_ids.end();
+  for (it = filenames_to_build_ids.begin(); it != filenames_to_build_ids.end();
        ++it) {
     expected_map[it->first] = it->second;
   }
@@ -128,8 +124,7 @@ void CheckFilenameAndBuildIDMethods(PerfReader* reader,
   // Only localize the first half of the files which have build ids.
   for (size_t j = 0; j < filenames.size() / 2; ++j) {
     string old_filename = filenames[j];
-    if (expected_map.find(old_filename) == expected_map.end())
-      continue;
+    if (expected_map.find(old_filename) == expected_map.end()) continue;
     string build_id = expected_map[old_filename];
 
     string new_filename = old_filename + ".local";
@@ -219,7 +214,7 @@ TEST(PerfParserTest, NormalPerfData) {
   string output_path = output_dir.path();
 
   int seed = 0;
-  for (const char* test_file : perf_test_files::GetPerfDataFiles()) {
+  for (const char *test_file : perf_test_files::GetPerfDataFiles()) {
     string input_perf_data = GetTestInputFilePath(test_file);
     LOG(INFO) << "Testing " << input_perf_data;
 
@@ -241,7 +236,7 @@ TEST(PerfParserTest, NormalPerfData) {
     CheckChronologicalOrderOfEvents(reader);
 
     // Check perf event stats.
-    const PerfEventStats& stats = parser.stats();
+    const PerfEventStats &stats = parser.stats();
     EXPECT_GT(stats.num_sample_events, 0U);
     EXPECT_GT(stats.num_mmap_events, 0U);
     EXPECT_GT(stats.num_sample_events_mapped, 0U);
@@ -278,7 +273,7 @@ TEST(PerfParserTest, NormalPerfData) {
     PerfParser remap_parser(&remap_reader, options);
     ASSERT_TRUE(remap_parser.ParseRawEvents());
 
-    const PerfEventStats& remap_stats = remap_parser.stats();
+    const PerfEventStats &remap_stats = remap_parser.stats();
     EXPECT_GT(remap_stats.num_sample_events, 0U);
     EXPECT_GT(remap_stats.num_mmap_events, 0U);
     EXPECT_GT(remap_stats.num_sample_events_mapped, 0U);
@@ -294,8 +289,8 @@ TEST(PerfParserTest, NormalPerfData) {
 
     // No need to call CheckPerfDataAgainstBaseline again. Just compare
     // ParsedEvents.
-    const auto& parser_events = parser.parsed_events();
-    const auto& remap_parser_events = remap_parser.parsed_events();
+    const auto &parser_events = parser.parsed_events();
+    const auto &remap_parser_events = remap_parser.parsed_events();
     EXPECT_EQ(parser_events.size(), remap_parser_events.size());
     EXPECT_TRUE(std::equal(parser_events.begin(), parser_events.end(),
                            remap_parser_events.begin()));
@@ -315,7 +310,7 @@ TEST(PerfParserTest, PipedModePerfData) {
   string output_path = output_dir.path();
 
   int seed = 0;
-  for (const char* test_file : perf_test_files::GetPerfPipedDataFiles()) {
+  for (const char *test_file : perf_test_files::GetPerfPipedDataFiles()) {
     string input_perf_data = GetTestInputFilePath(test_file);
     LOG(INFO) << "Testing " << input_perf_data;
     string output_perf_data = output_path + test_file + ".pr.out";
@@ -354,64 +349,63 @@ TEST(PerfParserTest, MapsSampleEventIp) {
   // data
 
   // PERF_RECORD_HEADER_ATTR
-  testing::ExamplePerfEventAttrEvent_Hardware(PERF_SAMPLE_IP |
-                                              PERF_SAMPLE_TID,
+  testing::ExamplePerfEventAttrEvent_Hardware(PERF_SAMPLE_IP | PERF_SAMPLE_TID,
                                               true /*sample_id_all*/)
       .WriteTo(&input);
 
   // PERF_RECORD_MMAP
-  testing::ExampleMmapEvent(
-      1001, 0x1c1000, 0x1000, 0, "/usr/lib/foo.so",
-      testing::SampleInfo().Tid(1001)).WriteTo(&input);        // 0
+  testing::ExampleMmapEvent(1001, 0x1c1000, 0x1000, 0, "/usr/lib/foo.so",
+                            testing::SampleInfo().Tid(1001))
+      .WriteTo(&input);  // 0
   // becomes: 0x0000, 0x1000, 0
-  testing::ExampleMmapEvent(
-      1001, 0x1c3000, 0x2000, 0x2000, "/usr/lib/bar.so",
-      testing::SampleInfo().Tid(1001)).WriteTo(&input);        // 1
+  testing::ExampleMmapEvent(1001, 0x1c3000, 0x2000, 0x2000, "/usr/lib/bar.so",
+                            testing::SampleInfo().Tid(1001))
+      .WriteTo(&input);  // 1
   // becomes: 0x1000, 0x2000, 0
 
   // PERF_RECORD_MMAP2
-  testing::ExampleMmap2Event(
-      1002, 0x2c1000, 0x2000, 0, "/usr/lib/baz.so",
-      testing::SampleInfo().Tid(1002)).WriteTo(&input);        // 2
+  testing::ExampleMmap2Event(1002, 0x2c1000, 0x2000, 0, "/usr/lib/baz.so",
+                             testing::SampleInfo().Tid(1002))
+      .WriteTo(&input);  // 2
   // becomes: 0x0000, 0x2000, 0
-  testing::ExampleMmap2Event(
-      1002, 0x2c3000, 0x1000, 0x3000, "/usr/lib/xyz.so",
-      testing::SampleInfo().Tid(1002)).WriteTo(&input);        // 3
+  testing::ExampleMmap2Event(1002, 0x2c3000, 0x1000, 0x3000, "/usr/lib/xyz.so",
+                             testing::SampleInfo().Tid(1002))
+      .WriteTo(&input);  // 3
   // becomes: 0x1000, 0x1000, 0
 
   // PERF_RECORD_SAMPLE
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c1000).Tid(1001))  // 4
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c1000).Tid(1001))
+      .WriteTo(&input);  // 4
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c100a).Tid(1001))  // 5
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c100a).Tid(1001))
+      .WriteTo(&input);  // 5
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c3fff).Tid(1001))  // 6
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c3fff).Tid(1001))
+      .WriteTo(&input);  // 6
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c2bad).Tid(1001))  // 7 (not mapped)
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c2bad).Tid(1001))
+      .WriteTo(&input);  // 7 (not mapped)
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000002c100a).Tid(1002))  // 8
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000002c100a).Tid(1002))
+      .WriteTo(&input);  // 8
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000002c5bad).Tid(1002))  // 9 (not mapped)
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000002c5bad).Tid(1002))
+      .WriteTo(&input);  // 9 (not mapped)
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000002c300b).Tid(1002))  // 10
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000002c300b).Tid(1002))
+      .WriteTo(&input);  // 10
 
   // not mapped yet:
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000002c400b).Tid(1002))  // 11
-      .WriteTo(&input);
-  testing::ExampleMmap2Event(
-      1002, 0x2c4000, 0x1000, 0, "/usr/lib/new.so",
-      testing::SampleInfo().Tid(1002)).WriteTo(&input);        // 12
+      testing::SampleInfo().Ip(0x00000000002c400b).Tid(1002))
+      .WriteTo(&input);  // 11
+  testing::ExampleMmap2Event(1002, 0x2c4000, 0x1000, 0, "/usr/lib/new.so",
+                             testing::SampleInfo().Tid(1002))
+      .WriteTo(&input);  // 12
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000002c400b).Tid(1002))  // 13
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000002c400b).Tid(1002))
+      .WriteTo(&input);  // 13
 
   //
   // Parse input.
@@ -430,7 +424,7 @@ TEST(PerfParserTest, MapsSampleEventIp) {
   EXPECT_EQ(9, parser.stats().num_sample_events);
   EXPECT_EQ(6, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
+  const std::vector<ParsedEvent> &events = parser.parsed_events();
   ASSERT_EQ(14, events.size());
 
   // MMAPs
@@ -517,46 +511,45 @@ TEST(PerfParserTest, DsoInfoHasBuildId) {
   // data
 
   // PERF_RECORD_HEADER_ATTR
-  testing::ExamplePerfEventAttrEvent_Hardware(PERF_SAMPLE_IP |
-                                              PERF_SAMPLE_TID,
+  testing::ExamplePerfEventAttrEvent_Hardware(PERF_SAMPLE_IP | PERF_SAMPLE_TID,
                                               true /*sample_id_all*/)
       .WriteTo(&input);
 
   // PERF_RECORD_MMAP
-  testing::ExampleMmapEvent(
-      1001, 0x1c1000, 0x1000, 0, "/usr/lib/foo.so",
-      testing::SampleInfo().Tid(1001)).WriteTo(&input);        // 0
+  testing::ExampleMmapEvent(1001, 0x1c1000, 0x1000, 0, "/usr/lib/foo.so",
+                            testing::SampleInfo().Tid(1001))
+      .WriteTo(&input);  // 0
   // becomes: 0x0000, 0x1000, 0
-  testing::ExampleMmapEvent(
-      1001, 0x1c3000, 0x2000, 0x2000, "/usr/lib/bar.so",
-      testing::SampleInfo().Tid(1001)).WriteTo(&input);        // 1
+  testing::ExampleMmapEvent(1001, 0x1c3000, 0x2000, 0x2000, "/usr/lib/bar.so",
+                            testing::SampleInfo().Tid(1001))
+      .WriteTo(&input);  // 1
   // becomes: 0x1000, 0x2000, 0
 
   // PERF_RECORD_HEADER_BUILDID                                // N/A
-  string build_id_filename("/usr/lib/foo.so\0", 2*sizeof(u64));
+  string build_id_filename("/usr/lib/foo.so\0", 2 * sizeof(u64));
   ASSERT_EQ(0, build_id_filename.size() % sizeof(u64)) << "Sanity check";
   const size_t event_size =
-      sizeof(struct build_id_event) +
-      build_id_filename.size();
+      sizeof(struct build_id_event) + build_id_filename.size();
   const struct build_id_event event = {
-    .header = {
-      .type = PERF_RECORD_HEADER_BUILD_ID,
-      .misc = 0,
-      .size = static_cast<u16>(event_size),
-    },
-    .pid = -1,
-    .build_id = {0xde, 0xad, 0xf0, 0x0d },
+      .header =
+          {
+              .type = PERF_RECORD_HEADER_BUILD_ID,
+              .misc = 0,
+              .size = static_cast<u16>(event_size),
+          },
+      .pid = -1,
+      .build_id = {0xde, 0xad, 0xf0, 0x0d},
   };
-  input.write(reinterpret_cast<const char*>(&event), sizeof(event));
+  input.write(reinterpret_cast<const char *>(&event), sizeof(event));
   input.write(build_id_filename.data(), build_id_filename.size());
 
   // PERF_RECORD_SAMPLE
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c1000).Tid(1001))  // 2
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c1000).Tid(1001))
+      .WriteTo(&input);  // 2
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c300a).Tid(1001))  // 3
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c300a).Tid(1001))
+      .WriteTo(&input);  // 3
 
   //
   // Parse input.
@@ -574,7 +567,7 @@ TEST(PerfParserTest, DsoInfoHasBuildId) {
   EXPECT_EQ(2, parser.stats().num_sample_events);
   EXPECT_EQ(2, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
+  const std::vector<ParsedEvent> &events = parser.parsed_events();
   ASSERT_EQ(4, events.size());
 
   EXPECT_EQ("/usr/lib/foo.so", events[2].dso_and_offset.dso_name());
@@ -597,8 +590,8 @@ class RunInMountNamespaceThread : public quipper::Thread {
  public:
   explicit RunInMountNamespaceThread(string tmpdir, string mntdir)
       : quipper::Thread("MntNamespace"),
-        tmpdir_(tmpdir), mntdir_(mntdir) {
-  }
+        tmpdir_(std::move(tmpdir)),
+        mntdir_(std::move(mntdir)) {}
 
   void Start() override {
     quipper::Thread::Start();
@@ -613,8 +606,8 @@ class RunInMountNamespaceThread : public quipper::Thread {
  private:
   void Run() override {
     CHECK_EQ(unshare(CLONE_NEWNS), 0);
-    CHECK_EQ(mount(tmpdir_.c_str(), mntdir_.c_str(),
-                   nullptr, MS_BIND, nullptr), 0);
+    CHECK_EQ(mount(tmpdir_.c_str(), mntdir_.c_str(), nullptr, MS_BIND, nullptr),
+             0);
     ready.Notify();
     exit.Wait();
   }
@@ -641,8 +634,7 @@ class RunInMountNamespaceThread : public quipper::Thread {
 // (Not tried): /<path>
 // Expected buildid for <path>: "deadbeef"
 TEST(PerfParserTest, ReadsBuildidsInMountNamespace) {
-  if (!HaveCapability(CAP_SYS_ADMIN))
-    return;  // Skip test.
+  if (!HaveCapability(CAP_SYS_ADMIN)) return;  // Skip test.
   ScopedTempDir tmpdir("/tmp/quipper_tmp.");
   ScopedTempDir mntdir("/tmp/quipper_mnt.");
   RunInMountNamespaceThread thread(tmpdir.path(), mntdir.path());
@@ -674,24 +666,22 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace) {
 
   // PERF_RECORD_MMAP2
   // - mmap from a process and thread that doesn't exist
-  testing::ExampleMmap2Event(
-      pid, tid, 0x1c1000, 0x1000, 0, tmpfile_in_ns,
-      testing::SampleInfo().Tid(pid+10, tid+1))
+  testing::ExampleMmap2Event(pid, tid, 0x1c1000, 0x1000, 0, tmpfile_in_ns,
+                             testing::SampleInfo().Tid(pid + 10, tid + 1))
       .WithDeviceInfo(major(tmp_stat.st_dev), minor(tmp_stat.st_dev),
                       tmp_stat.st_ino)
-      .WriteTo(&input);                                            // 0
+      .WriteTo(&input);  // 0
   // - mmap from a running thread
-  testing::ExampleMmap2Event(
-      pid, tid, 0x1c2000, 0x1000, 0, tmpfile_in_ns,
-      testing::SampleInfo().Tid(pid, tid))
+  testing::ExampleMmap2Event(pid, tid, 0x1c2000, 0x1000, 0, tmpfile_in_ns,
+                             testing::SampleInfo().Tid(pid, tid))
       .WithDeviceInfo(major(tmp_stat.st_dev), minor(tmp_stat.st_dev),
                       tmp_stat.st_ino)
-      .WriteTo(&input);                                            // 1
+      .WriteTo(&input);  // 1
 
   // PERF_RECORD_SAMPLE
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c1000).Tid(pid, tid))  // 2
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c1000).Tid(pid, tid))
+      .WriteTo(&input);  // 2
 
   //
   // Parse input.
@@ -710,7 +700,7 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace) {
   EXPECT_EQ(1, parser.stats().num_sample_events);
   EXPECT_EQ(1, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
+  const std::vector<ParsedEvent> &events = parser.parsed_events();
   ASSERT_EQ(3, events.size());
 
   EXPECT_EQ(tmpfile_in_ns, events[2].dso_and_offset.dso_name());
@@ -722,8 +712,7 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace) {
 class RunInMountNamespaceProcess {
  public:
   RunInMountNamespaceProcess(string tmpdir, string mntdir)
-      : pid_(0), tmpdir_(tmpdir), mntdir_(mntdir) {
-  }
+      : pid_(0), tmpdir_(std::move(tmpdir)), mntdir_(std::move(mntdir)) {}
 
   void Start() {
     int pipe_fd[2];
@@ -735,8 +724,9 @@ class RunInMountNamespaceProcess {
     if (pid_ == 0) {  // child
       close(pipe_fd[0]);
       CHECK_EQ(unshare(CLONE_NEWNS), 0);
-      CHECK_EQ(mount(tmpdir_.c_str(), mntdir_.c_str(),
-                     nullptr, MS_BIND, nullptr), 0);
+      CHECK_EQ(
+          mount(tmpdir_.c_str(), mntdir_.c_str(), nullptr, MS_BIND, nullptr),
+          0);
       // Tell parent mounting is done.
       CHECK_EQ(write(pipe_fd[1], &nonce, sizeof(nonce)),
                static_cast<ssize_t>(sizeof(nonce)));
@@ -779,8 +769,7 @@ class RunInMountNamespaceProcess {
 // (Not tried): /<path>
 // Expected buildid for <path>: "deadbeef"
 TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesOwningProcess) {
-  if (!HaveCapability(CAP_SYS_ADMIN))
-    return;  // Skip test.
+  if (!HaveCapability(CAP_SYS_ADMIN)) return;  // Skip test.
   ScopedTempDir tmpdir("/tmp/quipper_tmp.");
   ScopedTempDir mntdir("/tmp/quipper_mnt.");
   RunInMountNamespaceProcess process(tmpdir.path(), mntdir.path());
@@ -816,17 +805,16 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesOwningProcess) {
       .WriteTo(&input);
 
   // PERF_RECORD_MMAP2
-  testing::ExampleMmap2Event(
-      pid, tid, 0x1c1000, 0x1000, 0, tmpfile_in_ns,
-      testing::SampleInfo().Tid(pid, tid))
+  testing::ExampleMmap2Event(pid, tid, 0x1c1000, 0x1000, 0, tmpfile_in_ns,
+                             testing::SampleInfo().Tid(pid, tid))
       .WithDeviceInfo(major(tmp_stat.st_dev), minor(tmp_stat.st_dev),
                       tmp_stat.st_ino)
-      .WriteTo(&input);                                            // 0
+      .WriteTo(&input);  // 0
 
   // PERF_RECORD_SAMPLE
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c1000).Tid(pid, tid))  // 1
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c1000).Tid(pid, tid))
+      .WriteTo(&input);  // 1
 
   //
   // Parse input.
@@ -845,7 +833,7 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesOwningProcess) {
   EXPECT_EQ(1, parser.stats().num_sample_events);
   EXPECT_EQ(1, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
+  const std::vector<ParsedEvent> &events = parser.parsed_events();
   ASSERT_EQ(2, events.size());
 
   EXPECT_EQ(tmpfile_in_ns, events[1].dso_and_offset.dso_name());
@@ -867,8 +855,7 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesOwningProcess) {
 // Accept (same inode): /<path>
 // Expected buildid for <path>: "deadbeef"
 TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesRootFs) {
-  if (!HaveCapability(CAP_SYS_ADMIN))
-    return;  // Skip test.
+  if (!HaveCapability(CAP_SYS_ADMIN)) return;  // Skip test.
   ScopedTempDir tmpdir("/tmp/quipper_tmp.");
   ScopedTempDir mntdir("/tmp/quipper_mnt.");
   RunInMountNamespaceThread thread(tmpdir.path(), mntdir.path());
@@ -902,17 +889,16 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesRootFs) {
 
   // PERF_RECORD_MMAP2
   // - Process doesn't exist, but file exists in our own namespace.
-  testing::ExampleMmap2Event(
-      pid, pid, 0x1c1000, 0x1000, 0, tmpfile,
-      testing::SampleInfo().Tid(pid+10, tid+1))
+  testing::ExampleMmap2Event(pid, pid, 0x1c1000, 0x1000, 0, tmpfile,
+                             testing::SampleInfo().Tid(pid + 10, tid + 1))
       .WithDeviceInfo(major(tmp_stat.st_dev), minor(tmp_stat.st_dev),
                       tmp_stat.st_ino)
-      .WriteTo(&input);                                            // 0
+      .WriteTo(&input);  // 0
 
   // PERF_RECORD_SAMPLE
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c1000).Tid(pid))       // 1
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c1000).Tid(pid))
+      .WriteTo(&input);  // 1
 
   //
   // Parse input.
@@ -931,7 +917,7 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesRootFs) {
   EXPECT_EQ(1, parser.stats().num_sample_events);
   EXPECT_EQ(1, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
+  const std::vector<ParsedEvent> &events = parser.parsed_events();
   ASSERT_EQ(2, events.size());
 
   EXPECT_EQ(tmpfile, events[1].dso_and_offset.dso_name());
@@ -954,8 +940,7 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesRootFs) {
 // Reject (wrong inode): /<path>
 // Expected buildid for <path>: ""
 TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesRootFsRejectsInode) {
-  if (!HaveCapability(CAP_SYS_ADMIN))
-    return;  // Skip test.
+  if (!HaveCapability(CAP_SYS_ADMIN)) return;  // Skip test.
   ScopedTempDir tmpdir("/tmp/quipper_tmp.");
   ScopedTempDir mntdir("/tmp/quipper_mnt.");
   RunInMountNamespaceThread thread(tmpdir.path(), mntdir.path());
@@ -994,16 +979,15 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesRootFsRejectsInode) {
 
   // PERF_RECORD_MMAP2
   // - Process doesn't exist, but file exists in our own namespace.
-  testing::ExampleMmap2Event(
-      pid, pid, 0x1c1000, 0x1000, 0, tmpfile_in_ns,
-      testing::SampleInfo().Tid(pid, tid))
+  testing::ExampleMmap2Event(pid, pid, 0x1c1000, 0x1000, 0, tmpfile_in_ns,
+                             testing::SampleInfo().Tid(pid, tid))
       .WithDeviceInfo(major(tmp_stat.st_dev), minor(tmp_stat.st_dev), bad_ino)
-      .WriteTo(&input);                                            // 0
+      .WriteTo(&input);  // 0
 
   // PERF_RECORD_SAMPLE
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c1000).Tid(pid))       // 1
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c1000).Tid(pid))
+      .WriteTo(&input);  // 1
 
   //
   // Parse input.
@@ -1022,7 +1006,7 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesRootFsRejectsInode) {
   EXPECT_EQ(1, parser.stats().num_sample_events);
   EXPECT_EQ(1, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
+  const std::vector<ParsedEvent> &events = parser.parsed_events();
   ASSERT_EQ(2, events.size());
 
   EXPECT_EQ(tmpfile_in_ns, events[1].dso_and_offset.dso_name());
@@ -1045,8 +1029,7 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesRootFsRejectsInode) {
 // Accept (falsely): /<path>
 // Expected buildid for <path>: "baadf00d" (even though incorrect)
 TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesRootFsNoInodeToReject) {
-  if (!HaveCapability(CAP_SYS_ADMIN))
-    return;  // Skip test.
+  if (!HaveCapability(CAP_SYS_ADMIN)) return;  // Skip test.
   ScopedTempDir tmpdir("/tmp/quipper_tmp.");
   ScopedTempDir mntdir("/tmp/quipper_mnt.");
   RunInMountNamespaceThread thread(tmpdir.path(), mntdir.path());
@@ -1080,15 +1063,14 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesRootFsNoInodeToReject) {
 
   // PERF_RECORD_MMAP
   // - Process & thread don't exist, but file exists in our own namespace.
-  testing::ExampleMmapEvent(
-      pid, 0x1c1000, 0x1000, 0, tmpfile_in_ns,
-      testing::SampleInfo().Tid(pid+10, tid+1))
-      .WriteTo(&input);                                            // 0
+  testing::ExampleMmapEvent(pid, 0x1c1000, 0x1000, 0, tmpfile_in_ns,
+                            testing::SampleInfo().Tid(pid + 10, tid + 1))
+      .WriteTo(&input);  // 0
 
   // PERF_RECORD_SAMPLE
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c1000).Tid(pid))       // 1
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c1000).Tid(pid))
+      .WriteTo(&input);  // 1
 
   //
   // Parse input.
@@ -1107,7 +1089,7 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesRootFsNoInodeToReject) {
   EXPECT_EQ(1, parser.stats().num_sample_events);
   EXPECT_EQ(1, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
+  const std::vector<ParsedEvent> &events = parser.parsed_events();
   ASSERT_EQ(2, events.size());
 
   EXPECT_EQ(tmpfile_in_ns, events[1].dso_and_offset.dso_name());
@@ -1144,8 +1126,7 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace_TriesRootFsNoInodeToReject) {
 // map<tuple<maj,min,ino,path>, DSOInfo>, but even so, it will be impossible
 // to store unambiguously in perf.data.
 TEST(PerfParserTest, ReadsBuildidsInMountNamespace_DifferentDevOrIno) {
-  if (!HaveCapability(CAP_SYS_ADMIN))
-    return;  // Skip test.
+  if (!HaveCapability(CAP_SYS_ADMIN)) return;  // Skip test.
   ScopedTempDir tmpdir("/tmp/quipper_tmp.");
   ScopedTempDir mntdir("/tmp/quipper_mnt.");
   RunInMountNamespaceThread thread(tmpdir.path(), mntdir.path());
@@ -1184,37 +1165,34 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace_DifferentDevOrIno) {
 
   // PERF_RECORD_MMAP2
   // - Wrong major number
-  testing::ExampleMmap2Event(
-      pid, tid, 0x1c1000, 0x1000, 0, tmpfile_in_ns,
-      testing::SampleInfo().Tid(pid, tid))
-      .WithDeviceInfo(major(tmp_stat.st_dev)+1, minor(tmp_stat.st_dev),
+  testing::ExampleMmap2Event(pid, tid, 0x1c1000, 0x1000, 0, tmpfile_in_ns,
+                             testing::SampleInfo().Tid(pid, tid))
+      .WithDeviceInfo(major(tmp_stat.st_dev) + 1, minor(tmp_stat.st_dev),
                       tmp_stat.st_ino)
-      .WriteTo(&input);                                            // 0
+      .WriteTo(&input);  // 0
   // - Wrong minor number
-  testing::ExampleMmap2Event(
-      pid, tid, 0x1c2000, 0x1000, 0, tmpfile_in_ns,
-      testing::SampleInfo().Tid(pid, tid))
-      .WithDeviceInfo(major(tmp_stat.st_dev), minor(tmp_stat.st_dev)+1,
+  testing::ExampleMmap2Event(pid, tid, 0x1c2000, 0x1000, 0, tmpfile_in_ns,
+                             testing::SampleInfo().Tid(pid, tid))
+      .WithDeviceInfo(major(tmp_stat.st_dev), minor(tmp_stat.st_dev) + 1,
                       tmp_stat.st_ino)
-      .WriteTo(&input);                                            // 1
+      .WriteTo(&input);  // 1
   // - Wrong inode number
-  testing::ExampleMmap2Event(
-      pid, tid, 0x1c3000, 0x1000, 0, tmpfile_in_ns,
-      testing::SampleInfo().Tid(pid, tid))
+  testing::ExampleMmap2Event(pid, tid, 0x1c3000, 0x1000, 0, tmpfile_in_ns,
+                             testing::SampleInfo().Tid(pid, tid))
       .WithDeviceInfo(major(tmp_stat.st_dev), minor(tmp_stat.st_dev),
                       bad_ino)
-      .WriteTo(&input);                                            // 2
+      .WriteTo(&input);  // 2
 
   // PERF_RECORD_SAMPLE
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c1000).Tid(pid, tid))  // 3
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c1000).Tid(pid, tid))
+      .WriteTo(&input);  // 3
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c2000).Tid(pid, tid))  // 4
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c2000).Tid(pid, tid))
+      .WriteTo(&input);  // 4
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c3000).Tid(pid, tid))  // 5
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c3000).Tid(pid, tid))
+      .WriteTo(&input);  // 5
 
   //
   // Parse input.
@@ -1233,7 +1211,7 @@ TEST(PerfParserTest, ReadsBuildidsInMountNamespace_DifferentDevOrIno) {
   EXPECT_EQ(3, parser.stats().num_sample_events);
   EXPECT_EQ(3, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
+  const std::vector<ParsedEvent> &events = parser.parsed_events();
   ASSERT_EQ(6, events.size());
 
   // Buildid should not be found for any of the samples.
@@ -1270,17 +1248,17 @@ TEST(PerfParserTest, OverwriteBuildidIfAlreadyKnown) {
       .WriteTo(&input);
 
   // PERF_RECORD_MMAP
-  testing::ExampleMmapEvent(
-      1001, 0x1c1000, 0x1000, 0, known_file,
-      testing::SampleInfo().Tid(1001)).WriteTo(&input);        // 0
+  testing::ExampleMmapEvent(1001, 0x1c1000, 0x1000, 0, known_file,
+                            testing::SampleInfo().Tid(1001))
+      .WriteTo(&input);  // 0
   // becomes: 0x0000, 0x1000, 0
-  testing::ExampleMmapEvent(
-      1001, 0x1c2000, 0x2000, 0, known_file_to_overwrite,
-      testing::SampleInfo().Tid(1001)).WriteTo(&input);        // 1
+  testing::ExampleMmapEvent(1001, 0x1c2000, 0x2000, 0, known_file_to_overwrite,
+                            testing::SampleInfo().Tid(1001))
+      .WriteTo(&input);  // 1
   // becomes: 0x1000, 0x2000, 0
-  testing::ExampleMmapEvent(
-      1001, 0x1c4000, 0x2000, 0x2000, unknown_file,
-      testing::SampleInfo().Tid(1001)).WriteTo(&input);        // 2
+  testing::ExampleMmapEvent(1001, 0x1c4000, 0x2000, 0x2000, unknown_file,
+                            testing::SampleInfo().Tid(1001))
+      .WriteTo(&input);  // 2
   // becomes: 0x3000, 0x2000, 0x2000
 
   // PERF_RECORD_HEADER_BUILDID                                // N/A
@@ -1288,52 +1266,52 @@ TEST(PerfParserTest, OverwriteBuildidIfAlreadyKnown) {
     string build_id_filename(known_file);
     build_id_filename.resize(Align<u64>(known_file.size()));  // null-pad
     const size_t event_size =
-        sizeof(struct build_id_event) +
-        build_id_filename.size();
+        sizeof(struct build_id_event) + build_id_filename.size();
     const struct build_id_event event = {
-      .header = {
-        .type = PERF_RECORD_HEADER_BUILD_ID,
-        .misc = 0,
-        .size = static_cast<u16>(event_size),
-      },
-      .pid = -1,
-      .build_id = {0xde, 0xad, 0xbe, 0xef},
+        .header =
+            {
+                .type = PERF_RECORD_HEADER_BUILD_ID,
+                .misc = 0,
+                .size = static_cast<u16>(event_size),
+            },
+        .pid = -1,
+        .build_id = {0xde, 0xad, 0xbe, 0xef},
     };
-    input.write(reinterpret_cast<const char*>(&event), sizeof(event));
+    input.write(reinterpret_cast<const char *>(&event), sizeof(event));
     input.write(build_id_filename.data(), build_id_filename.size());
   }
 
   // PERF_RECORD_HEADER_BUILDID                                // N/A
   {
     string build_id_filename(known_file_to_overwrite);
-                                                                 // null-pad
+    // null-pad
     build_id_filename.resize(Align<u64>(known_file_to_overwrite.size()));
     const size_t event_size =
-        sizeof(struct build_id_event) +
-        build_id_filename.size();
+        sizeof(struct build_id_event) + build_id_filename.size();
     const struct build_id_event event = {
-      .header = {
-        .type = PERF_RECORD_HEADER_BUILD_ID,
-        .misc = 0,
-        .size = static_cast<u16>(event_size),
-      },
-      .pid = -1,
-      .build_id = {0xca, 0xfe, 0xba, 0xbe},
+        .header =
+            {
+                .type = PERF_RECORD_HEADER_BUILD_ID,
+                .misc = 0,
+                .size = static_cast<u16>(event_size),
+            },
+        .pid = -1,
+        .build_id = {0xca, 0xfe, 0xba, 0xbe},
     };
-    input.write(reinterpret_cast<const char*>(&event), sizeof(event));
+    input.write(reinterpret_cast<const char *>(&event), sizeof(event));
     input.write(build_id_filename.data(), build_id_filename.size());
   }
 
   // PERF_RECORD_SAMPLE
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c100a).Tid(1001))  // 3
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c100a).Tid(1001))
+      .WriteTo(&input);  // 3
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c300b).Tid(1001))  // 4
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c300b).Tid(1001))
+      .WriteTo(&input);  // 4
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c400c).Tid(1001))  // 5
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c400c).Tid(1001))
+      .WriteTo(&input);  // 5
 
   //
   // Parse input.
@@ -1352,15 +1330,14 @@ TEST(PerfParserTest, OverwriteBuildidIfAlreadyKnown) {
   EXPECT_EQ(3, parser.stats().num_sample_events);
   EXPECT_EQ(3, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
+  const std::vector<ParsedEvent> &events = parser.parsed_events();
   ASSERT_EQ(6, events.size());
 
   EXPECT_EQ(known_file, events[3].dso_and_offset.dso_name());
   EXPECT_EQ("deadbeef00000000000000000000000000000000",
             events[3].dso_and_offset.build_id());
   EXPECT_EQ(known_file_to_overwrite, events[4].dso_and_offset.dso_name());
-  EXPECT_EQ("f00157ea",
-            events[4].dso_and_offset.build_id());
+  EXPECT_EQ("f00157ea", events[4].dso_and_offset.build_id());
   EXPECT_EQ(unknown_file, events[5].dso_and_offset.dso_name());
   EXPECT_EQ("c001d00d", events[5].dso_and_offset.build_id());
 }
@@ -1385,16 +1362,16 @@ TEST(PerfParserTest, OnlyReadsBuildidIfSampled) {
       .WriteTo(&input);
 
   // PERF_RECORD_MMAP
-  testing::ExampleMmapEvent(
-      1001, 0x1c1000, 0x1000, 0, unknown_file,
-      testing::SampleInfo().Tid(1001)).WriteTo(&input);        // 0
+  testing::ExampleMmapEvent(1001, 0x1c1000, 0x1000, 0, unknown_file,
+                            testing::SampleInfo().Tid(1001))
+      .WriteTo(&input);  // 0
   // becomes: 0x0000, 0x1000, 0
 
   // PERF_RECORD_SAMPLE
   // - Sample outside mmap
   testing::ExamplePerfSampleEvent(
-      testing::SampleInfo().Ip(0x00000000001c300a).Tid(1001))  // 1
-      .WriteTo(&input);
+      testing::SampleInfo().Ip(0x00000000001c300a).Tid(1001))
+      .WriteTo(&input);  // 1
 
   //
   // Parse input.
@@ -1413,7 +1390,7 @@ TEST(PerfParserTest, OnlyReadsBuildidIfSampled) {
   EXPECT_EQ(1, parser.stats().num_sample_events);
   EXPECT_EQ(0, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
+  const std::vector<ParsedEvent> &events = parser.parsed_events();
   ASSERT_EQ(2, events.size());
 
   EXPECT_EQ("", events[1].dso_and_offset.dso_name());
@@ -1422,7 +1399,7 @@ TEST(PerfParserTest, OnlyReadsBuildidIfSampled) {
   std::map<string, string> filenames_to_build_ids;
   reader.GetFilenamesToBuildIDs(&filenames_to_build_ids);
   auto it = filenames_to_build_ids.find(unknown_file);
-  EXPECT_EQ(filenames_to_build_ids.end(), it) << it->first << " "<< it->second;
+  EXPECT_EQ(filenames_to_build_ids.end(), it) << it->first << " " << it->second;
 }
 
 TEST(PerfParserTest, HandlesFinishedRoundEventsAndSortsByTime) {
@@ -1436,37 +1413,36 @@ TEST(PerfParserTest, HandlesFinishedRoundEventsAndSortsByTime) {
   // data
 
   // PERF_RECORD_HEADER_ATTR
-  testing::ExamplePerfEventAttrEvent_Hardware(PERF_SAMPLE_IP |
-                                              PERF_SAMPLE_TID |
-                                              PERF_SAMPLE_TIME,
-                                              true /*sample_id_all*/)
+  testing::ExamplePerfEventAttrEvent_Hardware(
+      PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_TIME,
+      true /*sample_id_all*/)
       .WriteTo(&input);
 
   // PERF_RECORD_MMAP
-  testing::ExampleMmapEvent(
-      1001, 0x1c1000, 0x1000, 0, "/usr/lib/foo.so",
-      testing::SampleInfo().Tid(1001).Time(12300010)).WriteTo(&input);
+  testing::ExampleMmapEvent(1001, 0x1c1000, 0x1000, 0, "/usr/lib/foo.so",
+                            testing::SampleInfo().Tid(1001).Time(12300010))
+      .WriteTo(&input);
   // becomes: 0x0000, 0x1000, 0
 
   // PERF_RECORD_SAMPLE
-  testing::ExamplePerfSampleEvent(                                // 1
+  testing::ExamplePerfSampleEvent(
       testing::SampleInfo().Ip(0x00000000001c1000).Tid(1001).Time(12300020))
-      .WriteTo(&input);
-  testing::ExamplePerfSampleEvent(                                // 2
+      .WriteTo(&input);  // 1
+  testing::ExamplePerfSampleEvent(
       testing::SampleInfo().Ip(0x00000000001c1000).Tid(1001).Time(12300030))
-      .WriteTo(&input);
+      .WriteTo(&input);  // 2
   // PERF_RECORD_FINISHED_ROUND
-  testing::FinishedRoundEvent().WriteTo(&input);                  // N/A
+  testing::FinishedRoundEvent().WriteTo(&input);  // N/A
 
   // PERF_RECORD_SAMPLE
-  testing::ExamplePerfSampleEvent(                                // 3
+  testing::ExamplePerfSampleEvent(
       testing::SampleInfo().Ip(0x00000000001c1000).Tid(1001).Time(12300050))
-      .WriteTo(&input);
-  testing::ExamplePerfSampleEvent(                                // 4
+      .WriteTo(&input);  // 3
+  testing::ExamplePerfSampleEvent(
       testing::SampleInfo().Ip(0x00000000001c1000).Tid(1001).Time(12300040))
-      .WriteTo(&input);
+      .WriteTo(&input);  // 4
   // PERF_RECORD_FINISHED_ROUND
-  testing::FinishedRoundEvent().WriteTo(&input);                  // N/A
+  testing::FinishedRoundEvent().WriteTo(&input);  // N/A
 
   //
   // Parse input.
@@ -1485,7 +1461,7 @@ TEST(PerfParserTest, HandlesFinishedRoundEventsAndSortsByTime) {
   EXPECT_EQ(4, parser.stats().num_sample_events);
   EXPECT_EQ(4, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
+  const std::vector<ParsedEvent> &events = parser.parsed_events();
   ASSERT_EQ(5, events.size());
 
   EXPECT_EQ(PERF_RECORD_MMAP, events[0].event_ptr->header().type());
@@ -1512,14 +1488,16 @@ TEST(PerfParserTest, MmapCoversEntireAddressSpace) {
 
   // PERF_RECORD_MMAP, a kernel mapping that covers the whole space.
   const uint32_t kKernelMmapPid = UINT32_MAX;
-  testing::ExampleMmapEvent(
-      kKernelMmapPid, 0, UINT64_MAX, 0, "[kernel.kallsyms]_text",
-      testing::SampleInfo().Tid(kKernelMmapPid, 0)).WriteTo(&input);
+  testing::ExampleMmapEvent(kKernelMmapPid, 0, UINT64_MAX, 0,
+                            "[kernel.kallsyms]_text",
+                            testing::SampleInfo().Tid(kKernelMmapPid, 0))
+      .WriteTo(&input);
 
   // PERF_RECORD_MMAP, a shared object library.
-  testing::ExampleMmapEvent(
-      1234, 0x7f008e000000, 0x2000000, 0, "/usr/lib/libfoo.so",
-      testing::SampleInfo().Tid(1234, 1234)).WriteTo(&input);
+  testing::ExampleMmapEvent(1234, 0x7f008e000000, 0x2000000, 0,
+                            "/usr/lib/libfoo.so",
+                            testing::SampleInfo().Tid(1234, 1234))
+      .WriteTo(&input);
 
   // PERF_RECORD_SAMPLE, within library.
   testing::ExamplePerfSampleEvent(
@@ -1554,15 +1532,14 @@ TEST(PerfParserTest, MmapCoversEntireAddressSpace) {
   EXPECT_EQ(4, parser.stats().num_sample_events);
   EXPECT_EQ(4, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
+  const std::vector<ParsedEvent> &events = parser.parsed_events();
   ASSERT_EQ(6, events.size());
 
   EXPECT_EQ(PERF_RECORD_MMAP, events[0].event_ptr->header().type());
   EXPECT_EQ("[kernel.kallsyms]_text",
             events[0].event_ptr->mmap_event().filename());
   EXPECT_EQ(PERF_RECORD_MMAP, events[1].event_ptr->header().type());
-  EXPECT_EQ("/usr/lib/libfoo.so",
-            events[1].event_ptr->mmap_event().filename());
+  EXPECT_EQ("/usr/lib/libfoo.so", events[1].event_ptr->mmap_event().filename());
 
   // Sample from library.
   EXPECT_EQ(PERF_RECORD_SAMPLE, events[2].event_ptr->header().type());
@@ -1597,9 +1574,9 @@ TEST(PerfParserTest, HugePagesMappings) {
       .WriteTo(&input);
 
   // PERF_RECORD_MMAP, a normal mapping.
-  testing::ExampleMmapEvent(
-      1234, 0x40000000, 0x18000, 0, "/usr/lib/libfoo.so",
-      testing::SampleInfo().Tid(1234, 1234)).WriteTo(&input);
+  testing::ExampleMmapEvent(1234, 0x40000000, 0x18000, 0, "/usr/lib/libfoo.so",
+                            testing::SampleInfo().Tid(1234, 1234))
+      .WriteTo(&input);
 
   // PERF_RECORD_SAMPLE, within library.
   testing::ExamplePerfSampleEvent(
@@ -1621,12 +1598,13 @@ TEST(PerfParserTest, HugePagesMappings) {
 
   // Split Chrome mapping #2, starting with a huge pages section (no preceding
   // normal mapping).
-  testing::ExampleMmapEvent(
-      2345, 0x45e00000, 0x1e00000, 0, "//anon",
-      testing::SampleInfo().Tid(2345, 2346)).WriteTo(&input);
-  testing::ExampleMmapEvent(
-      2345, 0x47c00000, 0x4000000, 0x1e00000, "/opt/google/chrome/chrome",
-      testing::SampleInfo().Tid(2345, 2346)).WriteTo(&input);
+  testing::ExampleMmapEvent(2345, 0x45e00000, 0x1e00000, 0, "//anon",
+                            testing::SampleInfo().Tid(2345, 2346))
+      .WriteTo(&input);
+  testing::ExampleMmapEvent(2345, 0x47c00000, 0x4000000, 0x1e00000,
+                            "/opt/google/chrome/chrome",
+                            testing::SampleInfo().Tid(2345, 2346))
+      .WriteTo(&input);
 
   // PERF_RECORD_SAMPLE, within Chrome #1 (before huge pages mapping).
   testing::ExamplePerfSampleEvent(
@@ -1672,7 +1650,7 @@ TEST(PerfParserTest, HugePagesMappings) {
   EXPECT_EQ(7, parser.stats().num_sample_events);
   EXPECT_EQ(7, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
+  const std::vector<ParsedEvent> &events = parser.parsed_events();
   ASSERT_EQ(10, events.size());
 
   EXPECT_EQ(PERF_RECORD_MMAP, events[0].event_ptr->header().type());
@@ -1801,12 +1779,12 @@ TEST(PerfParserTest, Regression62446346) {
   EXPECT_EQ(0, parser.stats().num_sample_events);
   EXPECT_EQ(0, parser.stats().num_sample_events_mapped);
 
-  const std::vector<ParsedEvent>& events = parser.parsed_events();
+  const std::vector<ParsedEvent> &events = parser.parsed_events();
 
   {
     PerfDataProto expected;
     {
-      auto* ev = expected.add_events();
+      auto *ev = expected.add_events();
       ev->mutable_header()->set_type(PERF_RECORD_MMAP);
       ev->mutable_mmap_event()->set_filename("file");
       ev->mutable_mmap_event()->set_start(0x55a685bfb000);
@@ -1815,7 +1793,7 @@ TEST(PerfParserTest, Regression62446346) {
     }
 
     PerfDataProto actual;
-    for (const auto& ev : events) {
+    for (const auto &ev : events) {
       if (ev.event_ptr == nullptr) {
         continue;
       }
@@ -1828,7 +1806,7 @@ TEST(PerfParserTest, Regression62446346) {
   ASSERT_EQ(1, events.size());
 
   // Verify the header().size() entry is large enough to deserialize/serialize.
-  for (const auto& ev : events) {
+  for (const auto &ev : events) {
     malloced_unique_ptr<event_t> e(
         CallocMemoryForEvent(ev.event_ptr->header().size()));
 
@@ -1905,20 +1883,20 @@ TEST(PerfParserTest, Regression62446346_Perf3_12_0_11) {
   EXPECT_EQ(0, parser.stats().num_sample_events);
   EXPECT_EQ(0, parser.stats().num_sample_events_mapped);
 
-    PerfDataProto expected;
-    {
-      auto* ev = expected.add_events();
-      ev->mutable_header()->set_type(PERF_RECORD_MMAP);
-      ev->mutable_mmap_event()->set_filename("file");
-      ev->mutable_mmap_event()->set_start(0x55bd43879000);
-      ev->mutable_mmap_event()->set_len(0x55bd5bcb5000 - 0x55bd43879000);
-      ev->mutable_mmap_event()->set_pgoff(0x0);
-    }
+  PerfDataProto expected;
+  {
+    auto *ev = expected.add_events();
+    ev->mutable_header()->set_type(PERF_RECORD_MMAP);
+    ev->mutable_mmap_event()->set_filename("file");
+    ev->mutable_mmap_event()->set_start(0x55bd43879000);
+    ev->mutable_mmap_event()->set_len(0x55bd5bcb5000 - 0x55bd43879000);
+    ev->mutable_mmap_event()->set_pgoff(0x0);
+  }
 
-    PerfDataProto actual;
-    CopyActualEvents(parser.parsed_events(), &actual);
-    EXPECT_TRUE(PartiallyEqualsProto(actual, expected));
-    ASSERT_EQ(1, parser.parsed_events().size());
+  PerfDataProto actual;
+  CopyActualEvents(parser.parsed_events(), &actual);
+  EXPECT_TRUE(PartiallyEqualsProto(actual, expected));
+  ASSERT_EQ(1, parser.parsed_events().size());
 }
 
 TEST(PerfParserTest, Regression62446346_Perf3_12_0_14) {
@@ -1985,7 +1963,7 @@ TEST(PerfParserTest, Regression62446346_Perf3_12_0_14) {
 
   PerfDataProto expected;
   {
-    auto* ev = expected.add_events();
+    auto *ev = expected.add_events();
     ev->mutable_header()->set_type(PERF_RECORD_MMAP);
     ev->mutable_mmap_event()->set_filename("file");
     ev->mutable_mmap_event()->set_start(0x55bd43879000);
@@ -2044,7 +2022,7 @@ TEST(PerfParserTest, DiscontiguousMappings) {
   // The first two mappings should have been combined.  The third should not.
   PerfDataProto expected;
   {
-    auto* ev = expected.add_events();
+    auto *ev = expected.add_events();
     ev->mutable_header()->set_type(PERF_RECORD_MMAP);
     ev->mutable_mmap_event()->set_filename("file");
     ev->mutable_mmap_event()->set_start(0x7f489000);
@@ -2052,7 +2030,7 @@ TEST(PerfParserTest, DiscontiguousMappings) {
     ev->mutable_mmap_event()->set_pgoff(0x0);
   }
   {
-    auto* ev = expected.add_events();
+    auto *ev = expected.add_events();
     ev->mutable_header()->set_type(PERF_RECORD_MMAP);
     ev->mutable_mmap_event()->set_filename("file");
     ev->mutable_mmap_event()->set_start(0x80400000);

@@ -28,7 +28,7 @@ namespace {
 string ParseFormatOptions(string format, PerfParserOptions* options) {
   auto dot = format.find('.');
   if (dot != string::npos) {
-    string opt = format.substr(dot+1);
+    string opt = format.substr(dot + 1);
     format = format.substr(0, dot);
     if (opt == "remap") {
       options->do_remap = true;
@@ -46,8 +46,7 @@ string ParseFormatOptions(string format, PerfParserOptions* options) {
 }
 
 // ReadInput reads the input and stores it within |reader|.
-bool ReadInput(const FormatAndFile& input,
-               PerfReader* reader,
+bool ReadInput(const FormatAndFile& input, PerfReader* reader,
                PerfParserOptions* options) {
   LOG(INFO) << "Reading input.";
 
@@ -59,11 +58,9 @@ bool ReadInput(const FormatAndFile& input,
   if (format == kProtoTextFormat) {
     PerfDataProto perf_data_proto;
     std::vector<char> data;
-    if (!FileToBuffer(input.filename, &data))
-      return false;
+    if (!FileToBuffer(input.filename, &data)) return false;
     string text(data.begin(), data.end());
-    if (!TextFormat::ParseFromString(text, &perf_data_proto))
-      return false;
+    if (!TextFormat::ParseFromString(text, &perf_data_proto)) return false;
 
     return reader->Deserialize(perf_data_proto);
   }
@@ -74,8 +71,7 @@ bool ReadInput(const FormatAndFile& input,
 
 // WriteOutput reads from |reader| and writes the output to the file
 // within |output|.
-bool WriteOutput(const FormatAndFile& output,
-                 const PerfParserOptions& options,
+bool WriteOutput(const FormatAndFile& output, const PerfParserOptions& options,
                  PerfReader* reader) {
   LOG(INFO) << "Writing output.";
 
@@ -120,10 +116,8 @@ const char kProtoTextFormat[] = "text";
 bool ConvertFile(const FormatAndFile& input, const FormatAndFile& output) {
   PerfReader reader;
   PerfParserOptions options;
-  if (!ReadInput(input, &reader, &options))
-    return false;
-  if (!WriteOutput(output, options, &reader))
-    return false;
+  if (!ReadInput(input, &reader, &options)) return false;
+  if (!WriteOutput(output, options, &reader)) return false;
   return true;
 }
 

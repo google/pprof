@@ -23,10 +23,8 @@ AddressMapper::AddressMapper(const AddressMapper& other) {
   }
 }
 
-bool AddressMapper::MapWithID(const uint64_t real_addr,
-                              const uint64_t size,
-                              const uint64_t id,
-                              const uint64_t offset_base,
+bool AddressMapper::MapWithID(const uint64_t real_addr, const uint64_t size,
+                              const uint64_t id, const uint64_t offset_base,
                               bool remove_existing_mappings) {
   if (size == 0) {
     LOG(ERROR) << "Must allocate a nonzero-length address range.";
@@ -65,11 +63,9 @@ bool AddressMapper::MapWithID(const uint64_t real_addr,
   MappingList::iterator old_range_iter = mappings_.end();
   for (auto map_iter = map_iter_start; map_iter != map_iter_end; ++map_iter) {
     auto iter = map_iter->second;
-    if (!iter->Intersects(range))
-      continue;
+    if (!iter->Intersects(range)) continue;
     // Quit if existing ranges that collide aren't supposed to be removed.
-    if (!remove_existing_mappings)
-      return false;
+    if (!remove_existing_mappings) return false;
     if (old_range_iter == mappings_.end() && iter->Covers(range) &&
         iter->size > range.size) {
       old_range_iter = iter;
@@ -90,8 +86,8 @@ bool AddressMapper::MapWithID(const uint64_t real_addr,
     Unmap(old_range_iter);
 
     uint64_t gap_before = range.real_addr - old_range.real_addr;
-    uint64_t gap_after = (old_range.real_addr + old_range.size) -
-                         (range.real_addr + range.size);
+    uint64_t gap_after =
+        (old_range.real_addr + old_range.size) - (range.real_addr + range.size);
 
     // If the new mapping is not aligned to a page boundary at either its start
     // or end, it will require the end of the old mapping range to be moved,
@@ -184,8 +180,7 @@ bool AddressMapper::MapWithID(const uint64_t real_addr,
 
       // Check if there's enough room in the unmapped space following the
       // current existing mapping for the page-aligned mapping.
-      if (end_of_new_mapping > end_of_unmapped_space_after)
-        continue;
+      if (end_of_new_mapping > end_of_unmapped_space_after) continue;
 
       range.mapped_addr = next_page_boundary + mapping_offset;
       range.unmapped_space_after =
@@ -193,8 +188,7 @@ bool AddressMapper::MapWithID(const uint64_t real_addr,
       existing_mapping.unmapped_space_after =
           range.mapped_addr - end_of_existing_mapping;
     } else {
-      if (existing_mapping.unmapped_space_after < range.size)
-        continue;
+      if (existing_mapping.unmapped_space_after < range.size) continue;
       // Insert the new mapping range immediately after the existing one.
       range.mapped_addr = existing_mapping.mapped_addr + existing_mapping.size;
       range.unmapped_space_after =
@@ -250,8 +244,7 @@ void AddressMapper::GetMappedIDAndOffset(
 }
 
 uint64_t AddressMapper::GetMaxMappedLength() const {
-  if (IsEmpty())
-    return 0;
+  if (IsEmpty()) return 0;
 
   uint64_t min = mappings_.begin()->mapped_addr;
 

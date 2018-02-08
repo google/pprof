@@ -14,7 +14,6 @@ package quipper;
 
 // Next tag: 17
 message PerfDataProto {
-
   // Perf event attribute. Stores the event description.
   // This data structure is defined in the linux kernel:
   // $kernel/include/uapi/linux/perf_event.h.
@@ -220,7 +219,7 @@ message PerfDataProto {
 
     // Time the sample was taken.
     // Deprecated, use |sample_info| instead.
-    optional uint64 sample_time = 5 [deprecated=true];
+    optional uint64 sample_time = 5 [deprecated = true];
 
     // Info about the perf sample containing this event.
     optional SampleInfo sample_info = 6;

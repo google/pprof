@@ -50,7 +50,7 @@ bool ParsePerfStatOutputToProto(const string& data, PerfStatProto* proto) {
       }
       auto newline = proto->add_line();
       newline->set_count(count);
-      newline->set_event_name(first_token.substr(0, first_token.size()-1));
+      newline->set_event_name(first_token.substr(0, first_token.size() - 1));
     }
     // Look for "1.234 seconds time elapsed"
     if (tokens[1] == "seconds" &&

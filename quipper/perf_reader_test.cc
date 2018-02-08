@@ -43,15 +43,16 @@ TEST(PerfReaderTest, PipedData_IncompleteEventHeader) {
 
   // PERF_RECORD_HEADER_EVENT_TYPE
   const struct event_type_event event_type = {
-    .header = {
-      .type = PERF_RECORD_HEADER_EVENT_TYPE,
-      .misc = 0,
-      .size = sizeof(struct event_type_event),
-    },
-    .event_type = {
-      /*event_id*/ 123,
-      /*name*/ "cycles",
-    },
+      .header =
+          {
+              .type = PERF_RECORD_HEADER_EVENT_TYPE,
+              .misc = 0,
+              .size = sizeof(struct event_type_event),
+          },
+      .event_type = {
+          /*event_id*/ 123,
+          /*name*/ "cycles",
+      },
   };
   input.write(reinterpret_cast<const char*>(&event_type), sizeof(event_type));
 
@@ -92,24 +93,25 @@ TEST(PerfReaderTest, PipedData_IncompleteEventData) {
 
   // PERF_RECORD_HEADER_EVENT_TYPE
   const struct event_type_event event_type = {
-    .header = {
-      .type = PERF_RECORD_HEADER_EVENT_TYPE,
-      .misc = 0,
-      .size = sizeof(struct event_type_event),
-    },
-    .event_type = {
-      /*event_id*/ 456,
-      /*name*/ "instructions",
-    },
+      .header =
+          {
+              .type = PERF_RECORD_HEADER_EVENT_TYPE,
+              .misc = 0,
+              .size = sizeof(struct event_type_event),
+          },
+      .event_type = {
+          /*event_id*/ 456,
+          /*name*/ "instructions",
+      },
   };
   input.write(reinterpret_cast<const char*>(&event_type), sizeof(event_type));
 
   // Incomplete data at the end:
   // Header:
   const struct perf_event_header incomplete_event_header = {
-    .type = PERF_RECORD_SAMPLE,
-    .misc = 0,
-    .size = sizeof(perf_event_header) + 10,
+      .type = PERF_RECORD_SAMPLE,
+      .misc = 0,
+      .size = sizeof(perf_event_header) + 10,
   };
   input.write(reinterpret_cast<const char*>(&incomplete_event_header),
               sizeof(incomplete_event_header));
@@ -153,11 +155,9 @@ TEST(PerfReaderTest, ReadsAndWritesTraceMetadata) {
 
   // header
   testing::ExamplePerfDataFileHeader file_header(1 << HEADER_TRACING_DATA);
-  file_header
-      .WithAttrCount(1)
-      .WithDataSize(data_size);
+  file_header.WithAttrCount(1).WithDataSize(data_size);
   file_header.WriteTo(&input);
-  const perf_file_header &header = file_header.header();
+  const perf_file_header& header = file_header.header();
 
   // attrs
   CHECK_EQ(header.attrs.offset, static_cast<u64>(input.tellp()));
@@ -174,7 +174,7 @@ TEST(PerfReaderTest, ReadsAndWritesTraceMetadata) {
 
   // HEADER_TRACING_DATA
   testing::ExampleTracingMetadata tracing_metadata(
-      file_header.data_end() + metadata_count*sizeof(perf_file_section));
+      file_header.data_end() + metadata_count * sizeof(perf_file_section));
 
   // write metadata index entries
   tracing_metadata.index_entry().WriteTo(&input);
@@ -206,15 +206,16 @@ TEST(PerfReaderTest, ReadsTracingMetadataEvent) {
   // data
 
   const char raw_data[] = "\x17\x08\x44tracing0.5BLAHBLAHBLAH....";
-  const string trace_metadata(raw_data, sizeof(raw_data)-1);
+  const string trace_metadata(raw_data, sizeof(raw_data) - 1);
 
   const tracing_data_event trace_event = {
-    .header = {
-      .type = PERF_RECORD_HEADER_TRACING_DATA,
-      .misc = 0,
-      .size = sizeof(tracing_data_event),
-    },
-    .size = static_cast<u32>(trace_metadata.size()),
+      .header =
+          {
+              .type = PERF_RECORD_HEADER_TRACING_DATA,
+              .misc = 0,
+              .size = sizeof(tracing_data_event),
+          },
+      .size = static_cast<u32>(trace_metadata.size()),
   };
 
   input.write(reinterpret_cast<const char*>(&trace_event), sizeof(trace_event));
@@ -245,16 +246,15 @@ TEST(PerfReaderTest, BranchStackMetadataIndexHasZeroSize) {
 
   // header
   testing::ExamplePerfDataFileHeader file_header(1 << HEADER_BRANCH_STACK);
-  file_header
-      .WithAttrCount(1)
-      .WithDataSize(data_size);
+  file_header.WithAttrCount(1).WithDataSize(data_size);
   file_header.WriteTo(&input);
-  const perf_file_header &header = file_header.header();
+  const perf_file_header& header = file_header.header();
 
   // attrs
   CHECK_EQ(header.attrs.offset, static_cast<u64>(input.tellp()));
-  testing::ExamplePerfFileAttr_Hardware(
-      PERF_SAMPLE_BRANCH_STACK, false /*sample_id_all*/).WriteTo(&input);
+  testing::ExamplePerfFileAttr_Hardware(PERF_SAMPLE_BRANCH_STACK,
+                                        false /*sample_id_all*/)
+      .WriteTo(&input);
 
   // data
   ASSERT_EQ(header.data.offset, static_cast<u64>(input.tellp()));
@@ -265,8 +265,8 @@ TEST(PerfReaderTest, BranchStackMetadataIndexHasZeroSize) {
 
   // HEADER_BRANCH_STACK
   const perf_file_section branch_stack_index = {
-    .offset = file_header.data_end_offset(),
-    .size = 0,
+      .offset = file_header.data_end_offset(),
+      .size = 0,
   };
   input.write(reinterpret_cast<const char*>(&branch_stack_index),
               sizeof(branch_stack_index));
@@ -288,15 +288,15 @@ TEST(PerfReaderTest, BranchStackMetadataIndexHasZeroSize) {
       << "Bad prediction for written size";
 
   // Specifically check that the metadata index has zero in the size.
-  const auto *output_header =
+  const auto* output_header =
       reinterpret_cast<struct perf_file_header*>(output_perf_data.data());
   EXPECT_EQ(1 << HEADER_BRANCH_STACK, output_header->adds_features[0])
       << "Expected just a HEADER_BRANCH_STACK feature";
   const size_t metadata_offset =
       output_header->data.offset + output_header->data.size;
-  const auto *output_feature_index =
-      reinterpret_cast<struct perf_file_section*>(
-          output_perf_data.data() + metadata_offset);
+  const auto* output_feature_index =
+      reinterpret_cast<struct perf_file_section*>(output_perf_data.data() +
+                                                  metadata_offset);
   EXPECT_EQ(0, output_feature_index[0].size)
       << "Regression: Expected zero size for the HEADER_BRANCH_STACK feature "
       << "metadata index";
@@ -315,10 +315,12 @@ TEST(PerfReaderTest, CorrectlyReadsPerfEventAttrSize) {
     __u32 type;
     __u32 size;
     __u64 config;
+    // clang-format off
     // union {
             __u64 sample_period;
     //      __u64 sample_freq;
     // };
+    // clang-format on
     __u64 sample_type;
     __u64 read_format;
     // Skip the rest of the fields from perf_event_attr to simulate an
@@ -331,25 +333,27 @@ TEST(PerfReaderTest, CorrectlyReadsPerfEventAttrSize) {
     u64 id[];
   };
 
-
   const old_attr_event attr = {
-    .header = {
-      .type = PERF_RECORD_HEADER_ATTR,
-      .misc = 0,
-      // A count of 8 ids is carefully selected to make the event exceed
-      // 96 bytes (sizeof(perf_event_attr)) so that the test fails instead of
-      // crashes with the old code.
-      .size = sizeof(old_attr_event) + 8*sizeof(u64),
-    },
-    .attr = {
-      .type = 0,
-      .size = sizeof(old_perf_event_attr),
-      .config = 0,
-      .sample_period = 10000001,
-      .sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_TIME |
-                     PERF_SAMPLE_ID | PERF_SAMPLE_CPU,
-      .read_format = PERF_FORMAT_ID,
-    },
+      .header =
+          {
+              .type = PERF_RECORD_HEADER_ATTR,
+              .misc = 0,
+              // A count of 8 ids is carefully selected to make the event exceed
+              // 96 bytes (sizeof(perf_event_attr)) so that the test fails
+              // instead of crashes with the old code.
+              .size = sizeof(old_attr_event) + 8 * sizeof(u64),
+          },
+      .attr =
+          {
+              .type = 0,
+              .size = sizeof(old_perf_event_attr),
+              .config = 0,
+              .sample_period = 10000001,
+              .sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID |
+                             PERF_SAMPLE_TIME | PERF_SAMPLE_ID |
+                             PERF_SAMPLE_CPU,
+              .read_format = PERF_FORMAT_ID,
+          },
   };
 
   input.write(reinterpret_cast<const char*>(&attr), sizeof(attr));
@@ -358,20 +362,19 @@ TEST(PerfReaderTest, CorrectlyReadsPerfEventAttrSize) {
 
   // Add some sample events so that there's something to over-read.
   const sample_event sample = {
-    .header = {
-      .type = PERF_RECORD_SAMPLE,
-      .misc = 0,
-      .size = sizeof(perf_event_header) + 5*sizeof(u64),
-    }
-  };
+      .header = {
+          .type = PERF_RECORD_SAMPLE,
+          .misc = 0,
+          .size = sizeof(perf_event_header) + 5 * sizeof(u64),
+      }};
   // We don't care about the contents of the SAMPLE events, except for the ID,
   // which is needed to determine the attr for reading sample info.
   const u64 sample_event_array[] = {
-    0,                                     // IP
-    0,                                     // TID
-    0,                                     // TIME
-    308,                                   // ID
-    0,                                     // CPU
+      0,    // IP
+      0,    // TID
+      0,    // TIME
+      308,  // ID
+      0,    // CPU
   };
 
   for (int i = 0; i < 20; i++) {
@@ -408,18 +411,11 @@ TEST(PerfReaderTest, ReadsAndWritesSampleEvent) {
   // data
 
   // PERF_RECORD_HEADER_ATTR
-  const u64 sample_type =
-      PERF_SAMPLE_IP |
-      PERF_SAMPLE_TID |
-      PERF_SAMPLE_TIME |
-      PERF_SAMPLE_ADDR |
-      PERF_SAMPLE_READ |
-      PERF_SAMPLE_CALLCHAIN |
-      PERF_SAMPLE_CPU |
-      PERF_SAMPLE_ID |
-      PERF_SAMPLE_PERIOD |
-      PERF_SAMPLE_STREAM_ID |
-      PERF_SAMPLE_BRANCH_STACK;
+  const u64 sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_TIME |
+                          PERF_SAMPLE_ADDR | PERF_SAMPLE_READ |
+                          PERF_SAMPLE_CALLCHAIN | PERF_SAMPLE_CPU |
+                          PERF_SAMPLE_ID | PERF_SAMPLE_PERIOD |
+                          PERF_SAMPLE_STREAM_ID | PERF_SAMPLE_BRANCH_STACK;
 
   const size_t num_sample_event_bits = 10;
   // not tested:
@@ -428,56 +424,59 @@ TEST(PerfReaderTest, ReadsAndWritesSampleEvent) {
                                               true /*sample_id_all*/)
       .WithId(401)
       .WithReadFormat(PERF_FORMAT_TOTAL_TIME_ENABLED |
-                      PERF_FORMAT_TOTAL_TIME_RUNNING |
-                      PERF_FORMAT_ID)
+                      PERF_FORMAT_TOTAL_TIME_RUNNING | PERF_FORMAT_ID)
       .WriteTo(&input);
 
   // PERF_RECORD_SAMPLE
   const size_t call_chain_size = 6;
   const size_t branch_stack_size = 5;
   const sample_event written_sample_event = {
-    .header = {
-      .type = PERF_RECORD_SAMPLE,
-      .misc = PERF_RECORD_MISC_KERNEL,
-      .size = sizeof(struct sample_event) + num_sample_event_bits*sizeof(u64) +
-              4*sizeof(u64) +  // Non-grouped read info, see
-                               // perf_event_read_format in kernel/perf_event.h.
-              call_chain_size*sizeof(u64) +
-              branch_stack_size*sizeof(struct branch_entry),
-    }
-  };
+      .header = {
+          .type = PERF_RECORD_SAMPLE,
+          .misc = PERF_RECORD_MISC_KERNEL,
+          .size =
+              sizeof(struct sample_event) +
+              num_sample_event_bits * sizeof(u64) +
+              4 * sizeof(
+                      u64) +  // Non-grouped read info, see
+                              // perf_event_read_format in kernel/perf_event.h.
+              call_chain_size * sizeof(u64) +
+              branch_stack_size * sizeof(struct branch_entry),
+      }};
   const u64 sample_event_array[] = {
-    0xffffffff01234567,                    // IP
-    PunU32U64{.v32 = {0x68d, 0x68e}}.v64,  // TID (u32 pid, tid)
-    1415837014*1000000000ULL,              // TIME
-    0x00007f999c38d15a,                    // ADDR
-    401,                                   // ID
-    1,                                     // STREAM_ID
-    8,                                     // CPU
-    10001,                                 // PERIOD
+      0xffffffff01234567,                    // IP
+      PunU32U64{.v32 = {0x68d, 0x68e}}.v64,  // TID (u32 pid, tid)
+      1415837014 * 1000000000ULL,            // TIME
+      0x00007f999c38d15a,                    // ADDR
+      401,                                   // ID
+      1,                                     // STREAM_ID
+      8,                                     // CPU
+      10001,                                 // PERIOD
 
-    // READ
-    0x103c5d0,                             // value
-    0x7f6e8c45a920,                        // time_enabled
-    0x7ffed1a5e950,                        // time_running
-    402,                                   // id
+      // READ
+      0x103c5d0,       // value
+      0x7f6e8c45a920,  // time_enabled
+      0x7ffed1a5e950,  // time_running
+      402,             // id
 
-    // CALLCHAIN
-    6,                                     // nr
-        0x1c1000,                          // ips
-        0x1c2000,
-        0x1c3000,
-        0x2c0000,
-        0x2c1000,
-        0x3c1000,
+      // clang-format off
+      // CALLCHAIN
+      6,         // nr
+      0x1c1000,  // ips
+      0x1c2000,
+      0x1c3000,
+      0x2c0000,
+      0x2c1000,
+      0x3c1000,
 
-    // BRANCH_STACK
-    5,                                     // nr
-        0x00007f4a313bb8cc, 0x00007f4a313bdb40, 0x02,  // entries
-        0x00007f4a30ce4de2, 0x00007f4a313bb8b3, 0x02,  // predicted = 0x2
-        0x00007f4a313bb8b0, 0x00007f4a30ce4de0, 0x01,  // mispredict = 0x1
-        0x00007f4a30ff45c1, 0x00007f4a313bb8a0, 0x02,
-        0x00007f4a30ff49f2, 0x00007f4a30ff45bb, 0x02,
+      // BRANCH_STACK
+      5,  // nr
+      0x00007f4a313bb8cc, 0x00007f4a313bdb40, 0x02,  // entries
+      0x00007f4a30ce4de2, 0x00007f4a313bb8b3, 0x02,  // predicted = 0x2
+      0x00007f4a313bb8b0, 0x00007f4a30ce4de0, 0x01,  // mispredict = 0x1
+      0x00007f4a30ff45c1, 0x00007f4a313bb8a0, 0x02,
+      0x00007f4a30ff49f2, 0x00007f4a30ff45bb, 0x02,
+      // clang-format on
   };
   ASSERT_EQ(written_sample_event.header.size,
             sizeof(written_sample_event.header) + sizeof(sample_event_array));
@@ -510,7 +509,7 @@ TEST(PerfReaderTest, ReadsAndWritesSampleEvent) {
     EXPECT_EQ(0xffffffff01234567, sample.ip());
     EXPECT_EQ(0x68d, sample.pid());
     EXPECT_EQ(0x68e, sample.tid());
-    EXPECT_EQ(1415837014*1000000000ULL, sample.sample_time_ns());
+    EXPECT_EQ(1415837014 * 1000000000ULL, sample.sample_time_ns());
     EXPECT_EQ(0x00007f999c38d15a, sample.addr());
     EXPECT_EQ(401, sample.id());
     EXPECT_EQ(1, sample.stream_id());
@@ -639,6 +638,7 @@ TEST(PerfReaderTest, ReadsAndWritesSampleAndSampleIdAll) {
   // data
 
   // PERF_RECORD_HEADER_ATTR
+  // clang-format off
   const u64 sample_type =      // * == in sample_id_all
       PERF_SAMPLE_IP |
       PERF_SAMPLE_TID |        // *
@@ -648,6 +648,7 @@ TEST(PerfReaderTest, ReadsAndWritesSampleAndSampleIdAll) {
       PERF_SAMPLE_STREAM_ID |  // *
       PERF_SAMPLE_CPU |        // *
       PERF_SAMPLE_PERIOD;
+  // clang-format on
   const size_t num_sample_event_bits = 8;
   const size_t num_sample_id_bits = 5;
   // not tested:
@@ -662,21 +663,21 @@ TEST(PerfReaderTest, ReadsAndWritesSampleAndSampleIdAll) {
 
   // PERF_RECORD_SAMPLE
   const sample_event written_sample_event = {
-    .header = {
-      .type = PERF_RECORD_SAMPLE,
-      .misc = PERF_RECORD_MISC_KERNEL,
-      .size = sizeof(struct sample_event) + num_sample_event_bits*sizeof(u64),
-    }
-  };
+      .header = {
+          .type = PERF_RECORD_SAMPLE,
+          .misc = PERF_RECORD_MISC_KERNEL,
+          .size =
+              sizeof(struct sample_event) + num_sample_event_bits * sizeof(u64),
+      }};
   const u64 sample_event_array[] = {
-    0xffffffff01234567,                    // IP
-    PunU32U64{.v32 = {0x68d, 0x68e}}.v64,  // TID (u32 pid, tid)
-    1415837014*1000000000ULL,              // TIME
-    0x00007f999c38d15a,                    // ADDR
-    401,                                   // ID
-    1,                                     // STREAM_ID
-    8,                                     // CPU
-    10001,                                 // PERIOD
+      0xffffffff01234567,                    // IP
+      PunU32U64{.v32 = {0x68d, 0x68e}}.v64,  // TID (u32 pid, tid)
+      1415837014 * 1000000000ULL,            // TIME
+      0x00007f999c38d15a,                    // ADDR
+      401,                                   // ID
+      1,                                     // STREAM_ID
+      8,                                     // CPU
+      10001,                                 // PERIOD
   };
   ASSERT_EQ(written_sample_event.header.size,
             sizeof(written_sample_event.header) + sizeof(sample_event_array));
@@ -687,35 +688,38 @@ TEST(PerfReaderTest, ReadsAndWritesSampleAndSampleIdAll) {
 
   // PERF_RECORD_MMAP
   ASSERT_EQ(40, offsetof(struct mmap_event, filename));
+  // clang-format off
   const size_t mmap_event_size =
       offsetof(struct mmap_event, filename) +
       10+6 /* ==16, nearest 64-bit boundary for filename */ +
       num_sample_id_bits*sizeof(u64);
-
+  // clang-format on
   struct mmap_event written_mmap_event = {
-    .header = {
-      .type = PERF_RECORD_MMAP,
-      .misc = 0,
-      .size = mmap_event_size,
-    },
-    .pid = 0x68d, .tid = 0x68d,
-    .start = 0x1d000,
-    .len = 0x1000,
-    .pgoff = 0,
-    // .filename = ..., // written separately
+      .header =
+          {
+              .type = PERF_RECORD_MMAP,
+              .misc = 0,
+              .size = mmap_event_size,
+          },
+      .pid = 0x68d,
+      .tid = 0x68d,
+      .start = 0x1d000,
+      .len = 0x1000,
+      .pgoff = 0,
+      // .filename = ..., // written separately
   };
-  const char mmap_filename[10+6] = "/dev/zero";
+  const char mmap_filename[10 + 6] = "/dev/zero";
   const u64 mmap_sample_id[] = {
-    PunU32U64{.v32 = {0x68d, 0x68e}}.v64,  // TID (u32 pid, tid)
-    1415911367*1000000000ULL,              // TIME
-    401,                                   // ID
-    2,                                     // STREAM_ID
-    9,                                     // CPU
+      PunU32U64{.v32 = {0x68d, 0x68e}}.v64,  // TID (u32 pid, tid)
+      1415911367 * 1000000000ULL,            // TIME
+      401,                                   // ID
+      2,                                     // STREAM_ID
+      9,                                     // CPU
   };
   const size_t pre_mmap_offset = input.tellp();
   input.write(reinterpret_cast<const char*>(&written_mmap_event),
               offsetof(struct mmap_event, filename));
-  input.write(mmap_filename, 10+6);
+  input.write(mmap_filename, 10 + 6);
   input.write(reinterpret_cast<const char*>(mmap_sample_id),
               sizeof(mmap_sample_id));
   const size_t written_mmap_size =
@@ -748,7 +752,7 @@ TEST(PerfReaderTest, ReadsAndWritesSampleAndSampleIdAll) {
       EXPECT_EQ(0xffffffff01234567, sample.ip());
       EXPECT_EQ(0x68d, sample.pid());
       EXPECT_EQ(0x68e, sample.tid());
-      EXPECT_EQ(1415837014*1000000000ULL, sample.sample_time_ns());
+      EXPECT_EQ(1415837014 * 1000000000ULL, sample.sample_time_ns());
       EXPECT_EQ(0x00007f999c38d15a, sample.addr());
       EXPECT_EQ(401, sample.id());
       EXPECT_EQ(1, sample.stream_id());
@@ -763,7 +767,7 @@ TEST(PerfReaderTest, ReadsAndWritesSampleAndSampleIdAll) {
       const SampleInfo& sample = event.mmap_event().sample_info();
       EXPECT_EQ(0x68d, sample.pid());
       EXPECT_EQ(0x68e, sample.tid());
-      EXPECT_EQ(1415911367*1000000000ULL, sample.sample_time_ns());
+      EXPECT_EQ(1415911367 * 1000000000ULL, sample.sample_time_ns());
       EXPECT_EQ(401, sample.id());
       EXPECT_EQ(2, sample.stream_id());
       EXPECT_EQ(9, sample.cpu());
@@ -783,25 +787,23 @@ TEST(PerfReaderTest, ReadsAndWritesPerfSampleIdentifier) {
   // data
 
   // PERF_RECORD_HEADER_ATTR
-  testing::ExamplePerfEventAttrEvent_Hardware(PERF_SAMPLE_IDENTIFIER |
-                                              PERF_SAMPLE_IP |
-                                              PERF_SAMPLE_TID,
-                                              true /*sample_id_all*/)
+  testing::ExamplePerfEventAttrEvent_Hardware(
+      PERF_SAMPLE_IDENTIFIER | PERF_SAMPLE_IP | PERF_SAMPLE_TID,
+      true /*sample_id_all*/)
       .WithIds({0xdeadbeef, 0xf00dbaad})
       .WriteTo(&input);
 
   // PERF_RECORD_SAMPLE
   const sample_event written_sample_event = {
-    .header = {
-      .type = PERF_RECORD_SAMPLE,
-      .misc = PERF_RECORD_MISC_KERNEL,
-      .size = sizeof(struct sample_event) + 3*sizeof(u64),
-    }
-  };
+      .header = {
+          .type = PERF_RECORD_SAMPLE,
+          .misc = PERF_RECORD_MISC_KERNEL,
+          .size = sizeof(struct sample_event) + 3 * sizeof(u64),
+      }};
   const u64 sample_event_array[] = {
-    0x00000000deadbeef,  // IDENTIFIER
-    0x00007f999c38d15a,  // IP
-    0x0000068d0000068d,  // TID (u32 pid, tid)
+      0x00000000deadbeef,  // IDENTIFIER
+      0x00007f999c38d15a,  // IP
+      0x0000068d0000068d,  // TID (u32 pid, tid)
   };
   ASSERT_EQ(written_sample_event.header.size,
             sizeof(written_sample_event.header) + sizeof(sample_event_array));
@@ -812,33 +814,36 @@ TEST(PerfReaderTest, ReadsAndWritesPerfSampleIdentifier) {
 
   // PERF_RECORD_MMAP
   ASSERT_EQ(40, offsetof(struct mmap_event, filename));
+  // clang-format off
   const size_t mmap_event_size =
       offsetof(struct mmap_event, filename) +
       10+6 /* ==16, nearest 64-bit boundary for filename */ +
       2*sizeof(u64);
-
+  // clang-format on
   struct mmap_event written_mmap_event = {
-    .header = {
-      .type = PERF_RECORD_MMAP,
-      .misc = 0,
-      .size = mmap_event_size,
-    },
-    .pid = 0x68d, .tid = 0x68d,
-    .start = 0x1d000,
-    .len = 0x1000,
-    .pgoff = 0,
-    // .filename = ..., // written separately
+      .header =
+          {
+              .type = PERF_RECORD_MMAP,
+              .misc = 0,
+              .size = mmap_event_size,
+          },
+      .pid = 0x68d,
+      .tid = 0x68d,
+      .start = 0x1d000,
+      .len = 0x1000,
+      .pgoff = 0,
+      // .filename = ..., // written separately
   };
-  const char mmap_filename[10+6] = "/dev/zero";
+  const char mmap_filename[10 + 6] = "/dev/zero";
   const u64 mmap_sample_id[] = {
-    // NB: PERF_SAMPLE_IP is not part of sample_id
-    0x0000068d0000068d,  // TID (u32 pid, tid)
-    0x00000000f00dbaad,  // IDENTIFIER
+      // NB: PERF_SAMPLE_IP is not part of sample_id
+      0x0000068d0000068d,  // TID (u32 pid, tid)
+      0x00000000f00dbaad,  // IDENTIFIER
   };
   const size_t pre_mmap_offset = input.tellp();
   input.write(reinterpret_cast<const char*>(&written_mmap_event),
               offsetof(struct mmap_event, filename));
-  input.write(mmap_filename, 10+6);
+  input.write(mmap_filename, 10 + 6);
   input.write(reinterpret_cast<const char*>(mmap_sample_id),
               sizeof(mmap_sample_id));
   const size_t written_mmap_size =
@@ -888,33 +893,36 @@ TEST(PerfReaderTest, ReadsAndWritesMmap2Events) {
 
   // PERF_RECORD_MMAP2
   ASSERT_EQ(72, offsetof(struct mmap2_event, filename));
+  // clang-format off
   const size_t mmap_event_size =
       offsetof(struct mmap2_event, filename) +
       10+6; /* ==16, nearest 64-bit boundary for filename */
-
+  // clang-format on
   struct mmap2_event written_mmap_event = {
-    .header = {
-      .type = PERF_RECORD_MMAP2,
-      .misc = 0,
-      .size = mmap_event_size,
-    },
-    .pid = 0x68d, .tid = 0x68d,
-    .start = 0x1d000,
-    .len = 0x1000,
-    .pgoff = 0x2000,
-    .maj = 6,
-    .min = 7,
-    .ino = 8,
-    .ino_generation = 9,
-    .prot = 1|2,  // == PROT_READ | PROT_WRITE
-    .flags = 2,   // == MAP_PRIVATE
-    // .filename = ..., // written separately
+      .header =
+          {
+              .type = PERF_RECORD_MMAP2,
+              .misc = 0,
+              .size = mmap_event_size,
+          },
+      .pid = 0x68d,
+      .tid = 0x68d,
+      .start = 0x1d000,
+      .len = 0x1000,
+      .pgoff = 0x2000,
+      .maj = 6,
+      .min = 7,
+      .ino = 8,
+      .ino_generation = 9,
+      .prot = 1 | 2,  // == PROT_READ | PROT_WRITE
+      .flags = 2,     // == MAP_PRIVATE
+                      // .filename = ..., // written separately
   };
-  const char mmap_filename[10+6] = "/dev/zero";
+  const char mmap_filename[10 + 6] = "/dev/zero";
   const size_t pre_mmap_offset = input.tellp();
   input.write(reinterpret_cast<const char*>(&written_mmap_event),
               offsetof(struct mmap2_event, filename));
-  input.write(mmap_filename, 10+6);
+  input.write(mmap_filename, 10 + 6);
   const size_t written_mmap_size =
       static_cast<size_t>(input.tellp()) - pre_mmap_offset;
   ASSERT_EQ(written_mmap_event.header.size,
@@ -948,7 +956,7 @@ TEST(PerfReaderTest, ReadsAndWritesMmap2Events) {
     EXPECT_EQ(7, event.mmap_event().min());
     EXPECT_EQ(8, event.mmap_event().ino());
     EXPECT_EQ(9, event.mmap_event().ino_generation());
-    EXPECT_EQ(1|2, event.mmap_event().prot());
+    EXPECT_EQ(1 | 2, event.mmap_event().prot());
     EXPECT_EQ(2, event.mmap_event().flags());
   }
 }
@@ -957,10 +965,8 @@ TEST(PerfReaderTest, ReadsAndWritesMmap2Events) {
 TEST(PerfReaderTest, ReadsAllAvailableMetadataTypes) {
   std::stringstream input;
 
-  const uint32_t features = (1 << HEADER_HOSTNAME) |
-                            (1 << HEADER_OSRELEASE) |
-                            (1 << HEADER_VERSION) |
-                            (1 << HEADER_ARCH) |
+  const uint32_t features = (1 << HEADER_HOSTNAME) | (1 << HEADER_OSRELEASE) |
+                            (1 << HEADER_VERSION) | (1 << HEADER_ARCH) |
                             (1 << HEADER_LAST_FEATURE);
 
   // header
@@ -1028,34 +1034,25 @@ TEST(PerfReaderTest, AttrsWithDifferentSampleTypes) {
   std::stringstream input;
 
   // PERF_RECORD_SAMPLE
-  testing::ExamplePerfSampleEvent sample_event_1(testing::SampleInfo()
-      .Id(51)
-      .Ip(0x00000000002c100a)
-      .Tid(1002));
+  testing::ExamplePerfSampleEvent sample_event_1(
+      testing::SampleInfo().Id(51).Ip(0x00000000002c100a).Tid(1002));
   // PERF_RECORD_SAMPLE
   testing::ExamplePerfSampleEvent sample_event_2(testing::SampleInfo()
-      .Id(61)
-      .Ip(0x00000000002c100b)
-      .Tid(1002)
-      .Time(1000006));
+                                                     .Id(61)
+                                                     .Ip(0x00000000002c100b)
+                                                     .Tid(1002)
+                                                     .Time(1000006));
   // PERF_RECORD_SAMPLE
-  testing::ExamplePerfSampleEvent sample_event_3(testing::SampleInfo()
-      .Id(52)
-      .Ip(0x00000000002c100c)
-      .Tid(1002));
+  testing::ExamplePerfSampleEvent sample_event_3(
+      testing::SampleInfo().Id(52).Ip(0x00000000002c100c).Tid(1002));
 
-  const size_t data_size =
-      sample_event_1.GetSize() +
-      sample_event_2.GetSize() +
-      sample_event_3.GetSize();
+  const size_t data_size = sample_event_1.GetSize() + sample_event_2.GetSize() +
+                           sample_event_3.GetSize();
   const uint32_t features = 0;
 
   // header
   testing::ExamplePerfDataFileHeader file_header(features);
-  file_header
-      .WithAttrIdsCount(3)
-      .WithAttrCount(2)
-      .WithDataSize(data_size);
+  file_header.WithAttrIdsCount(3).WithAttrCount(2).WithDataSize(data_size);
   file_header.WriteTo(&input);
 
   // attr ids
@@ -1065,26 +1062,22 @@ TEST(PerfReaderTest, AttrsWithDifferentSampleTypes) {
   attr_ids.WriteTo(&input);
 
   // attrs
-  ASSERT_EQ(file_header.header().attrs.offset,
-            static_cast<u64>(input.tellp()));
-  testing::ExamplePerfFileAttr_Hardware(PERF_SAMPLE_IDENTIFIER |
-                                        PERF_SAMPLE_IP |
-                                        PERF_SAMPLE_TID,
-                                        true /*sample_id_all*/)
+  ASSERT_EQ(file_header.header().attrs.offset, static_cast<u64>(input.tellp()));
+  testing::ExamplePerfFileAttr_Hardware(
+      PERF_SAMPLE_IDENTIFIER | PERF_SAMPLE_IP | PERF_SAMPLE_TID,
+      true /*sample_id_all*/)
       .WithIds(id_section_1)
       .WriteTo(&input);
   testing::ExamplePerfFileAttr_Hardware(PERF_SAMPLE_IDENTIFIER |
-                                        PERF_SAMPLE_IP |
-                                        PERF_SAMPLE_TID |
-                                        PERF_SAMPLE_TIME,
+                                            PERF_SAMPLE_IP | PERF_SAMPLE_TID |
+                                            PERF_SAMPLE_TIME,
                                         true /*sample_id_all*/)
       .WithIds(id_section_2)
       .WriteTo(&input);
 
   // data
 
-  ASSERT_EQ(file_header.header().data.offset,
-            static_cast<u64>(input.tellp()));
+  ASSERT_EQ(file_header.header().data.offset, static_cast<u64>(input.tellp()));
   sample_event_1.WriteTo(&input);
   sample_event_2.WriteTo(&input);
   sample_event_3.WriteTo(&input);
@@ -1157,14 +1150,11 @@ TEST(PerfReaderTest, NoSampleIdField) {
 
   // header
   testing::ExamplePerfDataFileHeader file_header(features);
-  file_header
-      .WithAttrCount(1)
-      .WithDataSize(data_size);
+  file_header.WithAttrCount(1).WithDataSize(data_size);
   file_header.WriteTo(&input);
 
   // attrs
-  ASSERT_EQ(file_header.header().attrs.offset,
-            static_cast<u64>(input.tellp()));
+  ASSERT_EQ(file_header.header().attrs.offset, static_cast<u64>(input.tellp()));
   testing::ExamplePerfFileAttr_Hardware(PERF_SAMPLE_IP | PERF_SAMPLE_TID,
                                         false /*sample_id_all*/)
       .WithConfig(456)
@@ -1172,8 +1162,7 @@ TEST(PerfReaderTest, NoSampleIdField) {
 
   // data
 
-  ASSERT_EQ(file_header.header().data.offset,
-            static_cast<u64>(input.tellp()));
+  ASSERT_EQ(file_header.header().data.offset, static_cast<u64>(input.tellp()));
   sample_event.WriteTo(&input);
   ASSERT_EQ(file_header.header().data.offset + data_size,
             static_cast<u64>(input.tellp()));
@@ -1217,17 +1206,12 @@ TEST(PerfReaderTest, SampleIdFalseMeansDontReadASampleId) {
       // should return an error.
       testing::SampleInfo().Tid(1001).Id(666));
 
-  const size_t data_size =
-      sample_event.GetSize() +
-      mmap_event.GetSize();
+  const size_t data_size = sample_event.GetSize() + mmap_event.GetSize();
   const uint32_t features = 0;
 
   // header
   testing::ExamplePerfDataFileHeader file_header(features);
-  file_header
-      .WithAttrIdsCount(1)
-      .WithAttrCount(1)
-      .WithDataSize(data_size);
+  file_header.WithAttrIdsCount(1).WithAttrCount(1).WithDataSize(data_size);
   file_header.WriteTo(&input);
 
   // attr IDs
@@ -1236,19 +1220,16 @@ TEST(PerfReaderTest, SampleIdFalseMeansDontReadASampleId) {
   attr_ids.WriteTo(&input);
 
   // attrs
-  ASSERT_EQ(file_header.header().attrs.offset,
-            static_cast<u64>(input.tellp()));
-  testing::ExamplePerfFileAttr_Hardware(PERF_SAMPLE_IP |
-                                        PERF_SAMPLE_TID |
-                                        PERF_SAMPLE_ID,
-                                        false /*sample_id_all*/)
+  ASSERT_EQ(file_header.header().attrs.offset, static_cast<u64>(input.tellp()));
+  testing::ExamplePerfFileAttr_Hardware(
+      PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_ID,
+      false /*sample_id_all*/)
       .WithIds(id_section)
       .WriteTo(&input);
 
   // data
 
-  ASSERT_EQ(file_header.header().data.offset,
-            static_cast<u64>(input.tellp()));
+  ASSERT_EQ(file_header.header().data.offset, static_cast<u64>(input.tellp()));
   sample_event.WriteTo(&input);
   mmap_event.WriteTo(&input);
   ASSERT_EQ(file_header.header().data.offset + data_size,
@@ -1296,15 +1277,13 @@ TEST(PerfReaderTest, LargePerfEventAttr) {
 
   // header
   testing::ExamplePerfDataFileHeader file_header(0);
-  file_header
-      .WithCustomPerfEventAttrSize(attr_size)
+  file_header.WithCustomPerfEventAttrSize(attr_size)
       .WithAttrCount(1)
       .WithDataSize(data_size);
   file_header.WriteTo(&input);
 
   // attrs
-  ASSERT_EQ(file_header.header().attrs.offset,
-            static_cast<u64>(input.tellp()));
+  ASSERT_EQ(file_header.header().attrs.offset, static_cast<u64>(input.tellp()));
   testing::ExamplePerfFileAttr_Hardware(PERF_SAMPLE_IP | PERF_SAMPLE_TID,
                                         false /*sample_id_all*/)
       .WithAttrSize(attr_size)
@@ -1361,15 +1340,16 @@ TEST(PerfReaderTest, LargePerfEventAttrPiped) {
 
   // PERF_RECORD_HEADER_EVENT_TYPE
   const struct event_type_event event_type = {
-    .header = {
-      .type = PERF_RECORD_HEADER_EVENT_TYPE,
-      .misc = 0,
-      .size = sizeof(struct event_type_event),
-    },
-    .event_type = {
-      /*event_id*/ 123,
-      /*name*/ "cycles",
-    },
+      .header =
+          {
+              .type = PERF_RECORD_HEADER_EVENT_TYPE,
+              .misc = 0,
+              .size = sizeof(struct event_type_event),
+          },
+      .event_type = {
+          /*event_id*/ 123,
+          /*name*/ "cycles",
+      },
   };
   input.write(reinterpret_cast<const char*>(&event_type), sizeof(event_type));
 
@@ -1413,15 +1393,13 @@ TEST(PerfReaderTest, SmallPerfEventAttr) {
 
   // header
   testing::ExamplePerfDataFileHeader file_header(0);
-  file_header
-      .WithCustomPerfEventAttrSize(attr_size)
+  file_header.WithCustomPerfEventAttrSize(attr_size)
       .WithAttrCount(1)
       .WithDataSize(data_size);
   file_header.WriteTo(&input);
 
   // attrs
-  CHECK_EQ(file_header.header().attrs.offset,
-           static_cast<u64>(input.tellp()));
+  CHECK_EQ(file_header.header().attrs.offset, static_cast<u64>(input.tellp()));
   testing::ExamplePerfFileAttr_Hardware(PERF_SAMPLE_IP | PERF_SAMPLE_TID,
                                         false /*sample_id_all*/)
       .WithAttrSize(attr_size)
@@ -1430,8 +1408,7 @@ TEST(PerfReaderTest, SmallPerfEventAttr) {
 
   // data
 
-  ASSERT_EQ(file_header.header().data.offset,
-            static_cast<u64>(input.tellp()));
+  ASSERT_EQ(file_header.header().data.offset, static_cast<u64>(input.tellp()));
   sample_event.WriteTo(&input);
   ASSERT_EQ(file_header.header().data.offset + data_size,
             static_cast<u64>(input.tellp()));
@@ -1479,15 +1456,16 @@ TEST(PerfReaderTest, SmallPerfEventAttrPiped) {
 
   // PERF_RECORD_HEADER_EVENT_TYPE
   const struct event_type_event event_type = {
-    .header = {
-      .type = PERF_RECORD_HEADER_EVENT_TYPE,
-      .misc = 0,
-      .size = sizeof(struct event_type_event),
-    },
-    .event_type = {
-      /*event_id*/ 123,
-      /*name*/ "cycles",
-    },
+      .header =
+          {
+              .type = PERF_RECORD_HEADER_EVENT_TYPE,
+              .misc = 0,
+              .size = sizeof(struct event_type_event),
+          },
+      .event_type = {
+          /*event_id*/ 123,
+          /*name*/ "cycles",
+      },
   };
   input.write(reinterpret_cast<const char*>(&event_type), sizeof(event_type));
 
@@ -1529,8 +1507,7 @@ TEST(PerfReaderTest, CrossEndianAttrs) {
     // header
     const uint32_t features = 0;
     testing::ExamplePerfDataFileHeader file_header(features);
-    file_header
-        .WithAttrCount(3)
+    file_header.WithAttrCount(3)
         .WithCrossEndianness(is_cross_endian)
         .WriteTo(&input);
 
@@ -1603,16 +1580,14 @@ TEST(PerfReaderTest, CrossEndianNormalPerfData) {
       testing::SampleInfo().Tid(bswap_32(1236), bswap_32(1237)))
       .WithCrossEndianness(true)
       .WriteTo(&input_data);
-  testing::ExamplePerfSampleEvent(
-      testing::SampleInfo()
-          .Ip(bswap_64(0x0000000000810100))
-          .Tid(bswap_32(1234), bswap_32(1235)))
+  testing::ExamplePerfSampleEvent(testing::SampleInfo()
+                                      .Ip(bswap_64(0x0000000000810100))
+                                      .Tid(bswap_32(1234), bswap_32(1235)))
       .WithCrossEndianness(true)
       .WriteTo(&input_data);
-  testing::ExamplePerfSampleEvent(
-      testing::SampleInfo()
-          .Ip(bswap_64(0x000000000081ff00))
-          .Tid(bswap_32(1236), bswap_32(1237)))
+  testing::ExamplePerfSampleEvent(testing::SampleInfo()
+                                      .Ip(bswap_64(0x000000000081ff00))
+                                      .Tid(bswap_32(1236), bswap_32(1237)))
       .WithCrossEndianness(true)
       .WriteTo(&input_data);
 
@@ -1622,15 +1597,13 @@ TEST(PerfReaderTest, CrossEndianNormalPerfData) {
   const size_t data_size = input_data.str().size();
   const uint32_t features = (1 << HEADER_HOSTNAME) | (1 << HEADER_OSRELEASE);
   testing::ExamplePerfDataFileHeader file_header(features);
-  file_header
-      .WithAttrCount(1)
+  file_header.WithAttrCount(1)
       .WithDataSize(data_size)
       .WithCrossEndianness(true)
       .WriteTo(&input);
 
   // attrs
-  CHECK_EQ(file_header.header().attrs.offset,
-           static_cast<u64>(input.tellp()));
+  CHECK_EQ(file_header.header().attrs.offset, static_cast<u64>(input.tellp()));
   testing::ExamplePerfFileAttr_Hardware(PERF_SAMPLE_IP | PERF_SAMPLE_TID,
                                         true /*sample_id_all*/)
       .WithConfig(456)
@@ -1664,7 +1637,6 @@ TEST(PerfReaderTest, CrossEndianNormalPerfData) {
 
   hostname_metadata.WriteTo(&input);
   osrelease_metadata.WriteTo(&input);
-
 
   //
   // Parse input.

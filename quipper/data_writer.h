@@ -24,9 +24,7 @@ class DataWriter {
   // the data.
   virtual size_t Tell() const = 0;
 
-  virtual size_t size() const {
-    return size_;
-  }
+  virtual size_t size() const { return size_; }
 
   // Writes raw data. Returns true if it managed to write |size| bytes.
   virtual bool WriteData(const void* src, const size_t size) = 0;

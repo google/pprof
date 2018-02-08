@@ -23,10 +23,8 @@ const char kTempPathTemplatePrefix[] = "/tmp/quipper.";
 const int kNumOpenFds = 4;
 
 // Callback for nftw(). Deletes each file it is given.
-int FileDeletionCallback(const char* path,
-                         const struct stat* sb,
-                         int /* type_flag */,
-                         struct FTW* /* ftwbuf */) {
+int FileDeletionCallback(const char* path, const struct stat* sb,
+                         int /* type_flag */, struct FTW* /* ftwbuf */) {
   if (path && remove(path))
     LOG(ERROR) << "Could not remove " << path << ", errno=" << errno;
   return 0;
@@ -52,8 +50,7 @@ ScopedTempFile::ScopedTempFile() : ScopedTempFile(kTempPathTemplatePrefix) {}
 ScopedTempFile::ScopedTempFile(const string prefix) {
   std::vector<char> filename = MakeTempfileTemplate(prefix);
   int fd = mkstemp(filename.data());
-  if (fd == -1)
-    return;
+  if (fd == -1) return;
   close(fd);
   path_ = string(filename.data());
 }
@@ -62,8 +59,7 @@ ScopedTempDir::ScopedTempDir() : ScopedTempDir(kTempPathTemplatePrefix) {}
 
 ScopedTempDir::ScopedTempDir(const string prefix) {
   std::vector<char> dirname = MakeTempfileTemplate(prefix);
-  if (!mkdtemp(dirname.data()))
-    return;
+  if (!mkdtemp(dirname.data())) return;
   path_ = string(dirname.data()) + "/";
 }
 
@@ -71,9 +67,8 @@ ScopedTempPath::~ScopedTempPath() {
   // Recursively delete the path. Meaning of the flags:
   //   FTW_DEPTH: Handle directories after their contents.
   //   FTW_PHYS:  Do not follow symlinks.
-  if (!path_.empty() &&
-      nftw(path_.c_str(), FileDeletionCallback, kNumOpenFds,
-           FTW_DEPTH | FTW_PHYS)) {
+  if (!path_.empty() && nftw(path_.c_str(), FileDeletionCallback, kNumOpenFds,
+                             FTW_DEPTH | FTW_PHYS)) {
     LOG(ERROR) << "Error while using ftw() to remove " << path_;
   }
 }

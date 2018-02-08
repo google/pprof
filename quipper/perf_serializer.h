@@ -95,24 +95,24 @@ class PerfSerializer {
   // These handle both fork and exit events, which use the same protobuf
   // message definition.
   bool SerializeForkExitEvent(const event_t& event,
-                               PerfDataProto_ForkEvent* sample) const;
+                              PerfDataProto_ForkEvent* sample) const;
   bool DeserializeForkExitEvent(const PerfDataProto_ForkEvent& sample,
-                                 event_t* event) const;
+                                event_t* event) const;
 
   bool SerializeLostEvent(const event_t& event,
-                           PerfDataProto_LostEvent* sample) const;
+                          PerfDataProto_LostEvent* sample) const;
   bool DeserializeLostEvent(const PerfDataProto_LostEvent& sample,
-                             event_t* event) const;
+                            event_t* event) const;
 
   bool SerializeThrottleEvent(const event_t& event,
-                               PerfDataProto_ThrottleEvent* sample) const;
+                              PerfDataProto_ThrottleEvent* sample) const;
   bool DeserializeThrottleEvent(const PerfDataProto_ThrottleEvent& sample,
-                                 event_t* event) const;
+                                event_t* event) const;
 
   bool SerializeReadEvent(const event_t& event,
-                           PerfDataProto_ReadEvent* sample) const;
+                          PerfDataProto_ReadEvent* sample) const;
   bool DeserializeReadEvent(const PerfDataProto_ReadEvent& sample,
-                             event_t* event) const;
+                            event_t* event) const;
 
   bool SerializeSampleInfo(const event_t& event,
                            PerfDataProto_SampleInfo* sample_info) const;
@@ -218,8 +218,7 @@ class PerfSerializer {
   // returns a bitfield of available sample info fields for the attr, in
   // |sample_type|.
   // Returns true if successfully read.
-  bool ReadPerfSampleInfoAndType(const event_t& event,
-                                 perf_sample* sample_info,
+  bool ReadPerfSampleInfoAndType(const event_t& event, perf_sample* sample_info,
                                  uint64_t* sample_type) const;
 
   // For SAMPLE events, the position of the sample id,

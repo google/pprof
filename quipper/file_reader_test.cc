@@ -218,8 +218,8 @@ TEST(FileReaderTest, ReadString) {
   input_string_with_padding.resize(input_string.size() + 10, '\0');
 
   ScopedTempFile input_file_padded;
-  ASSERT_TRUE(BufferToFile(input_file_padded.path(),
-                           input_string_with_padding));
+  ASSERT_TRUE(
+      BufferToFile(input_file_padded.path(), input_string_with_padding));
 
   // Read everything including the padding.
   FileReader padding_reader(input_file_padded.path());

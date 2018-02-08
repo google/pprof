@@ -6,8 +6,8 @@
 #define CHROMIUMOS_WIDE_PROFILING_MYBASE_BASE_MACROS_H_
 
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
-    TypeName(const TypeName&); \
-    void operator=(const TypeName&)
+  TypeName(const TypeName&);               \
+  void operator=(const TypeName&)
 
 #define arraysize(x) (sizeof(x) / sizeof(*x))
 

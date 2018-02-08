@@ -51,22 +51,22 @@ void TrimZeroesFromBuildIDString(string* build_id) {
 const PerfDataProto_SampleInfo* GetSampleInfoForEvent(
     const PerfDataProto_PerfEvent& event) {
   switch (event.header().type()) {
-  case PERF_RECORD_MMAP:
-  case PERF_RECORD_MMAP2:
-    return &event.mmap_event().sample_info();
-  case PERF_RECORD_COMM:
-    return &event.comm_event().sample_info();
-  case PERF_RECORD_FORK:
-    return &event.fork_event().sample_info();
-  case PERF_RECORD_EXIT:
-    return &event.exit_event().sample_info();
-  case PERF_RECORD_LOST:
-    return &event.lost_event().sample_info();
-  case PERF_RECORD_THROTTLE:
-  case PERF_RECORD_UNTHROTTLE:
-    return &event.throttle_event().sample_info();
-  case PERF_RECORD_READ:
-    return &event.read_event().sample_info();
+    case PERF_RECORD_MMAP:
+    case PERF_RECORD_MMAP2:
+      return &event.mmap_event().sample_info();
+    case PERF_RECORD_COMM:
+      return &event.comm_event().sample_info();
+    case PERF_RECORD_FORK:
+      return &event.fork_event().sample_info();
+    case PERF_RECORD_EXIT:
+      return &event.exit_event().sample_info();
+    case PERF_RECORD_LOST:
+      return &event.lost_event().sample_info();
+    case PERF_RECORD_THROTTLE:
+    case PERF_RECORD_UNTHROTTLE:
+      return &event.throttle_event().sample_info();
+    case PERF_RECORD_READ:
+      return &event.read_event().sample_info();
   }
   return nullptr;
 }
@@ -77,11 +77,9 @@ uint64_t GetTimeFromPerfEvent(const PerfDataProto_PerfEvent& event) {
     return event.sample_event().sample_time_ns();
 
   const auto* sample_info = GetSampleInfoForEvent(event);
-  if (sample_info)
-    return sample_info->sample_time_ns();
+  if (sample_info) return sample_info->sample_time_ns();
 
   return 0;
 }
-
 
 }  // namespace quipper

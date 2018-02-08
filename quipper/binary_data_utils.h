@@ -24,21 +24,21 @@ namespace quipper {
 template <class T>
 void ByteSwap(T* input) {
   switch (sizeof(T)) {
-  case sizeof(uint8_t):
-    LOG(WARNING) << "Attempting to byte swap on a single byte.";
-    break;
-  case sizeof(uint16_t):
-    *input = bswap_16(*input);
-    break;
-  case sizeof(uint32_t):
-    *input = bswap_32(*input);
-    break;
-  case sizeof(uint64_t):
-    *input = bswap_64(*input);
-    break;
-  default:
-    LOG(FATAL) << "Invalid size for byte swap: " << sizeof(T) << " bytes";
-    break;
+    case sizeof(uint8_t):
+      LOG(WARNING) << "Attempting to byte swap on a single byte.";
+      break;
+    case sizeof(uint16_t):
+      *input = bswap_16(*input);
+      break;
+    case sizeof(uint32_t):
+      *input = bswap_32(*input);
+      break;
+    case sizeof(uint64_t):
+      *input = bswap_64(*input);
+      break;
+    default:
+      LOG(FATAL) << "Invalid size for byte swap: " << sizeof(T) << " bytes";
+      break;
   }
 }
 
@@ -46,8 +46,7 @@ void ByteSwap(T* input) {
 // trivial but it avoids filling code with "if (swap) { ... } " statements.
 template <typename T>
 T MaybeSwap(T value, bool swap) {
-  if (swap)
-    ByteSwap(&value);
+  if (swap) ByteSwap(&value);
   return value;
 }
 
@@ -77,17 +76,19 @@ bool HexStringToRawData(const string& str, u8* array, size_t length);
 // Round |value| up to the next |alignment|. I.e. returns the smallest multiple
 // of |alignment| less than or equal to |value|. |alignment| must be a power
 // of 2 (compile-time enforced).
+// clang-format off
 template<unsigned int alignment,
          typename std::enable_if<
              alignment != 0 && (alignment&(alignment-1)) == 0
          >::type* = nullptr>
+// clang-format on
 inline uint64_t Align(uint64_t value) {
   constexpr uint64_t mask = alignment - 1;
   return (value + mask) & ~mask;
 }
 
 // Allows passing a type parameter instead of a size.
-template<typename T>
+template <typename T>
 inline uint64_t Align(uint64_t value) {
   return Align<sizeof(T)>(value);
 }

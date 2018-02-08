@@ -38,8 +38,8 @@ const char kProtobufDataExtension[] = ".pb_data";
 const char kBuildIDListExtension[] = ".buildids";
 
 enum PerfDataType {
-  kPerfDataNormal,    // Perf data is in normal format.
-  kPerfDataPiped,     // Perf data is in piped format.
+  kPerfDataNormal,  // Perf data is in normal format.
+  kPerfDataPiped,   // Perf data is in piped format.
 };
 
 // The piped commands above produce comma-separated lines with the following
@@ -70,8 +70,7 @@ bool ReadExistingProtobufText(const string& filename, string* output_string) {
 
 // Given a perf data file, return its protobuf representation as a text string
 // and/or a serialized data stream.
-bool PerfDataToProtoRepresentation(const string& filename,
-                                   string* output_text,
+bool PerfDataToProtoRepresentation(const string& filename, string* output_text,
                                    string* output_data) {
   PerfDataProto perf_data_proto;
   if (!SerializeFromFile(filename, &perf_data_proto)) {
@@ -81,8 +80,7 @@ bool PerfDataToProtoRepresentation(const string& filename,
   // testing.
   perf_data_proto.set_timestamp_sec(0);
 
-  if (output_text &&
-      !TextFormat::PrintToString(perf_data_proto, output_text)) {
+  if (output_text && !TextFormat::PrintToString(perf_data_proto, output_text)) {
     return false;
   }
   if (output_data && !perf_data_proto.SerializeToString(output_data))
@@ -96,24 +94,24 @@ bool PerfDataToProtoRepresentation(const string& filename,
 namespace quipper {
 
 const char* kSupportedMetadata[] = {
-  "hostname",
-  "os release",
-  "perf version",
-  "arch",
-  "nrcpus online",
-  "nrcpus avail",
-  "cpudesc",
-  "cpuid",
-  "total memory",
-  "cmdline",
-  "event",
-  "sibling cores",        // CPU topology.
-  "sibling threads",      // CPU topology.
-  "node0 meminfo",        // NUMA topology.
-  "node0 cpu list",       // NUMA topology.
-  "node1 meminfo",        // NUMA topology.
-  "node1 cpu list",       // NUMA topology.
-  NULL,
+    "hostname",
+    "os release",
+    "perf version",
+    "arch",
+    "nrcpus online",
+    "nrcpus avail",
+    "cpudesc",
+    "cpuid",
+    "total memory",
+    "cmdline",
+    "event",
+    "sibling cores",    // CPU topology.
+    "sibling threads",  // CPU topology.
+    "node0 meminfo",    // NUMA topology.
+    "node0 cpu list",   // NUMA topology.
+    "node1 meminfo",    // NUMA topology.
+    "node1 cpu list",   // NUMA topology.
+    NULL,
 };
 string GetTestInputFilePath(const string& filename) {
   return "testdata/" + filename;
@@ -125,8 +123,7 @@ string GetPerfPath() {
 
 int64_t GetFileSize(const string& filename) {
   FileReader reader(filename);
-  if (!reader.IsOpen())
-    return -1;
+  if (!reader.IsOpen()) return -1;
   return reader.size();
 }
 
@@ -206,7 +203,7 @@ bool CheckPerfDataAgainstBaseline(const string& filename) {
   string existing_input_file =
       GetTestInputFilePath(basename(filename.c_str())) + extension;
   string baseline;
-  if (!ReadExistingProtobufText(existing_input_file , &baseline)) {
+  if (!ReadExistingProtobufText(existing_input_file, &baseline)) {
     return false;
   }
   bool matches_baseline = (baseline == protobuf_representation);
