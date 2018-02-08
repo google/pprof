@@ -179,15 +179,20 @@ func (b *binrep) openMachO(name string, start, limit, offset uint64) (plugin.Obj
 	}
 	defer of.Close()
 
-	base := start
-
 	// Subtract the load address of the __TEXT section. Usually 0 for shared
 	// libraries or 0x100000000 for executables. You can check this value by
 	// running `objdump -private-headers <file>`.
+
 	textSegment := of.Segment("__TEXT")
-	if textSegment != nil {
-		base -= textSegment.Addr
+	if textSegment == nil {
+		return nil, fmt.Errorf("Parsing %s: no __TEXT segment", name)
 	}
+	if textSegment.Addr > start {
+		return nil, fmt.Errorf("Parsing %s: __TEXT segment address (0x%x) > mapping start address (0x%x)",
+			name, textSegment.Addr, start)
+	}
+
+	base := start - textSegment.Addr
 
 	if b.fast || (!b.addr2lineFound && !b.llvmSymbolizerFound) {
 		return &fileNM{file: file{b: b, name: name, base: base}}, nil

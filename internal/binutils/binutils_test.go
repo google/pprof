@@ -205,6 +205,17 @@ func TestDisasm(t *testing.T) {
 	}
 }
 
+func findSymbol(syms []*plugin.Sym, name string) *plugin.Sym {
+	for _, s := range syms {
+		for _, n := range s.Name {
+			if n == name {
+				return s
+			}
+		}
+	}
+	return nil
+}
+
 func TestObjFile(t *testing.T) {
 	skipUnlessLinuxAmd64(t)
 	for _, tc := range []struct {
@@ -231,17 +242,7 @@ func TestObjFile(t *testing.T) {
 				t.Fatalf("Symbols: unexpected error %v", err)
 			}
 
-			find := func(name string) *plugin.Sym {
-				for _, s := range syms {
-					for _, n := range s.Name {
-						if n == name {
-							return s
-						}
-					}
-				}
-				return nil
-			}
-			m := find("main")
+			m := findSymbol(syms, "main")
 			if m == nil {
 				t.Fatalf("Symbols: did not find main")
 			}
@@ -303,17 +304,7 @@ func TestMachoFiles(t *testing.T) {
 				t.Fatalf("Symbols: unexpected error %v", err)
 			}
 
-			find := func(name string) *plugin.Sym {
-				for _, s := range syms {
-					for _, n := range s.Name {
-						if n == name {
-							return s
-						}
-					}
-				}
-				return nil
-			}
-			m := find(tc.sym)
+			m := findSymbol(syms, tc.sym)
 			if m == nil {
 				t.Fatalf("Symbols: could not find symbol %v", tc.sym)
 			}
