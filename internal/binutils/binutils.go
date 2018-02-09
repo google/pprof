@@ -175,7 +175,7 @@ func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFi
 func (b *binrep) openMachO(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
 	of, err := macho.Open(name)
 	if err != nil {
-		return nil, fmt.Errorf("Parsing %s: %v", name, err)
+		return nil, fmt.Errorf("error parsing %s: %v", name, err)
 	}
 	defer of.Close()
 
@@ -185,10 +185,10 @@ func (b *binrep) openMachO(name string, start, limit, offset uint64) (plugin.Obj
 
 	textSegment := of.Segment("__TEXT")
 	if textSegment == nil {
-		return nil, fmt.Errorf("Parsing %s: no __TEXT segment", name)
+		return nil, fmt.Errorf("could not identify base for %s: no __TEXT segment", name)
 	}
 	if textSegment.Addr > start {
-		return nil, fmt.Errorf("Parsing %s: __TEXT segment address (0x%x) > mapping start address (0x%x)",
+		return nil, fmt.Errorf("could not identify base for %s: __TEXT segment address (0x%x) > mapping start address (0x%x)",
 			name, textSegment.Addr, start)
 	}
 
@@ -203,7 +203,7 @@ func (b *binrep) openMachO(name string, start, limit, offset uint64) (plugin.Obj
 func (b *binrep) openELF(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
 	ef, err := elf.Open(name)
 	if err != nil {
-		return nil, fmt.Errorf("Parsing %s: %v", name, err)
+		return nil, fmt.Errorf("error parsing %s: %v", name, err)
 	}
 	defer ef.Close()
 
@@ -232,7 +232,7 @@ func (b *binrep) openELF(name string, start, limit, offset uint64) (plugin.ObjFi
 
 	base, err := elfexec.GetBase(&ef.FileHeader, elfexec.FindTextProgHeader(ef), stextOffset, start, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("Could not identify base for %s: %v", name, err)
+		return nil, fmt.Errorf("could not identify base for %s: %v", name, err)
 	}
 
 	buildID := ""

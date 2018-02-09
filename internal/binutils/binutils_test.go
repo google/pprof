@@ -265,6 +265,8 @@ func TestObjFile(t *testing.T) {
 func TestMachoFiles(t *testing.T) {
 	skipUnlessDarwinAmd64(t)
 
+	t.Skip("Disabled because of issues with addr2line (see https://github.com/google/pprof/pull/313#issuecomment-364073010)")
+
 	// Load `file`, pretending it was mapped at `start`. Then get the symbol
 	// table. Check that it contains the symbol `sym` and that the address
 	// `addr` gives the `expected` stack trace.

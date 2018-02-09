@@ -46,7 +46,7 @@ func findSymbols(syms []byte, file string, r *regexp.Regexp, address uint64) ([]
 	for {
 		symAddr, name, err := nextSymbol(buf)
 		if err == io.EOF {
-			// Done! If there was an unfinished group, append it.
+			// Done. If there was an unfinished group, append it.
 			if len(names) != 0 {
 				if match := matchSymbol(names, start, symAddr-1, r, address); match != nil {
 					symbols = append(symbols, &plugin.Sym{Name: match, File: file, Start: start, End: symAddr - 1})
