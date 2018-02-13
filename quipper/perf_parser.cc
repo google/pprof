@@ -71,7 +71,7 @@ bool PerfParser::ParseRawEvents() {
 
   // Find huge page mappings.
   if (options_.deduce_huge_page_mappings) {
-    DeduceHugePages(reader_->mutable_events());
+      DeduceHugePages(reader_->mutable_events());
   }
 
   // Combine split mappings.  Because the remapping process makes addresses

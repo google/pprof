@@ -2022,18 +2022,27 @@ TEST(PerfParserTest, DiscontiguousMappings) {
   PerfParser parser(&reader, options);
   EXPECT_TRUE(parser.ParseRawEvents());
 
-  EXPECT_EQ(2, parser.stats().num_mmap_events);
+  EXPECT_EQ(3, parser.stats().num_mmap_events);
   EXPECT_EQ(0, parser.stats().num_sample_events);
   EXPECT_EQ(0, parser.stats().num_sample_events_mapped);
 
-  // The first two mappings should have been combined.  The third should not.
+  // The first two mappings should not combine, since we cannot know if the
+  // middle one follows the first, or preceeds the last in the binary.
   PerfDataProto expected;
   {
     auto *ev = expected.add_events();
     ev->mutable_header()->set_type(PERF_RECORD_MMAP);
     ev->mutable_mmap_event()->set_filename("file");
     ev->mutable_mmap_event()->set_start(0x7f489000);
-    ev->mutable_mmap_event()->set_len(0xd77000 + 0x200000);
+    ev->mutable_mmap_event()->set_len(0xd77000);
+    ev->mutable_mmap_event()->set_pgoff(0x0);
+  }
+  {
+    auto *ev = expected.add_events();
+    ev->mutable_header()->set_type(PERF_RECORD_MMAP);
+    ev->mutable_mmap_event()->set_filename("file");
+    ev->mutable_mmap_event()->set_start(0x80200000);
+    ev->mutable_mmap_event()->set_len(0x200000);
     ev->mutable_mmap_event()->set_pgoff(0x0);
   }
   {
@@ -2049,6 +2058,6 @@ TEST(PerfParserTest, DiscontiguousMappings) {
   CopyActualEvents(parser.parsed_events(), &actual);
 
   EXPECT_TRUE(PartiallyEqualsProto(actual, expected));
-  EXPECT_EQ(2, parser.parsed_events().size());
+  EXPECT_EQ(3, parser.parsed_events().size());
 }
 }  // namespace quipper
