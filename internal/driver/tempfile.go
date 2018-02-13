@@ -21,6 +21,19 @@ import (
 	"sync"
 )
 
+// getNextTempFile returns the next available temp file in dir with the provided prefix and suffix.
+func getNextTempFile(dir, prefix, suffix string) (string, error) {
+	for index := 1; index < 10000; index++ {
+		path := filepath.Join(dir, fmt.Sprintf("%s%03d%s", prefix, index, suffix))
+		if _, err := os.Stat(path); err != nil {
+			return path, nil
+		}
+	}
+
+	// Give up
+	return "", fmt.Errorf("could not fetch next available file of the form %s%03d%s till %s%03d%s", prefix, 1, suffix, prefix, 9999, suffix)
+}
+
 // newTempFile returns a new output file in dir with the provided prefix and suffix.
 func newTempFile(dir, prefix, suffix string) (*os.File, error) {
 	for index := 1; index < 10000; index++ {
