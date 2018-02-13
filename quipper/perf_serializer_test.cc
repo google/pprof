@@ -45,10 +45,11 @@ namespace {
 
 // Set up some parameterized fixtures for test cases that should run
 // against multiple files.
-class PerfDataFiles : public ::testing::TestWithParam<const char*> {};
-class PerfPipedDataFiles : public ::testing::TestWithParam<const char*> {};
-class AllPerfDataFiles : public ::testing::TestWithParam<const char*> {};
-class PerfDataProtoFiles : public ::testing::TestWithParam<const char*> {};
+class SerializePerfDataFiles : public ::testing::TestWithParam<const char*> {};
+class SerializeAllPerfDataFiles : public ::testing::TestWithParam<const char*> {
+};
+class SerializePerfDataProtoFiles
+    : public ::testing::TestWithParam<const char*> {};
 
 // Gets the timestamp from an event field in PerfDataProto.
 const uint64_t GetSampleTimestampFromEventProto(
@@ -180,7 +181,7 @@ void SerializeToFileAndBack(const string& input, const string& output) {
 
 }  // namespace
 
-TEST_P(PerfDataFiles, Test1Cycle) {
+TEST_P(SerializePerfDataFiles, Test1Cycle) {
   ScopedTempDir output_dir;
   ASSERT_FALSE(output_dir.path().empty());
   string output_path = output_dir.path();
@@ -241,7 +242,7 @@ TEST_P(PerfDataFiles, Test1Cycle) {
     EXPECT_TRUE(ComparePerfBuildIDLists(output_perf_data, output_perf_data2));
 }
 
-TEST_P(AllPerfDataFiles, TestRemap) {
+TEST_P(SerializeAllPerfDataFiles, TestRemap) {
   ScopedTempDir output_dir;
   ASSERT_FALSE(output_dir.path().empty());
   const string output_path = output_dir.path();
@@ -256,7 +257,7 @@ TEST_P(AllPerfDataFiles, TestRemap) {
   SerializeAndDeserialize(input_perf_data, output_perf_data, true, true);
 }
 
-TEST_P(PerfDataFiles, TestCommMd5s) {
+TEST_P(SerializePerfDataFiles, TestCommMd5s) {
   ScopedTempDir output_dir;
   ASSERT_FALSE(output_dir.path().empty());
   string output_path = output_dir.path();
@@ -305,7 +306,7 @@ TEST_P(PerfDataFiles, TestCommMd5s) {
     EXPECT_TRUE(CheckPerfDataAgainstBaseline(output_perf_data));
 }
 
-TEST_P(PerfDataFiles, TestMmapMd5s) {
+TEST_P(SerializePerfDataFiles, TestMmapMd5s) {
   ScopedTempDir output_dir;
   ASSERT_FALSE(output_dir.path().empty());
   string output_path = output_dir.path();
@@ -357,7 +358,7 @@ TEST_P(PerfDataFiles, TestMmapMd5s) {
     EXPECT_TRUE(DeserializeToFile(perf_data_proto, output_perf_data));
 }
 
-TEST_P(PerfDataProtoFiles, TestProtoFiles) {
+TEST_P(SerializePerfDataProtoFiles, TestProtoFiles) {
   const string test_file = GetParam();
   string perf_data_proto_file = GetTestInputFilePath(test_file);
   LOG(INFO) << "Testing " << perf_data_proto_file;
@@ -373,7 +374,7 @@ TEST_P(PerfDataProtoFiles, TestProtoFiles) {
   EXPECT_TRUE(deserializer.Deserialize(perf_data_proto));
 }
 
-TEST_P(PerfDataFiles, TestBuildIDs) {
+TEST_P(SerializePerfDataFiles, TestBuildIDs) {
   const string test_file = GetParam();
   string perf_data_file = GetTestInputFilePath(test_file);
   LOG(INFO) << "Testing " << perf_data_file;
@@ -813,14 +814,11 @@ std::vector<const char*> AllPerfData() {
 }  // namespace
 
 INSTANTIATE_TEST_CASE_P(
-    PerfSerializerTest, PerfDataFiles,
+    PerfSerializerTest, SerializePerfDataFiles,
     ::testing::ValuesIn(perf_test_files::GetPerfDataFiles()));
-INSTANTIATE_TEST_CASE_P(
-    PerfSerializerTest, PerfPipedDataFiles,
-    ::testing::ValuesIn(perf_test_files::GetPerfPipedDataFiles()));
-INSTANTIATE_TEST_CASE_P(PerfSerializerTest, AllPerfDataFiles,
+INSTANTIATE_TEST_CASE_P(PerfSerializerTest, SerializeAllPerfDataFiles,
                         ::testing::ValuesIn(AllPerfData()));
 INSTANTIATE_TEST_CASE_P(
-    PerfSerializerTest, PerfDataProtoFiles,
+    PerfSerializerTest, SerializePerfDataProtoFiles,
     ::testing::ValuesIn(perf_test_files::GetPerfDataProtoFiles()));
 }  // namespace quipper
