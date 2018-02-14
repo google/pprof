@@ -47,10 +47,11 @@ addons:
   apt:
     packages:
       - graphviz
-      
+
 before_install:
-  - go get -u github.com/golang/lint/golint honnef.co/go/tools/cmd/...   
-  - if [[ "$TRAVIS_OS_NAME" == "osx" && -z $SKIP_GRAPHVIZ ]]; then brew update          ; fi
+  - go get -u github.com/golang/lint/golint honnef.co/go/tools/cmd/...
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install binutils ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" && -z $SKIP_GRAPHVIZ ]]; then brew install graphviz; fi
 
 script:
