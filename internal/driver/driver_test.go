@@ -1425,6 +1425,10 @@ func TestSymbolzAfterMerge(t *testing.T) {
 
 type mockObjTool struct{}
 
+func (mockObjTool) ExecutableBuildID(file string) (string, error) {
+	return "", nil
+}
+
 func (*mockObjTool) Open(file string, start, limit, offset uint64) (plugin.ObjFile, error) {
 	return &mockFile{file, "abcdef", 0}, nil
 }

@@ -263,6 +263,10 @@ func frame(fname, file string, line int) plugin.Frame {
 
 type mockObjTool struct{}
 
+func (mockObjTool) ExecutableBuildID(file string) (string, error) {
+	return "", nil
+}
+
 func (mockObjTool) Open(file string, start, limit, offset uint64) (plugin.ObjFile, error) {
 	return mockObjFile{frames: mockAddresses}, nil
 }

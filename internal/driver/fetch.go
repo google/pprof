@@ -417,9 +417,7 @@ mapping:
 				fileNames = append(fileNames, filepath.Join(path, m.File))
 			}
 			for _, name := range fileNames {
-				if f, err := obj.Open(name, m.Start, m.Limit, m.Offset); err == nil {
-					defer f.Close()
-					fileBuildID := f.BuildID()
+				if fileBuildID, err := obj.ExecutableBuildID(name); err == nil {
 					if m.BuildID != "" && m.BuildID != fileBuildID {
 						ui.PrintErr("Ignoring local file " + name + ": build-id mismatch (" + m.BuildID + " != " + fileBuildID + ")")
 					} else {
