@@ -151,15 +151,6 @@ func (bu *Binutils) Disasm(file string, start, end uint64) ([]plugin.Inst, error
 // Open satisfies the plugin.ObjTool interface.
 func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
 	b := bu.get()
-
-	// Make sure file is a supported executable.
-	// The pprof driver uses Open to sniff the difference
-	// between an executable and a profile.
-	// For now, only ELF is supported.
-	// Could read the first few bytes of the file and
-	// use a table of prefixes if we need to support other
-	// systems at some point.
-
 	if _, err := os.Stat(name); err != nil {
 		// For testing, do not require file name to exist.
 		if strings.Contains(b.addr2line, "testdata/") {
@@ -175,6 +166,26 @@ func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFi
 		return f, nil
 	}
 	return nil, fmt.Errorf("unrecognized binary: %s", name)
+}
+
+// ExecutableBuildID returns the build id of a file if it is recognized as a
+// supported executable.
+func (bu *Binutils) ExecutableBuildID(name string) (string, error) {
+	b := bu.get()
+	if _, err := os.Stat(name); err != nil {
+		// For testing, do not require file name to exist.
+		if strings.Contains(b.addr2line, "testdata/") {
+			return "", nil
+		}
+		return "", err
+	}
+	if buildID, err := b.buildIDELF(name); err == nil {
+		return buildID, nil
+	}
+	if buildID, err := b.buildIDMachO(name); err == nil {
+		return buildID, nil
+	}
+	return "", fmt.Errorf("unrecognized binary: %s", name)
 }
 
 func (b *binrep) openMachO(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
@@ -203,6 +214,15 @@ func (b *binrep) openMachO(name string, start, limit, offset uint64) (plugin.Obj
 		return &fileNM{file: file{b: b, name: name, base: base}}, nil
 	}
 	return &fileAddr2Line{file: file{b: b, name: name, base: base}}, nil
+}
+
+func (b *binrep) buildIDMachO(name string) (string, error) {
+	of, err := macho.Open(name)
+	if err != nil {
+		return "", err
+	}
+	of.Close()
+	return "", nil // No build ids on MachO
 }
 
 func (b *binrep) openELF(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
@@ -240,16 +260,24 @@ func (b *binrep) openELF(name string, start, limit, offset uint64) (plugin.ObjFi
 		return nil, fmt.Errorf("could not identify base for %s: %v", name, err)
 	}
 
-	buildID := ""
-	if f, err := os.Open(name); err == nil {
-		if id, err := elfexec.GetBuildID(f); err == nil {
-			buildID = fmt.Sprintf("%x", id)
-		}
-	}
+	buildID, _ := b.buildIDELF(name) // Ignore error if we couldn't find a build id.
 	if b.fast || (!b.addr2lineFound && !b.llvmSymbolizerFound) {
 		return &fileNM{file: file{b, name, base, buildID}}, nil
 	}
 	return &fileAddr2Line{file: file{b, name, base, buildID}}, nil
+}
+
+func (b *binrep) buildIDELF(name string) (string, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	id, err := elfexec.GetBuildID(f)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", id), nil
 }
 
 // file implements the binutils.ObjFile interface.

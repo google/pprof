@@ -123,6 +123,12 @@ type MappingSources map[string][]struct {
 
 // An ObjTool inspects shared libraries and executable files.
 type ObjTool interface {
+	// ExecutableBuildID returns the build id associated to an executable.
+	// It returns err != nil if the file can't be recognized as an executable.
+	// It returns err == nil and an empty string if the file is an executable but
+	// the build id could not be determined.
+	ExecutableBuildID(file string) (string, error)
+
 	// Open opens the named object file. If the object is a shared
 	// library, start/limit/offset are the addresses where it is mapped
 	// into memory in the address space being inspected.

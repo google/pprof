@@ -293,8 +293,12 @@ func TestMachoFiles(t *testing.T) {
 			}},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
+			filename := filepath.Join("testdata", tc.file)
 			bu := &Binutils{}
-			f, err := bu.Open(filepath.Join("testdata", tc.file), tc.start, tc.limit, tc.offset)
+			if _, err := bu.ExecutableBuildID(filename); err != nil {
+				t.Fatalf("ExecutableBuildID: couldn't recognize %s: %v", filename, err)
+			}
+			f, err := bu.Open(filename, tc.start, tc.limit, tc.offset)
 			if err != nil {
 				t.Fatalf("Open: unexpected error %v", err)
 			}
