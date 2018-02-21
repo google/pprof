@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <sys/capability.h>
 #include <sys/mount.h>
+#include <sys/sysmacros.h>
 #include <sys/types.h>
 #include <unistd.h>
 
