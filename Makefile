@@ -59,7 +59,7 @@ QUIPPER_LIBRARY_SOURCES = \
 QUIPPER_LIBRARY_SOURCES := \
 	$(QUIPPER_LIBRARY_SOURCES:%=${CWP}/%)
 CONVERTER_LIBRARY_SOURCES = perf_data_converter.cc perf_data_handler.cc \
-														builder.cc
+														builder.cc perf_to_profile_lib.cc
 LIBRARY_SOURCES = $(QUIPPER_LIBRARY_SOURCES) $(CONVERTER_LIBRARY_SOURCES)
 
 QUIPPER_PROTOS = perf_data.proto perf_stat.proto
@@ -76,7 +76,7 @@ COMMON_SOURCES = $(GENERATED_SOURCES) $(LIBRARY_SOURCES)
 COMMON_OBJECTS = $(COMMON_SOURCES:.cc=.o)
 
 TEST_SOURCES = intervalmap_test.cc perf_data_converter_test.cc \
-	perf_data_handler_test.cc
+	perf_data_handler_test.cc perf_to_profile_lib_test.cc
 TEST_BINARIES = $(TEST_SOURCES:.cc=)
 TEST_OBJECTS = $(TEST_SOURCES:.cc=.o)
 
