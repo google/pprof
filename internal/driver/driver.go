@@ -20,7 +20,6 @@ package driver
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -139,15 +138,7 @@ func generateReport(p *profile.Profile, cmd []string, vars variables, o *plugin.
 
 	// Output to specified file.
 	o.UI.PrintErr("Generating report in ", output)
-
-	openOutput := func(output string) (io.WriteCloser, error) {
-		if o.Writer != nil {
-			return o.Writer.Open(output)
-		}
-		return os.Create(output)
-	}
-
-	out, err := openOutput(output)
+	out, err := o.Writer.Open(output)
 	if err != nil {
 		return err
 	}
