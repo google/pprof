@@ -157,6 +157,10 @@ class PerfReader {
   bool ReadBuildIDMetadataWithoutHeader(DataReader* data,
                                         const perf_event_header& header);
 
+  // Reads and serializes trace data following PERF_RECORD_AUXTRACE event.
+  bool ReadAuxtraceTraceData(DataReader* data,
+                             PerfDataProto_PerfEvent* proto_event);
+
   // Reads a singular string metadata field (with preceding size field) from
   // |data| and writes the string and its Md5sum prefix into |dest|.
   bool ReadSingleStringMetadata(

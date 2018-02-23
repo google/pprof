@@ -107,8 +107,11 @@ const std::vector<const char*>& GetPerfDataFiles() {
       // has throttle and unthrottle events.
       "perf.data.throttle-3.8",
 
-      // File mode perf data from perf_4.13
-      "perf.data-4.13",
+      // Perf data that contains intel pt events from perf-4.14
+      // Command:
+      //    perf record -e intel_pt// -e cycles -o /tmp/perf.data.intel_pt-4.14
+      //    -- echo "Hello, World!"
+      "perf.data.intel_pt-4.14",
   };
   return *files;
 }
@@ -131,8 +134,12 @@ const std::vector<const char*>& GetPerfPipedDataFiles() {
       "perf.data.piped.extrabyte-3.4",
       "perf.data.piped.extradata-3.4",
 
-      // Piped data from perf_4.13
-      "perf.data.piped-4.13",
+      // Perf data that contains intel pt events collected in piped mode from
+      // perf-4.14
+      // Command:
+      //    perf record -e intel_pt// -e cycles -o - -- echo "Hello, World!" | \
+      //    cat &> /tmp/perf.data.piped.intel_pt-4.14
+      "perf.data.piped.intel_pt-4.14",
   };
   return *files;
 }

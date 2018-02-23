@@ -114,6 +114,11 @@ class PerfSerializer {
   bool DeserializeReadEvent(const PerfDataProto_ReadEvent& sample,
                             event_t* event) const;
 
+  bool SerializeAuxEvent(const event_t& event,
+                         PerfDataProto_AuxEvent* sample) const;
+  bool DeserializeAuxEvent(const PerfDataProto_AuxEvent& sample,
+                           event_t* event) const;
+
   bool SerializeSampleInfo(const event_t& event,
                            PerfDataProto_SampleInfo* sample_info) const;
   bool DeserializeSampleInfo(const PerfDataProto_SampleInfo& info,
@@ -128,6 +133,15 @@ class PerfSerializer {
                              PerfDataProto_PerfBuildID* to) const;
   bool DeserializeBuildIDEvent(const PerfDataProto_PerfBuildID& from,
                                malloced_unique_ptr<build_id_event>* to) const;
+
+  bool SerializeAuxtraceEvent(const event_t& event,
+                              PerfDataProto_AuxtraceEvent* sample) const;
+  bool SerializeAuxtraceEventTraceData(const std::vector<char>& from,
+                                       PerfDataProto_AuxtraceEvent* to) const;
+  bool DeserializeAuxtraceEvent(const PerfDataProto_AuxtraceEvent& sample,
+                                event_t* event) const;
+  bool DeserializeAuxtraceEventTraceData(
+      const PerfDataProto_AuxtraceEvent& from, std::vector<char>* to) const;
 
   bool SerializeSingleUint32Metadata(
       const PerfUint32Metadata& metadata,
@@ -220,6 +234,16 @@ class PerfSerializer {
   // Returns true if successfully read.
   bool ReadPerfSampleInfoAndType(const event_t& event, perf_sample* sample_info,
                                  uint64_t* sample_type) const;
+
+  bool SerializeKernelEvent(const event_t& event,
+                            PerfDataProto_PerfEvent* event_proto) const;
+  bool SerializeUserEvent(const event_t& event,
+                          PerfDataProto_PerfEvent* event_proto) const;
+
+  bool DeserializeKernelEvent(const PerfDataProto_PerfEvent& event_proto,
+                              event_t* event) const;
+  bool DeserializeUserEvent(const PerfDataProto_PerfEvent& event_proto,
+                            event_t* event) const;
 
   // For SAMPLE events, the position of the sample id,
   // Or EventIdPosition::NotPresent if neither PERF_SAMPLE_ID(ENTIFIER) are set.

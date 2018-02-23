@@ -67,6 +67,8 @@ const PerfDataProto_SampleInfo* GetSampleInfoForEvent(
       return &event.throttle_event().sample_info();
     case PERF_RECORD_READ:
       return &event.read_event().sample_info();
+    case PERF_RECORD_AUX:
+      return &event.aux_event().sample_info();
   }
   return nullptr;
 }

@@ -71,6 +71,8 @@ const uint64_t GetSampleTimestampFromEventProto(
     return event.throttle_event().sample_info().sample_time_ns();
   } else if (event.has_read_event()) {
     return event.read_event().sample_info().sample_time_ns();
+  } else if (event.has_aux_event()) {
+    return event.aux_event().sample_info().sample_time_ns();
   }
   return 0;
 }
@@ -501,6 +503,47 @@ TEST(PerfSerializerTest, SerializesAndDeserializesMmapEvents) {
     EXPECT_EQ(9, mmap.ino_generation());
     EXPECT_EQ(1 | 2, mmap.prot());
     EXPECT_EQ(2, mmap.flags());
+  }
+}
+
+TEST(PerfSerializerTest, SerializesAndDeserializesAuxtraceEvents) {
+  std::stringstream input;
+
+  // header
+  testing::ExamplePipedPerfDataFileHeader().WriteTo(&input);
+
+  // data
+
+  // PERF_RECORD_HEADER_ATTR
+  testing::ExamplePerfEventAttrEvent_Hardware(PERF_SAMPLE_IP,
+                                              true /*sample_id_all*/)
+      .WriteTo(&input);
+
+  // PERF_RECORD_MMAP
+  testing::ExampleAuxtraceEvent(9, 0x2000, 7, 3, 0x68d, 4, 0, "/dev/zero")
+      .WriteTo(&input);
+
+  // Parse and Serialize
+
+  PerfReader reader;
+  ASSERT_TRUE(reader.ReadFromString(input.str()));
+
+  PerfDataProto perf_data_proto;
+  ASSERT_TRUE(reader.Serialize(&perf_data_proto));
+
+  EXPECT_EQ(1, perf_data_proto.events().size());
+
+  {
+    const PerfDataProto::PerfEvent& event = perf_data_proto.events(0);
+    EXPECT_EQ(PERF_RECORD_AUXTRACE, event.header().type());
+    EXPECT_TRUE(event.has_auxtrace_event());
+    const PerfDataProto::AuxtraceEvent& auxtrace_event = event.auxtrace_event();
+    EXPECT_EQ(9, auxtrace_event.size());
+    EXPECT_EQ(0x2000, auxtrace_event.offset());
+    EXPECT_EQ(7, auxtrace_event.reference());
+    EXPECT_EQ(3, auxtrace_event.idx());
+    EXPECT_EQ(0x68d, auxtrace_event.tid());
+    EXPECT_EQ("/dev/zero", auxtrace_event.trace_data());
   }
 }
 

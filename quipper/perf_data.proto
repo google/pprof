@@ -427,6 +427,52 @@ message PerfDataProto {
     optional SampleInfo sample_info = 7;
   }
 
+  // Next tag: 7
+  message AuxEvent {
+    // Aux offset.
+    optional uint64 aux_offset = 1;
+
+    // Aux size.
+    optional uint64 aux_size = 2;
+
+    // Is the record was truncated to fit.
+    optional bool is_truncated = 3;
+
+    // Does the record contain snapshot from overwrite mode.
+    optional bool is_overwrite = 4;
+
+    // Does the record contain gaps.
+    optional bool is_partial = 5;
+
+    // Info about the perf sample containing this event.
+    optional SampleInfo sample_info = 6;
+  }
+
+  // Next tag: 8
+  message AuxtraceEvent {
+    // Size of AUX area tracing buffer.
+    optional uint64 size = 1;
+
+    // Offset as determined by aux_head / aux_tail members of struct
+    // perf_event_mmap_page.
+    optional uint64 offset = 2;
+
+    // Implementation specific reference determined when the data is recorded.
+    optional uint64 reference = 3;
+
+    // Index of AUX area tracing data buffer.
+    optional uint32 idx = 4;
+
+    // In per-thread mode, the tid this buffer is associated with.
+    optional uint32 tid = 5;
+
+    // In per-cpu mode, the cpu this buffer is associated with.
+    optional uint32 cpu = 6;
+
+    // The trace data.
+    optional bytes trace_data = 7;
+  }
+
   // Next tag: 4
   message EventHeader {
     // Type of event.
@@ -436,7 +482,7 @@ message PerfDataProto {
     optional uint32 size = 3;
   }
 
-  // Next tag: 11
+  // Next tag: 13
   message PerfEvent {
     optional EventHeader header = 1;
     oneof event_type {
@@ -452,6 +498,8 @@ message PerfDataProto {
       LostEvent lost_event = 6;
       ThrottleEvent throttle_event = 7;
       ReadEvent read_event = 8;
+      AuxEvent aux_event = 11;
+      AuxtraceEvent auxtrace_event = 12;
     }
     // Time after boot in nanoseconds corresponding to the event.
     optional uint64 timestamp = 10;

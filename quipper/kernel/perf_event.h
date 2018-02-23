@@ -801,6 +801,13 @@ enum perf_callchain_context {
   PERF_CONTEXT_MAX = (__u64)-4095,
 };
 
+/**
+ * PERF_RECORD_AUX::flags bits
+ */
+#define PERF_AUX_FLAG_TRUNCATED 0x01 /* record was truncated to fit */
+#define PERF_AUX_FLAG_OVERWRITE 0x02 /* snapshot from overwrite mode */
+#define PERF_AUX_FLAG_PARTIAL 0x04   /* record contains gaps */
+
 #define PERF_FLAG_FD_NO_GROUP (1UL << 0)
 #define PERF_FLAG_FD_OUTPUT (1UL << 1)
 #define PERF_FLAG_PID_CGROUP (1UL << 2) /* pid=cgroup id, per-cpu mode only */

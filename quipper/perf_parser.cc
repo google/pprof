@@ -127,7 +127,15 @@ bool PerfParser::ParseRawEvents() {
 
 bool PerfParser::ProcessUserEvents(PerfEvent& event) {
   // New user events from PERF-4.13 is not yet supported
-  VLOG(1) << "Unsupported event type: " << event.header().type();
+  switch (event.header().type()) {
+    case PERF_RECORD_AUXTRACE:
+      VLOG(1) << "Parsed event type: " << event.header().type()
+              << ". Doing nothing.";
+      break;
+    default:
+      VLOG(1) << "Unsupported event type: " << event.header().type();
+      break;
+  }
   return true;
 }
 
@@ -224,10 +232,10 @@ bool PerfParser::ProcessEvents() {
       case PERF_RECORD_THROTTLE:
       case PERF_RECORD_UNTHROTTLE:
       case PERF_RECORD_READ:
+      case PERF_RECORD_AUX:
         VLOG(1) << "Parsed event type: " << event.header().type()
                 << ". Doing nothing.";
         break;
-      case PERF_RECORD_AUX:
       case PERF_RECORD_ITRACE_START:
       case PERF_RECORD_LOST_SAMPLES:
       case PERF_RECORD_SWITCH:

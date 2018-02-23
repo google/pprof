@@ -478,6 +478,34 @@ class ExampleTracingMetadata {
   MetadataIndexEntry index_entry_;
 };
 
+// Produces a PERF_RECORD_AUXTRACE event.
+class ExampleAuxtraceEvent : public StreamWriteable {
+ public:
+  ExampleAuxtraceEvent(u64 size, u64 offset, u64 reference, u32 idx, u32 tid,
+                       u32 cpu, u32 reserved, string trace_data)
+      : size_(size),
+        offset_(offset),
+        reference_(reference),
+        idx_(idx),
+        tid_(tid),
+        cpu_(cpu),
+        reserved_(reserved),
+        trace_data_(std::move(trace_data)) {}
+  size_t GetSize() const;
+  size_t GetTraceSize() const;
+  void WriteTo(std::ostream* out) const override;
+
+ private:
+  const u64 size_;
+  const u64 offset_;
+  const u64 reference_;
+  const u32 idx_;
+  const u32 tid_;
+  const u32 cpu_;
+  const u32 reserved_;
+  const string trace_data_;
+};
+
 }  // namespace testing
 }  // namespace quipper
 

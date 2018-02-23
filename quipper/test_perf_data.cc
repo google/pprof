@@ -446,5 +446,34 @@ void ExampleTracingMetadata::Data::WriteTo(std::ostream* out) const {
            index_entry.offset + index_entry.size);
 }
 
+size_t ExampleAuxtraceEvent::GetSize() const {
+  return sizeof(struct auxtrace_event);
+}
+
+size_t ExampleAuxtraceEvent::GetTraceSize() const { return trace_data_.size(); }
+
+void ExampleAuxtraceEvent::WriteTo(std::ostream* out) const {
+  const size_t event_size = GetSize();
+
+  struct auxtrace_event event = {
+      .header =
+          {
+              .type = MaybeSwap32(PERF_RECORD_AUXTRACE),
+              .misc = 0,
+              .size = MaybeSwap16(static_cast<u16>(event_size)),
+          },
+      .size = MaybeSwap64(size_),
+      .offset = MaybeSwap64(offset_),
+      .reference = MaybeSwap64(reference_),
+      .idx = MaybeSwap32(idx_),
+      .tid = MaybeSwap32(tid_),
+      .cpu = MaybeSwap32(cpu_),
+      .reserved__ = MaybeSwap32(reserved_),
+  };
+
+  out->write(reinterpret_cast<const char*>(&event), event_size);
+  out->write(trace_data_.data(), trace_data_.size());
+}
+
 }  // namespace testing
 }  // namespace quipper

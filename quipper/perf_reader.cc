@@ -345,8 +345,14 @@ void PerfReader::GenerateHeader(struct perf_file_header* header) const {
   header->size = sizeof(*header);
   header->attr_size = sizeof(perf_file_attr);
   header->attrs.size = header->attr_size * attrs().size();
-  for (const PerfEvent& event : proto_->events())
+  for (const PerfEvent& event : proto_->events()) {
     header->data.size += event.header().size();
+    // Auxtrace event contain trace data at the end of the event. Add the size
+    // of this trace data to the header.data size.
+    if (event.header().type() == PERF_RECORD_AUXTRACE) {
+      header->data.size += event.auxtrace_event().size();
+    }
+  }
   // Do not use the event_types section. Use EVENT_DESC metadata instead.
   header->event_types.size = 0;
 
@@ -782,6 +788,10 @@ bool PerfReader::ReadDataSection(DataReader* data) {
     PerfEvent* proto_event = proto_->add_events();
     if (!serializer_.SerializeEvent(event, proto_event)) return false;
 
+    if (proto_event->header().type() == PERF_RECORD_AUXTRACE) {
+      if (!ReadAuxtraceTraceData(data, proto_event)) return false;
+      data_remaining_bytes -= proto_event->auxtrace_event().size();
+    }
     data_remaining_bytes -= event->header.size;
   }
 
@@ -1266,7 +1276,19 @@ bool PerfReader::ReadPipedData(DataReader* data) {
     // Compute the size of the post-header part of the event data.
     size_t size_without_header = header.size - sizeof(header);
 
-    if (header.type < PERF_RECORD_MAX) {
+    bool isHeaderEventType = [&] {
+      switch (header.type) {
+        case PERF_RECORD_HEADER_ATTR:
+        case PERF_RECORD_HEADER_EVENT_TYPE:
+        case PERF_RECORD_HEADER_TRACING_DATA:
+        case PERF_RECORD_HEADER_BUILD_ID:
+          return true;
+        default:
+          return false;
+      }
+    }();
+
+    if (!isHeaderEventType) {
       // Allocate space for an event struct based on the size in the header.
       // Don't blindly allocate the entire event_t because it is a
       // variable-sized type that may include data beyond what's nominally
@@ -1285,6 +1307,9 @@ bool PerfReader::ReadPipedData(DataReader* data) {
       PerfEvent* proto_event = proto_->add_events();
       if (!serializer_.SerializeEvent(event, proto_event)) return false;
 
+      if (proto_event->header().type() == PERF_RECORD_AUXTRACE) {
+        if (!ReadAuxtraceTraceData(data, proto_event)) return false;
+      }
       continue;
     }
 
@@ -1336,6 +1361,24 @@ bool PerfReader::ReadPipedData(DataReader* data) {
   }
 
   return result;
+}
+
+bool PerfReader::ReadAuxtraceTraceData(DataReader* data,
+                                       PerfEvent* proto_event) {
+  std::vector<char> trace_data(proto_event->auxtrace_event().size());
+  if (!data->ReadDataValue(trace_data.size(),
+                           "trace date from PERF_RECORD_AUXTRACE event",
+                           trace_data.data())) {
+    return false;
+  }
+  if (data->is_cross_endian()) {
+    LOG(ERROR) << "Cannot byteswap trace data from PERF_RECORD_AUXTRACE";
+  }
+  if (!serializer_.SerializeAuxtraceEventTraceData(
+          trace_data, proto_event->mutable_auxtrace_event())) {
+    return false;
+  }
+  return true;
 }
 
 bool PerfReader::WriteHeader(const struct perf_file_header& header,
@@ -1390,6 +1433,19 @@ bool PerfReader::WriteData(const struct perf_file_header& header,
     if (!serializer_.DeserializeEvent(proto_event, &event) ||
         !data->WriteDataValue(event.get(), event->header.size, "event data")) {
       return false;
+    }
+    // PERF_RECORD_AUXTRACE contains trace data that is written after writing
+    // the actual event data.
+    if (proto_event.header().type() == PERF_RECORD_AUXTRACE &&
+        proto_event.auxtrace_event().size() > 0) {
+      std::vector<char> trace_data;
+      if (!serializer_.DeserializeAuxtraceEventTraceData(
+              proto_event.auxtrace_event(), &trace_data) ||
+          !data->WriteDataValue(reinterpret_cast<void*>(trace_data.data()),
+                                trace_data.size(),
+                                "trace data from PERF_RECORD_AUXTRACE event")) {
+        return false;
+      }
     }
   }
   return true;
@@ -1785,6 +1841,19 @@ void PerfReader::MaybeSwapEventFields(event_t* event, bool is_cross_endian) {
       ByteSwap(&event->read.time_enabled);
       ByteSwap(&event->read.time_running);
       ByteSwap(&event->read.id);
+      break;
+    case PERF_RECORD_AUX:
+      ByteSwap(&event->aux.aux_offset);
+      ByteSwap(&event->aux.aux_size);
+      ByteSwap(&event->aux.flags);
+      break;
+    case PERF_RECORD_AUXTRACE:
+      ByteSwap(&event->auxtrace.size);
+      ByteSwap(&event->auxtrace.offset);
+      ByteSwap(&event->auxtrace.reference);
+      ByteSwap(&event->auxtrace.idx);
+      ByteSwap(&event->auxtrace.tid);
+      ByteSwap(&event->auxtrace.cpu);
       break;
     default:
       LOG(FATAL) << "Unknown event type: " << type;

@@ -288,27 +288,27 @@ struct build_id_event {
 #undef __ALIGN_MASK
 #undef BUILD_ID_SIZE
 
-enum perf_user_event_type { /* above any possible kernel type */
-                            PERF_RECORD_USER_TYPE_START = 64,
-                            PERF_RECORD_HEADER_ATTR = 64,
-                            PERF_RECORD_HEADER_EVENT_TYPE =
-                                65, /* depreceated */
-                            PERF_RECORD_HEADER_TRACING_DATA = 66,
-                            PERF_RECORD_HEADER_BUILD_ID = 67,
-                            PERF_RECORD_FINISHED_ROUND = 68,
-                            PERF_RECORD_ID_INDEX = 69,
-                            PERF_RECORD_AUXTRACE_INFO = 70,
-                            PERF_RECORD_AUXTRACE = 71,
-                            PERF_RECORD_AUXTRACE_ERROR = 72,
-                            PERF_RECORD_THREAD_MAP = 73,
-                            PERF_RECORD_CPU_MAP = 74,
-                            PERF_RECORD_STAT_CONFIG = 75,
-                            PERF_RECORD_STAT = 76,
-                            PERF_RECORD_STAT_ROUND = 77,
-                            PERF_RECORD_EVENT_UPDATE = 78,
-                            PERF_RECORD_TIME_CONV = 79,
-                            PERF_RECORD_HEADER_FEATURE = 80,
-                            PERF_RECORD_HEADER_MAX = 81,
+enum perf_user_event_type {
+  /* above any possible kernel type */
+  PERF_RECORD_USER_TYPE_START = 64,
+  PERF_RECORD_HEADER_ATTR = 64,
+  PERF_RECORD_HEADER_EVENT_TYPE = 65, /* depreceated */
+  PERF_RECORD_HEADER_TRACING_DATA = 66,
+  PERF_RECORD_HEADER_BUILD_ID = 67,
+  PERF_RECORD_FINISHED_ROUND = 68,
+  PERF_RECORD_ID_INDEX = 69,
+  PERF_RECORD_AUXTRACE_INFO = 70,
+  PERF_RECORD_AUXTRACE = 71,
+  PERF_RECORD_AUXTRACE_ERROR = 72,
+  PERF_RECORD_THREAD_MAP = 73,
+  PERF_RECORD_CPU_MAP = 74,
+  PERF_RECORD_STAT_CONFIG = 75,
+  PERF_RECORD_STAT = 76,
+  PERF_RECORD_STAT_ROUND = 77,
+  PERF_RECORD_EVENT_UPDATE = 78,
+  PERF_RECORD_TIME_CONV = 79,
+  PERF_RECORD_HEADER_FEATURE = 80,
+  PERF_RECORD_HEADER_MAX = 81,
 };
 
 struct attr_event {
@@ -336,6 +336,24 @@ struct tracing_data_event {
   u32 size;
 };
 
+struct auxtrace_event {
+  struct perf_event_header header;
+  u64 size;
+  u64 offset;
+  u64 reference;
+  u32 idx;
+  u32 tid;
+  u32 cpu;
+  u32 reserved__; /* For alignment */
+};
+
+struct aux_event {
+  struct perf_event_header header;
+  u64 aux_offset;
+  u64 aux_size;
+  u64 flags;
+};
+
 union perf_event {
   struct perf_event_header header;
   struct mmap_event mmap;
@@ -350,6 +368,8 @@ union perf_event {
   struct event_type_event event_type;
   struct tracing_data_event tracing_data;
   struct build_id_event build_id;
+  struct auxtrace_event auxtrace;
+  struct aux_event aux;
 };
 
 typedef perf_event event_t;

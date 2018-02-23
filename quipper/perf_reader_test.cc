@@ -147,6 +147,159 @@ TEST(PerfReaderTest, CorruptedFiles) {
   }
 }
 
+TEST(PerfReaderTest, ReadsAndWritesPipedModeAuxEvents) {
+  std::stringstream input;
+
+  // header
+  testing::ExamplePipedPerfDataFileHeader().WriteTo(&input);
+
+  // data
+
+  // PERF_RECORD_HEADER_ATTR
+  testing::ExamplePerfEventAttrEvent_Hardware(PERF_SAMPLE_IP,
+                                              false /*sample_id_all*/)
+      .WriteTo(&input);
+
+  // PERF_RECORD_AUX
+  struct aux_event written_aux_event = {
+      .header =
+          {
+              .type = PERF_RECORD_AUX,
+              .misc = 0,
+              .size = sizeof(struct aux_event),
+          },
+      .aux_offset = 0x2000,
+      .aux_size = 16,
+      .flags = PERF_AUX_FLAG_TRUNCATED | PERF_AUX_FLAG_PARTIAL,
+  };
+  input.write(reinterpret_cast<const char*>(&written_aux_event),
+              sizeof(struct aux_event));
+
+  //
+  // Parse input.
+  //
+
+  PerfReader pr1;
+  ASSERT_TRUE(pr1.ReadFromString(input.str()));
+  // Write it out and read it in again, the two should have the same data.
+  std::vector<char> output_perf_data;
+  ASSERT_TRUE(pr1.WriteToVector(&output_perf_data));
+  PerfReader pr2;
+  ASSERT_TRUE(pr2.ReadFromVector(output_perf_data));
+
+  // Test both versions:
+  for (PerfReader* pr : {&pr1, &pr2}) {
+    // PERF_RECORD_HEADER_ATTR is added to attr(), not events().
+    EXPECT_EQ(1, pr->events().size());
+
+    const PerfEvent& event = pr->events().Get(0);
+    EXPECT_EQ(PERF_RECORD_AUX, event.header().type());
+    EXPECT_EQ(0x2000, event.aux_event().aux_offset());
+    EXPECT_EQ(16, event.aux_event().aux_size());
+    EXPECT_TRUE(event.aux_event().is_truncated());
+    EXPECT_FALSE(event.aux_event().is_overwrite());
+    EXPECT_TRUE(event.aux_event().is_partial());
+  }
+}
+
+TEST(PerfReaderTest, ReadsAndWritesPipedModeAuxTraceEvents) {
+  std::stringstream input;
+
+  // header
+  testing::ExamplePipedPerfDataFileHeader().WriteTo(&input);
+
+  // data
+
+  // PERF_RECORD_HEADER_ATTR
+  testing::ExamplePerfEventAttrEvent_Hardware(PERF_SAMPLE_IP,
+                                              false /*sample_id_all*/)
+      .WriteTo(&input);
+
+  // PERF_RECORD_AUXTRACE
+  testing::ExampleAuxtraceEvent(9, 0x2000, 7, 3, 0x68d, 4, 0, "/dev/zero")
+      .WriteTo(&input);
+
+  //
+  // Parse input.
+  //
+
+  PerfReader pr1;
+  ASSERT_TRUE(pr1.ReadFromString(input.str()));
+  // Write it out and read it in again, the two should have the same data.
+  std::vector<char> output_perf_data;
+  ASSERT_TRUE(pr1.WriteToVector(&output_perf_data));
+  PerfReader pr2;
+  ASSERT_TRUE(pr2.ReadFromVector(output_perf_data));
+
+  // Test both versions:
+  for (PerfReader* pr : {&pr1, &pr2}) {
+    // PERF_RECORD_HEADER_ATTR is added to attr(), not events().
+    EXPECT_EQ(1, pr->events().size());
+
+    const PerfEvent& event = pr->events().Get(0);
+    EXPECT_EQ(PERF_RECORD_AUXTRACE, event.header().type());
+    EXPECT_EQ(9, event.auxtrace_event().size());
+    EXPECT_EQ(0x2000, event.auxtrace_event().offset());
+    EXPECT_EQ(7, event.auxtrace_event().reference());
+    EXPECT_EQ(3, event.auxtrace_event().idx());
+    EXPECT_EQ(0x68d, event.auxtrace_event().tid());
+    EXPECT_EQ(4, event.auxtrace_event().cpu());
+    EXPECT_EQ("/dev/zero", event.auxtrace_event().trace_data());
+  }
+}
+
+TEST(PerfReaderTest, ReadsAndWritesAuxTraceEvents) {
+  std::stringstream input;
+
+  // PERF_RECORD_AUXTRACE
+  testing::ExampleAuxtraceEvent auxtrace_event(9, 0x2000, 7, 3, 0x68d, 4, 0,
+                                               "/dev/zero");
+  const size_t data_size =
+      auxtrace_event.GetSize() + auxtrace_event.GetTraceSize();
+
+  // header
+  testing::ExamplePerfDataFileHeader file_header((0));
+  file_header.WithAttrCount(1).WithDataSize(data_size);
+  file_header.WriteTo(&input);
+
+  // attrs
+  ASSERT_EQ(file_header.header().attrs.offset, static_cast<u64>(input.tellp()));
+  testing::ExamplePerfFileAttr_Hardware(PERF_SAMPLE_IP, false /*sample_id_all*/)
+      .WriteTo(&input);
+
+  // data
+  ASSERT_EQ(file_header.header().data.offset, static_cast<u64>(input.tellp()));
+  auxtrace_event.WriteTo(&input);
+
+  //
+  // Parse input.
+  //
+
+  PerfReader pr1;
+  ASSERT_TRUE(pr1.ReadFromString(input.str()));
+  // Write it out and read it in again, the two should have the same data.
+  std::vector<char> output_perf_data;
+  ASSERT_TRUE(pr1.WriteToVector(&output_perf_data));
+  PerfReader pr2;
+  ASSERT_TRUE(pr2.ReadFromVector(output_perf_data));
+
+  // Test both versions:
+  for (PerfReader* pr : {&pr1, &pr2}) {
+    // PERF_RECORD_HEADER_ATTR is added to attr(), not events().
+    EXPECT_EQ(1, pr->events().size());
+
+    const PerfEvent& event = pr->events().Get(0);
+    EXPECT_EQ(PERF_RECORD_AUXTRACE, event.header().type());
+    EXPECT_EQ(9, event.auxtrace_event().size());
+    EXPECT_EQ(0x2000, event.auxtrace_event().offset());
+    EXPECT_EQ(7, event.auxtrace_event().reference());
+    EXPECT_EQ(3, event.auxtrace_event().idx());
+    EXPECT_EQ(0x68d, event.auxtrace_event().tid());
+    EXPECT_EQ(4, event.auxtrace_event().cpu());
+    EXPECT_EQ("/dev/zero", event.auxtrace_event().trace_data());
+  }
+}
+
 TEST(PerfReaderTest, ReadsAndWritesTraceMetadata) {
   std::stringstream input;
 
@@ -317,7 +470,7 @@ TEST(PerfReaderTest, CorrectlyReadsPerfEventAttrSize) {
     __u64 config;
     // clang-format off
     // union {
-            __u64 sample_period;
+    __u64 sample_period;
     //      __u64 sample_freq;
     // };
     // clang-format on
@@ -690,9 +843,9 @@ TEST(PerfReaderTest, ReadsAndWritesSampleAndSampleIdAll) {
   ASSERT_EQ(40, offsetof(struct mmap_event, filename));
   // clang-format off
   const size_t mmap_event_size =
-      offsetof(struct mmap_event, filename) +
-      10+6 /* ==16, nearest 64-bit boundary for filename */ +
-      num_sample_id_bits*sizeof(u64);
+      offsetof(struct mmap_event, filename) + 10 +
+      6 /* ==16, nearest 64-bit boundary for filename */ +
+      num_sample_id_bits * sizeof(u64);
   // clang-format on
   struct mmap_event written_mmap_event = {
       .header =
@@ -816,9 +969,8 @@ TEST(PerfReaderTest, ReadsAndWritesPerfSampleIdentifier) {
   ASSERT_EQ(40, offsetof(struct mmap_event, filename));
   // clang-format off
   const size_t mmap_event_size =
-      offsetof(struct mmap_event, filename) +
-      10+6 /* ==16, nearest 64-bit boundary for filename */ +
-      2*sizeof(u64);
+      offsetof(struct mmap_event, filename) + 10 +
+      6 /* ==16, nearest 64-bit boundary for filename */ + 2 * sizeof(u64);
   // clang-format on
   struct mmap_event written_mmap_event = {
       .header =
@@ -895,8 +1047,8 @@ TEST(PerfReaderTest, ReadsAndWritesMmap2Events) {
   ASSERT_EQ(72, offsetof(struct mmap2_event, filename));
   // clang-format off
   const size_t mmap_event_size =
-      offsetof(struct mmap2_event, filename) +
-      10+6; /* ==16, nearest 64-bit boundary for filename */
+      offsetof(struct mmap2_event, filename) + 10 +
+      6; /* ==16, nearest 64-bit boundary for filename */
   // clang-format on
   struct mmap2_event written_mmap_event = {
       .header =

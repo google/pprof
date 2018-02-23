@@ -187,55 +187,60 @@ bool PerfSerializer::SerializeEvent(
   if (!SerializeEventHeader(event.header, event_proto->mutable_header()))
     return false;
 
-  switch (event.header.type) {
-    case PERF_RECORD_SAMPLE:
-      if (!SerializeSampleEvent(event, event_proto->mutable_sample_event()))
-        return false;
-      break;
-    case PERF_RECORD_MMAP:
-      if (!SerializeMMapEvent(event, event_proto->mutable_mmap_event()))
-        return false;
-      break;
-    case PERF_RECORD_MMAP2:
-      if (!SerializeMMap2Event(event, event_proto->mutable_mmap_event()))
-        return false;
-      break;
-    case PERF_RECORD_COMM:
-      if (!SerializeCommEvent(event, event_proto->mutable_comm_event()))
-        return false;
-      break;
-    case PERF_RECORD_EXIT:
-      if (!SerializeForkExitEvent(event, event_proto->mutable_exit_event()))
-        return false;
-      break;
-    case PERF_RECORD_FORK:
-      if (!SerializeForkExitEvent(event, event_proto->mutable_fork_event()))
-        return false;
-      break;
-    case PERF_RECORD_LOST:
-      if (!SerializeLostEvent(event, event_proto->mutable_lost_event()))
-        return false;
-      break;
-    case PERF_RECORD_THROTTLE:
-    case PERF_RECORD_UNTHROTTLE:
-      if (!SerializeThrottleEvent(event,
-                                  event_proto->mutable_throttle_event())) {
-        return false;
-      }
-      break;
-    case PERF_RECORD_READ:
-      if (!SerializeReadEvent(event, event_proto->mutable_read_event()))
-        return false;
-      break;
-    default:
-      if (event.header.type < PERF_RECORD_USER_TYPE_START ||
-          event.header.type >= PERF_RECORD_HEADER_MAX) {
-        LOG(ERROR) << "Unknown event type: " << event.header.type;
-      }
-      break;
+  if (event.header.type >= PERF_RECORD_USER_TYPE_START) {
+    if (!SerializeUserEvent(event, event_proto)) {
+      return false;
+    }
+  } else if (!SerializeKernelEvent(event, event_proto)) {
+    return false;
   }
 
   event_proto->set_timestamp(GetTimeFromPerfEvent(*event_proto));
+  return true;
+}
+
+bool PerfSerializer::SerializeKernelEvent(
+    const event_t& event, PerfDataProto_PerfEvent* event_proto) const {
+  switch (event.header.type) {
+    case PERF_RECORD_SAMPLE:
+      return SerializeSampleEvent(event, event_proto->mutable_sample_event());
+    case PERF_RECORD_MMAP:
+      return SerializeMMapEvent(event, event_proto->mutable_mmap_event());
+    case PERF_RECORD_MMAP2:
+      return SerializeMMap2Event(event, event_proto->mutable_mmap_event());
+    case PERF_RECORD_COMM:
+      return SerializeCommEvent(event, event_proto->mutable_comm_event());
+    case PERF_RECORD_EXIT:
+      return SerializeForkExitEvent(event, event_proto->mutable_exit_event());
+    case PERF_RECORD_FORK:
+      return SerializeForkExitEvent(event, event_proto->mutable_fork_event());
+    case PERF_RECORD_LOST:
+      return SerializeLostEvent(event, event_proto->mutable_lost_event());
+    case PERF_RECORD_THROTTLE:
+    case PERF_RECORD_UNTHROTTLE:
+      return SerializeThrottleEvent(event,
+                                    event_proto->mutable_throttle_event());
+    case PERF_RECORD_READ:
+      return SerializeReadEvent(event, event_proto->mutable_read_event());
+    case PERF_RECORD_AUX:
+      return SerializeAuxEvent(event, event_proto->mutable_aux_event());
+    default:
+      LOG(ERROR) << "Unknown event type: " << event.header.type;
+  }
+  return true;
+}
+
+bool PerfSerializer::SerializeUserEvent(
+    const event_t& event, PerfDataProto_PerfEvent* event_proto) const {
+  switch (event.header.type) {
+    case PERF_RECORD_AUXTRACE:
+      return SerializeAuxtraceEvent(event,
+                                    event_proto->mutable_auxtrace_event());
+    default:
+      if (event.header.type >= PERF_RECORD_HEADER_MAX) {
+        LOG(ERROR) << "Unknown event type: " << event.header.type;
+      }
+  }
   return true;
 }
 
@@ -249,65 +254,75 @@ bool PerfSerializer::DeserializeEvent(
     return false;
 
   bool event_deserialized = false;
-  switch (event_proto.header().type()) {
-    case PERF_RECORD_SAMPLE:
-      if (DeserializeSampleEvent(event_proto.sample_event(), event))
-        event_deserialized = true;
-      break;
-    case PERF_RECORD_MMAP:
-      if (DeserializeMMapEvent(event_proto.mmap_event(), event))
-        event_deserialized = true;
-      break;
-    case PERF_RECORD_MMAP2:
-      if (DeserializeMMap2Event(event_proto.mmap_event(), event))
-        event_deserialized = true;
-      break;
-    case PERF_RECORD_COMM:
-      if (DeserializeCommEvent(event_proto.comm_event(), event))
-        event_deserialized = true;
-      break;
-    case PERF_RECORD_EXIT:
-      if (event_proto.has_exit_event() &&
-          DeserializeForkExitEvent(event_proto.exit_event(), event)) {
-        event_deserialized = true;
-      } else if (event_proto.has_fork_event() &&
-                 DeserializeForkExitEvent(event_proto.fork_event(), event)) {
-        // Some older protobufs use the |fork_event| field to store exit events.
-        event_deserialized = true;
-      }
-      break;
-    case PERF_RECORD_FORK:
-      if (DeserializeForkExitEvent(event_proto.fork_event(), event))
-        event_deserialized = true;
-      break;
-    case PERF_RECORD_LOST:
-      if (DeserializeLostEvent(event_proto.lost_event(), event))
-        event_deserialized = true;
-      break;
-    case PERF_RECORD_THROTTLE:
-    case PERF_RECORD_UNTHROTTLE:
-      if (DeserializeThrottleEvent(event_proto.throttle_event(), event))
-        event_deserialized = true;
-      break;
-    case PERF_RECORD_READ:
-      if (DeserializeReadEvent(event_proto.read_event(), event))
-        event_deserialized = true;
-      break;
-    default:
-      // User type events are marked as deserialized because they don't
-      // have non-header data in perf.data proto.
-      if (event_proto.header().type() >= PERF_RECORD_USER_TYPE_START &&
-          event_proto.header().type() < PERF_RECORD_HEADER_MAX) {
-        event_deserialized = true;
-      }
-      break;
+  if (event_proto.header().type() >= PERF_RECORD_USER_TYPE_START) {
+    event_deserialized = DeserializeUserEvent(event_proto, event);
+  } else {
+    event_deserialized = DeserializeKernelEvent(event_proto, event);
   }
+
   if (!event_deserialized) {
     LOG(ERROR) << "Could not deserialize event of type "
                << event_proto.header().type();
     return false;
   }
 
+  return true;
+}
+
+bool PerfSerializer::DeserializeKernelEvent(
+    const PerfDataProto_PerfEvent& event_proto, event_t* event) const {
+  switch (event_proto.header().type()) {
+    case PERF_RECORD_SAMPLE:
+      return DeserializeSampleEvent(event_proto.sample_event(), event);
+    case PERF_RECORD_MMAP:
+      return DeserializeMMapEvent(event_proto.mmap_event(), event);
+    case PERF_RECORD_MMAP2:
+      return DeserializeMMap2Event(event_proto.mmap_event(), event);
+    case PERF_RECORD_COMM:
+      return DeserializeCommEvent(event_proto.comm_event(), event);
+    case PERF_RECORD_EXIT:
+      return (event_proto.has_exit_event() &&
+              DeserializeForkExitEvent(event_proto.exit_event(), event)) ||
+             (event_proto.has_fork_event() &&
+              DeserializeForkExitEvent(event_proto.fork_event(), event));
+    // Some older protobufs use the |fork_event| field to store exit
+    // events.
+    case PERF_RECORD_FORK:
+      return DeserializeForkExitEvent(event_proto.fork_event(), event);
+    case PERF_RECORD_LOST:
+      return DeserializeLostEvent(event_proto.lost_event(), event);
+    case PERF_RECORD_THROTTLE:
+    case PERF_RECORD_UNTHROTTLE:
+      return DeserializeThrottleEvent(event_proto.throttle_event(), event);
+    case PERF_RECORD_READ:
+      return DeserializeReadEvent(event_proto.read_event(), event);
+    case PERF_RECORD_AUX:
+      return DeserializeAuxEvent(event_proto.aux_event(), event);
+    case PERF_RECORD_ITRACE_START:
+    case PERF_RECORD_LOST_SAMPLES:
+    case PERF_RECORD_SWITCH:
+    case PERF_RECORD_SWITCH_CPU_WIDE:
+    case PERF_RECORD_NAMESPACES:
+      LOG(ERROR) << "Event type: " << event_proto.header().type()
+                 << ". Not yet supported.";
+      return true;
+      break;
+  }
+  return false;
+}
+
+bool PerfSerializer::DeserializeUserEvent(
+    const PerfDataProto_PerfEvent& event_proto, event_t* event) const {
+  switch (event_proto.header().type()) {
+    case PERF_RECORD_AUXTRACE:
+      return DeserializeAuxtraceEvent(event_proto.auxtrace_event(), event);
+    default:
+      // User type events are marked as deserialized because they don't
+      // have non-header data in perf.data proto.
+      if (event_proto.header().type() >= PERF_RECORD_HEADER_MAX) {
+        return false;
+      }
+  }
   return true;
 }
 
@@ -663,6 +678,34 @@ bool PerfSerializer::DeserializeReadEvent(const PerfDataProto_ReadEvent& sample,
   return true;
 }
 
+bool PerfSerializer::SerializeAuxEvent(const event_t& event,
+                                       PerfDataProto_AuxEvent* sample) const {
+  const struct aux_event& aux = event.aux;
+  sample->set_aux_offset(aux.aux_offset);
+  sample->set_aux_size(aux.aux_size);
+  sample->set_is_truncated(aux.flags & PERF_AUX_FLAG_TRUNCATED ? true : false);
+  sample->set_is_overwrite(aux.flags & PERF_AUX_FLAG_OVERWRITE ? true : false);
+  sample->set_is_partial(aux.flags & PERF_AUX_FLAG_PARTIAL ? true : false);
+  if (aux.flags & ~(PERF_AUX_FLAG_TRUNCATED | PERF_AUX_FLAG_OVERWRITE |
+                    PERF_AUX_FLAG_PARTIAL)) {
+    LOG(WARNING) << "Ignoring unknown PERF_RECORD_AUX flag: " << aux.flags;
+  }
+
+  return SerializeSampleInfo(event, sample->mutable_sample_info());
+}
+
+bool PerfSerializer::DeserializeAuxEvent(const PerfDataProto_AuxEvent& sample,
+                                         event_t* event) const {
+  struct aux_event& aux = event->aux;
+  aux.aux_offset = sample.aux_offset();
+  aux.aux_size = sample.aux_size();
+  aux.flags |= sample.is_truncated() ? PERF_AUX_FLAG_TRUNCATED : 0;
+  aux.flags |= sample.is_overwrite() ? PERF_AUX_FLAG_OVERWRITE : 0;
+  aux.flags |= sample.is_partial() ? PERF_AUX_FLAG_PARTIAL : 0;
+
+  return DeserializeSampleInfo(sample.sample_info(), event);
+}
+
 bool PerfSerializer::SerializeSampleInfo(
     const event_t& event, PerfDataProto_SampleInfo* sample) const {
   if (!SampleIdAll()) return true;
@@ -773,6 +816,48 @@ bool PerfSerializer::DeserializeBuildIDEvent(
         snprintf(event->filename, filename.size() + 1, "%s", filename.c_str()),
         0);
   }
+  return true;
+}
+
+bool PerfSerializer::SerializeAuxtraceEvent(
+    const event_t& event, PerfDataProto_AuxtraceEvent* sample) const {
+  const struct auxtrace_event& auxtrace = event.auxtrace;
+  sample->set_size(auxtrace.size);
+  sample->set_offset(auxtrace.offset);
+  sample->set_reference(auxtrace.reference);
+  sample->set_idx(auxtrace.idx);
+  sample->set_tid(auxtrace.tid);
+  sample->set_cpu(auxtrace.cpu);
+
+  return true;
+}
+
+bool PerfSerializer::SerializeAuxtraceEventTraceData(
+    const std::vector<char>& from, PerfDataProto_AuxtraceEvent* to) const {
+  if (from.empty()) {
+    return true;
+  }
+  to->set_trace_data(from.data(), from.size());
+
+  return true;
+}
+
+bool PerfSerializer::DeserializeAuxtraceEvent(
+    const PerfDataProto_AuxtraceEvent& sample, event_t* event) const {
+  struct auxtrace_event& auxtrace = event->auxtrace;
+  auxtrace.size = sample.size();
+  auxtrace.offset = sample.offset();
+  auxtrace.reference = sample.reference();
+  auxtrace.idx = sample.idx();
+  auxtrace.tid = sample.tid();
+  auxtrace.cpu = sample.cpu();
+
+  return true;
+}
+
+bool PerfSerializer::DeserializeAuxtraceEventTraceData(
+    const PerfDataProto_AuxtraceEvent& from, std::vector<char>* to) const {
+  to->assign(from.trace_data().begin(), from.trace_data().end());
   return true;
 }
 
