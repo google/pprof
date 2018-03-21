@@ -66,6 +66,13 @@ func TestOpenSourceFile(t *testing.T) {
 			wantPath:   "$dir/foo/bar.txt",
 		},
 		{
+			desc:       "multiple search path",
+			searchPath: "some/path" + lsep + "$dir",
+			fs:         []string{"foo/bar.txt"},
+			path:       "foo/bar.txt",
+			wantPath:   "$dir/foo/bar.txt",
+		},
+		{
 			desc:       "relative path is found in parent dir",
 			searchPath: "$dir/foo/bar",
 			fs:         []string{"bar.txt", "foo/bar/baz.txt"},
@@ -78,7 +85,11 @@ func TestOpenSourceFile(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			defer os.RemoveAll(tempdir)
+			defer func() {
+				if err := os.RemoveAll(tempdir); err != nil {
+					t.Fatalf("failed to remove dir %q", tempdir, err)
+				}
+			}()
 			for _, f := range tc.fs {
 				path := filepath.Join(tempdir, filepath.FromSlash(f))
 				dir := filepath.Dir(path)
@@ -95,6 +106,7 @@ func TestOpenSourceFile(t *testing.T) {
 			if file, err := openSourceFile(tc.path, tc.searchPath); err != nil && tc.wantPath != "" {
 				t.Errorf("openSourceFile(%q, %q) = err %v, want path %q", tc.path, tc.searchPath, err, tc.wantPath)
 			} else if err == nil {
+				defer file.Close()
 				gotPath := file.Name()
 				if tc.wantPath == "" {
 					t.Errorf("openSourceFile(%q, %q) = %q, want error", tc.path, tc.searchPath, gotPath)
