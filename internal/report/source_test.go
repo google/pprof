@@ -87,7 +87,7 @@ func TestOpenSourceFile(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			defer func() {
 				if err := os.RemoveAll(tempdir); err != nil {
-					t.Fatalf("failed to remove dir %q", tempdir, err)
+					t.Fatalf("failed to remove dir %q: %v", tempdir, err)
 				}
 			}()
 			for _, f := range tc.fs {
