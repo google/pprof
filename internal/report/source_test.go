@@ -89,13 +89,13 @@ func TestOpenSourceFile(t *testing.T) {
 					t.Fatalf("failed to create file %q: %v", path, err)
 				}
 			}
-			tc.searchPath = strings.Replace(tc.searchPath, "$dir", tempdir, -1)
-			tc.path = strings.Replace(tc.path, "$dir", tempdir, 1)
-			tc.wantPath = strings.Replace(tc.wantPath, "$dir", tempdir, 1)
+			tc.searchPath = filepath.FromSlash(strings.Replace(tc.searchPath, "$dir", tempdir, -1))
+			tc.path = filepath.FromSlash(strings.Replace(tc.path, "$dir", tempdir, 1))
+			tc.wantPath = filepath.FromSlash(strings.Replace(tc.wantPath, "$dir", tempdir, 1))
 			if file, err := openSourceFile(tc.path, tc.searchPath); err != nil && tc.wantPath != "" {
 				t.Errorf("openSourceFile(%q, %q) = err %v, want path %q", tc.path, tc.searchPath, err, tc.wantPath)
 			} else if err == nil {
-				gotPath := filepath.ToSlash(file.Name())
+				gotPath := file.Name()
 				if tc.wantPath == "" {
 					t.Errorf("openSourceFile(%q, %q) = %q, want error", tc.path, tc.searchPath, gotPath)
 				} else if gotPath != tc.wantPath {
