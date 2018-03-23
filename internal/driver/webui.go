@@ -82,7 +82,7 @@ type webArgs struct {
 	FlameGraph template.JS
 }
 
-func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options, wantBrowser bool) error {
+func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) error {
 	host, port, err := getHostAndPort(hostport)
 	if err != nil {
 		return err
@@ -117,7 +117,7 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options, w
 		},
 	}
 
-	if wantBrowser {
+	if o.UI.IsTerminal() {
 		go openBrowser("http://"+args.Hostport, o)
 	}
 	return server(args)

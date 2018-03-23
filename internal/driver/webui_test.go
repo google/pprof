@@ -31,6 +31,12 @@ import (
 	"github.com/google/pprof/profile"
 )
 
+type nonTerminalUI struct {
+	plugin.UI
+}
+
+func (*nonTerminalUI) IsTerminal() bool { return false }
+
 func TestWebInterface(t *testing.T) {
 	if runtime.GOOS == "nacl" {
 		t.Skip("test assumes tcp available")
@@ -55,9 +61,9 @@ func TestWebInterface(t *testing.T) {
 	// Start server and wait for it to be initialized
 	go serveWebInterface("unused:1234", prof, &plugin.Options{
 		Obj:        fakeObjTool{},
-		UI:         &stdUI{},
+		UI:         &nonTerminalUI{&stdUI{}}, // don't open browser
 		HTTPServer: creator,
-	}, false)
+	})
 	<-serverCreated
 	defer server.Close()
 
