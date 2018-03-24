@@ -41,24 +41,36 @@ func (o *Options) internalOptions() *plugin.Options {
 	if o.Sym != nil {
 		sym = &internalSymbolizer{o.Sym}
 	}
+	var httpServer func(args *plugin.HTTPServerArgs) error
+	if o.HTTPServer != nil {
+		httpServer = func(args *plugin.HTTPServerArgs) error {
+			return o.HTTPServer(((*HTTPServerArgs)(args)))
+		}
+	}
 	return &plugin.Options{
-		Writer:  o.Writer,
-		Flagset: o.Flagset,
-		Fetch:   o.Fetch,
-		Sym:     sym,
-		Obj:     obj,
-		UI:      o.UI,
+		Writer:     o.Writer,
+		Flagset:    o.Flagset,
+		Fetch:      o.Fetch,
+		Sym:        sym,
+		Obj:        obj,
+		UI:         o.UI,
+		HTTPServer: httpServer,
 	}
 }
 
+// HTTPServerArgs contains arguments needed by an HTTP server that
+// is exporting a pprof web interface.
+type HTTPServerArgs plugin.HTTPServerArgs
+
 // Options groups all the optional plugins into pprof.
 type Options struct {
-	Writer  Writer
-	Flagset FlagSet
-	Fetch   Fetcher
-	Sym     Symbolizer
-	Obj     ObjTool
-	UI      UI
+	Writer     Writer
+	Flagset    FlagSet
+	Fetch      Fetcher
+	Sym        Symbolizer
+	Obj        ObjTool
+	UI         UI
+	HTTPServer func(*HTTPServerArgs) error
 }
 
 // Writer provides a mechanism to write data under a certain name,
