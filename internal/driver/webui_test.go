@@ -28,14 +28,9 @@ import (
 	"testing"
 
 	"github.com/google/pprof/internal/plugin"
+	"github.com/google/pprof/internal/proftest"
 	"github.com/google/pprof/profile"
 )
-
-type nonTerminalUI struct {
-	plugin.UI
-}
-
-func (*nonTerminalUI) IsTerminal() bool { return false }
 
 func TestWebInterface(t *testing.T) {
 	if runtime.GOOS == "nacl" {
@@ -61,7 +56,7 @@ func TestWebInterface(t *testing.T) {
 	// Start server and wait for it to be initialized
 	go serveWebInterface("unused:1234", prof, &plugin.Options{
 		Obj:        fakeObjTool{},
-		UI:         &nonTerminalUI{&stdUI{}}, // don't open browser
+		UI:         &proftest.TestUI{},
 		HTTPServer: creator,
 	})
 	<-serverCreated

@@ -130,6 +130,11 @@ func (ui *TestUI) IsTerminal() bool {
 	return false
 }
 
+// WantBrowser indicates whether a browser should be opened with the -http option.
+func (ui *TestUI) WantBrowser() bool {
+	return false
+}
+
 // SetAutoComplete is not supported by the test UI.
 func (ui *TestUI) SetAutoComplete(_ func(string) string) {
 }
