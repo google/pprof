@@ -283,8 +283,10 @@ func TestFetchWithBase(t *testing.T) {
 			}
 			f.args = tc.sources
 
-			o := setDefaults(nil)
-			o.Flagset = f
+			o := setDefaults(&plugin.Options{
+				UI:      &proftest.TestUI{T: t, AllowRx: "Local symbolization failed|Some binary filenames not available"},
+				Flagset: f,
+			})
 			src, _, err := parseFlags(o)
 
 			if err != nil {
