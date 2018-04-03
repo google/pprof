@@ -81,6 +81,26 @@ func (bu *Binutils) update(fn func(r *binrep)) {
 	bu.rep = r
 }
 
+// String returns string representation of the binutils state for debug logging.
+func (bu *Binutils) String() string {
+	r := bu.get()
+	var llvmSymbolizer, addr2line, nm, objdump string
+	if r.llvmSymbolizerFound {
+		llvmSymbolizer = r.llvmSymbolizer
+	}
+	if r.addr2lineFound {
+		addr2line = r.addr2line
+	}
+	if r.nmFound {
+		nm = r.nm
+	}
+	if r.objdumpFound {
+		objdump = r.objdump
+	}
+	return fmt.Sprintf("llvm-symbolizer=%q addr2line=%q nm=%q objdump=%q fast=%t",
+		llvmSymbolizer, addr2line, nm, objdump, r.fast)
+}
+
 // SetFastSymbolization sets a toggle that makes binutils use fast
 // symbolization (using nm), which is much faster than addr2line but
 // provides only symbol name information (no file/line).
