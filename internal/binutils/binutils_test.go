@@ -298,6 +298,13 @@ func TestMachoFiles(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Open: unexpected error %v", err)
 			}
+			t.Logf("binutils: %v", bu)
+			if runtime.GOOS == "darwin" && !bu.rep.addr2lineFound && !bu.rep.llvmSymbolizerFound {
+				// On OSX user needs to install gaddr2line or llvm-symbolizer with
+				// Homebrew, skip the test when the environment doesn't have it
+				// installed.
+				t.Skip("couldn't find addr2line or gaddr2line")
+			}
 			defer f.Close()
 			syms, err := f.Symbols(nil, 0)
 			if err != nil {
