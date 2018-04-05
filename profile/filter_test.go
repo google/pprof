@@ -124,12 +124,13 @@ func TestFilter2(t *testing.T) {
 	for _, testCase := range []struct{
 		name string
 		focus, ignore, hide, show *regexp.Regexp
-		fm, im, hm, hnm           bool
-		wantPaths [][]int // expected paths, wantPaths[sampleIndex][frameIndex] = locationIndex
-		wantValues []int64
+		// todo: fm, im, hm, hnm           bool
+		wantPaths [][]int // expected paths. wantPaths[sampleIndex][frameIndex] = locationIndex
+		wantValues []int64 // expected values. wantValues[sampleIndex] = sampleValue
 	}{
 		{
-			fm: true, // nil focus matches every sample
+			name: "empty filters keep all frames",
+			// todo: fm: true, // nil focus matches every sample
 			wantPaths: [][]int{
 				{0, 1, 2, 3},
 				{4, 5, 1, 6},
@@ -138,14 +139,26 @@ func TestFilter2(t *testing.T) {
 			},
 			wantValues: []int64{1, 2, 3, 4},
 		},
+		{
+			name: "hides a function if both show and hide match it",
+			show: regexp.MustCompile("fun1"),
+			hide: regexp.MustCompile("fun10"),
+			wantPaths: [][]int{
+				{1},
+				{1},
+			},
+			wantValues: []int64{1, 2},
+		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			gotProfile := profile.Copy()
 			gotProfile.FilterSamplesByName(testCase.focus, testCase.ignore, testCase.hide, testCase.show)
 			gotStr := gotProfile.String()
 
+			wantSamples, wantLocations := makeFilteredSamples(testCase.wantPaths, testCase.wantValues, locations)
 			wantProfile := profile.Copy()
-			wantProfile.Sample = makeSamples(testCase.wantPaths, testCase.wantValues, locations)
+			wantProfile.Sample = wantSamples
+			wantProfile.Location = wantLocations
 			wantStr := wantProfile.String()
 
 			if wantStr != gotStr {
@@ -159,8 +172,16 @@ func TestFilter2(t *testing.T) {
 	}
 }
 
-func makeSamples(paths [][]int, values []int64, locations []*Location) []*Sample {
+// makeSamples constructs profile samples from basic inputs.
+// paths: location indices, indexed by sample and frame.
+// 	i.e. paths[sampleIndex][frameIndex] = locationIndex
+// values: values for each sample. i.e. values[sampleIndex] = value
+// locations: locations to copy for new samples. unused locations are not
+// 	removed but their lines are set to nil.
+func makeFilteredSamples(paths [][]int, values []int64, locations []*Location) ([]*Sample, []*Location) {
 	samples := make([]*Sample, len(paths))
+	usedLocationIndices := map[int]bool{}
+
 	for sampleIndex, path := range paths {
 		sample := &Sample{
 			Value: []int64{values[sampleIndex]},
@@ -168,10 +189,23 @@ func makeSamples(paths [][]int, values []int64, locations []*Location) []*Sample
 		}
 		for frameIndex, locationIndex := range path {
 			sample.Location[frameIndex] = locations[locationIndex]
+			usedLocationIndices[locationIndex] = true
 		}
 		samples[sampleIndex] = sample
 	}
-	return samples
+
+	filteredLocations := make([]*Location, 0)
+	for i, _ := range locations {
+		if usedLocationIndices[i] {
+			filteredLocations = append(filteredLocations, locations[i])
+		} else {
+			newLocation := *locations[i]
+			newLocation.Line = nil
+			filteredLocations = append(filteredLocations, &newLocation)
+		}
+	}
+
+	return samples, filteredLocations
 }
 
 func TestTagFilter(t *testing.T) {
