@@ -350,7 +350,7 @@ func (m *Mapping) key() mappingKey {
 }
 
 type mappingKey struct {
-	size, offset    uint64
+	size, offset  uint64
 	buildIDOrFile string
 }
 
