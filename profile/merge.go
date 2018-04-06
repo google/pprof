@@ -338,12 +338,12 @@ func (m *Mapping) key() mappingKey {
 
 	switch {
 	case m.BuildID != "":
-		key.buildidIDOrFile = m.BuildID
+		key.buildIDOrFile = m.BuildID
 	case m.File != "":
-		key.buildidIDOrFile = m.File
+		key.buildIDOrFile = m.File
 	default:
 		// A mapping containing neither build ID nor file name is a fake mapping. A
-		// key with empty buildidIDOrFile is used for fake mappings so that they are
+		// key with empty buildIDOrFile is used for fake mappings so that they are
 		// treated as the same mapping during merging.
 	}
 	return key
@@ -351,7 +351,7 @@ func (m *Mapping) key() mappingKey {
 
 type mappingKey struct {
 	size, offset    uint64
-	buildidIDOrFile string
+	buildIDOrFile string
 }
 
 func (pm *profileMerger) mapLine(src Line) Line {

@@ -1,4 +1,4 @@
-// Copyright 2014 Google Inc. All Rights Reserved.
+// Copyright 2018 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -154,7 +154,7 @@ func TestMapMapping(t *testing.T) {
 				}
 			} else {
 				if gotM1.ID == gotM2.ID {
-					t.Errorf("first mapping got %v, second mapping got %v, want different ID", gotM1, gotM2)
+					t.Errorf("first mapping got %v, second mapping got %v, want different IDs", gotM1, gotM2)
 				}
 				wantM2 := tc.m2
 				wantM2.ID = gotM2.ID
