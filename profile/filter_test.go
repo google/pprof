@@ -1,4 +1,4 @@
-// Copyright 2014 Google Inc. All Rights Reserved.
+// Copyright 2018 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,58 +22,6 @@ import (
 )
 
 func TestFilter(t *testing.T) {
-	// Perform several forms of filtering on the test profile.
-
-	type filterTestcase struct {
-		focus, ignore, hide, show *regexp.Regexp
-		fm, im, hm, hnm           bool
-	}
-
-	for tx, tc := range []filterTestcase{
-		{
-			fm: true, // nil focus matches every sample
-		},
-		{
-			focus: regexp.MustCompile("notfound"),
-		},
-		{
-			ignore: regexp.MustCompile("foo.c"),
-			fm:     true,
-			im:     true,
-		},
-		{
-			hide: regexp.MustCompile("lib.so"),
-			fm:   true,
-			hm:   true,
-		},
-		{
-			show: regexp.MustCompile("foo.c"),
-			fm:   true,
-			hnm:  true,
-		},
-		{
-			show: regexp.MustCompile("notfound"),
-			fm:   true,
-		},
-	} {
-		prof := *testProfile1.Copy()
-		gf, gi, gh, gnh := prof.FilterSamplesByName(tc.focus, tc.ignore, tc.hide, tc.show)
-		if gf != tc.fm {
-			t.Errorf("Filter #%d, got fm=%v, want %v", tx, gf, tc.fm)
-		}
-		if gi != tc.im {
-			t.Errorf("Filter #%d, got im=%v, want %v", tx, gi, tc.im)
-		}
-		if gh != tc.hm {
-			t.Errorf("Filter #%d, got hm=%v, want %v", tx, gh, tc.hm)
-		}
-		if gnh != tc.hnm {
-			t.Errorf("Filter #%d, got hnm=%v, want %v", tx, gnh, tc.hnm)
-		}
-	}
-}
-
-func TestFilter2(t *testing.T) {
 	mappings := []*Mapping{
 		{ID: 1, Start: 0x10000, Limit: 0x40000, File: "map0", HasFunctions: true, HasFilenames: true, HasLineNumbers: true, HasInlineFrames: true},
 		{ID: 2, Start: 0x50000, Limit: 0x70000, File: "map1", HasFunctions: true, HasFilenames: true, HasLineNumbers: true, HasInlineFrames: true},
@@ -109,10 +57,10 @@ func TestFilter2(t *testing.T) {
 		PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
 		Period:        1,
 		DurationNanos: 10e9,
-		SampleType: []*ValueType{{Type: "samples", Unit: "count"}},
-		Mapping:  mappings,
-		Function: functions,
-		Location: locations,
+		SampleType:    []*ValueType{{Type: "samples", Unit: "count"}},
+		Mapping:       mappings,
+		Function:      functions,
+		Location:      locations,
 		Sample: []*Sample{
 			{Value: []int64{1}, Location: []*Location{locations[0], locations[1], locations[2], locations[3]}},
 			{Value: []int64{2}, Location: []*Location{locations[4], locations[5], locations[1], locations[6]}},
@@ -121,41 +69,240 @@ func TestFilter2(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range []struct{
+	type FilterMatch struct {
+		fm, im, sm, hm bool
+	}
+
+	allPaths := [][]int{
+		{0, 1, 2, 3},
+		{4, 5, 1, 6},
+		{7, 8},
+		{9, 4, 10, 7},
+	}
+	allValues := []int64{1, 2, 3, 4}
+
+	for _, testCase := range []struct {
+		// name is the name of the test case.
 		name string
+		// These are the inputs to FilterSamplesByName().
 		focus, ignore, hide, show *regexp.Regexp
-		// todo: fm, im, hm, hnm           bool
-		wantPaths [][]int // expected paths. wantPaths[sampleIndex][frameIndex] = locationIndex
-		wantValues []int64 // expected values. wantValues[sampleIndex] = sampleValue
+		// wantMatch contains the expected return values from FilterSamplesByName().
+		wantMatch FilterMatch
+		// wantPaths contains the location indices of expected paths, indexed by
+		// sample and then frame.
+		// I.e. wantPaths[sampleIndex][frameIndex] = locationIndex.
+		wantPaths [][]int
+		// wantValues contains the expected values, indexed by sample.
+		// I.e. wantValues[sampleIndex] = sampleValue.
+		wantValues []int64
+		// filterLocations specifes whether to remove functions from unused
+		// locations. This necessary because the focus and ignore filters do not
+		// remove functions, but show and hide do.
+		filterLocations bool
 	}{
+		// No Filters
 		{
-			name: "empty filters keep all frames",
-			// todo: fm: true, // nil focus matches every sample
+			name:       "empty filters keep all frames",
+			wantMatch:  FilterMatch{fm: true},
+			wantPaths:  allPaths,
+			wantValues: allValues,
+		},
+		// Focus
+		{
+			name:  "focus with no matches",
+			focus: regexp.MustCompile("unknown"),
+		},
+		{
+			name:      "focus matches function names",
+			focus:     regexp.MustCompile("fun1"),
+			wantMatch: FilterMatch{fm: true},
+			wantPaths: [][]int{
+				{0, 1, 2, 3},
+				{4, 5, 1, 6},
+				{9, 4, 10, 7},
+			},
+			wantValues: []int64{1, 2, 4},
+		},
+		{
+			name:      "focus matches file names",
+			focus:     regexp.MustCompile("file1"),
+			wantMatch: FilterMatch{fm: true},
+			wantPaths: [][]int{
+				{0, 1, 2, 3},
+				{4, 5, 1, 6},
+				{9, 4, 10, 7},
+			},
+			wantValues: []int64{1, 2, 4},
+		},
+		{
+			name:      "focus matches mapping names",
+			focus:     regexp.MustCompile("map1"),
+			wantMatch: FilterMatch{fm: true},
+			wantPaths: [][]int{
+				{9, 4, 10, 7},
+			},
+			wantValues: []int64{4},
+		},
+		// Ignore
+		{
+			name:       "ignore with no matches",
+			ignore:     regexp.MustCompile("unknown"),
+			wantMatch:  FilterMatch{fm: true},
+			wantPaths:  allPaths,
+			wantValues: allValues,
+		},
+		{
+			name:      "ignore matches function names",
+			ignore:    regexp.MustCompile("fun1"),
+			wantMatch: FilterMatch{fm: true, im: true},
+			wantPaths: [][]int{
+				{7, 8},
+			},
+			wantValues: []int64{3},
+		},
+		{
+			name:      "ignore matches file names",
+			ignore:    regexp.MustCompile("file1"),
+			wantMatch: FilterMatch{fm: true, im: true},
+			wantPaths: [][]int{
+				{7, 8},
+			},
+			wantValues: []int64{3},
+		},
+		{
+			name:      "ignore matches mapping names",
+			ignore:    regexp.MustCompile("map1"),
+			wantMatch: FilterMatch{fm: true, im: true},
 			wantPaths: [][]int{
 				{0, 1, 2, 3},
 				{4, 5, 1, 6},
 				{7, 8},
-				{9, 4, 10, 7},
 			},
-			wantValues: []int64{1, 2, 3, 4},
+			wantValues: []int64{1, 2, 3},
+		},
+		// Show
+		{
+			name:            "show with no matches",
+			show:            regexp.MustCompile("unknown"),
+			wantMatch:       FilterMatch{fm: true},
+			filterLocations: true,
 		},
 		{
-			name: "hides a function if both show and hide match it",
-			show: regexp.MustCompile("fun1"),
-			hide: regexp.MustCompile("fun10"),
+			name:      "show matches function names",
+			show:      regexp.MustCompile("fun1|fun2"),
+			wantMatch: FilterMatch{fm: true, sm: true},
+			wantPaths: [][]int{
+				{1, 2},
+				{1},
+				{10},
+			},
+			wantValues:      []int64{1, 2, 4},
+			filterLocations: true,
+		},
+		{
+			name:      "show matches file names",
+			show:      regexp.MustCompile("file1|file3"),
+			wantMatch: FilterMatch{fm: true, sm: true},
+			wantPaths: [][]int{
+				{1, 3},
+				{1},
+				{10},
+			},
+			wantValues:      []int64{1, 2, 4},
+			filterLocations: true,
+		},
+		{
+			name:      "show matches mapping names",
+			show:      regexp.MustCompile("map1"),
+			wantMatch: FilterMatch{fm: true, sm: true},
+			wantPaths: [][]int{
+				{10},
+			},
+			wantValues:      []int64{4},
+			filterLocations: true,
+		},
+		// Hide
+		{
+			name:       "hide with no matches",
+			hide:       regexp.MustCompile("unknown"),
+			wantMatch:  FilterMatch{fm: true},
+			wantPaths:  allPaths,
+			wantValues: allValues,
+		},
+		{
+			name:      "hide matches function names",
+			hide:      regexp.MustCompile("fun1|fun2"),
+			wantMatch: FilterMatch{fm: true, hm: true},
+			wantPaths: [][]int{
+				{0, 3},
+				{4, 5, 6},
+				{7, 8},
+				{9, 4, 7},
+			},
+			wantValues:      []int64{1, 2, 3, 4},
+			filterLocations: true,
+		},
+		{
+			name:      "hide matches file names",
+			hide:      regexp.MustCompile("file1|file3"),
+			wantMatch: FilterMatch{fm: true, hm: true},
+			wantPaths: [][]int{
+				{0, 2},
+				{4, 5, 6},
+				{7, 8},
+				{9, 4, 7},
+			},
+			wantValues:      []int64{1, 2, 3, 4},
+			filterLocations: true,
+		},
+		{
+			name:      "hide matches mapping names",
+			hide:      regexp.MustCompile("map1"),
+			wantMatch: FilterMatch{fm: true, hm: true},
+			wantPaths: [][]int{
+				{0, 1, 2, 3},
+				{4, 5, 1, 6},
+				{7, 8},
+				{9, 4, 7},
+			},
+			wantValues:      []int64{1, 2, 3, 4},
+			filterLocations: true,
+		},
+		// Compound filters
+		{
+			name:      "hides a stack matched by both focus and ignore",
+			focus:     regexp.MustCompile("fun1|fun7"),
+			ignore:    regexp.MustCompile("fun1"),
+			wantMatch: FilterMatch{fm: true, im: true},
+			wantPaths: [][]int{
+				{7, 8},
+			},
+			wantValues: []int64{3},
+		},
+		{
+			name:      "hides a function if both show and hide match it",
+			show:      regexp.MustCompile("fun1"),
+			hide:      regexp.MustCompile("fun10"),
+			wantMatch: FilterMatch{fm: true, sm: true, hm: true},
 			wantPaths: [][]int{
 				{1},
 				{1},
 			},
-			wantValues: []int64{1, 2},
+			wantValues:      []int64{1, 2},
+			filterLocations: true,
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			gotProfile := profile.Copy()
-			gotProfile.FilterSamplesByName(testCase.focus, testCase.ignore, testCase.hide, testCase.show)
+			fm, im, hm, sm := gotProfile.FilterSamplesByName(testCase.focus, testCase.ignore, testCase.hide, testCase.show)
+			gotMatch := FilterMatch{fm: fm, im: im, hm: hm, sm: sm}
 			gotStr := gotProfile.String()
 
-			wantSamples, wantLocations := makeFilteredSamples(testCase.wantPaths, testCase.wantValues, locations)
+			if gotMatch != testCase.wantMatch {
+				t.Errorf("match got %+v want %+v", gotMatch, testCase.wantMatch)
+			}
+
+			wantSamples, wantLocations := makeFilteredSamples(testCase.wantPaths, testCase.wantValues, testCase.filterLocations, locations)
 			wantProfile := profile.Copy()
 			wantProfile.Sample = wantSamples
 			wantProfile.Location = wantLocations
@@ -165,26 +312,28 @@ func TestFilter2(t *testing.T) {
 				diff, err := proftest.Diff([]byte(wantStr), []byte(gotStr))
 				if err != nil {
 					t.Fatalf("failed to get diff: %v", err)
+				} else {
+					t.Errorf("filtered profile got diff(want->got):\n%s", diff)
 				}
-				t.Errorf("filtered profile got diff(want->got): \n%s", diff)
 			}
 		})
 	}
 }
 
-// makeSamples constructs profile samples from basic inputs.
-// paths: location indices, indexed by sample and frame.
-// 	i.e. paths[sampleIndex][frameIndex] = locationIndex
-// values: values for each sample. i.e. values[sampleIndex] = value
-// locations: locations to copy for new samples. unused locations are not
-// 	removed but their lines are set to nil.
-func makeFilteredSamples(paths [][]int, values []int64, locations []*Location) ([]*Sample, []*Location) {
+// makeFilteredSamples constructs profile samples from basic inputs to simplify
+// the specification of expected values in filter test cases.
+// paths: location indices for each sample stack and frame, indexed by sample
+// and frame.
+// values: values for each sample, indexed by sample.
+// filterLocations: whether to remove function info from unused locations.
+// locations: locations used to create new samples.
+func makeFilteredSamples(paths [][]int, values []int64, filterLocations bool, locations []*Location) ([]*Sample, []*Location) {
 	samples := make([]*Sample, len(paths))
 	usedLocationIndices := map[int]bool{}
 
 	for sampleIndex, path := range paths {
 		sample := &Sample{
-			Value: []int64{values[sampleIndex]},
+			Value:    []int64{values[sampleIndex]},
 			Location: make([]*Location, len(path)),
 		}
 		for frameIndex, locationIndex := range path {
@@ -194,14 +343,17 @@ func makeFilteredSamples(paths [][]int, values []int64, locations []*Location) (
 		samples[sampleIndex] = sample
 	}
 
-	filteredLocations := make([]*Location, 0)
-	for i, _ := range locations {
-		if usedLocationIndices[i] {
-			filteredLocations = append(filteredLocations, locations[i])
-		} else {
-			newLocation := *locations[i]
-			newLocation.Line = nil
-			filteredLocations = append(filteredLocations, &newLocation)
+	filteredLocations := locations
+	if filterLocations {
+		filteredLocations = nil
+		for i, _ := range locations {
+			if usedLocationIndices[i] {
+				filteredLocations = append(filteredLocations, locations[i])
+			} else {
+				newLocation := *locations[i]
+				newLocation.Line = nil
+				filteredLocations = append(filteredLocations, &newLocation)
+			}
 		}
 	}
 
