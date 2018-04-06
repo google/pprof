@@ -320,13 +320,13 @@ func TestFilter(t *testing.T) {
 	}
 }
 
-// makeFilteredSamples constructs profile samples from basic inputs to simplify
-// the specification of expected values in filter test cases.
-// paths: location indices for each sample stack and frame, indexed by sample
-// and frame.
-// values: values for each sample, indexed by sample.
-// filterLocations: whether to remove function info from unused locations.
-// locations: locations used to create new samples.
+// makeFilteredSamples constructs  filtered profile samples and locations from
+// basic inputs to simplify the specification of expected values in filter test
+// cases. paths contains the location indices, indexed by sample and frame, of
+// the filtered samples. values contains the values, indexed by sample, of the
+// filtered samples. filterLocations is whether to remove function info from
+// unused locations. locations is the slice of locations from the original,
+// unfiltered profile, used to derive the new filtered locations.
 func makeFilteredSamples(paths [][]int, values []int64, filterLocations bool, locations []*Location) ([]*Sample, []*Location) {
 	samples := make([]*Sample, len(paths))
 	usedLocationIndices := map[int]bool{}
