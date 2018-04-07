@@ -407,6 +407,7 @@ mapping:
 				if matches, err := filepath.Glob(filepath.Join(path, m.BuildID, "*")); err == nil {
 					fileNames = append(fileNames, matches...)
 				}
+				fileNames = append(fileNames, filepath.Join(path, m.File, m.BuildID)) // perf path format
 			}
 			if m.File != "" {
 				// Try both the basename and the full path, to support the same directory
@@ -598,9 +599,9 @@ var httpGet = func(source string, timeout time.Duration) (*http.Response, error)
 
 	client := &http.Client{
 		Transport: &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			TLSClientConfig:       tlsConfig,
 			ResponseHeaderTimeout: timeout + 5*time.Second,
-			Proxy:           http.ProxyFromEnvironment,
-			TLSClientConfig: tlsConfig,
 		},
 	}
 	return client.Get(source)
