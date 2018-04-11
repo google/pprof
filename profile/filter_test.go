@@ -23,12 +23,12 @@ import (
 	"github.com/google/pprof/internal/proftest"
 )
 
-var simpleProfileMappings = []*Mapping{
+var mappings = []*Mapping{
 	{ID: 1, Start: 0x10000, Limit: 0x40000, File: "map0", HasFunctions: true, HasFilenames: true, HasLineNumbers: true, HasInlineFrames: true},
 	{ID: 2, Start: 0x50000, Limit: 0x70000, File: "map1", HasFunctions: true, HasFilenames: true, HasLineNumbers: true, HasInlineFrames: true},
 }
 
-var simpleProfilefunctions = []*Function{
+var functions = []*Function{
 	{ID: 1, Name: "fun0", SystemName: "fun0", Filename: "file0"},
 	{ID: 2, Name: "fun1", SystemName: "fun1", Filename: "file1"},
 	{ID: 3, Name: "fun2", SystemName: "fun2", Filename: "file2"},
@@ -42,62 +42,62 @@ var simpleProfilefunctions = []*Function{
 	{ID: 11, Name: "fun10", SystemName: "fun10", Filename: "file10"},
 }
 
-var simpleProfilelocations = []*Location{
-	{ID: 1, Mapping: simpleProfileMappings[0], Address: 0x1000, Line: []Line{{Function: simpleProfilefunctions[0], Line: 1}}},
-	{ID: 2, Mapping: simpleProfileMappings[0], Address: 0x2000, Line: []Line{{Function: simpleProfilefunctions[1], Line: 1}}},
-	{ID: 3, Mapping: simpleProfileMappings[0], Address: 0x3000, Line: []Line{{Function: simpleProfilefunctions[2], Line: 1}}},
-	{ID: 4, Mapping: simpleProfileMappings[0], Address: 0x4000, Line: []Line{{Function: simpleProfilefunctions[3], Line: 1}}},
-	{ID: 5, Mapping: simpleProfileMappings[0], Address: 0x5000, Line: []Line{{Function: simpleProfilefunctions[4], Line: 1}}},
-	{ID: 6, Mapping: simpleProfileMappings[0], Address: 0x6000, Line: []Line{{Function: simpleProfilefunctions[5], Line: 1}}},
-	{ID: 7, Mapping: simpleProfileMappings[0], Address: 0x7000, Line: []Line{{Function: simpleProfilefunctions[6], Line: 1}}},
-	{ID: 8, Mapping: simpleProfileMappings[0], Address: 0x8000, Line: []Line{{Function: simpleProfilefunctions[7], Line: 1}}},
-	{ID: 9, Mapping: simpleProfileMappings[0], Address: 0x9000, Line: []Line{{Function: simpleProfilefunctions[8], Line: 1}}},
-	{ID: 10, Mapping: simpleProfileMappings[0], Address: 0x10000, Line: []Line{{Function: simpleProfilefunctions[9], Line: 1}}},
-	{ID: 11, Mapping: simpleProfileMappings[1], Address: 0x11000, Line: []Line{{Function: simpleProfilefunctions[10], Line: 1}}},
+var noInlinesLocs = []*Location{
+	{ID: 1, Mapping: mappings[0], Address: 0x1000, Line: []Line{{Function: functions[0], Line: 1}}},
+	{ID: 2, Mapping: mappings[0], Address: 0x2000, Line: []Line{{Function: functions[1], Line: 1}}},
+	{ID: 3, Mapping: mappings[0], Address: 0x3000, Line: []Line{{Function: functions[2], Line: 1}}},
+	{ID: 4, Mapping: mappings[0], Address: 0x4000, Line: []Line{{Function: functions[3], Line: 1}}},
+	{ID: 5, Mapping: mappings[0], Address: 0x5000, Line: []Line{{Function: functions[4], Line: 1}}},
+	{ID: 6, Mapping: mappings[0], Address: 0x6000, Line: []Line{{Function: functions[5], Line: 1}}},
+	{ID: 7, Mapping: mappings[0], Address: 0x7000, Line: []Line{{Function: functions[6], Line: 1}}},
+	{ID: 8, Mapping: mappings[0], Address: 0x8000, Line: []Line{{Function: functions[7], Line: 1}}},
+	{ID: 9, Mapping: mappings[0], Address: 0x9000, Line: []Line{{Function: functions[8], Line: 1}}},
+	{ID: 10, Mapping: mappings[0], Address: 0x10000, Line: []Line{{Function: functions[9], Line: 1}}},
+	{ID: 11, Mapping: mappings[1], Address: 0x11000, Line: []Line{{Function: functions[10], Line: 1}}},
 }
 
-var simpleProfile = &Profile{
+var noInlinesProfile = &Profile{
 	TimeNanos:     10000,
 	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
 	Period:        1,
 	DurationNanos: 10e9,
 	SampleType:    []*ValueType{{Type: "samples", Unit: "count"}},
-	Mapping:       simpleProfileMappings,
-	Function:      simpleProfilefunctions,
-	Location:      simpleProfilelocations,
+	Mapping:       mappings,
+	Function:      functions,
+	Location:      noInlinesLocs,
 	Sample: []*Sample{
-		{Value: []int64{1}, Location: []*Location{simpleProfilelocations[0], simpleProfilelocations[1], simpleProfilelocations[2], simpleProfilelocations[3]}},
-		{Value: []int64{2}, Location: []*Location{simpleProfilelocations[4], simpleProfilelocations[5], simpleProfilelocations[1], simpleProfilelocations[6]}},
-		{Value: []int64{3}, Location: []*Location{simpleProfilelocations[7], simpleProfilelocations[8]}},
-		{Value: []int64{4}, Location: []*Location{simpleProfilelocations[9], simpleProfilelocations[4], simpleProfilelocations[10], simpleProfilelocations[7]}},
+		{Value: []int64{1}, Location: []*Location{noInlinesLocs[0], noInlinesLocs[1], noInlinesLocs[2], noInlinesLocs[3]}},
+		{Value: []int64{2}, Location: []*Location{noInlinesLocs[4], noInlinesLocs[5], noInlinesLocs[1], noInlinesLocs[6]}},
+		{Value: []int64{3}, Location: []*Location{noInlinesLocs[7], noInlinesLocs[8]}},
+		{Value: []int64{4}, Location: []*Location{noInlinesLocs[9], noInlinesLocs[4], noInlinesLocs[10], noInlinesLocs[7]}},
 	},
 }
 
-var allSimpleSampleFuncs = []string{
+var allNoInlinesSampleFuncs = []string{
 	"fun0 fun1 fun2 fun3: 1",
 	"fun4 fun5 fun1 fun6: 2",
 	"fun7 fun8: 3",
 	"fun9 fun4 fun10 fun7: 4",
 }
 
-var inlineProfilelocations = []*Location{
-	{ID: 1, Mapping: simpleProfileMappings[0], Address: 0x1000, Line: []Line{{Function: simpleProfilefunctions[0], Line: 1}, {Function: simpleProfilefunctions[1], Line: 1}}},
-	{ID: 2, Mapping: simpleProfileMappings[0], Address: 0x2000, Line: []Line{{Function: simpleProfilefunctions[2], Line: 1}, {Function: simpleProfilefunctions[3], Line: 1}}},
-	{ID: 3, Mapping: simpleProfileMappings[0], Address: 0x3000, Line: []Line{{Function: simpleProfilefunctions[4], Line: 1}, {Function: simpleProfilefunctions[5], Line: 1}, {Function: simpleProfilefunctions[6], Line: 1}}},
+var inlinesLocs = []*Location{
+	{ID: 1, Mapping: mappings[0], Address: 0x1000, Line: []Line{{Function: functions[0], Line: 1}, {Function: functions[1], Line: 1}}},
+	{ID: 2, Mapping: mappings[0], Address: 0x2000, Line: []Line{{Function: functions[2], Line: 1}, {Function: functions[3], Line: 1}}},
+	{ID: 3, Mapping: mappings[0], Address: 0x3000, Line: []Line{{Function: functions[4], Line: 1}, {Function: functions[5], Line: 1}, {Function: functions[6], Line: 1}}},
 }
 
-var inlineProfile = &Profile{
+var inlinesProfile = &Profile{
 	TimeNanos:     10000,
 	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
 	Period:        1,
 	DurationNanos: 10e9,
 	SampleType:    []*ValueType{{Type: "samples", Unit: "count"}},
-	Mapping:       simpleProfileMappings,
-	Function:      simpleProfilefunctions,
-	Location:      inlineProfilelocations,
+	Mapping:       mappings,
+	Function:      functions,
+	Location:      inlinesLocs,
 	Sample: []*Sample{
-		{Value: []int64{1}, Location: []*Location{inlineProfilelocations[0], inlineProfilelocations[1]}},
-		{Value: []int64{2}, Location: []*Location{inlineProfilelocations[2]}},
+		{Value: []int64{1}, Location: []*Location{inlinesLocs[0], inlinesLocs[1]}},
+		{Value: []int64{2}, Location: []*Location{inlinesLocs[2]}},
 	},
 }
 
@@ -119,19 +119,19 @@ func TestFilter(t *testing.T) {
 		// No Filters
 		{
 			name:            "empty filters keep all frames",
-			profile:         simpleProfile,
+			profile:         noInlinesProfile,
 			wantFm:          true,
-			wantSampleFuncs: allSimpleSampleFuncs,
+			wantSampleFuncs: allNoInlinesSampleFuncs,
 		},
 		// Focus
 		{
 			name:    "focus with no matches",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			focus:   regexp.MustCompile("unknown"),
 		},
 		{
 			name:    "focus matches function names",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			focus:   regexp.MustCompile("fun1"),
 			wantFm:  true,
 			wantSampleFuncs: []string{
@@ -142,7 +142,7 @@ func TestFilter(t *testing.T) {
 		},
 		{
 			name:    "focus matches file names",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			focus:   regexp.MustCompile("file1"),
 			wantFm:  true,
 			wantSampleFuncs: []string{
@@ -153,7 +153,7 @@ func TestFilter(t *testing.T) {
 		},
 		{
 			name:    "focus matches mapping names",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			focus:   regexp.MustCompile("map1"),
 			wantFm:  true,
 			wantSampleFuncs: []string{
@@ -162,7 +162,7 @@ func TestFilter(t *testing.T) {
 		},
 		{
 			name:    "focus matches inline functions",
-			profile: inlineProfile,
+			profile: inlinesProfile,
 			focus:   regexp.MustCompile("fun5"),
 			wantFm:  true,
 			wantSampleFuncs: []string{
@@ -172,14 +172,14 @@ func TestFilter(t *testing.T) {
 		// Ignore
 		{
 			name:            "ignore with no matches matches all samples",
-			profile:         simpleProfile,
+			profile:         noInlinesProfile,
 			ignore:          regexp.MustCompile("unknown"),
 			wantFm:          true,
-			wantSampleFuncs: allSimpleSampleFuncs,
+			wantSampleFuncs: allNoInlinesSampleFuncs,
 		},
 		{
 			name:    "ignore matches function names",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			ignore:  regexp.MustCompile("fun1"),
 			wantFm:  true,
 			wantIm:  true,
@@ -189,7 +189,7 @@ func TestFilter(t *testing.T) {
 		},
 		{
 			name:    "ignore matches file names",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			ignore:  regexp.MustCompile("file1"),
 			wantFm:  true,
 			wantIm:  true,
@@ -199,7 +199,7 @@ func TestFilter(t *testing.T) {
 		},
 		{
 			name:    "ignore matches mapping names",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			ignore:  regexp.MustCompile("map1"),
 			wantFm:  true,
 			wantIm:  true,
@@ -211,7 +211,7 @@ func TestFilter(t *testing.T) {
 		},
 		{
 			name:    "ignore matches inline functions",
-			profile: inlineProfile,
+			profile: inlinesProfile,
 			ignore:  regexp.MustCompile("fun5"),
 			wantFm:  true,
 			wantIm:  true,
@@ -222,13 +222,13 @@ func TestFilter(t *testing.T) {
 		// Show
 		{
 			name:    "show with no matches",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			show:    regexp.MustCompile("unknown"),
 			wantFm:  true,
 		},
 		{
 			name:    "show matches function names",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			show:    regexp.MustCompile("fun1|fun2"),
 			wantFm:  true,
 			wantSm:  true,
@@ -240,7 +240,7 @@ func TestFilter(t *testing.T) {
 		},
 		{
 			name:    "show matches file names",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			show:    regexp.MustCompile("file1|file3"),
 			wantFm:  true,
 			wantSm:  true,
@@ -252,7 +252,7 @@ func TestFilter(t *testing.T) {
 		},
 		{
 			name:    "show matches mapping names",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			show:    regexp.MustCompile("map1"),
 			wantFm:  true,
 			wantSm:  true,
@@ -262,7 +262,7 @@ func TestFilter(t *testing.T) {
 		},
 		{
 			name:    "show matches inline functions",
-			profile: inlineProfile,
+			profile: inlinesProfile,
 			show:    regexp.MustCompile("fun[03]"),
 			wantFm:  true,
 			wantSm:  true,
@@ -272,7 +272,7 @@ func TestFilter(t *testing.T) {
 		},
 		{
 			name:    "show keeps all lines when matching both mapping and function",
-			profile: inlineProfile,
+			profile: inlinesProfile,
 			show:    regexp.MustCompile("map0|fun5"),
 			wantFm:  true,
 			wantSm:  true,
@@ -284,14 +284,14 @@ func TestFilter(t *testing.T) {
 		// Hide
 		{
 			name:            "hide with no matches",
-			profile:         simpleProfile,
+			profile:         noInlinesProfile,
 			hide:            regexp.MustCompile("unknown"),
 			wantFm:          true,
-			wantSampleFuncs: allSimpleSampleFuncs,
+			wantSampleFuncs: allNoInlinesSampleFuncs,
 		},
 		{
 			name:    "hide matches function names",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			hide:    regexp.MustCompile("fun1|fun2"),
 			wantFm:  true,
 			wantHm:  true,
@@ -304,7 +304,7 @@ func TestFilter(t *testing.T) {
 		},
 		{
 			name:    "hide matches file names",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			hide:    regexp.MustCompile("file1|file3"),
 			wantFm:  true,
 			wantHm:  true,
@@ -317,7 +317,7 @@ func TestFilter(t *testing.T) {
 		},
 		{
 			name:    "hide matches mapping names",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			hide:    regexp.MustCompile("map1"),
 			wantFm:  true,
 			wantHm:  true,
@@ -330,7 +330,7 @@ func TestFilter(t *testing.T) {
 		},
 		{
 			name:    "hide matches inline functions",
-			profile: inlineProfile,
+			profile: inlinesProfile,
 			hide:    regexp.MustCompile("fun[125]"),
 			wantFm:  true,
 			wantHm:  true,
@@ -341,7 +341,7 @@ func TestFilter(t *testing.T) {
 		},
 		{
 			name:    "hide drops all lines when matching both mapping and function",
-			profile: inlineProfile,
+			profile: inlinesProfile,
 			hide:    regexp.MustCompile("map0|fun5"),
 			wantFm:  true,
 			wantHm:  true,
@@ -349,7 +349,7 @@ func TestFilter(t *testing.T) {
 		// Compound filters
 		{
 			name:    "hides a stack matched by both focus and ignore",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			focus:   regexp.MustCompile("fun1|fun7"),
 			ignore:  regexp.MustCompile("fun1"),
 			wantFm:  true,
@@ -360,7 +360,7 @@ func TestFilter(t *testing.T) {
 		},
 		{
 			name:    "hides a function if both show and hide match it",
-			profile: simpleProfile,
+			profile: noInlinesProfile,
 			show:    regexp.MustCompile("fun1"),
 			hide:    regexp.MustCompile("fun10"),
 			wantFm:  true,
