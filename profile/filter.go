@@ -142,6 +142,9 @@ func (loc *Location) unmatchedLines(re *regexp.Regexp) []Line {
 // matchedLines returns the lines in the location that match
 // the regular expression.
 func (loc *Location) matchedLines(re *regexp.Regexp) []Line {
+	if m := loc.Mapping; m != nil && re.MatchString(m.File) {
+		return loc.Line
+	}
 	var lines []Line
 	for _, ln := range loc.Line {
 		if fn := ln.Function; fn != nil {
