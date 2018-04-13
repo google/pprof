@@ -169,6 +169,67 @@ func TestFilter(t *testing.T) {
 				"fun4 fun5 fun6: 2",
 			},
 		},
+		// Focus with other filters
+		{
+			name:    "focus and ignore",
+			profile: noInlinesProfile,
+			focus:   regexp.MustCompile("fun1|fun7"),
+			ignore:  regexp.MustCompile("fun1"),
+			wantFm:  true,
+			wantIm:  true,
+			wantSampleFuncs: []string{
+				"fun7 fun8: 3",
+			},
+		},
+		{
+			name:    "focus and showFrom",
+			profile: noInlinesProfile,
+			focus:   regexp.MustCompile("fun1"),
+			showFrom:  regexp.MustCompile("fun2|fun8"),
+			wantFm:  true,
+			wantSfm:  true,
+			wantSampleFuncs: []string{
+				"fun0 fun1 fun2: 1",
+			},
+		},
+		{
+			name:    "focus and hideFrom",
+			profile: noInlinesProfile,
+			focus:   regexp.MustCompile("fun1"),
+			hideFrom:  regexp.MustCompile("fun2|fun7"),
+			wantFm:  true,
+			wantHfm:  true,
+			wantSampleFuncs: []string{
+				"fun3: 1",
+				"fun4 fun5 fun1 fun6: 2",
+			},
+		},
+		{
+			name:    "focus and hide",
+			profile: noInlinesProfile,
+			focus:   regexp.MustCompile("fun1"),
+			hide:   regexp.MustCompile("fun1"),
+			wantFm:  true,
+			wantHm: true,
+			wantSampleFuncs: []string{
+				"fun0 fun2 fun3: 1",
+				"fun4 fun5 fun6: 2",
+				"fun9 fun4 fun7: 4",
+			},
+		},
+		{
+			name:    "focus and show",
+			profile: noInlinesProfile,
+			focus:   regexp.MustCompile("fun1"),
+			show:   regexp.MustCompile("fun1"),
+			wantFm:  true,
+			wantSm: true,
+			wantSampleFuncs: []string{
+				"fun1: 1",
+				"fun1: 2",
+				"fun10: 4",
+			},
+		},
 		// Ignore
 		{
 			name:            "ignore with no matches matches all samples",
@@ -217,6 +278,61 @@ func TestFilter(t *testing.T) {
 			wantIm:  true,
 			wantSampleFuncs: []string{
 				"fun0 fun1 fun2 fun3: 1",
+			},
+		},
+		// Ignore with other filters
+		{
+			name:    "ignore and showFrom",
+			profile: noInlinesProfile,
+			ignore:   regexp.MustCompile("fun2"),
+			showFrom:  regexp.MustCompile("fun1"),
+			wantFm:  true,
+			wantIm:  true,
+			wantSfm:  true,
+			wantSampleFuncs: []string{
+				"fun4 fun5 fun1: 2",
+				"fun9 fun4 fun10: 4",
+			},
+		},
+		{
+			name:    "ignore and hideFrom",
+			profile: noInlinesProfile,
+			ignore:   regexp.MustCompile("fun2"),
+			hideFrom:  regexp.MustCompile("fun1"),
+			wantFm:  true,
+			wantIm: true,
+			wantHfm:  true,
+			wantSampleFuncs: []string{
+				"fun6: 2",
+				"fun7 fun8: 3",
+				"fun7: 4",
+			},
+		},
+		{
+			name:    "ignore and hide",
+			profile: noInlinesProfile,
+			ignore:   regexp.MustCompile("fun2"),
+			hide:   regexp.MustCompile("fun1"),
+			wantFm:  true,
+			wantIm: true,
+			wantHm: true,
+			wantSampleFuncs: []string{
+				"fun4 fun5 fun6: 2",
+				"fun7 fun8: 3",
+				"fun9 fun4 fun7: 4",
+			},
+		},
+		{
+			name:    "ignore and show",
+			profile: noInlinesProfile,
+			ignore:   regexp.MustCompile("fun2"),
+			show:   regexp.MustCompile("fun1"),
+			wantFm:  true,
+			wantIm: true,
+			wantSm: true,
+			wantSampleFuncs: []string{
+				"fun1: 2",
+				"fun10: 4",
 			},
 		},
 		// ShowFrom
@@ -280,6 +396,46 @@ func TestFilter(t *testing.T) {
 			wantSampleFuncs: []string{
 				"fun0 fun1 fun2 fun3: 1",
 				"fun4 fun5 fun6: 2",
+			},
+		},
+		// ShowFrom with other filters
+		{
+			name:    "showFrom and hideFrom",
+			profile: noInlinesProfile,
+			showFrom:   regexp.MustCompile("fun2|fun5|fun9"),
+			hideFrom:  regexp.MustCompile("fun0|fun6|fun9"),
+			wantFm:  true,
+			wantSfm: true,
+			wantHfm:  true,
+			wantSampleFuncs: []string{
+				"fun1 fun2: 1",
+			},
+		},
+		{
+			name:    "showFrom and hide",
+			profile: noInlinesProfile,
+			showFrom:   regexp.MustCompile("fun1"),
+			hide:   regexp.MustCompile("fun2|fun4"),
+			wantFm:  true,
+			wantSfm: true,
+			wantHm: true,
+			wantSampleFuncs: []string{
+				"fun0 fun1: 1",
+				"fun5 fun1: 2",
+				"fun9 fun10: 4",
+			},
+		},
+		{
+			name:    "showFrom and show",
+			profile: noInlinesProfile,
+			showFrom:   regexp.MustCompile("fun1"),
+			show:   regexp.MustCompile("fun3|fun5|fun10"),
+			wantFm:  true,
+			wantSfm: true,
+			wantSm: true,
+			wantSampleFuncs: []string{
+				"fun5: 2",
+				"fun10: 4",
 			},
 		},
 		// HideFrom
@@ -347,6 +503,34 @@ func TestFilter(t *testing.T) {
 			wantFm:  true,
 			wantHfm:  true,
 		},
+		// HideFrom with other filters
+		{
+			name:    "hideFrom and hide",
+			profile: noInlinesProfile,
+			hideFrom:   regexp.MustCompile("fun1"),
+			hide:   regexp.MustCompile("fun2|fun4|fun10"),
+			wantFm:  true,
+			wantHfm: true,
+			wantHm: true,
+			wantSampleFuncs: []string{
+				"fun3: 1",
+				"fun6: 2",
+				"fun7 fun8: 3",
+				"fun7: 4",
+			},
+		},
+		{
+			name:    "hideFrom and show",
+			profile: noInlinesProfile,
+			hideFrom:   regexp.MustCompile("fun1"),
+			show:   regexp.MustCompile("fun0|fun6|fun10"),
+			wantFm:  true,
+			wantHfm: true,
+			wantSm: true,
+			wantSampleFuncs: []string{
+				"fun6: 2",
+			},
+		},
 		// Show
 		{
 			name:    "show with no matches",
@@ -407,6 +591,20 @@ func TestFilter(t *testing.T) {
 			wantSampleFuncs: []string{
 				"fun0 fun1 fun2 fun3: 1",
 				"fun4 fun5 fun6: 2",
+			},
+		},
+		// Show with other filters
+		{
+			name:    "show and hide",
+			profile: noInlinesProfile,
+			show:    regexp.MustCompile("fun1|fun2"),
+			hide:    regexp.MustCompile("fun10"),
+			wantFm:  true,
+			wantSm:  true,
+			wantHm:  true,
+			wantSampleFuncs: []string{
+				"fun1 fun2: 1",
+				"fun1: 2",
 			},
 		},
 		// Hide
@@ -475,30 +673,6 @@ func TestFilter(t *testing.T) {
 			wantHm:  true,
 		},
 		// Compound filters
-		{
-			name:    "hides a stack matched by both focus and ignore",
-			profile: noInlinesProfile,
-			focus:   regexp.MustCompile("fun1|fun7"),
-			ignore:  regexp.MustCompile("fun1"),
-			wantFm:  true,
-			wantIm:  true,
-			wantSampleFuncs: []string{
-				"fun7 fun8: 3",
-			},
-		},
-		{
-			name:    "hides a function if both show and hide match it",
-			profile: noInlinesProfile,
-			show:    regexp.MustCompile("fun1"),
-			hide:    regexp.MustCompile("fun10"),
-			wantFm:  true,
-			wantSm:  true,
-			wantHm:  true,
-			wantSampleFuncs: []string{
-				"fun1: 1",
-				"fun1: 2",
-			},
-		},
 		{
 			name:    "focus showFrom hide",
 			profile: noInlinesProfile,
