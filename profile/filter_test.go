@@ -438,6 +438,32 @@ func TestFilter(t *testing.T) {
 				"fun10: 4",
 			},
 		},
+		{
+			name:    "showFrom and hide inline",
+			profile: inlinesProfile,
+			showFrom:   regexp.MustCompile("fun2|fun5"),
+			hide:   regexp.MustCompile("fun0|fun4"),
+			wantFm:  true,
+			wantSfm: true,
+			wantHm: true,
+			wantSampleFuncs: []string{
+				"fun1 fun2: 1",
+				"fun5: 2",
+			},
+		},
+		{
+			name:    "showFrom and show inline",
+			profile: inlinesProfile,
+			showFrom:   regexp.MustCompile("fun2|fun3|fun5|"),
+			show:   regexp.MustCompile("fun1|fun5"),
+			wantFm:  true,
+			wantSfm: true,
+			wantSm: true,
+			wantSampleFuncs: []string{
+				"fun1: 1",
+				"fun5: 2",
+			},
+		},
 		// HideFrom
 		{
 			name:            "hideFrom with no matches keeps all samples",
@@ -528,6 +554,32 @@ func TestFilter(t *testing.T) {
 			wantHfm: true,
 			wantSm: true,
 			wantSampleFuncs: []string{
+				"fun6: 2",
+			},
+		},
+		{
+			name:    "hideFrom and hide inline",
+			profile: inlinesProfile,
+			hideFrom:   regexp.MustCompile("fun1|fun4"),
+			hide:   regexp.MustCompile("fun3|fun5"),
+			wantFm:  true,
+			wantHfm: true,
+			wantHm: true,
+			wantSampleFuncs: []string{
+				"fun2: 1",
+				"fun6: 2",
+			},
+		},
+		{
+			name:    "hideFrom and show inline",
+			profile: inlinesProfile,
+			hideFrom:   regexp.MustCompile("fun1|fun4"),
+			show:   regexp.MustCompile("fun3|fun4|fun6"),
+			wantFm:  true,
+			wantHfm: true,
+			wantSm: true,
+			wantSampleFuncs: []string{
+				"fun3: 1",
 				"fun6: 2",
 			},
 		},
