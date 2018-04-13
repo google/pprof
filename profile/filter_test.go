@@ -108,9 +108,9 @@ func TestFilter(t *testing.T) {
 		// profile is the profile that gets filtered.
 		profile *Profile
 		// These are the inputs to FilterSamplesByName().
-		focus, ignore, hide, show *regexp.Regexp
+		focus, ignore, showFrom, hideFrom, hide, show *regexp.Regexp
 		// want{F,I,S,H}m are expected return values from FilterSamplesByName.
-		wantFm, wantIm, wantSm, wantHm bool
+		wantFm, wantIm, wantSfm, wantHfm, wantSm, wantHm bool
 		// wantSampleFuncs contains expected stack functions and sample value after
 		// filtering, in the same order as in the profile. The format is as
 		// returned by sampleFuncs function below, which is "callee caller: <num>".
@@ -218,6 +218,134 @@ func TestFilter(t *testing.T) {
 			wantSampleFuncs: []string{
 				"fun0 fun1 fun2 fun3: 1",
 			},
+		},
+		// ShowFrom
+		{
+			name:            "showFrom with no matches drops all samples",
+			profile:         noInlinesProfile,
+			showFrom:          regexp.MustCompile("unknown"),
+			wantFm:          true,
+		},
+		{
+			name:    "showFrom matches function names",
+			profile: noInlinesProfile,
+			showFrom:  regexp.MustCompile("fun1"),
+			wantFm:  true,
+			wantSfm:  true,
+			wantSampleFuncs: []string{
+				"fun0 fun1: 1",
+				"fun4 fun5 fun1: 2",
+				"fun9 fun4 fun10: 4",
+			},
+		},
+		{
+			name:    "showFrom matches file names",
+			profile: noInlinesProfile,
+			showFrom:  regexp.MustCompile("file1"),
+			wantFm:  true,
+			wantSfm:  true,
+			wantSampleFuncs: []string{
+				"fun0 fun1: 1",
+				"fun4 fun5 fun1: 2",
+				"fun9 fun4 fun10: 4",
+			},
+		},
+		{
+			name:    "showFrom matches mapping names",
+			profile: noInlinesProfile,
+			showFrom:  regexp.MustCompile("map1"),
+			wantFm:  true,
+			wantSfm:  true,
+			wantSampleFuncs: []string{
+				"fun9 fun4 fun10: 4",
+			},
+		},
+		{
+			name:    "showFrom matches inline functions",
+			profile: inlinesProfile,
+			showFrom:  regexp.MustCompile("fun0|fun5"),
+			wantFm:  true,
+			wantSfm:  true,
+			wantSampleFuncs: []string{
+				"fun0: 1",
+				"fun4 fun5: 2",
+			},
+		},
+		{
+			name:    "showFrom keeps all lines when matching mapping and function",
+			profile: inlinesProfile,
+			showFrom:  regexp.MustCompile("map0|fun5"),
+			wantFm:  true,
+			wantSfm:  true,
+			wantSampleFuncs: []string{
+				"fun0 fun1 fun2 fun3: 1",
+				"fun4 fun5 fun6: 2",
+			},
+		},
+		// HideFrom
+		{
+			name:            "hideFrom with no matches keeps all samples",
+			profile:         noInlinesProfile,
+			hideFrom:          regexp.MustCompile("unknown"),
+			wantFm:          true,
+			wantSampleFuncs: allNoInlinesSampleFuncs,
+		},
+		{
+			name:    "hideFrom matches function names",
+			profile: noInlinesProfile,
+			hideFrom:  regexp.MustCompile("fun1"),
+			wantFm:  true,
+			wantHfm:  true,
+			wantSampleFuncs: []string{
+				"fun2 fun3: 1",
+				"fun6: 2",
+				"fun7 fun8: 3",
+				"fun7: 4",
+			},
+		},
+		{
+			name:    "hideFrom matches file names",
+			profile: noInlinesProfile,
+			hideFrom:  regexp.MustCompile("file1"),
+			wantFm:  true,
+			wantHfm:  true,
+			wantSampleFuncs: []string{
+				"fun2 fun3: 1",
+				"fun6: 2",
+				"fun7 fun8: 3",
+				"fun7: 4",
+			},
+		},
+		{
+			name:    "hideFrom matches mapping names",
+			profile: noInlinesProfile,
+			hideFrom:  regexp.MustCompile("map1"),
+			wantFm:  true,
+			wantHfm:  true,
+			wantSampleFuncs: []string{
+				"fun0 fun1 fun2 fun3: 1",
+				"fun4 fun5 fun1 fun6: 2",
+				"fun7 fun8: 3",
+				"fun7: 4",
+			},
+		},
+		{
+			name:    "hideFrom matches inline functions",
+			profile: inlinesProfile,
+			hideFrom:  regexp.MustCompile("fun0|fun5"),
+			wantFm:  true,
+			wantHfm:  true,
+			wantSampleFuncs: []string{
+				"fun1 fun2 fun3: 1",
+				"fun6: 2",
+			},
+		},
+		{
+			name:    "hideFrom drops all lines when matching mapping and function",
+			profile: inlinesProfile,
+			hideFrom:  regexp.MustCompile("map0|fun5"),
+			wantFm:  true,
+			wantHfm:  true,
 		},
 		// Show
 		{
@@ -371,14 +499,29 @@ func TestFilter(t *testing.T) {
 				"fun1: 2",
 			},
 		},
+		{
+			name:    "focus showFrom hide",
+			profile: noInlinesProfile,
+			focus:    regexp.MustCompile("fun3"),
+			showFrom:    regexp.MustCompile("fun2"),
+			hide:    regexp.MustCompile("fun1"),
+			wantFm:  true,
+			wantSfm:  true,
+			wantHm:  true,
+			wantSampleFuncs: []string{
+				"fun0 fun2: 1",
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := tc.profile.Copy()
-			fm, im, hm, sm := p.FilterSamplesByName(tc.focus, tc.ignore, tc.hide, tc.show)
+			fm, im, sfm, hfm, sm, hm := p.FilterSamplesByName(tc.focus, tc.ignore, tc.showFrom, tc.hideFrom, tc.show, tc.hide)
 
-			type match struct{ fm, im, hm, sm bool }
-			if got, want := (match{fm: fm, im: im, hm: hm, sm: sm}), (match{fm: tc.wantFm, im: tc.wantIm, hm: tc.wantHm, sm: tc.wantSm}); got != want {
-				t.Errorf("match got %+v want %+v", got, want)
+			type match struct{fm, im, sfm, hfm, sm, hm bool }
+			gotMatch := match{fm, im, sfm, hfm, sm, hm}
+			wantMatch := match{tc.wantFm, tc.wantIm, tc.wantSfm, tc.wantHfm, tc.wantSm, tc.wantHm}
+			if gotMatch != wantMatch {
+				t.Errorf("match got %+v want %+v", gotMatch, wantMatch)
 			}
 
 			if got, want := strings.Join(sampleFuncs(p), "\n")+"\n", strings.Join(tc.wantSampleFuncs, "\n")+"\n"; got != want {

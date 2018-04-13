@@ -21,9 +21,14 @@ import "regexp"
 // FilterSamplesByName filters the samples in a profile and only keeps
 // samples where at least one frame matches focus but none match ignore.
 // Returns true is the corresponding regexp matched at least one sample.
-func (p *Profile) FilterSamplesByName(focus, ignore, hide, show *regexp.Regexp) (fm, im, hm, hnm bool) {
+func (p *Profile) FilterSamplesByName(focus, ignore, showFrom, hideFrom, show, hide  *regexp.Regexp) (fm, im, sfm, hfm, sm, hm bool) {
 	focusOrIgnore := make(map[uint64]bool)
 	hidden := make(map[uint64]bool)
+	// showFromLocs stores location IDs that matched ShowFrom.
+	showFromLocs := make(map[uint64]bool)
+	// hideFromLocs stores location IDs that matched HideFrom.
+	hideFromLocs := make(map[uint64]bool)
+
 	for _, l := range p.Location {
 		if ignore != nil && l.matchesName(ignore) {
 			im = true
@@ -33,45 +38,124 @@ func (p *Profile) FilterSamplesByName(focus, ignore, hide, show *regexp.Regexp) 
 			focusOrIgnore[l.ID] = true
 		}
 
-		if hide != nil && l.matchesName(hide) {
-			hm = true
-			l.Line = l.unmatchedLines(hide)
-			if len(l.Line) == 0 {
-				hidden[l.ID] = true
+		sfml, hfml, sml, hml := filterLocationLines(l, showFrom, hideFrom, show, hide)
+		if sfml {
+			sfm = true
+			showFromLocs[l.ID] = true
+		}
+		if hfml {
+			hfm = true
+			hideFromLocs[l.ID] = true
+		}
+		sm = sm || sml
+		hm = hm || hml
+		if len(l.Line) == 0 {
+			hidden[l.ID] = true
+		}
+	}
+
+	filteredSamples := make([]*Sample, 0, len(p.Sample))
+	for _, sample := range p.Sample {
+		if !focusedAndNotIgnored(sample.Location, focusOrIgnore) {
+			continue
+		}
+
+		if len(hidden) == 0 && showFrom != nil && hideFrom != nil {
+			filteredSamples = append(filteredSamples, sample)
+			continue
+		}
+
+		var pathIndex int
+		if hideFrom != nil {
+			if i := lastLocationIndex(sample.Location, hideFromLocs); i >= 0 {
+				pathIndex = i
 			}
 		}
-		if show != nil {
-			l.Line = l.matchedLines(show)
-			if len(l.Line) == 0 {
-				hidden[l.ID] = true
+
+		var lastPathIndex = len(sample.Location)
+		if showFrom != nil {
+			if i := lastLocationIndex(sample.Location, showFromLocs); i >= 0 {
+			 lastPathIndex = i + 1
 			} else {
-				hnm = true
+				lastPathIndex = 0;
+			}
+		}
+
+		var filteredPath []*Location
+		for ; pathIndex < lastPathIndex; pathIndex++ {
+			location := sample.Location[pathIndex]
+			if !hidden[location.ID] {
+				filteredPath = append(filteredPath, location)
+			}
+		}
+
+		if len(filteredPath) != 0 {
+			sample.Location = filteredPath
+			filteredSamples = append(filteredSamples, sample)
+		}
+	}
+	p.Sample = filteredSamples
+	return
+}
+
+// filterLocationLines prunes a location's lines based on filters and returns
+// whether each filter was matched.
+func filterLocationLines(location *Location, showFrom, hideFrom, show, hide *regexp.Regexp) (sfml, hfml, sml, hml bool) {
+	// TODO: These filter regexes are tested twice, first to determine the return
+	// values, and again to prune the lines. This is done because we want to test
+	// each filter against all lines before any pruning is done, to avoid missing
+	// any matches that were removed by a previous filter.
+	if show != nil && location.matchesName(show) {
+		sml = true
+	}
+	if hide != nil && location.matchesName(hide) {
+		hml = true
+	}
+
+
+	showFromIndex := len(location.Line)
+	if showFrom != nil {
+		if location.matchesMapping(showFrom) {
+			sfml = true
+		} else if i := location.lastMatchedLineIndex(showFrom); i>=0 {
+			sfml = true
+			showFromIndex = i + 1
+		}
+	}
+
+	hideFromIndex := 0
+	if hideFrom != nil {
+		if location.matchesMapping(hideFrom) {
+			hfml = true
+			hideFromIndex = showFromIndex
+		} else if i := location.lastMatchedLineIndex(hideFrom); i>=0 {
+			hfml = true
+			hideFromIndex = i + 1
+			if hideFromIndex > showFromIndex {
+				hideFromIndex = showFromIndex
 			}
 		}
 	}
 
-	s := make([]*Sample, 0, len(p.Sample))
-	for _, sample := range p.Sample {
-		if focusedAndNotIgnored(sample.Location, focusOrIgnore) {
-			if len(hidden) > 0 {
-				var locs []*Location
-				for _, loc := range sample.Location {
-					if !hidden[loc.ID] {
-						locs = append(locs, loc)
-					}
-				}
-				if len(locs) == 0 {
-					// Remove sample with no locations (by not adding it to s).
-					continue
-				}
-				sample.Location = locs
-			}
-			s = append(s, sample)
-		}
+	location.Line = location.Line[hideFromIndex:showFromIndex]
+	if show != nil {
+		location.Line = location.matchedLines(show)
 	}
-	p.Sample = s
+	if hide != nil {
+		location.Line = location.unmatchedLines(hide)
+	}
 
 	return
+}
+
+// lastLocationIndex returns the index of the last location who's ID is in the map.
+func lastLocationIndex(path []*Location, matchedIDs map[uint64]bool) int {
+	for i:=len(path)-1; i>=0; i-- {
+		if matchedIDs[path[i].ID] {
+			return i;
+		}
+	}
+	return -1
 }
 
 // FilterTagsByName filters the tags in a profile and only keeps
@@ -119,6 +203,27 @@ func (loc *Location) matchesName(re *regexp.Regexp) bool {
 		return true
 	}
 	return false
+}
+
+// matchesMapping returns whether a regex matches the location's mapping.
+func (loc *Location) matchesMapping(re *regexp.Regexp) bool {
+	if m := loc.Mapping; m != nil && re != nil && re.MatchString(m.File) {
+		return true
+	}
+	return false
+}
+
+// lastMatchedLineIndex returns the last line index that matches a regex, or
+// -1 if no match is found.
+func (loc *Location) lastMatchedLineIndex(re *regexp.Regexp) int {
+	for i := len(loc.Line)-1; i>=0; i-- {
+		if fn := loc.Line[i].Function; fn != nil {
+			if re.MatchString(fn.Name) || re.MatchString(fn.Filename) {
+				return i
+			}
+		}
+	}
+	return -1
 }
 
 // unmatchedLines returns the lines in the location that do not match
