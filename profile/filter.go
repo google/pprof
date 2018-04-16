@@ -22,6 +22,8 @@ import "regexp"
 // samples where at least one frame matches focus but none match ignore.
 // Returns true is the corresponding regexp matched at least one sample.
 func (p *Profile) FilterSamplesByName(focus, ignore, showFrom, hideFrom, show, hide  *regexp.Regexp) (fm, im, sfm, hfm, sm, hm bool) {
+	// TODO: short circuit if filters are empty
+
 	focusOrIgnore := make(map[uint64]bool)
 	hidden := make(map[uint64]bool)
 	// showFromLocs stores location IDs that matched ShowFrom.
@@ -38,7 +40,10 @@ func (p *Profile) FilterSamplesByName(focus, ignore, showFrom, hideFrom, show, h
 			focusOrIgnore[l.ID] = true
 		}
 
-		sfml, hfml, sml, hml := filterLocationLines(l, showFrom, hideFrom, show, hide)
+		drop, sfml, hfml, sml, hml := filterLocation(l, showFrom, hideFrom, show, hide)
+		if drop {
+			hidden[l.ID] = true
+		}
 		if sfml {
 			sfm = true
 			showFromLocs[l.ID] = true
@@ -49,9 +54,6 @@ func (p *Profile) FilterSamplesByName(focus, ignore, showFrom, hideFrom, show, h
 		}
 		sm = sm || sml
 		hm = hm || hml
-		if len(l.Line) == 0 {
-			hidden[l.ID] = true
-		}
 	}
 
 	filteredSamples := make([]*Sample, 0, len(p.Sample))
@@ -60,10 +62,7 @@ func (p *Profile) FilterSamplesByName(focus, ignore, showFrom, hideFrom, show, h
 			continue
 		}
 
-		if len(hidden) == 0 && showFrom != nil && hideFrom != nil {
-			filteredSamples = append(filteredSamples, sample)
-			continue
-		}
+		// TODO: short circuit if nothing can be hidden
 
 		var pathIndex int
 		if hideFrom != nil {
@@ -98,11 +97,15 @@ func (p *Profile) FilterSamplesByName(focus, ignore, showFrom, hideFrom, show, h
 	return
 }
 
-// filterLocationLines prunes a location's lines based on filters and returns
-// whether each filter was matched.
-func filterLocationLines(location *Location, showFrom, hideFrom, show, hide *regexp.Regexp) (sfml, hfml, sml, hml bool) {
+// filterLocation prunes a location's lines based on filters and returns
+// whether each filter was matched, and whether or not to drop the location.
+func filterLocation(location *Location, showFrom, hideFrom, show, hide *regexp.Regexp) (drop, sfml, hfml, sml, hml bool) {
+	if len(location.Line) == 0 {
+		return filterEmptyLocation(location, showFrom, hideFrom, show, hide)
+	}
+
 	// TODO: These filter regexes are tested twice, first to determine the return
-	// values, and again to prune the lines. This is done because we want to test
+	// values, and again to prune the lines. This happens because we want to test
 	// each filter against all lines before any pruning is done, to avoid missing
 	// any matches that were removed by a previous filter.
 	if show != nil && location.matchesName(show) {
@@ -111,7 +114,6 @@ func filterLocationLines(location *Location, showFrom, hideFrom, show, hide *reg
 	if hide != nil && location.matchesName(hide) {
 		hml = true
 	}
-
 
 	showFromIndex := len(location.Line)
 	if showFrom != nil {
@@ -145,10 +147,37 @@ func filterLocationLines(location *Location, showFrom, hideFrom, show, hide *reg
 		location.Line = location.unmatchedLines(hide)
 	}
 
+	drop = len(location.Line) == 0
 	return
 }
 
-// lastLocationIndex returns the index of the last location who's ID is in the map.
+// filterEmptyLocation handles the special case of locations with zero lines.
+// the filters are only tested against the mapping, and the location is only
+// dropped if explicitly matched by the filters.
+func filterEmptyLocation(location *Location, showFrom, hideFrom, show, hide *regexp.Regexp) (drop, sfml, hfml, sml, hml bool) {
+	if showFrom != nil && location.matchesMapping(showFrom) {
+		sfml = true;
+	}
+	if hideFrom != nil && location.matchesMapping(hideFrom) {
+		drop = true
+		hfml = true
+	}
+	if show != nil {
+		if location.matchesMapping(show) {
+			sml = true;
+		} else {
+			drop = true
+		}
+	}
+	if hide != nil && location.matchesMapping(hide) {
+		drop = true
+		hml = true;
+	}
+	return
+}
+
+// lastLocationIndex returns the index of the last location who's ID is in the
+// map.
 func lastLocationIndex(path []*Location, matchedIDs map[uint64]bool) int {
 	for i:=len(path)-1; i>=0; i-- {
 		if matchedIDs[path[i].ID] {

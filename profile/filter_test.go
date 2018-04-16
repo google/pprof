@@ -101,6 +101,33 @@ var inlinesProfile = &Profile{
 	},
 }
 
+var emptyLinesLocs = []*Location{
+	{ID: 1, Mapping: mappings[0], Address: 0x1000, Line: []Line{{Function: functions[0], Line: 1}, {Function: functions[1], Line: 1}}},
+	{ID: 2, Mapping: mappings[0], Address: 0x2000, Line: []Line{}},
+	{ID: 3, Mapping: mappings[1], Address: 0x2000, Line: []Line{}},
+}
+
+var emptyLinesProfile = &Profile{
+	TimeNanos:     10000,
+	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
+	Period:        1,
+	DurationNanos: 10e9,
+	SampleType:    []*ValueType{{Type: "samples", Unit: "count"}},
+	Mapping:       mappings,
+	Function:      functions,
+	Location:      emptyLinesLocs,
+	Sample: []*Sample{
+		{Value: []int64{1}, Location: []*Location{emptyLinesLocs[0], emptyLinesLocs[1]}},
+		{Value: []int64{2}, Location: []*Location{emptyLinesLocs[2]}},
+		{Value: []int64{3}, Location: []*Location{}},
+	},
+}
+
+var allEmptyLinesSampleFuncs = []string{
+	"fun0 fun1: 1",
+  ": 2",
+}
+
 func TestFilter(t *testing.T) {
 	for _, tc := range []struct {
 		// name is the name of the test case.
@@ -122,6 +149,12 @@ func TestFilter(t *testing.T) {
 			profile:         noInlinesProfile,
 			wantFm:          true,
 			wantSampleFuncs: allNoInlinesSampleFuncs,
+		},
+		{
+			name:            "empty filters keep all frames with empty lines",
+			profile:         emptyLinesProfile,
+			wantFm:          true,
+			wantSampleFuncs: allEmptyLinesSampleFuncs,
 		},
 		// Focus
 		{
@@ -167,6 +200,15 @@ func TestFilter(t *testing.T) {
 			wantFm:  true,
 			wantSampleFuncs: []string{
 				"fun4 fun5 fun6: 2",
+			},
+		},
+		{
+			name:            "focus matches location with empty lines",
+			profile:         emptyLinesProfile,
+			focus:   regexp.MustCompile("map1"),
+			wantFm:          true,
+			wantSampleFuncs: []string{
+  			": 2",
 			},
 		},
 		// Focus with other filters
@@ -278,6 +320,16 @@ func TestFilter(t *testing.T) {
 			wantIm:  true,
 			wantSampleFuncs: []string{
 				"fun0 fun1 fun2 fun3: 1",
+			},
+		},
+		{
+			name:            "ignore matches location with empty lines",
+			profile:         emptyLinesProfile,
+			ignore:   regexp.MustCompile("map1"),
+			wantFm:          true,
+			wantIm:          true,
+			wantSampleFuncs: []string{
+  			"fun0 fun1: 1",
 			},
 		},
 		// Ignore with other filters
@@ -396,6 +448,16 @@ func TestFilter(t *testing.T) {
 			wantSampleFuncs: []string{
 				"fun0 fun1 fun2 fun3: 1",
 				"fun4 fun5 fun6: 2",
+			},
+		},
+		{
+			name:            "showFrom matches location with empty lines",
+			profile:         emptyLinesProfile,
+			showFrom:   regexp.MustCompile("map1"),
+			wantFm:          true,
+			wantSfm:          true,
+			wantSampleFuncs: []string{
+				": 2",
 			},
 		},
 		// ShowFrom with other filters
@@ -529,6 +591,16 @@ func TestFilter(t *testing.T) {
 			wantFm:  true,
 			wantHfm:  true,
 		},
+		{
+			name:            "hideFrom matches location with empty lines",
+			profile:         emptyLinesProfile,
+			hideFrom:   regexp.MustCompile("map1"),
+			wantFm:          true,
+			wantHfm:          true,
+			wantSampleFuncs: []string{
+				"fun0 fun1: 1",
+			},
+		},
 		// HideFrom with other filters
 		{
 			name:    "hideFrom and hide",
@@ -645,6 +717,17 @@ func TestFilter(t *testing.T) {
 				"fun4 fun5 fun6: 2",
 			},
 		},
+		{
+			name:            "show matches location with empty lines",
+			profile:         emptyLinesProfile,
+			show:   regexp.MustCompile("fun1|map1"),
+			wantFm:          true,
+			wantSm:          true,
+			wantSampleFuncs: []string{
+				"fun1: 1",
+				": 2",
+			},
+		},
 		// Show with other filters
 		{
 			name:    "show and hide",
@@ -723,6 +806,16 @@ func TestFilter(t *testing.T) {
 			hide:    regexp.MustCompile("map0|fun5"),
 			wantFm:  true,
 			wantHm:  true,
+		},
+		{
+			name:            "hide matches location with empty lines",
+			profile:         emptyLinesProfile,
+			hide:   regexp.MustCompile("fun1|map1"),
+			wantFm:          true,
+			wantHm:          true,
+			wantSampleFuncs: []string{
+				"fun0: 1",
+			},
 		},
 		// Compound filters
 		{
