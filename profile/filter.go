@@ -21,8 +21,11 @@ import "regexp"
 // FilterSamplesByName filters the samples in a profile and only keeps
 // samples where at least one frame matches focus but none match ignore.
 // Returns true is the corresponding regexp matched at least one sample.
-func (p *Profile) FilterSamplesByName(focus, ignore, showFrom, hideFrom, show, hide  *regexp.Regexp) (fm, im, sfm, hfm, sm, hm bool) {
-	// TODO: short circuit if filters are empty
+func (p *Profile) FilterSamplesByName(focus, ignore, showFrom, hideFrom, show, hide *regexp.Regexp) (fm, im, sfm, hfm, sm, hm bool) {
+	if focus == nil && ignore == nil && showFrom == nil && hideFrom == nil && show == nil && hide == nil {
+		fm = true
+		return
+	}
 
 	focusOrIgnore := make(map[uint64]bool)
 	hidden := make(map[uint64]bool)
@@ -56,13 +59,18 @@ func (p *Profile) FilterSamplesByName(focus, ignore, showFrom, hideFrom, show, h
 		hm = hm || hml
 	}
 
+	mayHideFrames := len(hidden) != 0 || showFrom != nil || len(hideFromLocs) != 0
+
 	filteredSamples := make([]*Sample, 0, len(p.Sample))
 	for _, sample := range p.Sample {
 		if !focusedAndNotIgnored(sample.Location, focusOrIgnore) {
 			continue
 		}
 
-		// TODO: short circuit if nothing can be hidden
+		if !mayHideFrames {
+			filteredSamples = append(filteredSamples, sample)
+			continue
+		}
 
 		var pathIndex int
 		if hideFrom != nil {
@@ -74,9 +82,9 @@ func (p *Profile) FilterSamplesByName(focus, ignore, showFrom, hideFrom, show, h
 		var lastPathIndex = len(sample.Location)
 		if showFrom != nil {
 			if i := lastLocationIndex(sample.Location, showFromLocs); i >= 0 {
-			 lastPathIndex = i + 1
+				lastPathIndex = i + 1
 			} else {
-				lastPathIndex = 0;
+				lastPathIndex = 0
 			}
 		}
 
@@ -119,7 +127,7 @@ func filterLocation(location *Location, showFrom, hideFrom, show, hide *regexp.R
 	if showFrom != nil {
 		if location.matchesMapping(showFrom) {
 			sfml = true
-		} else if i := location.lastMatchedLineIndex(showFrom); i>=0 {
+		} else if i := location.lastMatchedLineIndex(showFrom); i >= 0 {
 			sfml = true
 			showFromIndex = i + 1
 		}
@@ -130,7 +138,7 @@ func filterLocation(location *Location, showFrom, hideFrom, show, hide *regexp.R
 		if location.matchesMapping(hideFrom) {
 			hfml = true
 			hideFromIndex = showFromIndex
-		} else if i := location.lastMatchedLineIndex(hideFrom); i>=0 {
+		} else if i := location.lastMatchedLineIndex(hideFrom); i >= 0 {
 			hfml = true
 			hideFromIndex = i + 1
 			if hideFromIndex > showFromIndex {
@@ -156,7 +164,7 @@ func filterLocation(location *Location, showFrom, hideFrom, show, hide *regexp.R
 // dropped if explicitly matched by the filters.
 func filterEmptyLocation(location *Location, showFrom, hideFrom, show, hide *regexp.Regexp) (drop, sfml, hfml, sml, hml bool) {
 	if showFrom != nil && location.matchesMapping(showFrom) {
-		sfml = true;
+		sfml = true
 	}
 	if hideFrom != nil && location.matchesMapping(hideFrom) {
 		drop = true
@@ -164,14 +172,14 @@ func filterEmptyLocation(location *Location, showFrom, hideFrom, show, hide *reg
 	}
 	if show != nil {
 		if location.matchesMapping(show) {
-			sml = true;
+			sml = true
 		} else {
 			drop = true
 		}
 	}
 	if hide != nil && location.matchesMapping(hide) {
 		drop = true
-		hml = true;
+		hml = true
 	}
 	return
 }
@@ -179,9 +187,9 @@ func filterEmptyLocation(location *Location, showFrom, hideFrom, show, hide *reg
 // lastLocationIndex returns the index of the last location who's ID is in the
 // map.
 func lastLocationIndex(path []*Location, matchedIDs map[uint64]bool) int {
-	for i:=len(path)-1; i>=0; i-- {
+	for i := len(path) - 1; i >= 0; i-- {
 		if matchedIDs[path[i].ID] {
-			return i;
+			return i
 		}
 	}
 	return -1
@@ -245,7 +253,7 @@ func (loc *Location) matchesMapping(re *regexp.Regexp) bool {
 // lastMatchedLineIndex returns the last line index that matches a regex, or
 // -1 if no match is found.
 func (loc *Location) lastMatchedLineIndex(re *regexp.Regexp) int {
-	for i := len(loc.Line)-1; i>=0; i-- {
+	for i := len(loc.Line) - 1; i >= 0; i-- {
 		if fn := loc.Line[i].Function; fn != nil {
 			if re.MatchString(fn.Name) || re.MatchString(fn.Filename) {
 				return i
