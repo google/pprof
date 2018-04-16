@@ -40,7 +40,7 @@ func applyFocus(prof *profile.Profile, numLabelUnits map[string]string, v variab
 		return err
 	}
 
-	fm, im, hm, hnm := prof.FilterSamplesByName(focus, ignore, hide, show)
+	fm, im, _, _, hnm, hm := prof.FilterSamplesByName(focus, ignore, nil, nil, show, hide)
 	warnNoMatches(focus == nil || fm, "Focus", ui)
 	warnNoMatches(ignore == nil || im, "Ignore", ui)
 	warnNoMatches(hide == nil || hm, "Hide", ui)
