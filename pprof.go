@@ -35,8 +35,7 @@ func main() {
 // readlineUI implements the driver.UI interface using the
 // github.com/chzyer/readline library
 type readlineUI struct {
-	rl        *readline.Instance
-	completer func(string) string
+	rl *readline.Instance
 }
 
 func newUI() driver.UI {
