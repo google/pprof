@@ -33,7 +33,10 @@ func main() {
 }
 
 // readlineUI implements the driver.UI interface using the
-// github.com/chzyer/readline library
+// github.com/chzyer/readline library.
+// This is contained in pprof.go to avoid adding the readline
+// dependency in the vendored copy of pprof in the Go distribution,
+// which does not use this file.
 type readlineUI struct {
 	rl *readline.Instance
 }
