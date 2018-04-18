@@ -5,6 +5,7 @@ install:
 
 before_build:
  - go get github.com/ianlancetaylor/demangle
+ - go get github.com/chzyer/readline
 
 build_script:
  - go build github.com/google/pprof
