@@ -57,7 +57,7 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 		})
 	}
 
-	p, pbase, m, mbase, save, err := grabSourcesAndBases(sources, bases, o.Fetch, o.Obj, o.UI)
+	p, pbase, m, mbase, save, err := grabSourcesAndBases(sources, bases, s.DiffBase, o.Fetch, o.Obj, o.UI)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 	return p, nil
 }
 
-func grabSourcesAndBases(sources, bases []profileSource, fetch plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (*profile.Profile, *profile.Profile, plugin.MappingSources, plugin.MappingSources, bool, error) {
+func grabSourcesAndBases(sources, bases []profileSource, isDiffBase bool, fetch plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI) (*profile.Profile, *profile.Profile, plugin.MappingSources, plugin.MappingSources, bool, error) {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	var psrc, pbase *profile.Profile
@@ -135,6 +135,9 @@ func grabSourcesAndBases(sources, bases []profileSource, fetch plugin.Fetcher, o
 	go func() {
 		defer wg.Done()
 		pbase, mbase, savebase, countbase, errbase = chunkedGrab(bases, fetch, obj, ui)
+		if pbase != nil && isDiffBase {
+			pbase.AddTag("pprof::diff", "true")
+		}
 	}()
 	wg.Wait()
 	save := savesrc || savebase

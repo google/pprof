@@ -241,10 +241,10 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	for _, f := range prof.Function {
 		f.Filename = trimPath(f.Filename, o.TrimPath, o.SourcePath)
 	}
-	// Removes all numeric tags except for the bytes tag prior
-	// to making graph.
-	// TODO: modify to select first numeric tag if no bytes tag
 	for _, s := range prof.Sample {
+		// Removes all numeric tags except for the bytes tag prior
+		// to making graph.
+		// TODO: modify to select first numeric tag if no bytes tag
 		numLabels := make(map[string][]int64, len(s.NumLabel))
 		numUnits := make(map[string][]string, len(s.NumLabel))
 		for k, vs := range s.NumLabel {
@@ -262,6 +262,21 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 		}
 		s.NumLabel = numLabels
 		s.NumUnit = numUnits
+
+		// Also remove pprof::diff=true string tag.
+		if values, ok := s.Label["pprof::diff"]; ok {
+			newVals := []string{}
+			for _, v := range values {
+				if v != "true" {
+					newVals = append(newVals, v)
+				}
+			}
+			if len(newVals) == 0 {
+				delete(s.Label, "pprof::diff")
+			} else if len(newVals) != len(values) {
+				s.Label["pprof::diff"] = newVals
+			}
+		}
 	}
 
 	formatTag := func(v int64, key string) string {
@@ -1212,10 +1227,10 @@ func NewDefault(prof *profile.Profile, options Options) *Report {
 	return New(prof, o)
 }
 
-// computeTotal computes the sum of all sample values. This will be
-// used to compute percentages.
+// computeTotal computes the sum of the absolute value of all sample values.
+// This will be used to compute percentages.
 func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64) int64 {
-	var div, ret int64
+	var div, total, diffTotal int64
 	for _, sample := range prof.Sample {
 		var d, v int64
 		v = value(sample.Value)
@@ -1225,13 +1240,19 @@ func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64) i
 		if v < 0 {
 			v = -v
 		}
-		ret += v
+		total += v
+		if sample.HasTag("pprof::diff", "true") {
+			diffTotal += v
+		}
 		div += d
 	}
-	if div != 0 {
-		return ret / div
+	if diffTotal > 0 {
+		total = diffTotal
 	}
-	return ret
+	if div != 0 {
+		return total / div
+	}
+	return total
 }
 
 // Report contains the data and associated routines to extract a

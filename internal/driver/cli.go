@@ -28,6 +28,7 @@ type source struct {
 	ExecName  string
 	BuildID   string
 	Base      []string
+	DiffBase  bool
 	Normalize bool
 
 	Seconds      int
@@ -43,7 +44,8 @@ type source struct {
 func parseFlags(o *plugin.Options) (*source, []string, error) {
 	flag := o.Flagset
 	// Comparisons.
-	flagBase := flag.StringList("base", "", "Source for base profile for comparison")
+	flagBase := flag.StringList("base", "", "Source for base profile for profile subtraction")
+	flagDiff := flag.StringList("diff", "", "Source for base profile for comparison")
 	// Source options.
 	flagSymbolize := flag.String("symbolize", "", "Options for profile symbolization")
 	flagBuildID := flag.String("buildid", "", "Override build id for first mapping")
@@ -140,7 +142,15 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		Comment:      *flagAddComment,
 	}
 
-	for _, s := range *flagBase {
+	if len(*flagBase) > 0 && len(*flagDiff) > 0 {
+		return nil, nil, fmt.Errorf("only -base or -diff flag can be specified")
+	}
+	base := *flagBase
+	if len(*flagDiff) > 0 {
+		base = *flagDiff
+		source.DiffBase = true
+	}
+	for _, s := range base {
 		if *s != "" {
 			source.Base = append(source.Base, *s)
 		}

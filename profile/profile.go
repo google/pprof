@@ -674,6 +674,36 @@ func numLabelsToString(numLabels map[string][]int64, numUnits map[string][]strin
 	return strings.Join(ls, " ")
 }
 
+// AddTag adds a tag with the specified key and value to all samples in the
+// profile.
+func (p *Profile) AddTag(key, value string) {
+	for _, sample := range p.Sample {
+		if sample.HasTag(key, value) {
+			continue
+		}
+		if values := sample.Label[key]; values != nil {
+			sample.Label[key] = append(values, value)
+		} else {
+			if sample.Label == nil {
+				sample.Label = make(map[string][]string)
+			}
+			sample.Label[key] = []string{value}
+		}
+	}
+}
+
+// HasTag returns true if a sample has a tag with indicated key and value.
+func (s *Sample) HasTag(key, value string) bool {
+	if values, ok := s.Label[key]; ok {
+		for _, v := range values {
+			if v == value {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // Scale multiplies all sample values in a profile by a constant.
 func (p *Profile) Scale(ratio float64) {
 	if ratio == 1 {

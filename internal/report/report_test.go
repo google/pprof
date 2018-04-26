@@ -287,3 +287,122 @@ func TestLegendActiveFilters(t *testing.T) {
 		}
 	}
 }
+
+func TestComputTotal(t *testing.T) {
+	p1 := testProfile.Copy()
+	p1.Sample = []*profile.Sample{
+		{
+			Location: []*profile.Location{testL[0]},
+			Value:    []int64{1, 1},
+		},
+		{
+			Location: []*profile.Location{testL[2], testL[1], testL[0]},
+			Value:    []int64{1, 10},
+		},
+		{
+			Location: []*profile.Location{testL[4], testL[2], testL[0]},
+			Value:    []int64{1, 100},
+		},
+	}
+
+	p2 := testProfile.Copy()
+	p2.Sample = []*profile.Sample{
+		{
+			Location: []*profile.Location{testL[0]},
+			Value:    []int64{1, 1},
+		},
+		{
+			Location: []*profile.Location{testL[2], testL[1], testL[0]},
+			Value:    []int64{1, -10},
+		},
+		{
+			Location: []*profile.Location{testL[4], testL[2], testL[0]},
+			Value:    []int64{1, 100},
+		},
+	}
+
+	p3 := testProfile.Copy()
+	p3.Sample = []*profile.Sample{
+		{
+			Location: []*profile.Location{testL[0]},
+			Value:    []int64{10000, 1},
+		},
+		{
+			Location: []*profile.Location{testL[2], testL[1], testL[0]},
+			Value:    []int64{-10, 3},
+			Label:    map[string][]string{"pprof::diff": {"true"}},
+		},
+		{
+			Location: []*profile.Location{testL[2], testL[1], testL[0]},
+			Value:    []int64{1000, -10},
+		},
+		{
+			Location: []*profile.Location{testL[2], testL[1], testL[0]},
+			Value:    []int64{-9000, 3},
+			Label:    map[string][]string{"pprof::diff": {"true"}},
+		},
+		{
+			Location: []*profile.Location{testL[2], testL[1], testL[0]},
+			Value:    []int64{-1, 3},
+			Label:    map[string][]string{"pprof::diff": {"true"}},
+		},
+		{
+			Location: []*profile.Location{testL[4], testL[2], testL[0]},
+			Value:    []int64{100, 100},
+		},
+		{
+			Location: []*profile.Location{testL[2], testL[1], testL[0]},
+			Value:    []int64{100, 3},
+			Label:    map[string][]string{"pprof::diff": {"true"}},
+		},
+	}
+
+	testcases := []struct {
+		desc           string
+		prof           *profile.Profile
+		value, meanDiv func(v []int64) int64
+		wantTotal      int64
+	}{
+		{
+			desc: "non-diff profile, all positive values, index 1",
+			prof: p1,
+			value: func(v []int64) int64 {
+				return v[0]
+			},
+			wantTotal: 3,
+		},
+		{
+			desc: "non-diff profile, all positive values, index 2",
+			prof: p1,
+			value: func(v []int64) int64 {
+				return v[1]
+			},
+			wantTotal: 111,
+		},
+		{
+			desc: "non-diff profile, some negative values",
+			prof: p2,
+			value: func(v []int64) int64 {
+				return v[1]
+			},
+			wantTotal: 111,
+		},
+		{
+			desc: "diff profile, some negative values",
+			prof: p3,
+			value: func(v []int64) int64 {
+				return v[0]
+			},
+			wantTotal: 9111,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.desc, func(t *testing.T) {
+			gotTotal := computeTotal(tc.prof, tc.value, tc.meanDiv)
+			if gotTotal != tc.wantTotal {
+				t.Errorf("want total %d, got %v", tc.wantTotal, gotTotal)
+			}
+		})
+	}
+}
