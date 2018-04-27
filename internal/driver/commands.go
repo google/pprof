@@ -153,6 +153,7 @@ var pprofVariables = variables{
 		"Using auto will scale each value independently to the most natural unit.")},
 	"compact_labels": &variable{boolKind, "f", "", "Show minimal headers"},
 	"source_path":    &variable{stringKind, "", "", "Search path for source files"},
+	"trim_path":      &variable{stringKind, "", "", "Path to trim from source paths before search"},
 
 	// Filtering options
 	"nodecount": &variable{intKind, "-1", "", helpText(
