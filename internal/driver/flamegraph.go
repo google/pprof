@@ -102,14 +102,16 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 	})
 }
 
-// getNodeShortName builds a short node name.
+// getNodeShortName builds a short node name from fullName.
 func getNodeShortName(name string) string {
-	pathSep := strings.LastIndexByte(name, '/')
-	if pathSep == -1 || pathSep+1 >= len(name) {
+	chunks := strings.SplitN(name, "(", 2)
+	head := chunks[0]
+	pathSep := strings.LastIndexByte(head, '/')
+	if pathSep == -1 || pathSep+1 >= len(head) {
 		return name
 	}
 	// Check if name is a stdlib package, i.e. doesn't have "." before "/"
-	if dot := strings.IndexByte(name, '.'); dot == -1 || dot > pathSep {
+	if dot := strings.IndexByte(head, '.'); dot == -1 || dot > pathSep {
 		return name
 	}
 	// Trim package path prefix from node name
