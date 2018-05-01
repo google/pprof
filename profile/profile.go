@@ -674,21 +674,14 @@ func numLabelsToString(numLabels map[string][]int64, numUnits map[string][]strin
 	return strings.Join(ls, " ")
 }
 
-// AddTag adds a tag with the specified key and value to all samples in the
+// SetTag sets the specified key to the specified value for all samples in the
 // profile.
-func (p *Profile) AddTag(key, value string) {
+func (p *Profile) SetTag(key string, value []string) {
 	for _, sample := range p.Sample {
-		if sample.HasTag(key, value) {
-			continue
+		if sample.Label == nil {
+			sample.Label = make(map[string][]string)
 		}
-		if values := sample.Label[key]; values != nil {
-			sample.Label[key] = append(values, value)
-		} else {
-			if sample.Label == nil {
-				sample.Label = make(map[string][]string)
-			}
-			sample.Label[key] = []string{value}
-		}
+		sample.Label[key] = value
 	}
 }
 

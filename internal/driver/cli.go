@@ -142,18 +142,28 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		Comment:      *flagAddComment,
 	}
 
-	if len(*flagBase) > 0 && len(*flagDiff) > 0 {
-		return nil, nil, fmt.Errorf("only -base or -diff flag can be specified")
-	}
-	base := *flagBase
-	if len(*flagDiff) > 0 {
-		base = *flagDiff
-		source.DiffBase = true
-	}
-	for _, s := range base {
+	var base []string
+	for _, s := range *flagBase {
 		if *s != "" {
-			source.Base = append(source.Base, *s)
+			base = append(base, *s)
 		}
+	}
+
+	var diff []string
+	for _, s := range *flagDiff {
+		if *s != "" {
+			diff = append(diff, *s)
+		}
+	}
+
+	if len(base) > 0 && len(diff) > 0 {
+		return nil, nil, fmt.Errorf("-base and -diff flags cannot both be specified")
+	}
+
+	source.Base = base
+	if len(diff) > 0 {
+		source.Base = diff
+		source.DiffBase = true
 	}
 
 	normalize := pprofVariables["normalize"].boolValue()

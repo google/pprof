@@ -288,7 +288,7 @@ func TestLegendActiveFilters(t *testing.T) {
 	}
 }
 
-func TestComputTotal(t *testing.T) {
+func TestComputeTotal(t *testing.T) {
 	p1 := testProfile.Copy()
 	p1.Sample = []*profile.Sample{
 		{

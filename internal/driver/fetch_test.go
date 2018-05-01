@@ -430,7 +430,7 @@ func TestFetchWithBase(t *testing.T) {
 			[]string{path + "cppbench.contention"},
 			false,
 			[]WantSample{},
-			"only -base or -diff flag can be specified",
+			"-base and -diff flags cannot both be specified",
 		},
 	}
 

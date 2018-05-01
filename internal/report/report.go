@@ -241,10 +241,10 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	for _, f := range prof.Function {
 		f.Filename = trimPath(f.Filename, o.TrimPath, o.SourcePath)
 	}
+	// Removes all numeric tags except for the bytes tag prior
+	// to making graph.
+	// TODO: modify to select first numeric tag if no bytes tag
 	for _, s := range prof.Sample {
-		// Removes all numeric tags except for the bytes tag prior
-		// to making graph.
-		// TODO: modify to select first numeric tag if no bytes tag
 		numLabels := make(map[string][]int64, len(s.NumLabel))
 		numUnits := make(map[string][]string, len(s.NumLabel))
 		for k, vs := range s.NumLabel {
@@ -262,22 +262,11 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 		}
 		s.NumLabel = numLabels
 		s.NumUnit = numUnits
-
-		// Also remove pprof::diff=true string tag.
-		if values, ok := s.Label["pprof::diff"]; ok {
-			newVals := []string{}
-			for _, v := range values {
-				if v != "true" {
-					newVals = append(newVals, v)
-				}
-			}
-			if len(newVals) == 0 {
-				delete(s.Label, "pprof::diff")
-			} else if len(newVals) != len(values) {
-				s.Label["pprof::diff"] = newVals
-			}
-		}
 	}
+
+	// Remove tag marking samples from the base profiles, so it does not appear
+	// as a nodelet in the graph view.
+	prof.SetTag("pprof::diff", []string{})
 
 	formatTag := func(v int64, key string) string {
 		return measurement.ScaledLabel(v, key, o.OutputUnit)

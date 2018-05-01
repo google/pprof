@@ -1026,30 +1026,30 @@ func TestHasTag(t *testing.T) {
 	}
 }
 
-func TestAddTag(t *testing.T) {
+func TestSetTag(t *testing.T) {
 	var testcases = []struct {
 		desc     string
 		profile  *Profile
-		addKey   string
-		addVal   string
+		setKey   string
+		setVal   []string
 		wantTags []map[string][]string
 	}{
 		{
 			desc:    "some samples have tag already",
 			profile: testProfile6.Copy(),
-			addKey:  "key1",
-			addVal:  "value1",
+			setKey:  "key1",
+			setVal:  []string{"value1"},
 			wantTags: []map[string][]string{
 				{"key1": {"value1"}},
-				{"key1": {"value1", "value2", "value3"}, "key2": {"value1"}},
-				{"key1": {"value2", "value1"}},
+				{"key1": {"value1"}, "key2": {"value1"}},
+				{"key1": {"value1"}},
 			},
 		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			tc.profile.AddTag(tc.addKey, tc.addVal)
+			tc.profile.SetTag(tc.setKey, tc.setVal)
 			if got, want := len(tc.profile.Sample), len(tc.wantTags); got != want {
 				t.Fatalf("got %v samples, want %v samples", got, want)
 			}

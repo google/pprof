@@ -136,7 +136,7 @@ func grabSourcesAndBases(sources, bases []profileSource, isDiffBase bool, fetch 
 		defer wg.Done()
 		pbase, mbase, savebase, countbase, errbase = chunkedGrab(bases, fetch, obj, ui)
 		if pbase != nil && isDiffBase {
-			pbase.AddTag("pprof::diff", "true")
+			pbase.SetTag("pprof::diff", []string{"true"})
 		}
 	}()
 	wg.Wait()
