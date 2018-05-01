@@ -1217,9 +1217,10 @@ func NewDefault(prof *profile.Profile, options Options) *Report {
 }
 
 // computeTotal computes the sum of the absolute value of all sample values.
-// This will be used to compute percentages.
+// If any samples have the tag "pprof::diff" with value "true", then the total
+// will only include samples with that tag.
 func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64) int64 {
-	var div, total, diffTotal int64
+	var div, total, diffDiv, diffTotal int64
 	for _, sample := range prof.Sample {
 		var d, v int64
 		v = value(sample.Value)
@@ -1232,11 +1233,13 @@ func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64) i
 		total += v
 		if sample.HasTag("pprof::diff", "true") {
 			diffTotal += v
+			diffDiv += d
 		}
 		div += d
 	}
 	if diffTotal > 0 {
 		total = diffTotal
+		div = diffDiv
 	}
 	if div != 0 {
 		return total / div
