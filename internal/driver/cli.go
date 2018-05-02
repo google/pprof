@@ -45,7 +45,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	flag := o.Flagset
 	// Comparisons.
 	flagBase := flag.StringList("base", "", "Source for base profile for profile subtraction")
-	flagDiff := flag.StringList("diff", "", "Source for base profile for comparison")
+	flagDiffBase := flag.StringList("diff_base", "", "Source for diff base profile for comparison")
 	// Source options.
 	flagSymbolize := flag.String("symbolize", "", "Options for profile symbolization")
 	flagBuildID := flag.String("buildid", "", "Override build id for first mapping")
@@ -149,20 +149,20 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		}
 	}
 
-	var diff []string
-	for _, s := range *flagDiff {
+	var diffBase []string
+	for _, s := range *flagDiffBase {
 		if *s != "" {
-			diff = append(diff, *s)
+			diffBase = append(diffBase, *s)
 		}
 	}
 
-	if len(base) > 0 && len(diff) > 0 {
-		return nil, nil, fmt.Errorf("-base and -diff flags cannot both be specified")
+	if len(base) > 0 && len(diffBase) > 0 {
+		return nil, nil, fmt.Errorf("-base and -diff_base flags cannot both be specified")
 	}
 
 	source.Base = base
-	if len(diff) > 0 {
-		source.Base = diff
+	if len(diffBase) > 0 {
+		source.Base = diffBase
 		source.DiffBase = true
 	}
 

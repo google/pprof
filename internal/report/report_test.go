@@ -330,7 +330,7 @@ func TestComputeTotal(t *testing.T) {
 		{
 			Location: []*profile.Location{testL[2], testL[1], testL[0]},
 			Value:    []int64{-10, 3},
-			Label:    map[string][]string{"pprof::diff": {"true"}},
+			Label:    map[string][]string{"base": {"1"}},
 		},
 		{
 			Location: []*profile.Location{testL[2], testL[1], testL[0]},
@@ -339,12 +339,12 @@ func TestComputeTotal(t *testing.T) {
 		{
 			Location: []*profile.Location{testL[2], testL[1], testL[0]},
 			Value:    []int64{-9000, 3},
-			Label:    map[string][]string{"pprof::diff": {"true"}},
+			Label:    map[string][]string{"base": {"1"}},
 		},
 		{
 			Location: []*profile.Location{testL[2], testL[1], testL[0]},
 			Value:    []int64{-1, 3},
-			Label:    map[string][]string{"pprof::diff": {"true"}},
+			Label:    map[string][]string{"base": {"1"}},
 		},
 		{
 			Location: []*profile.Location{testL[4], testL[2], testL[0]},
@@ -353,7 +353,7 @@ func TestComputeTotal(t *testing.T) {
 		{
 			Location: []*profile.Location{testL[2], testL[1], testL[0]},
 			Value:    []int64{100, 3},
-			Label:    map[string][]string{"pprof::diff": {"true"}},
+			Label:    map[string][]string{"base": {"1"}},
 		},
 	}
 
@@ -364,7 +364,7 @@ func TestComputeTotal(t *testing.T) {
 		wantTotal      int64
 	}{
 		{
-			desc: "non-diff profile, all positive values, index 1",
+			desc: "no diff base, all positive values, index 1",
 			prof: p1,
 			value: func(v []int64) int64 {
 				return v[0]
@@ -372,7 +372,7 @@ func TestComputeTotal(t *testing.T) {
 			wantTotal: 3,
 		},
 		{
-			desc: "non-diff profile, all positive values, index 2",
+			desc: "no diff base, all positive values, index 2",
 			prof: p1,
 			value: func(v []int64) int64 {
 				return v[1]
@@ -380,7 +380,7 @@ func TestComputeTotal(t *testing.T) {
 			wantTotal: 111,
 		},
 		{
-			desc: "non-diff profile, some negative values",
+			desc: "no diff base, some negative values",
 			prof: p2,
 			value: func(v []int64) int64 {
 				return v[1]
@@ -388,7 +388,7 @@ func TestComputeTotal(t *testing.T) {
 			wantTotal: 111,
 		},
 		{
-			desc: "diff profile, some negative values",
+			desc: "diff base, some negative values",
 			prof: p3,
 			value: func(v []int64) int64 {
 				return v[0]

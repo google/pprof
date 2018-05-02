@@ -398,39 +398,39 @@ func TestFetchWithBase(t *testing.T) {
 				},
 				{
 					values: []int64{-2700, -608881724},
-					labels: map[string][]string{"pprof::diff": {"true"}},
+					labels: map[string][]string{"base": {"1"}},
 				},
 				{
 					values: []int64{-100, -23992},
-					labels: map[string][]string{"pprof::diff": {"true"}},
+					labels: map[string][]string{"base": {"1"}},
 				},
 				{
 					values: []int64{-200, -179943},
-					labels: map[string][]string{"pprof::diff": {"true"}},
+					labels: map[string][]string{"base": {"1"}},
 				},
 				{
 					values: []int64{-100, -17778444},
-					labels: map[string][]string{"pprof::diff": {"true"}},
+					labels: map[string][]string{"base": {"1"}},
 				},
 				{
 					values: []int64{-100, -75976},
-					labels: map[string][]string{"pprof::diff": {"true"}},
+					labels: map[string][]string{"base": {"1"}},
 				},
 				{
 					values: []int64{-300, -63568134},
-					labels: map[string][]string{"pprof::diff": {"true"}},
+					labels: map[string][]string{"base": {"1"}},
 				},
 			},
 			"",
 		},
 		{
-			"diff and base both specified",
+			"diff_base and base both specified",
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.contention"},
 			false,
 			[]WantSample{},
-			"-base and -diff flags cannot both be specified",
+			"-base and -diff_base flags cannot both be specified",
 		},
 	}
 
@@ -450,8 +450,8 @@ func TestFetchWithBase(t *testing.T) {
 
 			f := testFlags{
 				stringLists: map[string][]*string{
-					"base": base,
-					"diff": diffBase,
+					"base":      base,
+					"diff_base": diffBase,
 				},
 				bools: map[string]bool{
 					"normalize": tc.normalize,
