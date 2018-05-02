@@ -74,6 +74,97 @@ func (p *Profile) FilterSamplesByName(focus, ignore, hide, show *regexp.Regexp) 
 	return
 }
 
+// ShowFrom drops all stack frames before the first match from the root and
+// returns whether a match was found. If showFrom is nil it returns false and
+// does not modify the profile.
+//
+// Example: consider a sample with frames [A, B, C], where A is the root.
+// ShowFrom(nil) returns false and has frames [A, B, C].
+// ShowFrom(A) returns true and has frames [A, B, C].
+// ShowFrom(B) returns true and has frames [B, C].
+// ShowFrom(C) returns true and has frames [C].
+// ShowFrom(D) returns false and the sample is dropped because no frames remain.
+func (p *Profile) ShowFrom(showFrom *regexp.Regexp) (matched bool) {
+	if showFrom == nil {
+		return false
+	}
+
+	// showFromLocs stores location IDs that matched ShowFrom.
+	showFromLocs := make(map[uint64]bool)
+
+	// Apply to locations.
+	for _, location := range p.Location {
+		if filterShowFromLocation(location, showFrom) {
+			showFromLocs[location.ID] = true
+			matched = true
+		}
+	}
+
+	// Apply to samples and paths
+	filteredSamples := make([]*Sample, 0, len(p.Sample))
+	for _, sample := range p.Sample {
+		if i := lastLocationIndex(sample.Location, showFromLocs); i >= 0 {
+			sample.Location = sample.Location[0:i+1]
+			filteredSamples = append(filteredSamples, sample)
+		}
+	}
+
+	p.Sample = filteredSamples
+	return
+}
+
+// filterShowFromLocation tests a showFrom regex against a location and removes
+// lines after the last match. If the mapping is matched, then all lines are
+// kept.
+func filterShowFromLocation(location *Location, showFrom *regexp.Regexp) (matched bool) {
+	if showFrom == nil {
+		return false
+	}
+
+	if location.matchesMapping(showFrom) {
+		return true
+	}
+
+	if i := location.lastMatchedLineIndex(showFrom); i >= 0 {
+		matched = true
+		location.Line = location.Line[0:i+1]
+	}
+
+	return
+}
+
+// lastLocationIndex returns the index of the last location who's ID is in the
+// map.
+func lastLocationIndex(path []*Location, matchedIDs map[uint64]bool) int {
+	for i := len(path) - 1; i >= 0; i-- {
+		if matchedIDs[path[i].ID] {
+			return i
+		}
+	}
+	return -1
+}
+
+// lastMatchedLineIndex returns the index of the last line that matches a regex,
+// or -1 if no match is found.
+func (loc *Location) lastMatchedLineIndex(re *regexp.Regexp) int {
+	for i := len(loc.Line) - 1; i >= 0; i-- {
+		if fn := loc.Line[i].Function; fn != nil {
+			if re.MatchString(fn.Name) || re.MatchString(fn.Filename) {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+// matchesMapping returns whether a regex matches a location's mapping.
+func (loc *Location) matchesMapping(re *regexp.Regexp) bool {
+	if m := loc.Mapping; m != nil && re != nil && re.MatchString(m.File) {
+		return true
+	}
+	return false
+}
+
 // FilterTagsByName filters the tags in a profile and only keeps
 // tags that match show and not hide.
 func (p *Profile) FilterTagsByName(show, hide *regexp.Regexp) (sm, hm bool) {

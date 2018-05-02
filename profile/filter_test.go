@@ -101,7 +101,29 @@ var inlinesProfile = &Profile{
 	},
 }
 
-func TestFilter(t *testing.T) {
+var emptyLinesLocs = []*Location{
+	{ID: 1, Mapping: mappings[0], Address: 0x1000, Line: []Line{{Function: functions[0], Line: 1}, {Function: functions[1], Line: 1}}},
+	{ID: 2, Mapping: mappings[0], Address: 0x2000, Line: []Line{}},
+	{ID: 3, Mapping: mappings[1], Address: 0x2000, Line: []Line{}},
+}
+
+var emptyLinesProfile = &Profile{
+	TimeNanos:     10000,
+	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
+	Period:        1,
+	DurationNanos: 10e9,
+	SampleType:    []*ValueType{{Type: "samples", Unit: "count"}},
+	Mapping:       mappings,
+	Function:      functions,
+	Location:      emptyLinesLocs,
+	Sample: []*Sample{
+		{Value: []int64{1}, Location: []*Location{emptyLinesLocs[0], emptyLinesLocs[1]}},
+		{Value: []int64{2}, Location: []*Location{emptyLinesLocs[2]}},
+		{Value: []int64{3}, Location: []*Location{}},
+	},
+}
+
+func TestFilterSamplesByName(t *testing.T) {
 	for _, tc := range []struct {
 		// name is the name of the test case.
 		name string
@@ -387,6 +409,113 @@ func TestFilter(t *testing.T) {
 					t.Fatalf("failed to get diff: %v", err)
 				}
 				t.Errorf("FilterSamplesByName: got diff(want->got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestShowFrom(t *testing.T) {
+	for _, tc := range []struct {
+		// name is the name of the test case.
+		name string
+		// profile is the profile to filter.
+		profile *Profile
+		// showFrom is the showFrom filter.
+		showFrom *regexp.Regexp
+		// wantMatch is the expected return value.
+		wantMatch bool
+		// wantSampleFuncs contains expected stack functions and sample value after
+		// filtering, in the same order as in the profile. The format is as
+		// returned by sampleFuncs function below, which is "callee caller: <num>".
+		wantSampleFuncs []string
+	}{
+		{
+			name:            "nil showFrom keeps all frames",
+			profile:         noInlinesProfile,
+			wantMatch:          false,
+			wantSampleFuncs: allNoInlinesSampleFuncs,
+		},
+		{
+			name:     "showFrom with no matches drops all samples",
+			profile:  noInlinesProfile,
+			showFrom: regexp.MustCompile("unknown"),
+			wantMatch:          false,
+		},
+		{
+			name:     "showFrom matches function names",
+			profile:  noInlinesProfile,
+			showFrom: regexp.MustCompile("fun1"),
+			wantMatch:          true,
+			wantSampleFuncs: []string{
+				"fun0 fun1: 1",
+				"fun4 fun5 fun1: 2",
+				"fun9 fun4 fun10: 4",
+			},
+		},
+		{
+			name:     "showFrom matches file names",
+			profile:  noInlinesProfile,
+			showFrom: regexp.MustCompile("file1"),
+			wantMatch:   true,
+			wantSampleFuncs: []string{
+				"fun0 fun1: 1",
+				"fun4 fun5 fun1: 2",
+				"fun9 fun4 fun10: 4",
+			},
+		},
+		{
+			name:     "showFrom matches mapping names",
+			profile:  noInlinesProfile,
+			showFrom: regexp.MustCompile("map1"),
+			wantMatch:   true,
+			wantSampleFuncs: []string{
+				"fun9 fun4 fun10: 4",
+			},
+		},
+		{
+			name:     "showFrom matches inline functions",
+			profile:  inlinesProfile,
+			showFrom: regexp.MustCompile("fun0|fun5"),
+			wantMatch:   true,
+			wantSampleFuncs: []string{
+				"fun0: 1",
+				"fun4 fun5: 2",
+			},
+		},
+		{
+			name:     "showFrom keeps all lines when matching mapping and function",
+			profile:  inlinesProfile,
+			showFrom: regexp.MustCompile("map0|fun5"),
+			wantMatch:   true,
+			wantSampleFuncs: []string{
+				"fun0 fun1 fun2 fun3: 1",
+				"fun4 fun5 fun6: 2",
+			},
+		},
+		{
+			name:     "showFrom matches location with empty lines",
+			profile:  emptyLinesProfile,
+			showFrom: regexp.MustCompile("map1"),
+			wantMatch:   true,
+			wantSampleFuncs: []string{
+				": 2",
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := tc.profile.Copy()
+			gotMatch := p.ShowFrom(tc.showFrom)
+
+			if gotMatch != tc.wantMatch {
+				t.Errorf("match got %+v want %+v", gotMatch, tc.wantMatch)
+			}
+
+			if got, want := strings.Join(sampleFuncs(p), "\n")+"\n", strings.Join(tc.wantSampleFuncs, "\n")+"\n"; got != want {
+				diff, err := proftest.Diff([]byte(want), []byte(got))
+				if err != nil {
+					t.Fatalf("failed to get diff: %v", err)
+				}
+				t.Errorf("profile samples got diff(want->got):\n%s", diff)
 			}
 		})
 	}
