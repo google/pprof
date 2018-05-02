@@ -435,72 +435,74 @@ func TestFetchWithBase(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		t.Run(tc.desc, func(t *testing.T) {
-			pprofVariables = baseVars.makeCopy()
+		pprofVariables = baseVars.makeCopy()
 
-			base := make([]*string, len(tc.bases))
-			for i, s := range tc.bases {
-				base[i] = &s
-			}
+		base := make([]*string, len(tc.bases))
+		for i, s := range tc.bases {
+			base[i] = &s
+		}
 
-			diffBase := make([]*string, len(tc.diffBases))
-			for i, s := range tc.diffBases {
-				diffBase[i] = &s
-			}
+		diffBase := make([]*string, len(tc.diffBases))
+		for i, s := range tc.diffBases {
+			diffBase[i] = &s
+		}
 
-			f := testFlags{
-				stringLists: map[string][]*string{
-					"base":      base,
-					"diff_base": diffBase,
-				},
-				bools: map[string]bool{
-					"normalize": tc.normalize,
-				},
-			}
-			f.args = tc.sources
+		f := testFlags{
+			stringLists: map[string][]*string{
+				"base":      base,
+				"diff_base": diffBase,
+			},
+			bools: map[string]bool{
+				"normalize": tc.normalize,
+			},
+		}
+		f.args = tc.sources
 
-			o := setDefaults(&plugin.Options{
-				UI:      &proftest.TestUI{T: t, AllowRx: "Local symbolization failed|Some binary filenames not available"},
-				Flagset: f,
-			})
-			src, _, err := parseFlags(o)
-
-			if tc.wantErrorMsg != "" {
-				if err == nil {
-					t.Errorf("want error %q, got nil", tc.wantErrorMsg)
-				}
-				gotErrMsg := err.Error()
-				if gotErrMsg != tc.wantErrorMsg {
-					t.Errorf("want error %q, got error %q", tc.wantErrorMsg, gotErrMsg)
-				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("%s: %v", tc.desc, err)
-			}
-
-			p, err := fetchProfiles(src, o)
-
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if want, got := len(tc.wantSamples), len(p.Sample); want != got {
-				t.Fatalf("want %d samples got %d", want, got)
-			}
-
-			if len(p.Sample) > 0 {
-				for i, sample := range p.Sample {
-					if !reflect.DeepEqual(tc.wantSamples[i].values, sample.Value) {
-						t.Errorf("for sample %d want values %v, got %v", i, tc.wantSamples[i], sample.Value)
-					}
-					if !reflect.DeepEqual(tc.wantSamples[i].labels, sample.Label) {
-						t.Errorf("for sample %d want labels %v, got %v", i, tc.wantSamples[i].labels, sample.Label)
-					}
-				}
-			}
+		o := setDefaults(&plugin.Options{
+			UI:      &proftest.TestUI{T: t, AllowRx: "Local symbolization failed|Some binary filenames not available"},
+			Flagset: f,
 		})
+		src, _, err := parseFlags(o)
+
+		if tc.wantErrorMsg != "" {
+			if err == nil {
+				t.Errorf("%s: want error %q, got nil", tc.desc, tc.wantErrorMsg)
+				continue
+			}
+			gotErrMsg := err.Error()
+			if gotErrMsg != tc.wantErrorMsg {
+				t.Errorf("%s: want error %q, got error %q", tc.desc, tc.wantErrorMsg, gotErrMsg)
+			}
+			continue
+		}
+
+		if err != nil {
+			t.Errorf("%s: %v", tc.desc, err)
+			continue
+		}
+
+		p, err := fetchProfiles(src, o)
+
+		if err != nil {
+			t.Errorf("%s: %v", tc.desc, err)
+			continue
+		}
+
+		if want, got := len(tc.wantSamples), len(p.Sample); want != got {
+			t.Errorf("%s: want %d samples got %d", tc.desc, want, got)
+			continue
+		}
+
+		if len(p.Sample) > 0 {
+			for i, sample := range p.Sample {
+				if !reflect.DeepEqual(tc.wantSamples[i].values, sample.Value) {
+					t.Errorf("%s: for sample %d want values %v, got %v", tc.desc, i, tc.wantSamples[i], sample.Value)
+				}
+				if !reflect.DeepEqual(tc.wantSamples[i].labels, sample.Label) {
+					t.Errorf("%s: for sample %d want labels %v, got %v", tc.desc, i, tc.wantSamples[i].labels, sample.Label)
+				}
+			}
+		}
 	}
 }
 
