@@ -216,35 +216,9 @@ search for them in a directory pointed to by the environment variable
 * **-weblist= _regex_:** Generates a source/assembly combined annotated listing for
   functions matching *regex*, and starts a web browser to display it.
 
-## Comparing profiles
-
-pprof can subtract one profile's samples from another in order to compare them.
-For that, use the **-diff_base= _profile_** option, where *profile* is the filename
-or URL for the profile to be subtracted (referred to as the base profile). When
-using this mode, percentages reported in the output will be relative to the
-total of the base profile. To separate samples that are part of the diff base
-profile from those in the source profile, a string tag, "base"="1" is added to
-all samples in the base profile. This means that if one saves the merged profile
-and looks at it again with pprof, it will still be treated as a profile with a 
-diff base. It also means that any other samples which also have this tag will
-be treated as part of the diff base profile.
-
-If one is interested in the relative differences between the source and base
-profiles (for example, which profile has a larger percentage of CPU time used
-in a particular function), it can be useful to use the **-normalize** option.
-With this option, the source profile is scaled so that the total of samples in
-the source profile is equal to the total of samples in the base profile prior
-to merging the profiles.
-
-When comparing two cumulative profiles, for example two contention profiles
-collected from the same program at different times, use the **-base** flag
-in place of the **-diff_base** flag. When this flag is used and no negative
-values appear in the merged profile when aggregated at the address-level, 
-which would be the case when comparing cummulative profiles collected from the
-same program, percentages reported will be relative to the the difference
-between the total for the source profile and the total for the base profile.
-In the general case, percentages will be relative to the total of the absolute
-value of all samples when aggregated at the address level.
+Samples in a profile may have tags. These tags have a name and a value; this
+value can be either numeric or a string. pprof can select samples from a
+profile based on these tags using the `-tagfocus` and `-tagignore` options.
 
 # Fetching profiles
 
@@ -266,6 +240,42 @@ If multiple profiles are specified, pprof will fetch them all and merge
 them. This is useful to combine profiles from multiple processes of a
 distributed job. The profiles may be from different programs but must be
 compatible (for example, CPU profiles cannot be combined with heap profiles).
+
+
+## Comparing profiles
+
+pprof can subtract a profile from another, provided the profiles are of 
+compatible types, in order to compare them. For that, use the 
+**-diff_base= _profile_** option, where *profile* is the filename or URL for the
+profile to be subtracted. This may result in some report entries having negative
+values.  Percentages in the report are relative to the total of 
+the diff base. 
+
+If the merged profile is output as a protocol buffer, all samples in 
+the diff base profile will have a label with the key "base" and a value of "1".
+If pprof is then used to look at the merged profile, it will behave as if 
+separate source and base profiles were passed in. 
+
+The **-base** option can be used in the place of the **-diff_base** option, and
+may be preferrable when comparing two cumulative profiles, for example two
+contention profiles collected from the same program at different times. When 
+this flag is used and no negative values appear in the merged profile when
+aggregated at the address-level, percentages reported will be relative to the 
+the difference between the total for the source profile and the total for the
+base profile. In the general case, percentages will be relative to the total of
+the absolute value of all samples when aggregated at the address level.
+
+The **-normalize** option can be useful for determining the relative differences 
+between profiles, for example, which profile has a larger percentage of CPU time
+used in a particular function. With this option, the source profile is scaled so
+that the total of samples in the source profile is equal to the total of samples
+in the base profile prior to merging the profiles. 
+
+This flag can be only be used when a diff base or a base profile is specified, 
+so for example:
+
+    pprof <format> -normalize -diff_base=base source
+    
 
 ## Symbolization
 
