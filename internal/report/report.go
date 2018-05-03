@@ -78,6 +78,7 @@ type Options struct {
 
 	Symbol     *regexp.Regexp // Symbols to include on disassembly report.
 	SourcePath string         // Search path for source files.
+	TrimPath   string         // Paths to trim from source file paths.
 }
 
 // Generate generates a report as directed by the Report.
@@ -238,7 +239,7 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	// Clean up file paths using heuristics.
 	prof := rpt.prof
 	for _, f := range prof.Function {
-		f.Filename = trimPath(f.Filename)
+		f.Filename = trimPath(f.Filename, o.TrimPath, o.SourcePath)
 	}
 	// Removes all numeric tags except for the bytes tag prior
 	// to making graph.
