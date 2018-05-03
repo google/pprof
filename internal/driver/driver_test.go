@@ -65,7 +65,7 @@ func TestParse(t *testing.T) {
 		{"topproto,lines,cum,hide=mangled[X3]0", "cpu"},
 		{"tree,lines,cum,focus=[24]00", "heap"},
 		{"tree,relative_percentages,cum,focus=[24]00", "heap"},
-		{"tree,lines,cum,show_from=[2]00", "cpu"},
+		{"tree,lines,cum,show_from=line2", "cpu"},
 		{"callgrind", "cpu"},
 		{"callgrind,call_tree", "cpu"},
 		{"callgrind", "heap"},

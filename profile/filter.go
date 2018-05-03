@@ -104,7 +104,7 @@ func (p *Profile) ShowFrom(showFrom *regexp.Regexp) (matched bool) {
 	filteredSamples := make([]*Sample, 0, len(p.Sample))
 	for _, sample := range p.Sample {
 		if i := lastLocationIndex(sample.Location, showFromLocs); i >= 0 {
-			sample.Location = sample.Location[0:i+1]
+			sample.Location = sample.Location[0 : i+1]
 			filteredSamples = append(filteredSamples, sample)
 		}
 	}
@@ -127,7 +127,7 @@ func filterShowFromLocation(location *Location, showFrom *regexp.Regexp) (matche
 
 	if i := location.lastMatchedLineIndex(showFrom); i >= 0 {
 		matched = true
-		location.Line = location.Line[0:i+1]
+		location.Line = location.Line[0 : i+1]
 	}
 
 	return
