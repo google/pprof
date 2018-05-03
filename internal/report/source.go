@@ -603,6 +603,8 @@ func openSourceFile(path, searchPath, trim string) (*os.File, error) {
 
 // trimPath cleans up a path by removing prefixes that are commonly
 // found on profiles plus configured prefixes.
+// TODO(aalexand): Consider optimizing out the redundant work done in this
+// function if it proves to matter.
 func trimPath(path, trimPath, searchPath string) string {
 	// Keep path variable intact as it's used below to form the return value.
 	sPath, searchPath := filepath.ToSlash(path), filepath.ToSlash(searchPath)
