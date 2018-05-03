@@ -8,7 +8,9 @@ D3FLAMEGRAPH_VERSION="2.0.0-alpha4"
 D3FLAMEGRAPH_JS="d3-flamegraph.js"
 D3FLAMEGRAPH_CSS="d3-flamegraph.css"
 
-D3FLAMEGRAPH_DIR=third_party/d3flamegraph
+cd $(dirname $0)
+
+D3FLAMEGRAPH_DIR=d3flamegraph
 
 generate_d3flamegraph_go() {
     local d3_js=$(curl -s "${D3FLAMEGRAPH_REPO}/${D3FLAMEGRAPH_VERSION}/dist/${D3FLAMEGRAPH_JS}" | sed 's/`/`+"`"+`/g')
