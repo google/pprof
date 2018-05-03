@@ -242,7 +242,7 @@ func reportOptions(p *profile.Profile, numLabelUnits map[string]string, vars var
 	}
 
 	var filters []string
-	for _, k := range []string{"focus", "ignore", "hide", "show", "tagfocus", "tagignore", "tagshow", "taghide"} {
+	for _, k := range []string{"focus", "ignore", "hide", "show", "show_from", "tagfocus", "tagignore", "tagshow", "taghide"} {
 		v := vars[k].value
 		if v != "" {
 			filters = append(filters, k+"="+v)

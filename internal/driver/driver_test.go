@@ -65,6 +65,7 @@ func TestParse(t *testing.T) {
 		{"topproto,lines,cum,hide=mangled[X3]0", "cpu"},
 		{"tree,lines,cum,focus=[24]00", "heap"},
 		{"tree,relative_percentages,cum,focus=[24]00", "heap"},
+		{"tree,lines,cum,show_from=[2]00", "cpu"},
 		{"callgrind", "cpu"},
 		{"callgrind,call_tree", "cpu"},
 		{"callgrind", "heap"},
@@ -247,6 +248,7 @@ func testSourceURL(port int) string {
 
 // solutionFilename returns the name of the solution file for the test
 func solutionFilename(source string, f *testFlags) string {
+	fmt.Printf("solution flags: %v\n", f)
 	name := []string{"pprof", strings.TrimPrefix(source, testSourceURL(8000))}
 	name = addString(name, f, []string{"flat", "cum"})
 	name = addString(name, f, []string{"functions", "files", "lines", "addresses"})
@@ -260,6 +262,9 @@ func solutionFilename(source string, f *testFlags) string {
 	}
 	if f.strings["ignore"] != "" || f.strings["tagignore"] != "" {
 		name = append(name, "ignore")
+	}
+	if f.strings["show_from"] != "" {
+		name = append(name, "show_from")
 	}
 	name = addString(name, f, []string{"hide", "show"})
 	if f.strings["unit"] != "minimum" {
