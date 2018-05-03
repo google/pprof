@@ -266,7 +266,7 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 
 	// Remove tag marking samples from the base profiles, so it does not appear
 	// as a nodelet in the graph view.
-	prof.SetTag("base", []string{})
+	prof.SetTag("pprof::base", []string{})
 
 	formatTag := func(v int64, key string) string {
 		return measurement.ScaledLabel(v, key, o.OutputUnit)
@@ -1217,7 +1217,7 @@ func NewDefault(prof *profile.Profile, options Options) *Report {
 }
 
 // computeTotal computes the sum of the absolute value of all sample values.
-// If any samples have the tag "base" with value "1", then the total
+// If any samples have the tag "pprof::base" with value "true", then the total
 // will only include samples with that tag.
 func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64) int64 {
 	var div, total, diffDiv, diffTotal int64
@@ -1231,11 +1231,11 @@ func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64) i
 			v = -v
 		}
 		total += v
-		if sample.HasTag("base", "1") {
+		div += d
+		if sample.HasTag("pprof::base", "true") {
 			diffTotal += v
 			diffDiv += d
 		}
-		div += d
 	}
 	if diffTotal > 0 {
 		total = diffTotal

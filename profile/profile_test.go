@@ -540,39 +540,6 @@ var testProfile5 = &Profile{
 	Mapping:  cpuM,
 }
 
-var testProfile6 = &Profile{
-	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
-	Period:        1,
-	DurationNanos: 10e9,
-	SampleType: []*ValueType{
-		{Type: "samples", Unit: "count"},
-	},
-	Sample: []*Sample{
-		{
-			Location: []*Location{cpuL[0]},
-			Value:    []int64{1000},
-		},
-		{
-			Location: []*Location{cpuL[0]},
-			Value:    []int64{1000},
-			Label: map[string][]string{
-				"key1": {"value1", "value2", "value3"},
-				"key2": {"value1"},
-			},
-		},
-		{
-			Location: []*Location{cpuL[0]},
-			Value:    []int64{1000},
-			Label: map[string][]string{
-				"key1": {"value2"},
-			},
-		},
-	},
-	Location: cpuL,
-	Function: cpuF,
-	Mapping:  cpuM,
-}
-
 var aggTests = map[string]aggTest{
 	"precise":         {true, true, true, true, 5},
 	"fileline":        {false, true, true, true, 4},
@@ -948,53 +915,38 @@ func locationHash(s *Sample) string {
 func TestHasTag(t *testing.T) {
 	var testcases = []struct {
 		desc       string
-		sample     *Sample
+		labels     map[string][]string
 		key        string
 		value      string
 		wantHasTag bool
 	}{
 		{
-			desc: "empty label does not have tag",
-			sample: &Sample{
-				Location: []*Location{cpuL[0]},
-				Value:    []int64{1000, 1000},
-			},
+			desc:       "empty label does not have tag",
+			labels:     map[string][]string{},
 			key:        "key",
 			value:      "value",
 			wantHasTag: false,
 		},
 		{
-			desc: "label with one key and value has tag",
-			sample: &Sample{
-				Location: []*Location{cpuL[0]},
-				Value:    []int64{1000, 1000},
-				Label:    map[string][]string{"key": {"value"}},
-			},
+			desc:       "label with one key and value has tag",
+			labels:     map[string][]string{"key": {"value"}},
 			key:        "key",
 			value:      "value",
 			wantHasTag: true,
 		},
 		{
-			desc: "label with one key and value does not have tag",
-			sample: &Sample{
-				Location: []*Location{cpuL[0]},
-				Value:    []int64{1000, 1000},
-				Label:    map[string][]string{"key": {"value"}},
-			},
+			desc:       "label with one key and value does not have tag",
+			labels:     map[string][]string{"key": {"value"}},
 			key:        "key1",
 			value:      "value1",
 			wantHasTag: false,
 		},
 		{
 			desc: "label with many keys and values has tag",
-			sample: &Sample{
-				Location: []*Location{cpuL[0]},
-				Value:    []int64{1000, 1000},
-				Label: map[string][]string{
-					"key1": {"value2", "value1"},
-					"key2": {"value1", "value2", "value2"},
-					"key3": {"value1", "value2", "value2"},
-				},
+			labels: map[string][]string{
+				"key1": {"value2", "value1"},
+				"key2": {"value1", "value2", "value2"},
+				"key3": {"value1", "value2", "value2"},
 			},
 			key:        "key1",
 			value:      "value1",
@@ -1002,14 +954,10 @@ func TestHasTag(t *testing.T) {
 		},
 		{
 			desc: "label with many keys and values does not have tag",
-			sample: &Sample{
-				Location: []*Location{cpuL[0]},
-				Value:    []int64{1000, 1000},
-				Label: map[string][]string{
-					"key1": {"value2", "value1"},
-					"key2": {"value1", "value2", "value2"},
-					"key3": {"value1", "value2", "value2"},
-				},
+			labels: map[string][]string{
+				"key1": {"value2", "value1"},
+				"key2": {"value1", "value2", "value2"},
+				"key3": {"value1", "value2", "value2"},
 			},
 			key:        "key5",
 			value:      "value5",
@@ -1019,7 +967,10 @@ func TestHasTag(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			if gotHasTag := tc.sample.HasTag(tc.key, tc.value); gotHasTag != tc.wantHasTag {
+			sample := &Sample{
+				Label: tc.labels,
+			}
+			if gotHasTag := sample.HasTag(tc.key, tc.value); gotHasTag != tc.wantHasTag {
 				t.Errorf("sample.HasTag(%q, %q) got %v, want %v", tc.key, tc.value, gotHasTag, tc.wantHasTag)
 			}
 		})
@@ -1029,19 +980,103 @@ func TestHasTag(t *testing.T) {
 func TestSetTag(t *testing.T) {
 	var testcases = []struct {
 		desc     string
-		profile  *Profile
+		samples  []*Sample
 		setKey   string
 		setVal   []string
 		wantTags []map[string][]string
 	}{
 		{
-			desc:    "some samples have tag already",
-			profile: testProfile6.Copy(),
-			setKey:  "key1",
-			setVal:  []string{"value1"},
+			desc: "some samples have tag already",
+			samples: []*Sample{
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+				},
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					Label: map[string][]string{
+						"key1": {"value1", "value2", "value3"},
+						"key2": {"value1"},
+					},
+				},
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					Label: map[string][]string{
+						"key1": {"value2"},
+					},
+				},
+			},
+			setKey: "key1",
+			setVal: []string{"value1"},
 			wantTags: []map[string][]string{
 				{"key1": {"value1"}},
 				{"key1": {"value1"}, "key2": {"value1"}},
+				{"key1": {"value1"}},
+			},
+		},
+		{
+			desc: "no samples have tags",
+			samples: []*Sample{
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+				},
+			},
+			setKey: "key1",
+			setVal: []string{"value1"},
+			wantTags: []map[string][]string{
+				{"key1": {"value1"}},
+			},
+		},
+		{
+			desc: "all samples have some tags, but not key being added",
+			samples: []*Sample{
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					Label: map[string][]string{
+						"key2": {"value2"},
+					},
+				},
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					Label: map[string][]string{
+						"key3": {"value3"},
+					},
+				},
+			},
+			setKey: "key1",
+			setVal: []string{"value1"},
+			wantTags: []map[string][]string{
+				{"key1": {"value1"}, "key2": {"value2"}},
+				{"key1": {"value1"}, "key3": {"value3"}},
+			},
+		},
+		{
+			desc: "all samples have key being added",
+			samples: []*Sample{
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					Label: map[string][]string{
+						"key1": {"value1"},
+					},
+				},
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					Label: map[string][]string{
+						"key1": {"value1"},
+					},
+				},
+			},
+			setKey: "key1",
+			setVal: []string{"value1"},
+			wantTags: []map[string][]string{
+				{"key1": {"value1"}},
 				{"key1": {"value1"}},
 			},
 		},
@@ -1049,11 +1084,13 @@ func TestSetTag(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			tc.profile.SetTag(tc.setKey, tc.setVal)
-			if got, want := len(tc.profile.Sample), len(tc.wantTags); got != want {
+			profile := testProfile1.Copy()
+			profile.Sample = tc.samples
+			profile.SetTag(tc.setKey, tc.setVal)
+			if got, want := len(profile.Sample), len(tc.wantTags); got != want {
 				t.Fatalf("got %v samples, want %v samples", got, want)
 			}
-			for i, sample := range tc.profile.Sample {
+			for i, sample := range profile.Sample {
 				wantTags := tc.wantTags[i]
 				if got, want := len(sample.Label), len(wantTags); got != want {
 					t.Errorf("got %v label keys for sample %v, want %v", got, i, want)

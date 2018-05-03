@@ -330,7 +330,7 @@ func TestComputeTotal(t *testing.T) {
 		{
 			Location: []*profile.Location{testL[2], testL[1], testL[0]},
 			Value:    []int64{-10, 3},
-			Label:    map[string][]string{"base": {"1"}},
+			Label:    map[string][]string{"pprof::base": {"true"}},
 		},
 		{
 			Location: []*profile.Location{testL[2], testL[1], testL[0]},
@@ -339,12 +339,12 @@ func TestComputeTotal(t *testing.T) {
 		{
 			Location: []*profile.Location{testL[2], testL[1], testL[0]},
 			Value:    []int64{-9000, 3},
-			Label:    map[string][]string{"base": {"1"}},
+			Label:    map[string][]string{"pprof::base": {"true"}},
 		},
 		{
 			Location: []*profile.Location{testL[2], testL[1], testL[0]},
 			Value:    []int64{-1, 3},
-			Label:    map[string][]string{"base": {"1"}},
+			Label:    map[string][]string{"pprof::base": {"true"}},
 		},
 		{
 			Location: []*profile.Location{testL[4], testL[2], testL[0]},
@@ -353,7 +353,7 @@ func TestComputeTotal(t *testing.T) {
 		{
 			Location: []*profile.Location{testL[2], testL[1], testL[0]},
 			Value:    []int64{100, 3},
-			Label:    map[string][]string{"base": {"1"}},
+			Label:    map[string][]string{"pprof::base": {"true"}},
 		},
 	}
 

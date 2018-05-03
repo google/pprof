@@ -216,10 +216,6 @@ search for them in a directory pointed to by the environment variable
 * **-weblist= _regex_:** Generates a source/assembly combined annotated listing for
   functions matching *regex*, and starts a web browser to display it.
 
-Samples in a profile may have tags. These tags have a name and a value; this
-value can be either numeric or a string. pprof can select samples from a
-profile based on these tags using the `-tagfocus` and `-tagignore` options.
-
 # Fetching profiles
 
 pprof can read profiles from a file or directly from a URL over http. Its native
@@ -248,13 +244,13 @@ pprof can subtract a profile from another, provided the profiles are of
 compatible types, in order to compare them. For that, use the 
 **-diff_base= _profile_** option, where *profile* is the filename or URL for the
 profile to be subtracted. This may result in some report entries having negative
-values.  Percentages in the report are relative to the total of 
+values. Percentages in the report are relative to the total of 
 the diff base. 
 
-If the merged profile is output as a protocol buffer, all samples in 
-the diff base profile will have a label with the key "base" and a value of "1".
-If pprof is then used to look at the merged profile, it will behave as if 
-separate source and base profiles were passed in. 
+If the merged profile is output as a protocol buffer, all samples in
+the diff base profile will have a label with the key "pprof::base" and a value
+of "true". If pprof is then used to look at the merged profile, it will behave
+as if separate source and base profiles were passed in.
 
 The **-base** option can be used in the place of the **-diff_base** option, and
 may be preferrable when comparing two cumulative profiles, for example two

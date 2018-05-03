@@ -679,7 +679,7 @@ func numLabelsToString(numLabels map[string][]int64, numUnits map[string][]strin
 func (p *Profile) SetTag(key string, value []string) {
 	for _, sample := range p.Sample {
 		if sample.Label == nil {
-			sample.Label = make(map[string][]string)
+			sample.Label = map[string][]string{}
 		}
 		sample.Label[key] = value
 	}
