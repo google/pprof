@@ -214,7 +214,7 @@ func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint6
 			// stextOffset=0xffffffff80200198
 			//       Start=0xffffffff83200000
 			//       Limit=0xffffffff84200000
-			//      Offset=0 (0xc000000000000000 for PowerPC64) (==Start for Linux Perf)
+			//      Offset=0 (0xc000000000000000 for PowerPC64) (== Start for ASLR kernel)
 			// So the base should be:
 			if stextOffset != nil && (start%pageSize) == (*stextOffset%pageSize) {
 				// perf uses the address of _stext as start. Some tools may
