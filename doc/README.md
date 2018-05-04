@@ -240,38 +240,42 @@ compatible (for example, CPU profiles cannot be combined with heap profiles).
 
 ## Comparing profiles
 
-pprof can subtract a profile from another, provided the profiles are of 
-compatible types, in order to compare them. For that, use the 
-**-diff_base= _profile_** option, where *profile* is the filename or URL for the
-profile to be subtracted. This may result in some report entries having negative
-values. Percentages in the report are relative to the total of 
-the diff base. 
+pprof can subtract one profile from another, provided the profiles are of
+compatible types. pprof has two options which can be used to specify the
+filename or URL for a profile to be subtracted from the source profile:
 
-If the merged profile is output as a protocol buffer, all samples in
-the diff base profile will have a label with the key "pprof::base" and a value
-of "true". If pprof is then used to look at the merged profile, it will behave
-as if separate source and base profiles were passed in.
+* **-diff_base= _profile_:** useful for comparing any two profiles of compatible
+types (i.e. any two heap profiles). Percentages in the output are relative to
+the total of samples in the diff base profile.
 
-The **-base** option can be used in the place of the **-diff_base** option, and
-may be preferrable when comparing two cumulative profiles, for example two
-contention profiles collected from the same program at different times. When 
-this flag is used and no negative values appear in the merged profile when
-aggregated at the address-level, percentages reported will be relative to the 
-the difference between the total for the source profile and the total for the
-base profile. In the general case, percentages will be relative to the total of
-the absolute value of all samples when aggregated at the address level.
+* **-base= _profile_:** useful for subtracting a cumulative profile, like a
+[golang block profile](https://golang.org/doc/diagnostics.html#profiling),
+from another cumulative profile collected from the same program at a later time.
+When comparing cumulative profiles collected on the same profile, percentages in
+the output are relative to the the difference between the total for the source
+profile and the total for the base profile.
 
-The **-normalize** option can be useful for determining the relative differences 
-between profiles, for example, which profile has a larger percentage of CPU time
-used in a particular function. With this option, the source profile is scaled so
-that the total of samples in the source profile is equal to the total of samples
-in the base profile prior to merging the profiles. 
+The following flag can be used when a base profile is specified with either the
+`-diff_base` or the `-base` option:
 
-This flag can be only be used when a diff base or a base profile is specified, 
-so for example:
+* **-normalize**: Scales the source profile so that that the total of samples 
+in the source profile is equal to the total of samples in the base profile prior
+to subtracting the base profile from the source profile. Useful for determining
+the relative differences between profiles, for example, which profile has a
+larger percentage of CPU time used in a particular function.
 
-    pprof <format> -normalize -diff_base=base source
-    
+When using the **-diff_base** option, some report entries may have negative
+values. If the merged profile is output as a protocol buffer, all samples in the
+diff base profile will have a label with the key "pprof::base" and a value of
+"true". If pprof is then used to look at the merged profile, it will behave as
+if separate source and base profiles were passed in.
+
+When using the **-base** option to subtract one cumulative profile from another
+collected on the same program at a later time, percentages will be relative to
+the difference between the total for the source profile and the total for
+the base profile, and all values will be positive. In the general case, some 
+report entries may have negative values and percentages will be relative to the
+total of the absolute value of all samples when aggregated at the address level.
 
 ## Symbolization
 
