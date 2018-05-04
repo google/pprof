@@ -115,15 +115,15 @@ func (p *Profile) ShowFrom(showFrom *regexp.Regexp) (matched bool) {
 // filterShowFromLocation tests a showFrom regex against a location, removes
 // lines after the last match and returns whether a match was found. If the
 // mapping is matched, then all lines are kept.
-func filterShowFromLocation(loc *Location, showFrom *regexp.Regexp) (matched bool) {
+func filterShowFromLocation(loc *Location, showFrom *regexp.Regexp) bool {
 	if m := loc.Mapping; m != nil && showFrom.MatchString(m.File) {
 		return true
 	}
 	if i := loc.lastMatchedLineIndex(showFrom); i >= 0 {
-		matched = true
-		loc.Line = loc.Line[0 : i+1]
+		loc.Line = loc.Line[:i+1]
+		return true
 	}
-	return matched
+	return false
 }
 
 // lastMatchedLineIndex returns the index of the last line that matches a regex,
