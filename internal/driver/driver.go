@@ -150,13 +150,11 @@ func generateReport(p *profile.Profile, cmd []string, vars variables, o *plugin.
 }
 
 func applyCommandOverrides(cmd []string, v variables) variables {
-	trim, focus, tagfocus, hide := v["trim"].boolValue(), true, true, true
-	showFrom := true
+	trim, tagfocus, filter := v["trim"].boolValue(), true, true
 
 	switch cmd[0] {
 	case "proto", "raw":
-		trim, focus, tagfocus, hide = false, false, false, false
-		showFrom = false
+		trim, tagfocus, filter = false, false, false
 		v.set("addresses", "t")
 	case "callgrind", "kcachegrind":
 		trim = false
@@ -165,7 +163,7 @@ func applyCommandOverrides(cmd []string, v variables) variables {
 		trim = false
 		v.set("addressnoinlines", "t")
 	case "peek":
-		trim, focus, hide = false, false, false
+		trim, filter = false, false
 	case "list":
 		v.set("nodecount", "0")
 		v.set("lines", "t")
@@ -183,19 +181,15 @@ func applyCommandOverrides(cmd []string, v variables) variables {
 		v.set("nodefraction", "0")
 		v.set("edgefraction", "0")
 	}
-	if !focus {
-		v.set("focus", "")
-		v.set("ignore", "")
-	}
 	if !tagfocus {
 		v.set("tagfocus", "")
 		v.set("tagignore", "")
 	}
-	if !hide {
+	if !filter {
+		v.set("focus", "")
+		v.set("ignore", "")
 		v.set("hide", "")
 		v.set("show", "")
-	}
-	if !showFrom {
 		v.set("show_from", "")
 	}
 	return v

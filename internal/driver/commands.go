@@ -186,8 +186,8 @@ var pprofVariables = variables{
 		"If set, only show nodes that match this location.",
 		"Matching includes the function name, filename or object name.")},
 	"show_from": &variable{stringKind, "", "", helpText(
-		"Drops nodes above the highest matched node of every sample.",
-		"If set, any frames above the highest match are dropped from every sample.",
+		"Drops functions above the highest matched frame.",
+		"If set, all frames above the highest match are dropped from every sample.",
 		"Matching includes the function name, filename or object name.")},
 	"tagfocus": &variable{stringKind, "", "", helpText(
 		"Restricts to samples with tags in range or matched by regexp",

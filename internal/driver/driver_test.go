@@ -248,7 +248,6 @@ func testSourceURL(port int) string {
 
 // solutionFilename returns the name of the solution file for the test
 func solutionFilename(source string, f *testFlags) string {
-	fmt.Printf("solution flags: %v\n", f)
 	name := []string{"pprof", strings.TrimPrefix(source, testSourceURL(8000))}
 	name = addString(name, f, []string{"flat", "cum"})
 	name = addString(name, f, []string{"functions", "files", "lines", "addresses"})

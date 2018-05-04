@@ -416,11 +416,8 @@ func TestFilterSamplesByName(t *testing.T) {
 
 func TestShowFrom(t *testing.T) {
 	for _, tc := range []struct {
-		// name is the name of the test case.
-		name string
-		// profile is the profile to filter.
-		profile *Profile
-		// showFrom is the showFrom filter.
+		name     string
+		profile  *Profile
 		showFrom *regexp.Regexp
 		// wantMatch is the expected return value.
 		wantMatch bool
@@ -473,12 +470,33 @@ func TestShowFrom(t *testing.T) {
 			},
 		},
 		{
+			name:      "showFrom drops frames above highest of multiple matches",
+			profile:   noInlinesProfile,
+			showFrom:  regexp.MustCompile("fun[12]"),
+			wantMatch: true,
+			wantSampleFuncs: []string{
+				"fun0 fun1 fun2: 1",
+				"fun4 fun5 fun1: 2",
+				"fun9 fun4 fun10: 4",
+			},
+		},
+		{
 			name:      "showFrom matches inline functions",
 			profile:   inlinesProfile,
 			showFrom:  regexp.MustCompile("fun0|fun5"),
 			wantMatch: true,
 			wantSampleFuncs: []string{
 				"fun0: 1",
+				"fun4 fun5: 2",
+			},
+		},
+		{
+			name:      "showFrom drops frames above highest of multiple inline matches",
+			profile:   inlinesProfile,
+			showFrom:  regexp.MustCompile("fun[1245]"),
+			wantMatch: true,
+			wantSampleFuncs: []string{
+				"fun0 fun1 fun2: 1",
 				"fun4 fun5: 2",
 			},
 		},
@@ -504,10 +522,9 @@ func TestShowFrom(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := tc.profile.Copy()
-			gotMatch := p.ShowFrom(tc.showFrom)
 
-			if gotMatch != tc.wantMatch {
-				t.Errorf("match got %+v want %+v", gotMatch, tc.wantMatch)
+			if gotMatch := p.ShowFrom(tc.showFrom); gotMatch != tc.wantMatch {
+				t.Errorf("match got %+v, want %+v", gotMatch, tc.wantMatch)
 			}
 
 			if got, want := strings.Join(sampleFuncs(p), "\n")+"\n", strings.Join(tc.wantSampleFuncs, "\n")+"\n"; got != want {
