@@ -33,7 +33,7 @@ import (
 )
 
 func TestWebInterface(t *testing.T) {
-	if runtime.GOOS == "nacl" {
+	if runtime.GOOS == "nacl" || runtime.GOOS == "js" {
 		t.Skip("test assumes tcp available")
 	}
 
@@ -237,7 +237,7 @@ func makeFakeProfile() *profile.Profile {
 }
 
 func TestGetHostAndPort(t *testing.T) {
-	if runtime.GOOS == "nacl" {
+	if runtime.GOOS == "nacl" || runtime.GOOS == "js" {
 		t.Skip("test assumes tcp available")
 	}
 
