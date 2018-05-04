@@ -135,14 +135,6 @@ var pprofVariables = variables{
 		"Ignore negative differences",
 		"Do not show any locations with values <0.")},
 
-	// Comparisons.
-	"positive_percentages": &variable{boolKind, "f", "", helpText(
-		"Ignore negative samples when computing percentages",
-		"Do not count negative samples when computing the total value",
-		"of the profile, used to compute percentages. If set, and the -base",
-		"option is used, percentages reported will be computed against the",
-		"main profile, ignoring the base profile.")},
-
 	// Graph handling options.
 	"call_tree": &variable{boolKind, "f", "", helpText(
 		"Create a context-sensitive call tree",
@@ -161,6 +153,7 @@ var pprofVariables = variables{
 		"Using auto will scale each value independently to the most natural unit.")},
 	"compact_labels": &variable{boolKind, "f", "", "Show minimal headers"},
 	"source_path":    &variable{stringKind, "", "", "Search path for source files"},
+	"trim_path":      &variable{stringKind, "", "", "Path to trim from source paths before search"},
 
 	// Filtering options
 	"nodecount": &variable{intKind, "-1", "", helpText(

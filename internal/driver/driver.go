@@ -250,10 +250,9 @@ func reportOptions(p *profile.Profile, numLabelUnits map[string]string, vars var
 	}
 
 	ropt := &report.Options{
-		CumSort:             vars["cum"].boolValue(),
-		CallTree:            vars["call_tree"].boolValue(),
-		DropNegative:        vars["drop_negative"].boolValue(),
-		PositivePercentages: vars["positive_percentages"].boolValue(),
+		CumSort:      vars["cum"].boolValue(),
+		CallTree:     vars["call_tree"].boolValue(),
+		DropNegative: vars["drop_negative"].boolValue(),
 
 		CompactLabels: vars["compact_labels"].boolValue(),
 		Ratio:         1 / vars["divide_by"].floatValue(),
@@ -273,6 +272,7 @@ func reportOptions(p *profile.Profile, numLabelUnits map[string]string, vars var
 		OutputUnit: vars["unit"].value,
 
 		SourcePath: vars["source_path"].stringValue(),
+		TrimPath:   vars["trim_path"].stringValue(),
 	}
 
 	if len(p.Mapping) > 0 && p.Mapping[0].File != "" {
