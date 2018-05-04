@@ -271,6 +271,7 @@ func reportOptions(p *profile.Profile, numLabelUnits map[string]string, vars var
 		OutputUnit: vars["unit"].value,
 
 		SourcePath: vars["source_path"].stringValue(),
+		TrimPath:   vars["trim_path"].stringValue(),
 	}
 
 	if len(p.Mapping) > 0 && p.Mapping[0].File != "" {
