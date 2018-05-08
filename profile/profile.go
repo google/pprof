@@ -674,9 +674,9 @@ func numLabelsToString(numLabels map[string][]int64, numUnits map[string][]strin
 	return strings.Join(ls, " ")
 }
 
-// SetTag sets the specified key to the specified value for all samples in the
+// SetLabel sets the specified key to the specified value for all samples in the
 // profile.
-func (p *Profile) SetTag(key string, value []string) {
+func (p *Profile) SetLabel(key string, value []string) {
 	for _, sample := range p.Sample {
 		if sample.Label == nil {
 			sample.Label = map[string][]string{}
@@ -685,8 +685,18 @@ func (p *Profile) SetTag(key string, value []string) {
 	}
 }
 
-// HasTag returns true if a sample has a tag with indicated key and value.
-func (s *Sample) HasTag(key, value string) bool {
+// RemoveLabel removes all labels associated with the specified key for all
+// samples in the profile.
+func (p *Profile) RemoveLabel(key string) {
+	for _, sample := range p.Sample {
+		if _, ok := sample.Label[key]; ok {
+			delete(sample.Label, key)
+		}
+	}
+}
+
+// HasLabel returns true if a sample has a label with indicated key and value.
+func (s *Sample) HasLabel(key, value string) bool {
 	if values, ok := s.Label[key]; ok {
 		for _, v := range values {
 			if v == value {

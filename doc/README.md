@@ -229,7 +229,7 @@ the output are relative to the total of samples in the diff base profile.
 * **-base= _profile_:** useful for subtracting a cumulative profile, like a
 [golang block profile](https://golang.org/doc/diagnostics.html#profiling),
 from another cumulative profile collected from the same program at a later time.
-When comparing cumulative profiles collected on the same profile, percentages in
+When comparing cumulative profiles collected on the same program, percentages in
 the output are relative to the difference between the total for the source
 profile and the total for the base profile.
 

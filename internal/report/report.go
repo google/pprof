@@ -266,7 +266,7 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 
 	// Remove tag marking samples from the base profiles, so it does not appear
 	// as a nodelet in the graph view.
-	prof.SetTag("pprof::base", []string{})
+	prof.RemoveLabel("pprof::base")
 
 	formatTag := func(v int64, key string) string {
 		return measurement.ScaledLabel(v, key, o.OutputUnit)
@@ -1232,7 +1232,7 @@ func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64) i
 		}
 		total += v
 		div += d
-		if sample.HasTag("pprof::base", "true") {
+		if sample.HasLabel("pprof::base", "true") {
 			diffTotal += v
 			diffDiv += d
 		}
