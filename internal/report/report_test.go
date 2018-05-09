@@ -401,7 +401,7 @@ func TestComputeTotal(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			gotTotal := computeTotal(tc.prof, tc.value, tc.meanDiv)
 			if gotTotal != tc.wantTotal {
-				t.Errorf("want total %d, got %v", tc.wantTotal, gotTotal)
+				t.Errorf("got total %d, want %v", gotTotal, tc.wantTotal)
 			}
 		})
 	}

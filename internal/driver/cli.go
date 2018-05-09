@@ -15,6 +15,7 @@
 package driver
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -87,7 +88,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 			usageMsgVars)
 	})
 	if len(args) == 0 {
-		return nil, nil, fmt.Errorf("no profile source specified")
+		return nil, nil, errors.New("no profile source specified")
 	}
 
 	var execName string
@@ -114,7 +115,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		return nil, nil, err
 	}
 	if cmd != nil && *flagHTTP != "" {
-		return nil, nil, fmt.Errorf("-http is not compatible with an output format on the command line")
+		return nil, nil, errors.New("-http is not compatible with an output format on the command line")
 	}
 
 	si := pprofVariables["sample_index"].value
@@ -148,7 +149,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 
 	normalize := pprofVariables["normalize"].boolValue()
 	if normalize && len(source.Base) == 0 {
-		return nil, nil, fmt.Errorf("Must have base profile to normalize by")
+		return nil, nil, errors.New("Must have base profile to normalize by")
 	}
 	source.Normalize = normalize
 
@@ -162,17 +163,15 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 // the source. This function will return an error if both base and diff base
 // profiles are specified.
 func (source *source) addBaseProfiles(flagBase, flagDiffBase []*string) error {
-	base := dropEmpty(flagBase)
-	diffBase := dropEmpty(flagDiffBase)
+	base, diffBase := dropEmpty(flagBase), dropEmpty(flagDiffBase)
 
 	if len(base) > 0 && len(diffBase) > 0 {
-		return fmt.Errorf("-base and -diff_base flags cannot both be specified")
+		return errors.New("-base and -diff_base flags cannot both be specified")
 	}
 
 	source.Base = base
 	if len(diffBase) > 0 {
-		source.Base = diffBase
-		source.DiffBase = true
+		source.Base, source.DiffBase = diffBase, true
 	}
 	return nil
 }
@@ -271,7 +270,7 @@ func outputFormat(bcmd map[string]*bool, acmd map[string]*string) (cmd []string,
 	for n, b := range bcmd {
 		if *b {
 			if cmd != nil {
-				return nil, fmt.Errorf("must set at most one output format")
+				return nil, errors.New("must set at most one output format")
 			}
 			cmd = []string{n}
 		}
@@ -279,7 +278,7 @@ func outputFormat(bcmd map[string]*bool, acmd map[string]*string) (cmd []string,
 	for n, s := range acmd {
 		if *s != "" {
 			if cmd != nil {
-				return nil, fmt.Errorf("must set at most one output format")
+				return nil, errors.New("must set at most one output format")
 			}
 			cmd = []string{n, *s}
 		}

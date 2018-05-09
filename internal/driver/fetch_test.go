@@ -231,25 +231,25 @@ func TestFetchWithBase(t *testing.T) {
 			"not normalized base is same as source",
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.contention"},
-			[]string{},
+			nil,
 			false,
-			[]WantSample{},
+			nil,
 			"",
 		},
 		{
 			"not normalized base is same as source",
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.contention"},
-			[]string{},
+			nil,
 			false,
-			[]WantSample{},
+			nil,
 			"",
 		},
 		{
 			"not normalized single source, multiple base (all profiles same)",
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.contention", path + "cppbench.contention"},
-			[]string{},
+			nil,
 			false,
 			[]WantSample{
 				{
@@ -283,7 +283,7 @@ func TestFetchWithBase(t *testing.T) {
 			"not normalized, different base and source",
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.small.contention"},
-			[]string{},
+			nil,
 			false,
 			[]WantSample{
 				{
@@ -317,7 +317,7 @@ func TestFetchWithBase(t *testing.T) {
 			"normalized base is same as source",
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.contention"},
-			[]string{},
+			nil,
 			true,
 			[]WantSample{},
 			"",
@@ -326,7 +326,7 @@ func TestFetchWithBase(t *testing.T) {
 			"normalized single source, multiple base (all profiles same)",
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.contention", path + "cppbench.contention"},
-			[]string{},
+			nil,
 			true,
 			[]WantSample{},
 			"",
@@ -335,7 +335,7 @@ func TestFetchWithBase(t *testing.T) {
 			"normalized different base and source",
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.small.contention"},
-			[]string{},
+			nil,
 			true,
 			[]WantSample{
 				{
@@ -368,7 +368,7 @@ func TestFetchWithBase(t *testing.T) {
 		{
 			"not normalized diff base is same as source",
 			[]string{path + "cppbench.contention"},
-			[]string{},
+			nil,
 			[]string{path + "cppbench.contention"},
 			false,
 			[]WantSample{
@@ -466,12 +466,12 @@ func TestFetchWithBase(t *testing.T) {
 
 		if tc.wantErrorMsg != "" {
 			if err == nil {
-				t.Errorf("%s: want error %q, got nil", tc.desc, tc.wantErrorMsg)
+				t.Errorf("%s: got nil, want error %q", tc.desc, tc.wantErrorMsg)
 				continue
 			}
 			gotErrMsg := err.Error()
 			if gotErrMsg != tc.wantErrorMsg {
-				t.Errorf("%s: want error %q, got error %q", tc.desc, tc.wantErrorMsg, gotErrMsg)
+				t.Errorf("%s: got error %q, want error %q", tc.desc, gotErrMsg, tc.wantErrorMsg)
 			}
 			continue
 		}
@@ -489,18 +489,16 @@ func TestFetchWithBase(t *testing.T) {
 		}
 
 		if want, got := len(tc.wantSamples), len(p.Sample); want != got {
-			t.Errorf("%s: want %d samples got %d", tc.desc, want, got)
+			t.Errorf("%s: got %d samples want %d", tc.desc, got, want)
 			continue
 		}
 
-		if len(p.Sample) > 0 {
-			for i, sample := range p.Sample {
-				if !reflect.DeepEqual(tc.wantSamples[i].values, sample.Value) {
-					t.Errorf("%s: for sample %d want values %v, got %v", tc.desc, i, tc.wantSamples[i], sample.Value)
-				}
-				if !reflect.DeepEqual(tc.wantSamples[i].labels, sample.Label) {
-					t.Errorf("%s: for sample %d want labels %v, got %v", tc.desc, i, tc.wantSamples[i].labels, sample.Label)
-				}
+		for i, sample := range p.Sample {
+			if !reflect.DeepEqual(tc.wantSamples[i].values, sample.Value) {
+				t.Errorf("%s: for sample %d got values %v, want %v", tc.desc, i, sample.Value, tc.wantSamples[i])
+			}
+			if !reflect.DeepEqual(tc.wantSamples[i].labels, sample.Label) {
+				t.Errorf("%s: for sample %d got labels %v, want %v", tc.desc, i, sample.Label, tc.wantSamples[i].labels)
 			}
 		}
 	}
