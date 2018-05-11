@@ -437,20 +437,10 @@ func TestFetchWithBase(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
 			pprofVariables = baseVars.makeCopy()
-			base := make([]*string, len(tc.bases))
-			for i, s := range tc.bases {
-				base[i] = &s
-			}
-
-			diffBase := make([]*string, len(tc.diffBases))
-			for i, s := range tc.diffBases {
-				diffBase[i] = &s
-			}
-
 			f := testFlags{
-				stringLists: map[string][]*string{
-					"base":      base,
-					"diff_base": diffBase,
+				stringLists: map[string][]string{
+					"base":      tc.bases,
+					"diff_base": tc.diffBases,
 				},
 				bools: map[string]bool{
 					"normalize": tc.normalize,
@@ -468,8 +458,8 @@ func TestFetchWithBase(t *testing.T) {
 				if err == nil {
 					t.Fatalf("got nil, want error %q", tc.wantErrorMsg)
 				}
-				gotErrMsg := err.Error()
-				if gotErrMsg != tc.wantErrorMsg {
+
+				if gotErrMsg := err.Error(); gotErrMsg != tc.wantErrorMsg {
 					t.Fatalf("got error %q, want error %q", gotErrMsg, tc.wantErrorMsg)
 				}
 				return
@@ -485,7 +475,7 @@ func TestFetchWithBase(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if want, got := len(tc.wantSamples), len(p.Sample); want != got {
+			if got, want := len(p.Sample), len(tc.wantSamples); got != want {
 				t.Fatalf("got %d samples want %d", got, want)
 			}
 
