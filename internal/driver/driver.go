@@ -65,7 +65,13 @@ func generateRawReport(p *profile.Profile, cmd []string, vars variables, o *plug
 	// Identify units of numeric tags in profile.
 	numLabelUnits := identifyNumLabelUnits(p, o.UI)
 
-	vars = applyCommandOverrides(cmd, vars)
+	// Get report output format
+	c := pprofCommands[cmd[0]]
+	if c == nil {
+		panic("unexpected nil command")
+	}
+
+	vars = applyCommandOverrides(cmd, c.format, vars)
 
 	// Delay focus after configuring report to get percentages on all samples.
 	relative := vars["relative_percentages"].boolValue()
@@ -77,10 +83,6 @@ func generateRawReport(p *profile.Profile, cmd []string, vars variables, o *plug
 	ropt, err := reportOptions(p, numLabelUnits, vars)
 	if err != nil {
 		return nil, nil, err
-	}
-	c := pprofCommands[cmd[0]]
-	if c == nil {
-		panic("unexpected nil command")
 	}
 	ropt.OutputFormat = c.format
 	if len(cmd) == 2 {
@@ -149,7 +151,7 @@ func generateReport(p *profile.Profile, cmd []string, vars variables, o *plugin.
 	return out.Close()
 }
 
-func applyCommandOverrides(cmd []string, v variables) variables {
+func applyCommandOverrides(cmd []string, outputFormat int, v variables) variables {
 	trim, tagfilter, filter := v["trim"].boolValue(), true, true
 
 	switch cmd[0] {
@@ -176,6 +178,12 @@ func applyCommandOverrides(cmd []string, v variables) variables {
 			v.set("nodecount", "80")
 		}
 	}
+
+	if outputFormat == report.Proto {
+		trim, tagfilter, filter = false, false, false
+		v.set("addresses", "t")
+	}
+
 	if !trim {
 		v.set("nodecount", "0")
 		v.set("nodefraction", "0")
