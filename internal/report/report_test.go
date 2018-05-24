@@ -399,8 +399,7 @@ func TestComputeTotal(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			gotTotal := computeTotal(tc.prof, tc.value, tc.meanDiv)
-			if gotTotal != tc.wantTotal {
+			if gotTotal := computeTotal(tc.prof, tc.value, tc.meanDiv); gotTotal != tc.wantTotal {
 				t.Errorf("got total %d, want %v", gotTotal, tc.wantTotal)
 			}
 		})

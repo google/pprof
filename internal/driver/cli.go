@@ -149,7 +149,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 
 	normalize := pprofVariables["normalize"].boolValue()
 	if normalize && len(source.Base) == 0 {
-		return nil, nil, errors.New("Must have base profile to normalize by")
+		return nil, nil, errors.New("must have base profile to normalize by")
 	}
 	source.Normalize = normalize
 
@@ -164,7 +164,6 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 // profiles are specified.
 func (source *source) addBaseProfiles(flagBase, flagDiffBase []*string) error {
 	base, diffBase := dropEmpty(flagBase), dropEmpty(flagDiffBase)
-
 	if len(base) > 0 && len(diffBase) > 0 {
 		return errors.New("-base and -diff_base flags cannot both be specified")
 	}
@@ -176,8 +175,8 @@ func (source *source) addBaseProfiles(flagBase, flagDiffBase []*string) error {
 	return nil
 }
 
-// dropEmpty list takes a StringList flag, and outputs an array of non-empty
-// strings associated with the flag.
+// dropEmpty list takes a slice of string pointers, and outputs a slice of
+// non-empty strings associated with the flag.
 func dropEmpty(list []*string) []string {
 	var l []string
 	for _, s := range list {

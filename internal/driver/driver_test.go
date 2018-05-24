@@ -355,6 +355,7 @@ func (f testFlags) StringVar(p *string, s, d, c string) {
 
 func (f testFlags) StringList(s, d, c string) *[]*string {
 	if t, ok := f.stringLists[s]; ok {
+		// convert slice of strings to slice of string pointers before returning.
 		tp := make([]*string, len(t))
 		for i, v := range t {
 			tp[i] = &v

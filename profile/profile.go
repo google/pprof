@@ -679,9 +679,10 @@ func numLabelsToString(numLabels map[string][]int64, numUnits map[string][]strin
 func (p *Profile) SetLabel(key string, value []string) {
 	for _, sample := range p.Sample {
 		if sample.Label == nil {
-			sample.Label = map[string][]string{}
+			sample.Label = map[string][]string{key: value}
+		} else {
+			sample.Label[key] = value
 		}
-		sample.Label[key] = value
 	}
 }
 
@@ -689,19 +690,15 @@ func (p *Profile) SetLabel(key string, value []string) {
 // samples in the profile.
 func (p *Profile) RemoveLabel(key string) {
 	for _, sample := range p.Sample {
-		if _, ok := sample.Label[key]; ok {
-			delete(sample.Label, key)
-		}
+		delete(sample.Label, key)
 	}
 }
 
 // HasLabel returns true if a sample has a label with indicated key and value.
 func (s *Sample) HasLabel(key, value string) bool {
-	if values, ok := s.Label[key]; ok {
-		for _, v := range values {
-			if v == value {
-				return true
-			}
+	for _, v := range s.Label[key] {
+		if v == value {
+			return true
 		}
 	}
 	return false

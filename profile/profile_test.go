@@ -1033,7 +1033,7 @@ func TestRemove(t *testing.T) {
 				for wantKey, wantValues := range wantLabels {
 					if gotValues, ok := sample.Label[wantKey]; ok {
 						if !reflect.DeepEqual(gotValues, wantValues) {
-							t.Fatalf("for key %s, got values %v, want values %v", wantKey, gotValues, wantValues)
+							t.Errorf("for key %s, got values %v, want values %v", wantKey, gotValues, wantValues)
 						}
 					} else {
 						t.Errorf("for key %s got no values, want %v", wantKey, wantValues)
@@ -1166,7 +1166,7 @@ func TestSetLabel(t *testing.T) {
 				for wantKey, wantValues := range wantLabels {
 					if gotValues, ok := sample.Label[wantKey]; ok {
 						if !reflect.DeepEqual(gotValues, wantValues) {
-							t.Fatalf("for key %s, got values %v, want values %v", wantKey, gotValues, wantValues)
+							t.Errorf("for key %s, got values %v, want values %v", wantKey, gotValues, wantValues)
 						}
 					} else {
 						t.Errorf("for key %s got no values, want %v", wantKey, wantValues)
