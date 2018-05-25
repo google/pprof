@@ -300,7 +300,7 @@ func TestInteractiveCommands(t *testing.T) {
 		if c == nil {
 			t.Errorf("unexpected nil command")
 		}
-		vars = applyCommandOverrides(cmd, c.format, vars)
+		vars = applyCommandOverrides(cmd[0], c.format, vars)
 
 		for n, want := range tc.want {
 			if got := vars[n].stringValue(); got != want {

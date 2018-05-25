@@ -71,7 +71,7 @@ func generateRawReport(p *profile.Profile, cmd []string, vars variables, o *plug
 		panic("unexpected nil command")
 	}
 
-	vars = applyCommandOverrides(cmd, c.format, vars)
+	vars = applyCommandOverrides(cmd[0], c.format, vars)
 
 	// Delay focus after configuring report to get percentages on all samples.
 	relative := vars["relative_percentages"].boolValue()
@@ -151,13 +151,10 @@ func generateReport(p *profile.Profile, cmd []string, vars variables, o *plugin.
 	return out.Close()
 }
 
-func applyCommandOverrides(cmd []string, outputFormat int, v variables) variables {
+func applyCommandOverrides(cmd string, outputFormat int, v variables) variables {
 	trim, tagfilter, filter := v["trim"].boolValue(), true, true
 
-	switch cmd[0] {
-	case "proto", "raw":
-		trim, tagfilter, filter = false, false, false
-		v.set("addresses", "t")
+	switch cmd {
 	case "callgrind", "kcachegrind":
 		trim = false
 		v.set("addresses", "t")
@@ -179,7 +176,7 @@ func applyCommandOverrides(cmd []string, outputFormat int, v variables) variable
 		}
 	}
 
-	if outputFormat == report.Proto {
+	if outputFormat == report.Proto || outputFormat == report.Raw {
 		trim, tagfilter, filter = false, false, false
 		v.set("addresses", "t")
 	}
