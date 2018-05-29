@@ -216,6 +216,44 @@ search for them in a directory pointed to by the environment variable
 * **-weblist= _regex_:** Generates a source/assembly combined annotated listing for
   functions matching *regex*, and starts a web browser to display it.
 
+## Comparing profiles
+
+pprof can subtract one profile from another, provided the profiles are of
+compatible types (i.e. two heap profiles). pprof has two options which can be
+used to specify the filename or URL for a profile to be subtracted from the
+source profile:
+
+* **-diff_base= _profile_:** useful for comparing two profiles. Percentages in
+the output are relative to the total of samples in the diff base profile.
+
+* **-base= _profile_:** useful for subtracting a cumulative profile, like a
+[golang block profile](https://golang.org/doc/diagnostics.html#profiling),
+from another cumulative profile collected from the same program at a later time.
+When comparing cumulative profiles collected on the same program, percentages in
+the output are relative to the difference between the total for the source
+profile and the total for the base profile.
+
+The **-normalize** flag can be used when a base profile is specified with either 
+the `-diff_base` or the `-base` option. This flag scales the source profile so
+that the total of samples in the source profile is equal to the total of samples
+in the base profile prior to subtracting the base profile from the source
+profile. Useful for determining the relative differences between profiles, for
+example, which profile has a larger percentage of CPU time used in a particular
+function.
+
+When using the **-diff_base** option, some report entries may have negative
+values. If the merged profile is output as a protocol buffer, all samples in the
+diff base profile will have a label with the key "pprof::base" and a value of
+"true". If pprof is then used to look at the merged profile, it will behave as
+if separate source and base profiles were passed in.
+
+When using the **-base** option to subtract one cumulative profile from another
+collected on the same program at a later time, percentages will be relative to
+the difference between the total for the source profile and the total for
+the base profile, and all values will be positive. In the general case, some 
+report entries may have negative values and percentages will be relative to the
+total of the absolute value of all samples when aggregated at the address level.
+
 # Fetching profiles
 
 pprof can read profiles from a file or directly from a URL over http. Its native
@@ -236,11 +274,6 @@ If multiple profiles are specified, pprof will fetch them all and merge
 them. This is useful to combine profiles from multiple processes of a
 distributed job. The profiles may be from different programs but must be
 compatible (for example, CPU profiles cannot be combined with heap profiles).
-
-pprof can subtract a profile from another in order to compare them. For that,
-use the **-base= _profile_** option, where *profile* is the filename or URL for the
-profile to be subtracted. This may result on some report entries having negative
-values.
 
 ## Symbolization
 
@@ -286,4 +319,3 @@ the symbolization handler.
 
 * **-symbolize=demangle=templates:** Demangle, and trim function parameters, but
   not template parameters.
-
