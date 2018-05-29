@@ -319,7 +319,7 @@ func TestFetchWithBase(t *testing.T) {
 			[]string{path + "cppbench.contention"},
 			nil,
 			true,
-			[]WantSample{},
+			nil,
 			"",
 		},
 		{
@@ -328,7 +328,7 @@ func TestFetchWithBase(t *testing.T) {
 			[]string{path + "cppbench.contention", path + "cppbench.contention"},
 			nil,
 			true,
-			[]WantSample{},
+			nil,
 			"",
 		},
 		{
@@ -429,7 +429,7 @@ func TestFetchWithBase(t *testing.T) {
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.contention"},
 			false,
-			[]WantSample{},
+			nil,
 			"-base and -diff_base flags cannot both be specified",
 		},
 	}
@@ -466,13 +466,13 @@ func TestFetchWithBase(t *testing.T) {
 			}
 
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("got error %q, want no error", err)
 			}
 
 			p, err := fetchProfiles(src, o)
 
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("got error %q, want no error", err)
 			}
 
 			if got, want := len(p.Sample), len(tc.wantSamples); got != want {
