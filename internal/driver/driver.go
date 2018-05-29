@@ -162,7 +162,7 @@ func applyCommandOverrides(cmd string, outputFormat int, v variables) variables 
 		trim = false
 		v.set("addressnoinlines", "t")
 	case "peek":
-		trim, filter = false, false
+		trim, tagfilter, filter = false, false, false
 	case "list":
 		v.set("nodecount", "0")
 		v.set("lines", "t")
