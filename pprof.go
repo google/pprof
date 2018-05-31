@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"syscall"
 
 	"github.com/chzyer/readline"
 	"github.com/google/pprof/driver"
@@ -76,7 +77,10 @@ func (r *readlineUI) PrintErr(args ...interface{}) {
 	if !strings.HasSuffix(text, "\n") {
 		text += "\n"
 	}
-	fmt.Fprint(r.rl.Stderr(), colorize(text))
+	if readline.IsTerminal(int(syscall.Stderr)) {
+		text = colorize(text)
+	}
+	fmt.Fprint(r.rl.Stderr(), text)
 }
 
 // colorize the msg using ANSI color escapes.
@@ -90,8 +94,7 @@ func colorize(msg string) string {
 // IsTerminal returns whether the UI is known to be tied to an
 // interactive terminal (as opposed to being redirected to a file).
 func (r *readlineUI) IsTerminal() bool {
-	const stdout = 1
-	return readline.IsTerminal(stdout)
+	return readline.IsTerminal(int(syscall.Stdout))
 }
 
 // Start a browser on interactive mode.
