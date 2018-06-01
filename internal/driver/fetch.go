@@ -64,7 +64,7 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 
 	if pbase != nil {
 		if s.DiffBase {
-			pbase.SetLabel("pprof::base", []string{"true"})
+			pbase.SetLabel(profile.DiffBaseLabelKey, []string{profile.DiffBaseLabelValue})
 		}
 		if s.Normalize {
 			err := p.Normalize(pbase)

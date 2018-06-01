@@ -30,6 +30,14 @@ import (
 	"time"
 )
 
+// DiffBaseLabelKey is the key for the label which is used to mark profile
+// samples which are a part of the diff base profile.
+const DiffBaseLabelKey = "pprof::base"
+
+// DiffBaseLabelValue is the value for the label which is used to mark profile
+// samples which are a part of the diff base profile.
+const DiffBaseLabelValue = "true"
+
 // Profile is an in-memory representation of profile.proto.
 type Profile struct {
 	SampleType        []*ValueType
