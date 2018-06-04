@@ -398,27 +398,27 @@ func TestFetchWithBase(t *testing.T) {
 				},
 				{
 					values: []int64{-2700, -608881724},
-					labels: map[string][]string{profile.DiffBaseLabelKey: {profile.DiffBaseLabelValue}},
+					labels: map[string][]string{"pprof::base": {"true"}},
 				},
 				{
 					values: []int64{-100, -23992},
-					labels: map[string][]string{profile.DiffBaseLabelKey: {profile.DiffBaseLabelValue}},
+					labels: map[string][]string{"pprof::base": {"true"}},
 				},
 				{
 					values: []int64{-200, -179943},
-					labels: map[string][]string{profile.DiffBaseLabelKey: {profile.DiffBaseLabelValue}},
+					labels: map[string][]string{"pprof::base": {"true"}},
 				},
 				{
 					values: []int64{-100, -17778444},
-					labels: map[string][]string{profile.DiffBaseLabelKey: {profile.DiffBaseLabelValue}},
+					labels: map[string][]string{"pprof::base": {"true"}},
 				},
 				{
 					values: []int64{-100, -75976},
-					labels: map[string][]string{profile.DiffBaseLabelKey: {profile.DiffBaseLabelValue}},
+					labels: map[string][]string{"pprof::base": {"true"}},
 				},
 				{
 					values: []int64{-300, -63568134},
-					labels: map[string][]string{profile.DiffBaseLabelKey: {profile.DiffBaseLabelValue}},
+					labels: map[string][]string{"pprof::base": {"true"}},
 				},
 			},
 			"",
