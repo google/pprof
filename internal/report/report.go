@@ -1232,7 +1232,7 @@ func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64) i
 		}
 		total += v
 		div += d
-		if sample.HasLabel(profile.DiffBaseLabelKey, profile.DiffBaseLabelValue) {
+		if sample.DiffBaseSample() {
 			diffTotal += v
 			diffDiv += d
 		}
