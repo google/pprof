@@ -309,7 +309,10 @@ func printTopProto(w io.Writer, rpt *Report) error {
 	}
 	functionMap := make(functionMap)
 	for i, n := range g.Nodes {
-		f := functionMap.FindOrAdd(n.Info)
+		f, added := functionMap.FindOrAdd(n.Info)
+		if added {
+			out.Function = append(out.Function, f)
+		}
 		flat, cum := n.FlatValue(), n.CumValue()
 		l := &profile.Location{
 			ID:      uint64(i + 1),
@@ -328,7 +331,6 @@ func printTopProto(w io.Writer, rpt *Report) error {
 			Location: []*profile.Location{l},
 			Value:    []int64{int64(cv), int64(fv)},
 		}
-		out.Function = append(out.Function, f)
 		out.Location = append(out.Location, l)
 		out.Sample = append(out.Sample, s)
 	}
@@ -338,11 +340,15 @@ func printTopProto(w io.Writer, rpt *Report) error {
 
 type functionMap map[string]*profile.Function
 
-func (fm functionMap) FindOrAdd(ni graph.NodeInfo) *profile.Function {
+// FindOrAdd takes a node representing a function, adds the function represented
+// by the node to the if the function is not already present, and returns the
+// function the node represents. This also returns a boolean, which is true if
+// the function was added and false otherwise.
+func (fm functionMap) FindOrAdd(ni graph.NodeInfo) (*profile.Function, bool) {
 	fName := fmt.Sprintf("%q%q%q%d", ni.Name, ni.OrigName, ni.File, ni.StartLine)
 
 	if f := fm[fName]; f != nil {
-		return f
+		return f, false
 	}
 
 	f := &profile.Function{
@@ -353,7 +359,7 @@ func (fm functionMap) FindOrAdd(ni graph.NodeInfo) *profile.Function {
 		StartLine:  int64(ni.StartLine),
 	}
 	fm[fName] = f
-	return f
+	return f, true
 }
 
 // printAssembly prints an annotated assembly listing.

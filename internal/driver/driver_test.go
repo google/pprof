@@ -62,7 +62,8 @@ func TestParse(t *testing.T) {
 		{"text,lines,cum,hide=line[X3]0", "cpu"},
 		{"text,lines,cum,show=[12]00", "cpu"},
 		{"text,lines,cum,hide=line[X3]0,focus=[12]00", "cpu"},
-		{"topproto,lines,cum,hide=mangled[X3]0", "cpu"},
+		// {"topproto,lines,cum,hide=mangled[X3]0,", "cpu"},
+		{"topproto", "cpu_no_functions"},
 		{"tree,lines,cum,focus=[24]00", "heap"},
 		{"tree,relative_percentages,cum,focus=[24]00", "heap"},
 		{"tree,lines,cum,show_from=line2", "cpu"},
@@ -402,6 +403,8 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 		p = cpuProfile()
 	case "cpusmall":
 		p = cpuProfileSmall()
+	case "cpu_no_functions":
+		p = cpuProfileNoFunctions()
 	case "heap":
 		p = heapProfile()
 	case "heap_alloc":
@@ -708,6 +711,73 @@ func cpuProfileSmall() *profile.Profile {
 		},
 		Location: cpuL,
 		Function: nil,
+		Mapping:  cpuM,
+	}
+}
+
+func cpuProfileNoFunctions() *profile.Profile {
+	var cpuM = []*profile.Mapping{
+		{
+			ID:    1,
+			Start: 0x1000,
+			Limit: 0x2000,
+			File:  "file1",
+		},
+		{
+			ID:    2,
+			Start: 0x3000,
+			Limit: 0x4000,
+			File:  "file2",
+		},
+		{
+			ID:    3,
+			Start: 0x4000,
+			Limit: 0x5000,
+			File:  "file3",
+		},
+	}
+
+	var cpuL = []*profile.Location{
+		{
+			ID:      1000,
+			Mapping: cpuM[0],
+			Address: 0x1000,
+		},
+		{
+			ID:      2000,
+			Mapping: cpuM[1],
+			Address: 0x2000,
+		},
+		{
+			ID:      3000,
+			Mapping: cpuM[2],
+			Address: 0x3000,
+		},
+	}
+
+	return &profile.Profile{
+		PeriodType:    &profile.ValueType{Type: "cpu", Unit: "milliseconds"},
+		Period:        1,
+		DurationNanos: 10e9,
+		SampleType: []*profile.ValueType{
+			{Type: "samples", Unit: "count"},
+			{Type: "cpu", Unit: "milliseconds"},
+		},
+		Sample: []*profile.Sample{
+			{
+				Location: []*profile.Location{cpuL[0]},
+				Value:    []int64{6, 6},
+			},
+			{
+				Location: []*profile.Location{cpuL[1]},
+				Value:    []int64{1, 1},
+			},
+			{
+				Location: []*profile.Location{cpuL[2]},
+				Value:    []int64{1, 1},
+			},
+		},
+		Location: cpuL,
 		Mapping:  cpuM,
 	}
 }
