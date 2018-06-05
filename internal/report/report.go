@@ -1217,8 +1217,8 @@ func NewDefault(prof *profile.Profile, options Options) *Report {
 }
 
 // computeTotal computes the sum of the absolute value of all sample values.
-// If any samples have the label "pprof::base" with value "true", then the total
-// will only include samples with that label.
+// If any samples have label indicating they belong to the diff base, then the
+// total will only include samples with that label.
 func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64) int64 {
 	var div, total, diffDiv, diffTotal int64
 	for _, sample := range prof.Sample {
@@ -1232,7 +1232,7 @@ func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64) i
 		}
 		total += v
 		div += d
-		if sample.HasLabel("pprof::base", "true") {
+		if sample.DiffBaseSample() {
 			diffTotal += v
 			diffDiv += d
 		}
