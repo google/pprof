@@ -981,8 +981,6 @@ func TestDiffBaseSample(t *testing.T) {
 	var testcases = []struct {
 		desc               string
 		labels             map[string][]string
-		key                string
-		value              string
 		wantDiffBaseSample bool
 	}{
 		{
@@ -991,8 +989,8 @@ func TestDiffBaseSample(t *testing.T) {
 			wantDiffBaseSample: false,
 		},
 		{
-			desc:               "label with one key and value, not including diff base label",
-			labels:             map[string][]string{"pprof:base": {"true"}},
+			desc:               "label with one key and value, including diff base label",
+			labels:             map[string][]string{"pprof::base": {"true"}},
 			wantDiffBaseSample: true,
 		},
 		{
@@ -1003,9 +1001,9 @@ func TestDiffBaseSample(t *testing.T) {
 		{
 			desc: "label with many keys and values, including diff base label",
 			labels: map[string][]string{
-				"pprof:base": {"value2", "true"},
-				"key2":       {"true", "value2", "value2"},
-				"key3":       {"true", "value2", "value2"},
+				"pprof::base": {"value2", "true"},
+				"key2":        {"true", "value2", "value2"},
+				"key3":        {"true", "value2", "value2"},
 			},
 			wantDiffBaseSample: true,
 		},
@@ -1016,8 +1014,6 @@ func TestDiffBaseSample(t *testing.T) {
 				"key2": {"value1", "value2", "value2"},
 				"key3": {"value1", "value2", "value2"},
 			},
-			key:                "key5",
-			value:              "value5",
 			wantDiffBaseSample: false,
 		},
 	}
@@ -1027,7 +1023,7 @@ func TestDiffBaseSample(t *testing.T) {
 			sample := &Sample{
 				Label: tc.labels,
 			}
-			if gotHasLabel := sample.HasLabel(tc.key, tc.value); gotHasLabel != tc.wantDiffBaseSample {
+			if gotHasLabel := sample.DiffBaseSample(); gotHasLabel != tc.wantDiffBaseSample {
 				t.Errorf("sample.DiffBaseSample() got %v, want %v", gotHasLabel, tc.wantDiffBaseSample)
 			}
 		})
