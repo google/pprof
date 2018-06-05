@@ -266,7 +266,7 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 
 	// Remove label marking samples from the base profiles, so it does not appear
 	// as a nodelet in the graph view.
-	prof.RemoveLabel(profile.DiffBaseLabelKey)
+	prof.RemoveLabel("pprof::base")
 
 	formatTag := func(v int64, key string) string {
 		return measurement.ScaledLabel(v, key, o.OutputUnit)
