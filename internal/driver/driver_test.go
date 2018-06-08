@@ -62,7 +62,7 @@ func TestParse(t *testing.T) {
 		{"text,lines,cum,hide=line[X3]0", "cpu"},
 		{"text,lines,cum,show=[12]00", "cpu"},
 		{"text,lines,cum,hide=line[X3]0,focus=[12]00", "cpu"},
-		// {"topproto,lines,cum,hide=mangled[X3]0,", "cpu"},
+		{"topproto,lines,cum,hide=mangled[X3]0,", "cpu"},
 		{"topproto", "cpu_no_functions"},
 		{"tree,lines,cum,focus=[24]00", "heap"},
 		{"tree,relative_percentages,cum,focus=[24]00", "heap"},

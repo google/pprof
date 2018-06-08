@@ -309,7 +309,7 @@ func printTopProto(w io.Writer, rpt *Report) error {
 	}
 	functionMap := make(functionMap)
 	for i, n := range g.Nodes {
-		f, added := functionMap.FindOrAdd(n.Info)
+		f, added := functionMap.findOrAdd(n.Info)
 		if added {
 			out.Function = append(out.Function, f)
 		}
@@ -340,11 +340,11 @@ func printTopProto(w io.Writer, rpt *Report) error {
 
 type functionMap map[string]*profile.Function
 
-// FindOrAdd takes a node representing a function, adds the function represented
-// by the node to the if the function is not already present, and returns the
-// function the node represents. This also returns a boolean, which is true if
-// the function was added and false otherwise.
-func (fm functionMap) FindOrAdd(ni graph.NodeInfo) (*profile.Function, bool) {
+// findOrAdd takes a node representing a function, adds the function
+// represented by the node to the map if the function is not already present,
+// and returns the function the node represents. This also returns a boolean,
+// which is true if the function was added and false otherwise.
+func (fm functionMap) findOrAdd(ni graph.NodeInfo) (*profile.Function, bool) {
 	fName := fmt.Sprintf("%q%q%q%d", ni.Name, ni.OrigName, ni.File, ni.StartLine)
 
 	if f := fm[fName]; f != nil {

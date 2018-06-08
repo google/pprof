@@ -254,8 +254,8 @@ func TestFunctionMap(t *testing.T) {
 	}
 
 	want := []struct {
-		function profile.Function
-		wasAdded bool
+		wantFunction profile.Function
+		wantAdded    bool
 	}{
 		{profile.Function{ID: 1, Name: "fun1"}, true},
 		{profile.Function{ID: 2, Name: "fun2", Filename: "filename"}, true},
@@ -264,12 +264,12 @@ func TestFunctionMap(t *testing.T) {
 	}
 
 	for i, tc := range nodes {
-		gotFunc, gotAdded := fm.FindOrAdd(tc)
-		if got, want := gotFunc, want[i].function; *got != want {
-			t.Errorf("%d: want %v, got %v", i, want, got)
+		gotFunc, gotAdded := fm.findOrAdd(tc)
+		if got, want := gotFunc, want[i].wantFunction; *got != want {
+			t.Errorf("%d: got %v, want %v", i, got, want)
 		}
-		if got, want := gotAdded, want[i].wasAdded; got != want {
-			t.Errorf("%d: want %v, got %v", i, want, got)
+		if got, want := gotAdded, want[i].wantAdded; got != want {
+			t.Errorf("%d: got %v, want %v", i, got, want)
 		}
 	}
 }
