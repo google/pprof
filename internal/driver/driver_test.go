@@ -62,7 +62,8 @@ func TestParse(t *testing.T) {
 		{"text,lines,cum,hide=line[X3]0", "cpu"},
 		{"text,lines,cum,show=[12]00", "cpu"},
 		{"text,lines,cum,hide=line[X3]0,focus=[12]00", "cpu"},
-		{"topproto,lines,cum,hide=mangled[X3]0,", "cpu"},
+		{"topproto,lines,cum,hide=mangled[X3]0", "cpu"},
+		{"topproto,lines", "cpu_repeated_function"},
 		{"topproto", "cpu_no_functions"},
 		{"tree,lines,cum,focus=[24]00", "heap"},
 		{"tree,relative_percentages,cum,focus=[24]00", "heap"},
@@ -401,6 +402,8 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 	switch s {
 	case "cpu", "unknown":
 		p = cpuProfile()
+	case "cpu_repeated_function":
+		p = cpuProfileRepeatedFunction()
 	case "cpusmall":
 		p = cpuProfileSmall()
 	case "cpu_no_functions":
@@ -638,6 +641,75 @@ func cpuProfile() *profile.Profile {
 		Location: cpuL,
 		Function: cpuF,
 		Mapping:  cpuM,
+	}
+}
+
+func cpuProfileRepeatedFunction() *profile.Profile {
+	var cpuF = []*profile.Function{
+		{ID: 1, Name: "mangled1000", SystemName: "mangled1000", Filename: "testdata/file1000.src"},
+		{ID: 2, Name: "mangled2000", SystemName: "mangled2000", Filename: "testdata/file2000.src"},
+	}
+
+	var cpuL = []*profile.Location{
+		{
+			ID:      1,
+			Address: 0x1000,
+			Line: []profile.Line{
+				{Function: cpuF[0], Line: 1},
+			},
+		},
+		{
+			ID:      2,
+			Address: 0x3,
+			Line: []profile.Line{
+				{Function: cpuF[1], Line: 2},
+			},
+		},
+		{
+			ID:      3,
+			Address: 0x3,
+			Line: []profile.Line{
+				{Function: cpuF[1], Line: 3},
+			},
+		},
+		{
+			ID:      4,
+			Address: 0x5,
+			Line: []profile.Line{
+				{Function: cpuF[0], Line: 1},
+				{Function: cpuF[1], Line: 3},
+			},
+		},
+	}
+
+	return &profile.Profile{
+		PeriodType:    &profile.ValueType{Type: "cpu", Unit: "milliseconds"},
+		Period:        1,
+		DurationNanos: 10e9,
+		SampleType: []*profile.ValueType{
+			{Type: "samples", Unit: "count"},
+			{Type: "cpu", Unit: "milliseconds"},
+		},
+		Sample: []*profile.Sample{
+			{
+				Location: []*profile.Location{cpuL[1], cpuL[0]},
+				Value:    []int64{1000, 1000},
+			},
+			{
+				Location: []*profile.Location{cpuL[2], cpuL[0]},
+				Value:    []int64{100, 100},
+			},
+			{
+				Location: []*profile.Location{cpuL[1], cpuL[0]},
+				Value:    []int64{1000, 1000},
+			},
+			{
+				Location: []*profile.Location{cpuL[3]},
+				Value:    []int64{100, 100},
+			},
+		},
+		Location: cpuL,
+		Function: cpuF,
 	}
 }
 
