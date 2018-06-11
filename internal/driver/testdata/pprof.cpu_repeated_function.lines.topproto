@@ -1,4 +1,0 @@
-Showing nodes accounting for 2s, 90.91% of 2.20s total
-Dropped 2 nodes (cum <= 0.11s)
-      flat  flat%   sum%        cum   cum%
-        2s 90.91% 90.91%         2s 90.91%  mangled2000 testdata/file2000.src:2
