@@ -126,6 +126,17 @@ func TestParse(t *testing.T) {
 				f.bools["topproto"] = true
 			}
 
+			// Filters should not be applied on first pprof invocation.
+			delete(f.strings, "tagfocus")
+			delete(f.strings, "tagshow")
+			delete(f.strings, "taghide")
+			delete(f.strings, "tagignore")
+			delete(f.strings, "focus")
+			delete(f.strings, "show")
+			delete(f.strings, "hide")
+			delete(f.strings, "ignore")
+			delete(f.strings, "show_from")
+
 			// First pprof invocation to save the profile into a profile.proto.
 			o1 := setDefaults(nil)
 			o1.Flagset = f
@@ -152,13 +163,15 @@ func TestParse(t *testing.T) {
 			// Apply the flags for the second pprof run, and identify name of
 			// the file containing expected results
 			if flags[0] == "topproto" {
+				addFlags(&f, flags)
 				solution = solutionFilename(tc.source, &f)
 				delete(f.bools, "topproto")
 				f.bools["text"] = true
 			} else {
 				delete(f.bools, "proto")
-				addFlags(&f, flags[:1])
+				addFlags(&f, flags)
 				solution = solutionFilename(tc.source, &f)
+				fmt.Printf(solution)
 			}
 			// The add_comment flag is not idempotent so only apply it on the first run.
 			delete(f.strings, "add_comment")

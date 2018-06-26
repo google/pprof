@@ -177,7 +177,7 @@ func applyCommandOverrides(cmd string, outputFormat int, v variables) variables 
 	}
 
 	if outputFormat == report.Proto || outputFormat == report.Raw {
-		trim, tagfilter, filter = false, false, false
+		trim = false
 		v.set("addresses", "t")
 	}
 
