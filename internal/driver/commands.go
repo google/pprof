@@ -337,21 +337,23 @@ func listHelp(c string, redirect bool) string {
 
 // browsers returns a list of commands to attempt for web visualization.
 func browsers() []string {
-	cmds := []string{"chrome", "google-chrome", "firefox"}
+	var cmds []string
+	if userBrowser := os.Getenv("BROWSER"); userBrowser != "" {
+		cmds = append(cmds, userBrowser)
+	}
 	switch runtime.GOOS {
 	case "darwin":
-		return append(cmds, "/usr/bin/open")
+		cmds = append(cmds, "/usr/bin/open")
 	case "windows":
-		return append(cmds, "cmd /c start")
+		cmds = append(cmds, "cmd /c start")
 	default:
-		userBrowser := os.Getenv("BROWSER")
-		if userBrowser != "" {
-			cmds = append([]string{userBrowser, "sensible-browser"}, cmds...)
-		} else {
-			cmds = append([]string{"sensible-browser"}, cmds...)
+		if os.Getenv("DISPLAY") != "" {
+			// xdg-open is only for use in a desktop environment.
+			cmds = append(cmds, "xdg-open")
 		}
-		return append(cmds, "xdg-open")
+		cmds = append(cmds, "sensible-browser")
 	}
+	return append(cmds, []string{"chrome", "google-chrome", "chromium", "firefox"}...)
 }
 
 var kcachegrind = []string{"kcachegrind"}
