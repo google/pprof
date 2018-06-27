@@ -398,7 +398,7 @@ func (ui *webInterface) peek(w http.ResponseWriter, req *http.Request) {
 	}
 
 	out := &bytes.Buffer{}
-	if err := report.Generate(out, rpt, ui.options.Obj); err != nil {
+	if err := report.Generate(out, rpt, ui.options.Obj, ui.options.UI); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		ui.options.UI.PrintErr(err)
 		return

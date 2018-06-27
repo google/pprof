@@ -82,7 +82,11 @@ type Options struct {
 }
 
 // Generate generates a report as directed by the Report.
-func Generate(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
+func Generate(w io.Writer, rpt *Report, obj plugin.ObjTool, ui plugin.UI) error {
+	if rpt.unexpNegSamples {
+		ui.PrintErr("Negative sample values appeared in the profile.\nIf using the -base flag to compare profiles, consider using the -diff_base flag instead.")
+	}
+
 	o := rpt.options
 
 	switch o.OutputFormat {
@@ -1202,8 +1206,8 @@ func New(prof *profile.Profile, o *Options) *Report {
 		}
 		return measurement.ScaledLabel(v, o.SampleUnit, o.OutputUnit)
 	}
-	return &Report{prof, computeTotal(prof, o.SampleValue, o.SampleMeanDivisor),
-		o, format}
+	total, unexpNegSamples := computeTotal(prof, o.SampleValue, o.SampleMeanDivisor)
+	return &Report{prof, total, o, format, unexpNegSamples}
 }
 
 // NewDefault builds a new report indexing the last sample value
@@ -1225,8 +1229,11 @@ func NewDefault(prof *profile.Profile, options Options) *Report {
 // computeTotal computes the sum of the absolute value of all sample values.
 // If any samples have label indicating they belong to the diff base, then the
 // total will only include samples with that label.
-func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64) int64 {
+// Returns the profile total, and a boolean which is true if the profile was not
+// a diff base profile, but did have negative samples.
+func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64) (int64, bool) {
 	var div, total, diffDiv, diffTotal int64
+	var negSamples bool
 	for _, sample := range prof.Sample {
 		var d, v int64
 		v = value(sample.Value)
@@ -1234,6 +1241,7 @@ func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64) i
 			d = meanDiv(sample.Value)
 		}
 		if v < 0 {
+			negSamples = true
 			v = -v
 		}
 		total += v
@@ -1246,20 +1254,23 @@ func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64) i
 	if diffTotal > 0 {
 		total = diffTotal
 		div = diffDiv
+		// negative samples are expected in diff base profiles.
+		negSamples = false
 	}
 	if div != 0 {
-		return total / div
+		return total / div, negSamples
 	}
-	return total
+	return total, negSamples
 }
 
 // Report contains the data and associated routines to extract a
 // report from a profile.
 type Report struct {
-	prof        *profile.Profile
-	total       int64
-	options     *Options
-	formatValue func(int64) string
+	prof            *profile.Profile
+	total           int64
+	options         *Options
+	formatValue     func(int64) string
+	unexpNegSamples bool
 }
 
 // Total returns the total number of samples in a report.

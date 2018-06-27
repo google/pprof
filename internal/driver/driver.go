@@ -114,7 +114,7 @@ func generateReport(p *profile.Profile, cmd []string, vars variables, o *plugin.
 
 	// Generate the report.
 	dst := new(bytes.Buffer)
-	if err := report.Generate(dst, rpt, o.Obj); err != nil {
+	if err := report.Generate(dst, rpt, o.Obj, o.UI); err != nil {
 		return err
 	}
 	src := dst
