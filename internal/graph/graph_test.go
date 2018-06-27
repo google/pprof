@@ -316,7 +316,7 @@ func TestTrimTree(t *testing.T) {
 }
 
 func nodeTestProfile() *profile.Profile {
-	var mappings = []*profile.Mapping{
+	mappings := []*profile.Mapping{
 		{
 			ID:   1,
 			File: "symbolized_binary",
@@ -330,13 +330,11 @@ func nodeTestProfile() *profile.Profile {
 			File: "unsymbolized_library_2",
 		},
 	}
-
-	var functions = []*profile.Function{
+	functions := []*profile.Function{
 		{ID: 1, Name: "symname"},
 		{ID: 2},
 	}
-
-	var locations = []*profile.Location{
+	locations := []*profile.Location{
 		{
 			ID:      1,
 			Mapping: mappings[0],
@@ -356,7 +354,6 @@ func nodeTestProfile() *profile.Profile {
 			Mapping: mappings[2],
 		},
 	}
-
 	return &profile.Profile{
 		PeriodType: &profile.ValueType{Type: "cpu", Unit: "milliseconds"},
 		SampleType: []*profile.ValueType{
@@ -392,9 +389,8 @@ func TestCreateNodes(t *testing.T) {
 	}
 
 	nodes, _ := CreateNodes(testProfile, &Options{})
-
 	if len(nodes) != len(wantNodeSet) {
-		t.Errorf("want %d nodes, got %d", len(wantNodeSet), len(nodes))
+		t.Errorf("got %d nodes, want %d", len(nodes), len(wantNodeSet))
 	}
 	for _, node := range nodes {
 		if !wantNodeSet[node.Info] {
