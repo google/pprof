@@ -564,12 +564,12 @@ func nodeInfo(l *profile.Location, line profile.Line, objfile string, o *Options
 	if fname := line.Function.Filename; fname != "" {
 		ni.File = filepath.Clean(fname)
 	}
-	if o.ObjNames {
-		ni.Objfile = objfile
-		ni.StartLine = int(line.Function.StartLine)
-	}
 	if o.OrigFnNames {
 		ni.OrigName = line.Function.SystemName
+	}
+	if o.ObjNames || (ni.Name == "" && ni.OrigName == "") {
+		ni.Objfile = objfile
+		ni.StartLine = int(line.Function.StartLine)
 	}
 	return ni
 }
