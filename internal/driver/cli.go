@@ -45,8 +45,8 @@ type source struct {
 func parseFlags(o *plugin.Options) (*source, []string, error) {
 	flag := o.Flagset
 	// Comparisons.
-	flagBase := flag.StringList("base", "", "Source of base profile for profile subtraction")
 	flagDiffBase := flag.StringList("diff_base", "", "Source of base profile for comparison")
+	flagBase := flag.StringList("base", "", "Source of base profile for profile subtraction")
 	// Source options.
 	flagSymbolize := flag.String("symbolize", "", "Options for profile symbolization")
 	flagBuildID := flag.String("buildid", "", "Override build id for first mapping")
