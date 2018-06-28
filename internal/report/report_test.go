@@ -39,25 +39,31 @@ func TestSource(t *testing.T) {
 	sampleValue1 := func(v []int64) int64 {
 		return v[1]
 	}
-
+	negProfile := testProfile.Copy()
+	negProfile.Sample = negProfile.Sample[:2]
+	for _, sample := range negProfile.Sample {
+		for i, v := range sample.Value {
+			sample.Value[i] = -v
+		}
+	}
 	for _, tc := range []testcase{
 		{
 			rpt: New(
-				testProfile1.Copy(),
+				testProfile.Copy(),
 				&Options{
 					OutputFormat: List,
 					Symbol:       regexp.MustCompile(`.`),
 					TrimPath:     "/some/path",
 
 					SampleValue: sampleValue1,
-					SampleUnit:  testProfile1.SampleType[1].Unit,
+					SampleUnit:  testProfile.SampleType[1].Unit,
 				},
 			),
 			want: path + "source.rpt",
 		},
 		{
 			rpt: New(
-				testProfile1.Copy(),
+				testProfile.Copy(),
 				&Options{
 					OutputFormat: Dot,
 					CallTree:     true,
@@ -65,32 +71,29 @@ func TestSource(t *testing.T) {
 					TrimPath:     "/some/path",
 
 					SampleValue: sampleValue1,
-					SampleUnit:  testProfile1.SampleType[1].Unit,
+					SampleUnit:  testProfile.SampleType[1].Unit,
 				},
 			),
 			want: path + "source.dot",
 		},
 		{
 			rpt: New(
-				testProfile2.Copy(),
+				negProfile.Copy(),
 				&Options{
-					OutputFormat: Dot,
-					CallTree:     true,
+					OutputFormat: List,
 					Symbol:       regexp.MustCompile(`.`),
-					TrimPath:     "/some/path",
-
-					SampleValue: sampleValue1,
-					SampleUnit:  testProfile2.SampleType[1].Unit,
+					SampleValue:  sampleValue1,
+					SampleUnit:   negProfile.SampleType[1].Unit,
 				},
 			),
 			wantNegSampleErr: true,
-			want:             path + "source_neg_samples.dot",
+			want:             path + "source_neg_samples.rpt",
 		},
 	} {
 		var b bytes.Buffer
 		ui := &proftest.TestUI{T: t}
 		if tc.wantNegSampleErr {
-			ui.AllowRx = "Negative sample values appeared in the profile.\nIf using the -base flag to compare profiles, consider using the -diff_base flag instead."
+			ui.AllowRx = "Profile has negative sample values.\nIf using the -base flag to compare profiles, consider using the -diff_base flag instead."
 		}
 		if err := Generate(&b, tc.rpt, &binutils.Binutils{}, ui); err != nil {
 			t.Fatalf("%s: %v", tc.want, err)
@@ -203,7 +206,7 @@ var testL = []*profile.Location{
 	},
 }
 
-var testProfile1 = &profile.Profile{
+var testProfile = &profile.Profile{
 	PeriodType:    &profile.ValueType{Type: "cpu", Unit: "millisecond"},
 	Period:        10,
 	DurationNanos: 10e9,
@@ -223,41 +226,6 @@ var testProfile1 = &profile.Profile{
 		{
 			Location: []*profile.Location{testL[4], testL[2], testL[0]},
 			Value:    []int64{1, 100},
-		},
-		{
-			Location: []*profile.Location{testL[3], testL[0]},
-			Value:    []int64{1, 1000},
-		},
-		{
-			Location: []*profile.Location{testL[4], testL[3], testL[0]},
-			Value:    []int64{1, 10000},
-		},
-	},
-	Location: testL,
-	Function: testF,
-	Mapping:  testM,
-}
-
-var testProfile2 = &profile.Profile{
-	PeriodType:    &profile.ValueType{Type: "cpu", Unit: "millisecond"},
-	Period:        10,
-	DurationNanos: 10e9,
-	SampleType: []*profile.ValueType{
-		{Type: "samples", Unit: "count"},
-		{Type: "cpu", Unit: "cycles"},
-	},
-	Sample: []*profile.Sample{
-		{
-			Location: []*profile.Location{testL[0]},
-			Value:    []int64{1, 1},
-		},
-		{
-			Location: []*profile.Location{testL[2], testL[1], testL[0]},
-			Value:    []int64{1, 10},
-		},
-		{
-			Location: []*profile.Location{testL[4], testL[2], testL[0]},
-			Value:    []int64{1, -100},
 		},
 		{
 			Location: []*profile.Location{testL[3], testL[0]},
@@ -356,7 +324,7 @@ func TestLegendActiveFilters(t *testing.T) {
 }
 
 func TestComputeTotal(t *testing.T) {
-	p1 := testProfile1.Copy()
+	p1 := testProfile.Copy()
 	p1.Sample = []*profile.Sample{
 		{
 			Location: []*profile.Location{testL[0]},
@@ -372,7 +340,7 @@ func TestComputeTotal(t *testing.T) {
 		},
 	}
 
-	p2 := testProfile1.Copy()
+	p2 := testProfile.Copy()
 	p2.Sample = []*profile.Sample{
 		{
 			Location: []*profile.Location{testL[0]},
@@ -388,7 +356,7 @@ func TestComputeTotal(t *testing.T) {
 		},
 	}
 
-	p3 := testProfile1.Copy()
+	p3 := testProfile.Copy()
 	p3.Sample = []*profile.Sample{
 		{
 			Location: []*profile.Location{testL[0]},
@@ -473,7 +441,7 @@ func TestComputeTotal(t *testing.T) {
 				t.Errorf("got total %d, want %v", gotTotal, tc.wantTotal)
 			}
 			if gotUnexpNegSamples != tc.wantUnexpNegSamples {
-				t.Errorf("got  unexpected negative samples %v, want %v", gotUnexpNegSamples, tc.wantUnexpNegSamples)
+				t.Errorf("got unexpected negative samples %v, want %v", gotUnexpNegSamples, tc.wantUnexpNegSamples)
 			}
 		})
 	}
