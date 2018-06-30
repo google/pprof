@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math/big"
 	"net/url"
 	"path"
 	"regexp"
@@ -111,11 +112,16 @@ func symbolizeMapping(source string, offset int64, syms func(string, string) ([]
 	for _, l := range p.Location {
 		if l.Mapping == m && l.Address != 0 && len(l.Line) == 0 {
 			// Compensate for normalization.
-			addr := int64(l.Address) + offset
-			if addr < 0 {
+			var addr big.Int
+			addr.SetUint64(l.Address)
+			addr.Add(&addr, big.NewInt(offset))
+			if addr.Cmp(big.NewInt(0)) < 0 {
 				return fmt.Errorf("unexpected negative adjusted address, mapping %v source %d, offset %d", l.Mapping, l.Address, offset)
 			}
-			a = append(a, fmt.Sprintf("%#x", addr))
+			if !addr.IsUint64() {
+				return fmt.Errorf("adjusted address overflows uint64, mapping %v source %d, offset %d", l.Mapping, l.Address, offset)
+			}
+			a = append(a, fmt.Sprintf("%#x", addr.Uint64()))
 		}
 	}
 
@@ -144,15 +150,21 @@ func symbolizeMapping(source string, offset int64, syms func(string, string) ([]
 		}
 
 		if symbol := symbolzRE.FindStringSubmatch(l); len(symbol) == 3 {
-			addr, err := strconv.ParseInt(symbol[1], 0, 64)
+			parsedAddr, err := strconv.ParseUint(symbol[1], 0, 64)
 			if err != nil {
 				return fmt.Errorf("unexpected parse failure %s: %v", symbol[1], err)
 			}
-			if addr < 0 {
+
+			// Reapply offset expected by the profile.
+			var addr big.Int
+			addr.SetUint64(parsedAddr)
+			addr.Sub(&addr, big.NewInt(offset))
+			if addr.Cmp(big.NewInt(0)) < 0 {
 				return fmt.Errorf("unexpected negative adjusted address, source %s, offset %d", symbol[1], offset)
 			}
-			// Reapply offset expected by the profile.
-			addr -= offset
+			if !addr.IsUint64() {
+				return fmt.Errorf("adjusted address overflows uint64, source %s, offset %d", symbol[1], offset)
+			}
 
 			name := symbol[2]
 			fn := functions[name]
@@ -166,7 +178,7 @@ func symbolizeMapping(source string, offset int64, syms func(string, string) ([]
 				p.Function = append(p.Function, fn)
 			}
 
-			lines[uint64(addr)] = profile.Line{Function: fn}
+			lines[addr.Uint64()] = profile.Line{Function: fn}
 		}
 	}
 
