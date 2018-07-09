@@ -116,21 +116,21 @@ func TestParse(t *testing.T) {
 			}
 			defer os.Remove(protoTempFile.Name())
 			defer protoTempFile.Close()
-			f.bools["lines"] = true
 			f.strings["output"] = protoTempFile.Name()
 
 			if flags[0] == "topproto" {
 				f.bools["proto"] = false
 				f.bools["topproto"] = true
+				f.bools["addresses"] = true
 			}
 
 			// First pprof invocation to save the profile into a profile.proto.
-			o1 := setDefaults(nil)
-			o1.Flagset = f
-			o1.Fetch = testFetcher{}
-			o1.Sym = testSymbolizer{}
-			o1.UI = testUI
-			if err := PProf(o1); err != nil {
+			o := setDefaults(nil)
+			o.Flagset = f
+			o.Fetch = testFetcher{}
+			o.Sym = testSymbolizer{}
+			o.UI = testUI
+			if err := PProf(o); err != nil {
 				t.Fatalf("%s %q:  %v", tc.source, tc.flags, err)
 			}
 			// Reset the pprof variables after the proto invocation
@@ -162,13 +162,13 @@ func TestParse(t *testing.T) {
 
 			// Second pprof invocation to read the profile from profile.proto
 			// and generate a report.
-			o2 := setDefaults(nil)
-			o2.Flagset = f
-			o2.Sym = testSymbolizeDemangler{}
-			o2.Obj = new(mockObjTool)
-			o2.UI = testUI
+			o = setDefaults(nil)
+			o.Flagset = f
+			o.Sym = testSymbolizeDemangler{}
+			o.Obj = new(mockObjTool)
+			o.UI = testUI
 
-			if err := PProf(o2); err != nil {
+			if err := PProf(o); err != nil {
 				t.Errorf("%s: %v", tc.source, err)
 			}
 			b, err := ioutil.ReadFile(outputTempFile.Name())
