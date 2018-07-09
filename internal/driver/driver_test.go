@@ -104,8 +104,8 @@ func TestParse(t *testing.T) {
 
 			testUI := &proftest.TestUI{T: t, AllowRx: "Generating report in|Ignoring local file|expression matched no samples|Interpreted .* as range, not regexp"}
 
-			f1 := baseFlags()
-			f1.args = []string{tc.source}
+			f := baseFlags()
+			f.args = []string{tc.source}
 
 			flags := strings.Split(tc.flags, ",")
 
@@ -116,17 +116,17 @@ func TestParse(t *testing.T) {
 			}
 			defer os.Remove(protoTempFile.Name())
 			defer protoTempFile.Close()
-			f1.bools["lines"] = true
-			f1.strings["output"] = protoTempFile.Name()
+			f.bools["lines"] = true
+			f.strings["output"] = protoTempFile.Name()
 
 			if flags[0] == "topproto" {
-				f1.bools["proto"] = false
-				f1.bools["topproto"] = true
+				f.bools["proto"] = false
+				f.bools["topproto"] = true
 			}
 
 			// First pprof invocation to save the profile into a profile.proto.
 			o1 := setDefaults(nil)
-			o1.Flagset = f1
+			o1.Flagset = f
 			o1.Fetch = testFetcher{}
 			o1.Sym = testSymbolizer{}
 			o1.UI = testUI
@@ -144,26 +144,26 @@ func TestParse(t *testing.T) {
 			defer os.Remove(outputTempFile.Name())
 			defer outputTempFile.Close()
 
-			f2 := baseFlags()
-			f2.strings["output"] = outputTempFile.Name()
-			f2.args = []string{protoTempFile.Name()}
+			f = baseFlags()
+			f.strings["output"] = outputTempFile.Name()
+			f.args = []string{protoTempFile.Name()}
 
-			delete(f2.bools, "proto")
-			addFlags(&f2, flags)
-			solution := solutionFilename(tc.source, &f2)
+			delete(f.bools, "proto")
+			addFlags(&f, flags)
+			solution := solutionFilename(tc.source, &f)
 			// Apply the flags for the second pprof run, and identify name of
 			// the file containing expected results
 			if flags[0] == "topproto" {
-				addFlags(&f2, flags)
-				solution = solutionFilename(tc.source, &f2)
-				delete(f2.bools, "topproto")
-				f2.bools["text"] = true
+				addFlags(&f, flags)
+				solution = solutionFilename(tc.source, &f)
+				delete(f.bools, "topproto")
+				f.bools["text"] = true
 			}
 
 			// Second pprof invocation to read the profile from profile.proto
 			// and generate a report.
 			o2 := setDefaults(nil)
-			o2.Flagset = f2
+			o2.Flagset = f
 			o2.Sym = testSymbolizeDemangler{}
 			o2.Obj = new(mockObjTool)
 			o2.UI = testUI
