@@ -5,20 +5,18 @@ go_import_path: github.com/google/pprof
 matrix:
   include:
     - os: linux
-      go: 1.7.x
-    - os: linux
-      go: 1.8.x
-    - os: linux
       go: 1.9.x
+    - os: linux
+      go: 1.10.x
     - os: linux
       go: master
     - os: osx
       osx_image: xcode6.4
-      go: 1.8.x
+      go: 1.9.x
       env: SKIP_GRAPHVIZ=1
     - os: osx
       osx_image: xcode6.4
-      go: 1.9.x
+      go: 1.10.x
       env: SKIP_GRAPHVIZ=1
     - os: osx
       osx_image: xcode6.4
@@ -26,19 +24,19 @@ matrix:
       env: SKIP_GRAPHVIZ=1
     - os: osx
       osx_image: xcode7.3
-      go: 1.8.x
+      go: 1.9.x
     - os: osx
       osx_image: xcode7.3
-      go: 1.9.x
+      go: 1.10.x
     - os: osx
       osx_image: xcode7.3
       go: master
     - os: osx
       osx_image: xcode8.3
-      go: 1.8.x
+      go: 1.9.x
     - os: osx
       osx_image: xcode8.3
-      go: 1.9.x
+      go: 1.10.x
     - os: osx
       osx_image: xcode8.3
       go: master
