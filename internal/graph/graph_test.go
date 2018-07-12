@@ -3,6 +3,8 @@ package graph
 import (
 	"fmt"
 	"testing"
+
+	"github.com/google/pprof/profile"
 )
 
 func edgeDebugString(edge *Edge) string {
@@ -309,6 +311,90 @@ func TestTrimTree(t *testing.T) {
 			t.Fatalf("Graphs do not match.\nExpected: %s\nFound: %s\n",
 				expectedNodesDebugString(test.expected),
 				graphDebugString(graph))
+		}
+	}
+}
+
+func nodeTestProfile() *profile.Profile {
+	mappings := []*profile.Mapping{
+		{
+			ID:   1,
+			File: "symbolized_binary",
+		},
+		{
+			ID:   2,
+			File: "unsymbolized_library_1",
+		},
+		{
+			ID:   3,
+			File: "unsymbolized_library_2",
+		},
+	}
+	functions := []*profile.Function{
+		{ID: 1, Name: "symname"},
+		{ID: 2},
+	}
+	locations := []*profile.Location{
+		{
+			ID:      1,
+			Mapping: mappings[0],
+			Line: []profile.Line{
+				{Function: functions[0]},
+			},
+		},
+		{
+			ID:      2,
+			Mapping: mappings[1],
+			Line: []profile.Line{
+				{Function: functions[1]},
+			},
+		},
+		{
+			ID:      3,
+			Mapping: mappings[2],
+		},
+	}
+	return &profile.Profile{
+		PeriodType: &profile.ValueType{Type: "cpu", Unit: "milliseconds"},
+		SampleType: []*profile.ValueType{
+			{Type: "type", Unit: "unit"},
+		},
+		Sample: []*profile.Sample{
+			{
+				Location: []*profile.Location{locations[0]},
+				Value:    []int64{1},
+			},
+			{
+				Location: []*profile.Location{locations[1]},
+				Value:    []int64{1},
+			},
+			{
+				Location: []*profile.Location{locations[2]},
+				Value:    []int64{1},
+			},
+		},
+		Location: locations,
+		Function: functions,
+		Mapping:  mappings,
+	}
+}
+
+// Check that nodes are properly created for a simple profile.
+func TestCreateNodes(t *testing.T) {
+	testProfile := nodeTestProfile()
+	wantNodeSet := NodeSet{
+		{Name: "symname"}:                   true,
+		{Objfile: "unsymbolized_library_1"}: true,
+		{Objfile: "unsymbolized_library_2"}: true,
+	}
+
+	nodes, _ := CreateNodes(testProfile, &Options{})
+	if len(nodes) != len(wantNodeSet) {
+		t.Errorf("got %d nodes, want %d", len(nodes), len(wantNodeSet))
+	}
+	for _, node := range nodes {
+		if !wantNodeSet[node.Info] {
+			t.Errorf("unexpected node %v", node.Info)
 		}
 	}
 }

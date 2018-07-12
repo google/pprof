@@ -512,9 +512,7 @@ func isNegative(n *Node) bool {
 
 // CreateNodes creates graph nodes for all locations in a profile. It
 // returns set of all nodes, plus a mapping of each location to the
-// set of corresponding nodes (one per location.Line). If kept is
-// non-nil, only nodes in that set are included; nodes that do not
-// match are represented as a nil.
+// set of corresponding nodes (one per location.Line).
 func CreateNodes(prof *profile.Profile, o *Options) (Nodes, map[uint64]Nodes) {
 	locations := make(map[uint64]Nodes, len(prof.Location))
 	nm := make(NodeMap, len(prof.Location))
@@ -564,12 +562,12 @@ func nodeInfo(l *profile.Location, line profile.Line, objfile string, o *Options
 	if fname := line.Function.Filename; fname != "" {
 		ni.File = filepath.Clean(fname)
 	}
-	if o.ObjNames {
-		ni.Objfile = objfile
-		ni.StartLine = int(line.Function.StartLine)
-	}
 	if o.OrigFnNames {
 		ni.OrigName = line.Function.SystemName
+	}
+	if o.ObjNames || (ni.Name == "" && ni.OrigName == "") {
+		ni.Objfile = objfile
+		ni.StartLine = int(line.Function.StartLine)
 	}
 	return ni
 }
