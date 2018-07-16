@@ -109,9 +109,6 @@ func TestParse(t *testing.T) {
 
 			flags := strings.Split(tc.flags, ",")
 
-			// Skip the output format in the first flag, to output to a proto
-			addFlags(&f, flags[1:])
-
 			// Encode profile into a protobuf and decode it again.
 			protoTempFile, err := ioutil.TempFile("", "profile_proto")
 			if err != nil {
@@ -124,6 +121,7 @@ func TestParse(t *testing.T) {
 			if flags[0] == "topproto" {
 				f.bools["proto"] = false
 				f.bools["topproto"] = true
+				f.bools["addresses"] = true
 			}
 
 			// First pprof invocation to save the profile into a profile.proto.
@@ -145,23 +143,22 @@ func TestParse(t *testing.T) {
 			}
 			defer os.Remove(outputTempFile.Name())
 			defer outputTempFile.Close()
+
+			f = baseFlags()
 			f.strings["output"] = outputTempFile.Name()
 			f.args = []string{protoTempFile.Name()}
 
-			var solution string
+			delete(f.bools, "proto")
+			addFlags(&f, flags)
+			solution := solutionFilename(tc.source, &f)
 			// Apply the flags for the second pprof run, and identify name of
 			// the file containing expected results
 			if flags[0] == "topproto" {
+				addFlags(&f, flags)
 				solution = solutionFilename(tc.source, &f)
 				delete(f.bools, "topproto")
 				f.bools["text"] = true
-			} else {
-				delete(f.bools, "proto")
-				addFlags(&f, flags[:1])
-				solution = solutionFilename(tc.source, &f)
 			}
-			// The add_comment flag is not idempotent so only apply it on the first run.
-			delete(f.strings, "add_comment")
 
 			// Second pprof invocation to read the profile from profile.proto
 			// and generate a report.
