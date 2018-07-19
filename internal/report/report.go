@@ -84,7 +84,7 @@ type Options struct {
 // Generate generates a report as directed by the Report.
 func Generate(w io.Writer, rpt *Report, obj plugin.ObjTool, ui plugin.UI) error {
 	if rpt.unexpNegSamples {
-		ui.PrintErr("Profile has negative sample values.\nIf using the -base flag to compare profiles, consider using the -diff_base flag instead.")
+		ui.PrintErr("Profile has negative values, percentage values may be incorrect. If using -base, consider using -diff_base instead.")
 	}
 
 	o := rpt.options
@@ -1254,7 +1254,7 @@ func computeTotal(prof *profile.Profile, value, meanDiv func(v []int64) int64) (
 	if diffTotal > 0 {
 		total = diffTotal
 		div = diffDiv
-		// negative samples are expected in diff base profiles.
+		// Negative samples are expected in diff base profiles.
 		negSamples = false
 	}
 	if div != 0 {

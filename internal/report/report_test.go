@@ -93,7 +93,7 @@ func TestSource(t *testing.T) {
 		var b bytes.Buffer
 		ui := &proftest.TestUI{T: t}
 		if tc.wantNegSampleErr {
-			ui.AllowRx = "Profile has negative sample values.\nIf using the -base flag to compare profiles, consider using the -diff_base flag instead."
+			ui.AllowRx = "Profile has negative values, percentage values may be incorrect. If using -base, consider using -diff_base instead."
 		}
 		if err := Generate(&b, tc.rpt, &binutils.Binutils{}, ui); err != nil {
 			t.Fatalf("%s: %v", tc.want, err)
