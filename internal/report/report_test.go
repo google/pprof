@@ -28,8 +28,9 @@ import (
 )
 
 type testcase struct {
-	rpt  *Report
-	want string
+	rpt              *Report
+	want             string
+	wantNegSampleErr bool
 }
 
 func TestSource(t *testing.T) {
@@ -38,7 +39,13 @@ func TestSource(t *testing.T) {
 	sampleValue1 := func(v []int64) int64 {
 		return v[1]
 	}
-
+	negProfile := testProfile.Copy()
+	negProfile.Sample = negProfile.Sample[:2]
+	for _, sample := range negProfile.Sample {
+		for i, v := range sample.Value {
+			sample.Value[i] = -v
+		}
+	}
 	for _, tc := range []testcase{
 		{
 			rpt: New(
@@ -69,10 +76,31 @@ func TestSource(t *testing.T) {
 			),
 			want: path + "source.dot",
 		},
+		{
+			rpt: New(
+				negProfile.Copy(),
+				&Options{
+					OutputFormat: List,
+					Symbol:       regexp.MustCompile(`.`),
+					SampleValue:  sampleValue1,
+					SampleUnit:   negProfile.SampleType[1].Unit,
+				},
+			),
+			wantNegSampleErr: true,
+			want:             path + "source_neg_samples.rpt",
+		},
 	} {
 		var b bytes.Buffer
-		if err := Generate(&b, tc.rpt, &binutils.Binutils{}); err != nil {
+		ui := &proftest.TestUI{T: t}
+		if tc.wantNegSampleErr {
+			ui.AllowRx = "Profile has negative values, so percentage values may be incorrect. If using -base, consider using -diff_base instead."
+		}
+		if err := Generate(&b, tc.rpt, &binutils.Binutils{}, ui); err != nil {
 			t.Fatalf("%s: %v", tc.want, err)
+		}
+
+		if tc.wantNegSampleErr && ui.NumAllowRxMatches != 1 {
+			t.Errorf("want %q logged to UI once, got this message logged %d time(s)", ui.AllowRx, ui.NumAllowRxMatches)
 		}
 
 		gold, err := ioutil.ReadFile(tc.want)
@@ -365,10 +393,11 @@ func TestComputeTotal(t *testing.T) {
 	}
 
 	testcases := []struct {
-		desc           string
-		prof           *profile.Profile
-		value, meanDiv func(v []int64) int64
-		wantTotal      int64
+		desc                string
+		prof                *profile.Profile
+		value, meanDiv      func(v []int64) int64
+		wantTotal           int64
+		wantUnexpNegSamples bool
 	}{
 		{
 			desc: "no diff base, all positive values, index 1",
@@ -392,7 +421,8 @@ func TestComputeTotal(t *testing.T) {
 			value: func(v []int64) int64 {
 				return v[1]
 			},
-			wantTotal: 111,
+			wantTotal:           111,
+			wantUnexpNegSamples: true,
 		},
 		{
 			desc: "diff base, some negative values",
@@ -406,8 +436,12 @@ func TestComputeTotal(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			if gotTotal := computeTotal(tc.prof, tc.value, tc.meanDiv); gotTotal != tc.wantTotal {
+			gotTotal, gotUnexpNegSamples := computeTotal(tc.prof, tc.value, tc.meanDiv)
+			if gotTotal != tc.wantTotal {
 				t.Errorf("got total %d, want %v", gotTotal, tc.wantTotal)
+			}
+			if gotUnexpNegSamples != tc.wantUnexpNegSamples {
+				t.Errorf("got unexpected negative samples %v, want %v", gotUnexpNegSamples, tc.wantUnexpNegSamples)
 			}
 		})
 	}

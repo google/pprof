@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/google/pprof/internal/binutils"
+	"github.com/google/pprof/internal/proftest"
 	"github.com/google/pprof/profile"
 )
 
@@ -27,7 +28,7 @@ func TestWebList(t *testing.T) {
 		SampleUnit:   cpu.SampleType[1].Unit,
 	})
 	var buf bytes.Buffer
-	if err := Generate(&buf, rpt, &binutils.Binutils{}); err != nil {
+	if err := Generate(&buf, rpt, &binutils.Binutils{}, &proftest.TestUI{T: t}); err != nil {
 		t.Fatalf("could not generate weblist: %v", err)
 	}
 	output := buf.String()
