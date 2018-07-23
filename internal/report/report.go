@@ -84,7 +84,7 @@ type Options struct {
 // Generate generates a report as directed by the Report.
 func Generate(w io.Writer, rpt *Report, obj plugin.ObjTool, ui plugin.UI) error {
 	if rpt.unexpNegSamples {
-		ui.PrintErr("Profile has negative values, percentage values may be incorrect. If using -base, consider using -diff_base instead.")
+		ui.PrintErr("Profile has negative values, so percentage values may be incorrect. If using -base, consider using -diff_base instead.")
 	}
 
 	o := rpt.options
