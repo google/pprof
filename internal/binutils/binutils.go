@@ -195,8 +195,7 @@ func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFi
 	defer f.Close()
 
 	var header [4]byte
-	_, err = io.ReadFull(f, header[:])
-	if err != nil {
+	if _, err = io.ReadFull(f, header[:]); err != nil {
 		return nil, fmt.Errorf("error reading magic number from %s: %s", name, err)
 	}
 
