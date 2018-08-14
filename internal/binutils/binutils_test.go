@@ -369,24 +369,24 @@ func TestOpenMalformedELF(t *testing.T) {
 	bu := &Binutils{}
 	_, err := bu.Open(filepath.Join("testdata", "malformed_elf"), 0, 0, 0)
 	if err == nil {
-		t.Fatalf("Open malformed ELF succeeded but shouldn't have")
+		t.Fatalf("Open: unexpected success")
 	}
 
 	if !strings.Contains(err.Error(), "ELF") {
-		t.Errorf("Open malformed ELF error message doesn't contain 'ELF': %v", err)
+		t.Errorf("Open: got %v, want error containing 'ELF'", err)
 	}
 }
 
 func TestOpenMalformedMachO(t *testing.T) {
 	// Test that opening a malformed Mach-O file will report an error containing
-	// the word "ELF".
+	// the word "Mach-O".
 	bu := &Binutils{}
 	_, err := bu.Open(filepath.Join("testdata", "malformed_macho"), 0, 0, 0)
 	if err == nil {
-		t.Fatalf("Open malformed Mach-O succeeded but shouldn't have")
+		t.Fatalf("Open: unexpected success")
 	}
 
 	if !strings.Contains(err.Error(), "Mach-O") {
-		t.Errorf("Open malformed Mach-O error message doesn't contain 'Mach-O': %v", err)
+		t.Errorf("Open: got %v, want error containing 'Mach-O'", err)
 	}
 }
