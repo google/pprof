@@ -18,7 +18,9 @@ package binutils
 import (
 	"debug/elf"
 	"debug/macho"
+	"encoding/binary"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -173,12 +175,8 @@ func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFi
 	b := bu.get()
 
 	// Make sure file is a supported executable.
-	// The pprof driver uses Open to sniff the difference
-	// between an executable and a profile.
-	// For now, only ELF is supported.
-	// Could read the first few bytes of the file and
-	// use a table of prefixes if we need to support other
-	// systems at some point.
+	// This uses magic numbers, mainly to provide better error messages but
+	// it should also help speed.
 
 	if _, err := os.Stat(name); err != nil {
 		// For testing, do not require file name to exist.
@@ -188,13 +186,48 @@ func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFi
 		return nil, err
 	}
 
-	if f, err := b.openELF(name, start, limit, offset); err == nil {
+	// Read the first 4 bytes of the file.
+
+	f, err := os.Open(name)
+	if err != nil {
+		return nil, fmt.Errorf("error opening %s: %s", name, err)
+	}
+	defer f.Close()
+
+	var header [4]byte
+	if _, err = io.ReadFull(f, header[:]); err != nil {
+		return nil, fmt.Errorf("error reading magic number from %s: %s", name, err)
+	}
+
+	elfMagic := string(header[:])
+
+	// Match against supported file types.
+	if elfMagic == elf.ELFMAG {
+		f, err := b.openELF(name, start, limit, offset)
+		if err != nil {
+			return nil, fmt.Errorf("error reading ELF file %s: %s", name, err)
+		}
 		return f, nil
 	}
-	if f, err := b.openMachO(name, start, limit, offset); err == nil {
+
+	// Mach-O magic numbers can be big or little endian.
+	machoMagicLittle := binary.LittleEndian.Uint32(header[:])
+	machoMagicBig := binary.BigEndian.Uint32(header[:])
+
+	if machoMagicLittle == macho.Magic32 || machoMagicLittle == macho.Magic64 ||
+		machoMagicBig == macho.Magic32 || machoMagicBig == macho.Magic64 {
+		f, err := b.openMachO(name, start, limit, offset)
+		if err != nil {
+			return nil, fmt.Errorf("error reading Mach-O file %s: %s", name, err)
+		}
 		return f, nil
 	}
-	return nil, fmt.Errorf("unrecognized binary: %s", name)
+	if machoMagicLittle == macho.MagicFat || machoMagicBig == macho.MagicFat {
+		// TODO: #1033
+		return nil, fmt.Errorf("fat Mach-O archives are currently unsupported")
+	}
+
+	return nil, fmt.Errorf("unrecognized binary format: %s", name)
 }
 
 func (b *binrep) openMachO(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
