@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -223,19 +224,17 @@ func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFi
 		return f, nil
 	}
 	if machoMagicLittle == macho.MagicFat || machoMagicBig == macho.MagicFat {
-		// TODO: #1033
-		return nil, fmt.Errorf("fat Mach-O archives are currently unsupported")
+		f, err := b.openFatMachO(name, start, limit, offset)
+		if err != nil {
+			return nil, fmt.Errorf("error reading fat Mach-O file %s: %s", name, err)
+		}
+		return f, nil
 	}
 
 	return nil, fmt.Errorf("unrecognized binary format: %s", name)
 }
 
-func (b *binrep) openMachO(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
-	of, err := macho.Open(name)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing %s: %v", name, err)
-	}
-	defer of.Close()
+func (b *binrep) openMachOCommon(name string, of *macho.File, start, limit, offset uint64) (plugin.ObjFile, error) {
 
 	// Subtract the load address of the __TEXT section. Usually 0 for shared
 	// libraries or 0x100000000 for executables. You can check this value by
@@ -256,6 +255,51 @@ func (b *binrep) openMachO(name string, start, limit, offset uint64) (plugin.Obj
 		return &fileNM{file: file{b: b, name: name, base: base}}, nil
 	}
 	return &fileAddr2Line{file: file{b: b, name: name, base: base}}, nil
+}
+
+func (b *binrep) openFatMachO(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
+	of, err := macho.OpenFat(name)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing %s: %v", name, err)
+	}
+	defer of.Close()
+
+	if len(of.Arches) == 0 {
+		return nil, fmt.Errorf("empty fat Mach-O file: %s", name)
+	}
+
+	var arch macho.Cpu
+	// Use the host architecture. Not ideal.
+	switch runtime.GOARCH {
+	case "386":
+		arch = macho.Cpu386
+	case "amd64", "amd64p32":
+		arch = macho.CpuAmd64
+	case "arm", "armbe", "arm64", "arm64be":
+		arch = macho.CpuArm
+	case "ppc":
+		arch = macho.CpuPpc
+	case "ppc64", "ppc64le":
+		arch = macho.CpuPpc64
+	default:
+		return nil, fmt.Errorf("unsupported host architecture for %s: %s", name, runtime.GOARCH)
+	}
+	for i := range of.Arches {
+		if of.Arches[i].Cpu == arch {
+			return b.openMachOCommon(name, of.Arches[i].File, start, limit, offset)
+		}
+	}
+	return nil, fmt.Errorf("architecture not found in %s: %s", name, runtime.GOARCH)
+}
+
+func (b *binrep) openMachO(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
+	of, err := macho.Open(name)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing %s: %v", name, err)
+	}
+	defer of.Close()
+
+	return b.openMachOCommon(name, of, start, limit, offset)
 }
 
 func (b *binrep) openELF(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
