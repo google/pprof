@@ -191,13 +191,13 @@ func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFi
 
 	f, err := os.Open(name)
 	if err != nil {
-		return nil, fmt.Errorf("error opening %s: %s", name, err)
+		return nil, fmt.Errorf("error opening %s: %v", name, err)
 	}
 	defer f.Close()
 
 	var header [4]byte
 	if _, err = io.ReadFull(f, header[:]); err != nil {
-		return nil, fmt.Errorf("error reading magic number from %s: %s", name, err)
+		return nil, fmt.Errorf("error reading magic number from %s: %v", name, err)
 	}
 
 	elfMagic := string(header[:])
@@ -206,7 +206,7 @@ func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFi
 	if elfMagic == elf.ELFMAG {
 		f, err := b.openELF(name, start, limit, offset)
 		if err != nil {
-			return nil, fmt.Errorf("error reading ELF file %s: %s", name, err)
+			return nil, fmt.Errorf("error reading ELF file %s: %v", name, err)
 		}
 		return f, nil
 	}
@@ -219,14 +219,14 @@ func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFi
 		machoMagicBig == macho.Magic32 || machoMagicBig == macho.Magic64 {
 		f, err := b.openMachO(name, start, limit, offset)
 		if err != nil {
-			return nil, fmt.Errorf("error reading Mach-O file %s: %s", name, err)
+			return nil, fmt.Errorf("error reading Mach-O file %s: %v", name, err)
 		}
 		return f, nil
 	}
 	if machoMagicLittle == macho.MagicFat || machoMagicBig == macho.MagicFat {
 		f, err := b.openFatMachO(name, start, limit, offset)
 		if err != nil {
-			return nil, fmt.Errorf("error reading fat Mach-O file %s: %s", name, err)
+			return nil, fmt.Errorf("error reading fat Mach-O file %s: %v", name, err)
 		}
 		return f, nil
 	}
