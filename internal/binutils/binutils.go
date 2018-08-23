@@ -269,7 +269,9 @@ func (b *binrep) openFatMachO(name string, start, limit, offset uint64) (plugin.
 	}
 
 	var arch macho.Cpu
-	// Use the host architecture. Not ideal.
+	// Use the host architecture.
+	// TODO: This is not ideal because the host architecture may not be the one
+	// that was profiled. E.g. an amd64 host can profile a 386 program.
 	switch runtime.GOARCH {
 	case "386":
 		arch = macho.Cpu386
