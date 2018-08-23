@@ -201,6 +201,7 @@ func openBrowser(url string, o *plugin.Options) {
 		{"s", "show"},
 		{"i", "ignore"},
 		{"h", "hide"},
+		{"si", "sample_index"},
 	} {
 		if v := pprofVariables[p.key].value; v != "" {
 			q.Set(p.param, v)
@@ -232,6 +233,7 @@ func varsFromURL(u *gourl.URL) variables {
 	vars["show"].value = u.Query().Get("s")
 	vars["ignore"].value = u.Query().Get("i")
 	vars["hide"].value = u.Query().Get("h")
+	vars["sample_index"].value = u.Query().Get("si")
 	return vars
 }
 
