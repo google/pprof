@@ -341,6 +341,7 @@ func browsers() []string {
 	if userBrowser := os.Getenv("BROWSER"); userBrowser != "" {
 		cmds = append(cmds, userBrowser)
 	}
+	cmds = append(cmds, []string{"chrome", "google-chrome", "chromium", "firefox"}...)
 	switch runtime.GOOS {
 	case "darwin":
 		cmds = append(cmds, "/usr/bin/open")
@@ -348,12 +349,11 @@ func browsers() []string {
 		cmds = append(cmds, "cmd /c start")
 	default:
 		if os.Getenv("DISPLAY") != "" {
-			// xdg-open is only for use in a desktop environment.
 			cmds = append(cmds, "xdg-open")
 		}
 		cmds = append(cmds, "sensible-browser")
 	}
-	return append(cmds, []string{"chrome", "google-chrome", "chromium", "firefox"}...)
+	return cmds
 }
 
 var kcachegrind = []string{"kcachegrind"}
