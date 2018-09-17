@@ -172,13 +172,17 @@ func (rpt *Report) newTrimmedGraph() (g *graph.Graph, origCount, droppedNodes, d
 		}
 	}
 
-	// Final step: Filter out low frequency tags and edges, and remove redundant edges that clutter
+	// Third step: Filter out low frequency tags and edges, and remove redundant edges that clutter
 	// the graph.
 	g.TrimLowFrequencyTags(nodeCutoff)
 	droppedEdges = g.TrimLowFrequencyEdges(edgeCutoff)
 	if visualMode {
 		g.RemoveRedundantEdges()
 	}
+
+	// Final step: Simplify function names in graph.
+	g.SimplifyFunctionNames()
+
 	return
 }
 

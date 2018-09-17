@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -418,6 +419,40 @@ func newTree(prof *profile.Profile, o *Options) (g *Graph) {
 		nodes = append(nodes, nm.nodes()...)
 	}
 	return selectNodesForGraph(nodes, o.DropNegative)
+}
+
+// SimplifyFunctionNames replaces function names in graph with shortened names.
+func (g *Graph) SimplifyFunctionNames() {
+	for _, n := range g.Nodes {
+		f := getShortenFunctionedName(n.Function.Info.Name)
+		n.Function.Info.Name = f
+	}
+}
+
+var javaFullRegExp = regexp.MustCompile(`^(?:[a-z]\w*\.)*[A-Z][\w\$]*\.(?:<init>|[a-z]\w*(?:\$\d+)?)(?:\(|$)`)
+var javaShortRegExp = regexp.MustCompile(`([A-Z][\w\$]*\.(?:<init>|[a-z]\w*(?:\$\d+)?))(?:|$)`)
+var goPrefixRegExp = regexp.MustCompile(`^(?:[a-z]\w*\/)+.`)
+var goPathRegExp = regexp.MustCompile(`^(?:[a-z]\w*\/)+`)
+var cppFullRegExp = regexp.MustCompile(`^(?:[_a-zA-Z]\w*\::)*_*[A-Z]\w*::~?[_a-zA-Z]\w*$`)
+var cppAnonymousPrefixRegExp = regexp.MustCompile(`^\(anonymous namespace\)::`)
+
+func getShortenFunctionedName(f string) string {
+	if goPrefixRegExp.MatchString(f) {
+		match := goPathRegExp.ReplaceAllString(f, "")
+		return match
+	} else if javaFullRegExp.MatchString(f) {
+		match := javaShortRegExp.FindString(f)
+		if match != "" {
+			return match
+		}
+	} else {
+		name := cppAnonymousPrefixRegExp.ReplaceAllString(f, "")
+		if match := cppFullRegExp.FindString(name); match != "" {
+			return match
+		}
+		return name
+	}
+	return f
 }
 
 // TrimTree trims a Graph in forest form, keeping only the nodes in kept. This
