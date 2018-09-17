@@ -336,6 +336,9 @@ func listHelp(c string, redirect bool) string {
 }
 
 // browsers returns a list of commands to attempt for web visualization.
+// Commands which definitely will open a browser are prioritized over other
+// commands like xdg-open,  which may not open the javascript embedded SVG
+// files produced by the -web command in a browser.
 func browsers() []string {
 	var cmds []string
 	if userBrowser := os.Getenv("BROWSER"); userBrowser != "" {
