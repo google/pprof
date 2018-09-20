@@ -152,20 +152,28 @@ func generateReport(p *profile.Profile, cmd []string, vars variables, o *plugin.
 }
 
 func applyCommandOverrides(cmd string, outputFormat int, v variables) variables {
+	// Some report types override the trim flag to false below. This is to make
+	// sure the default heuristics of excluding insignificant nodes and edges
+	// from the call graph do not apply. One example where it is important is
+	// annotated source or disassembly listing. Those reports run on a specific
+	// function (or functions), but the trimming is applied before the function
+	// data is selected. So, with trimming enabled, the report could end up
+	// showing no data if the specified function is "uninteresting" as far as the
+	// trimming is concerned.
 	trim := v["trim"].boolValue()
 
 	switch cmd {
-	case "callgrind", "kcachegrind":
-		trim = false
-		v.set("addresses", "t")
 	case "disasm", "weblist":
 		trim = false
-		v.set("addressnoinlines", "t")
+		v.set("addresses", "t")
+		v.set("noinlines", "t")
 	case "peek":
 		trim = false
 	case "list":
-		v.set("nodecount", "0")
+		trim = false
 		v.set("lines", "t")
+		// Do not force 'noinlines' to be false so that specifying
+		// "-list foo -noinlines" is supported and works as expected.
 	case "text", "top", "topproto":
 		if v["nodecount"].intValue() == -1 {
 			v.set("nodecount", "0")
@@ -176,9 +184,11 @@ func applyCommandOverrides(cmd string, outputFormat int, v variables) variables 
 		}
 	}
 
-	if outputFormat == report.Proto || outputFormat == report.Raw {
+	switch outputFormat {
+	case report.Proto, report.Raw, report.Callgrind:
 		trim = false
 		v.set("addresses", "t")
+		v.set("noinlines", "f")
 	}
 
 	if !trim {
@@ -190,28 +200,28 @@ func applyCommandOverrides(cmd string, outputFormat int, v variables) variables 
 }
 
 func aggregate(prof *profile.Profile, v variables) error {
-	var inlines, function, filename, linenumber, address bool
+	var function, filename, linenumber, address bool
+	inlines := !v["noinlines"].boolValue()
 	switch {
 	case v["addresses"].boolValue():
-		return nil
-	case v["lines"].boolValue():
-		inlines = true
-		function = true
-		filename = true
-		linenumber = true
-	case v["files"].boolValue():
-		inlines = true
-		filename = true
-	case v["functions"].boolValue():
-		inlines = true
-		function = true
-	case v["noinlines"].boolValue():
-		function = true
-	case v["addressnoinlines"].boolValue():
+		if inlines {
+			return nil
+		}
 		function = true
 		filename = true
 		linenumber = true
 		address = true
+	case v["lines"].boolValue():
+		function = true
+		filename = true
+		linenumber = true
+	case v["files"].boolValue():
+		filename = true
+	case v["functions"].boolValue():
+		function = true
+	case v["filefunctions"].boolValue():
+		function = true
+		filename = true
 	default:
 		return fmt.Errorf("unexpected granularity")
 	}
