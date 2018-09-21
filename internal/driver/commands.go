@@ -228,17 +228,17 @@ var pprofVariables = variables{
 	// Output granularity
 	"functions": &variable{boolKind, "t", "granularity", helpText(
 		"Aggregate at the function level.",
-		"Takes into account the filename/lineno where the function was defined.")},
+		"Ignores the filename where the function was defined.")},
+	"filefunctions": &variable{boolKind, "t", "granularity", helpText(
+		"Aggregate at the function level.",
+		"Takes into account the filename where the function was defined.")},
 	"files": &variable{boolKind, "f", "granularity", "Aggregate at the file level."},
 	"lines": &variable{boolKind, "f", "granularity", "Aggregate at the source code line level."},
 	"addresses": &variable{boolKind, "f", "granularity", helpText(
-		"Aggregate at the function level.",
+		"Aggregate at the address level.",
 		"Includes functions' addresses in the output.")},
-	"noinlines": &variable{boolKind, "f", "granularity", helpText(
-		"Aggregate at the function level.",
-		"Attributes inlined functions to their first out-of-line caller.")},
-	"addressnoinlines": &variable{boolKind, "f", "granularity", helpText(
-		"Aggregate at the function level, including functions' addresses in the output.",
+	"noinlines": &variable{boolKind, "f", "", helpText(
+		"Ignore inlines.",
 		"Attributes inlined functions to their first out-of-line caller.")},
 }
 

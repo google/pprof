@@ -80,21 +80,21 @@ other.
 
 Some common pprof options are:
 
-* **-flat [default]:** Sort entries based on their flat weight, on text reports.
-* **-cum:** Sort entries based on cumulative weight, on text reports.
-* **-functions [default]:** Accumulate samples at the function level; profile
-  locations that describe the same function will be merged into a report entry.
-* **-lines:** Accumulate samples at the source line level; profile locations that
-  describe the same function will be merged into a report entry.
-* **-addresses:** Accumulate samples at the instruction address; profile locations
-  that describe the same function address will be merged into a report entry.
+* **-flat** [default], **-cum**: Sort entries based on their flat or cumulative
+  weight respectively, on text reports.
+* **-functions** [default], **-filefunctions**, **-files**, **-lines**,
+  **-addresses**: Generate the report using the specified granularity.
+* **-noinlines**: Attribute inlined functions to their first out-of-line caller.
+  For example, a command like `pprof -list foo -noinlines profile.pb.gz` can be
+  used to produce the annotated source listing attributing the metrics in the
+  inlined functions to the out-of-line calling line.
 * **-nodecount= _int_:** Maximum number of entries in the report. pprof will only print
   this many entries and will use heuristics to select which entries to trim.
 * **-focus= _regex_:** Only include samples that include a report entry matching
   *regex*.
 * **-ignore= _regex_:** Do not include samples that include a report entry matching
   *regex*.
-* **-show\_from= _regex_:** Do not show entries above the first one that 
+* **-show\_from= _regex_:** Do not show entries above the first one that
   matches *regex*.
 * **-show= _regex_:** Only show entries that match *regex*.
 * **-hide= _regex_:** Do not show entries that match *regex*.
@@ -209,12 +209,12 @@ default it will search for those tools in the current path, but it can also
 search for them in a directory pointed to by the environment variable
 `$PPROF_TOOLS`.
 
-* **-disasm= _regex_:** Generates an annotated source listing for functions matching
-  regex, with flat/cum weights for each source line.
-* **-list= _regex_:** Generates an annotated disassembly listing for functions
-  matching *regex*.
-* **-weblist= _regex_:** Generates a source/assembly combined annotated listing for
-  functions matching *regex*, and starts a web browser to display it.
+* **-list= _regex_:** Generates an annotated source listing for functions
+  matching *regex*, with flat/cum weights for each source line.
+* **-disasm= _regex_:** Generates an annotated disassembly listing for
+  functions matching *regex*.
+* **-weblist= _regex_:** Generates a source/assembly combined annotated listing
+  for functions matching *regex*, and starts a web browser to display it.
 
 ## Comparing profiles
 

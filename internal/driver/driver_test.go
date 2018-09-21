@@ -53,6 +53,9 @@ func TestParse(t *testing.T) {
 		flags, source string
 	}{
 		{"text,functions,flat", "cpu"},
+		{"text,functions,noinlines,flat", "cpu"},
+		{"text,filefunctions,noinlines,flat", "cpu"},
+		{"text,addresses,noinlines,flat", "cpu"},
 		{"tree,addresses,flat,nodecount=4", "cpusmall"},
 		{"text,functions,flat,nodecount=5,call_tree", "unknown"},
 		{"text,alloc_objects,flat", "heap_alloc"},
@@ -248,7 +251,8 @@ func testSourceURL(port int) string {
 func solutionFilename(source string, f *testFlags) string {
 	name := []string{"pprof", strings.TrimPrefix(source, testSourceURL(8000))}
 	name = addString(name, f, []string{"flat", "cum"})
-	name = addString(name, f, []string{"functions", "files", "lines", "addresses"})
+	name = addString(name, f, []string{"functions", "filefunctions", "files", "lines", "addresses"})
+	name = addString(name, f, []string{"noinlines"})
 	name = addString(name, f, []string{"inuse_space", "inuse_objects", "alloc_space", "alloc_objects"})
 	name = addString(name, f, []string{"relative_percentages"})
 	name = addString(name, f, []string{"seconds"})

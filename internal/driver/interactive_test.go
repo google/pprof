@@ -259,12 +259,13 @@ func TestInteractiveCommands(t *testing.T) {
 		{
 			"weblist  find -test",
 			map[string]string{
-				"functions":        "false",
-				"addressnoinlines": "true",
-				"nodecount":        "0",
-				"cum":              "false",
-				"flat":             "true",
-				"ignore":           "test",
+				"functions": "false",
+				"addresses": "true",
+				"noinlines": "true",
+				"nodecount": "0",
+				"cum":       "false",
+				"flat":      "true",
+				"ignore":    "test",
 			},
 		},
 		{
