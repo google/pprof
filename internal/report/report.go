@@ -367,7 +367,7 @@ func printAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 	return PrintAssembly(w, rpt, obj, -1)
 }
 
-// PrintAssembly prints annotated disasssembly of rpt to w.
+// PrintAssembly prints annotated disassembly of rpt to w.
 func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) error {
 	o := rpt.options
 	prof := rpt.prof
