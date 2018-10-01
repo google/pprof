@@ -166,6 +166,11 @@ func applyCommandOverrides(cmd string, outputFormat int, v variables) variables 
 	case "disasm", "weblist":
 		trim = false
 		v.set("addresses", "t")
+		// Force the 'noinlines' mode so that source locations for a given address
+		// collapse and there is only one for the given address. Without this
+		// cumulative metrics would be double-counted when annotating the assembly.
+		// This is because the merge is done by address and in case of an inlined
+		// stack each of the inlined entries is a separate callgraph node.
 		v.set("noinlines", "t")
 	case "peek":
 		trim = false
