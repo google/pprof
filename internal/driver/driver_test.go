@@ -128,8 +128,9 @@ func TestParse(t *testing.T) {
 			}
 
 			// First pprof invocation to save the profile into a profile.proto.
-			o1 := setDefaults(nil)
-			o1.Flagset = f
+			// Pass in flag set hen setting defaults, because otherwise default
+			// transport will try to add flags to the default flag set.
+			o1 := setDefaults(&plugin.Options{Flagset: f})
 			o1.Fetch = testFetcher{}
 			o1.Sym = testSymbolizer{}
 			o1.UI = testUI
@@ -165,8 +166,9 @@ func TestParse(t *testing.T) {
 
 			// Second pprof invocation to read the profile from profile.proto
 			// and generate a report.
-			o2 := setDefaults(nil)
-			o2.Flagset = f
+			// Pass in flag set hen setting defaults, because otherwise default
+			// transport will try to add flags to the default flag set.
+			o2 := setDefaults(&plugin.Options{Flagset: f})
 			o2.Sym = testSymbolizeDemangler{}
 			o2.Obj = new(mockObjTool)
 			o2.UI = testUI
@@ -294,6 +296,8 @@ type testFlags struct {
 }
 
 func (testFlags) ExtraUsage() string { return "" }
+
+func (testFlags) AddExtraUsage(eu string) {}
 
 func (f testFlags) Bool(s string, d bool, c string) *bool {
 	if b, ok := f.bools[s]; ok {
