@@ -50,7 +50,7 @@ addons:
       - graphviz
 
 before_install:
-  - go get -u github.com/golang/lint/golint honnef.co/go/tools/cmd/...
+  - go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" && -z $SKIP_BINUTILS ]]; then brew install binutils ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" && -z $SKIP_GRAPHVIZ ]]; then brew install graphviz; fi
