@@ -51,7 +51,7 @@ func TestGetBase(t *testing.T) {
 		wanterr              bool
 	}{
 		{"exec", fhExec, nil, nil, 0x400000, 0, 0, 0, false},
-		{"exec offset", fhExec, lsOffset, nil, 0x400000, 0x800000, 0, 0, false},
+		{"exec offset", fhExec, lsOffset, nil, 0x400000, 0x800000, 0, 0x200000, false},
 		{"exec offset 2", fhExec, lsOffset, nil, 0x200000, 0x600000, 0, 0, false},
 		{"exec nomap", fhExec, nil, nil, 0, 0, 0, 0, false},
 		{"exec kernel", fhExec, kernelHeader, uint64p(0xffffffff81000198), 0xffffffff82000198, 0xffffffff83000198, 0, 0x1000000, false},
@@ -85,7 +85,7 @@ func TestGetBase(t *testing.T) {
 			continue
 		}
 		if base != tc.want {
-			t.Errorf("%s: want %x, got %x", tc.label, tc.want, base)
+			t.Errorf("%s: want 0x%x, got 0x%x", tc.label, tc.want, base)
 		}
 	}
 }
