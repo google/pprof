@@ -421,25 +421,33 @@ func newTree(prof *profile.Profile, o *Options) (g *Graph) {
 	return selectNodesForGraph(nodes, o.DropNegative)
 }
 
-var javaFullRegExp = regexp.MustCompile(`^(?:[a-z]\w*\.)*([A-Z][\w\$]*\.(?:<init>|[a-z]\w*(?:\$\d+)?))(?:(?:\()|$)`)
-var goPrefixRegExp = regexp.MustCompile(`^(?:[\w\-\.]+\/)+(.+)`)
-var cppFullRegExp = regexp.MustCompile(`^(?:[_a-zA-Z]\w*\::)*(_*[A-Z]\w*::~?[_a-zA-Z]\w*)$`)
-var cppAnonymousPrefixRegExp = regexp.MustCompile(`^\(anonymous namespace\)::`)
+var javaRegExp = regexp.MustCompile(`^(?:[a-z]\w*\.)*([A-Z][\w\$]*\.(?:<init>|[a-z]\w*(?:\$\d+)?))(?:(?:\()|$)`)
+var goRegExp = regexp.MustCompile(`^(?:[\w\-\.]+\/)+(.+)`)
+var cppAnonymousPrefixRegExp = regexp.MustCompile(`^(?:\(anonymous namespace\)::)(.*)`)
+var cppRegExp = regexp.MustCompile(`^(?:[_a-zA-Z]\w*\::|)*(_*[A-Z]\w*::~?[_a-zA-Z]\w*)$`)
 
 // ShortenFunctionName returns a shortened version of a function's name.
 func ShortenFunctionName(f string) string {
-	fmt.Printf("%v\n", cppFullRegExp.FindStringSubmatch(f))
-	if matches := goPrefixRegExp.FindStringSubmatch(f); len(matches) >= 2 {
-		return matches[1]
-	} else if matches := javaFullRegExp.FindStringSubmatch(f); len(matches) >= 2 {
-		return matches[1]
-	} else {
-		name := cppAnonymousPrefixRegExp.ReplaceAllString(f, "")
-		if matches := cppFullRegExp.FindStringSubmatch(name); len(matches) >= 2 {
-			return matches[1]
-		}
-		return name
+	regexps := []struct {
+		re          *regexp.Regexp
+		returnMatch bool
+	}{
+		{javaRegExp, true},
+		{goRegExp, true},
+		{cppAnonymousPrefixRegExp, false},
+		{cppRegExp, true},
 	}
+
+	for _, re := range regexps {
+		if matches := re.re.FindStringSubmatch(f); len(matches) >= 2 {
+			f = matches[1]
+			if re.returnMatch {
+				return f
+			}
+		}
+	}
+
+	return f
 }
 
 // TrimTree trims a Graph in forest form, keeping only the nodes in kept. This

@@ -461,7 +461,7 @@ func TestShortenFunctionName(t *testing.T) {
 	for _, tc := range testcases {
 		name := ShortenFunctionName(tc.name)
 		if got, want := name, tc.want; got != want {
-			t.Errorf("for %s, got %q, want %q", tc.name, got, want)
+			t.Errorf("ShortenFunctionName(%q) = %q, want %q", tc.name, got, want)
 		}
 	}
 }
