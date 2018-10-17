@@ -96,8 +96,8 @@ func TestParse(t *testing.T) {
 		{"peek=line.*01", "cpu"},
 		{"weblist=line[13],addresses,flat", "cpu"},
 		{"tags,tagfocus=400kb:", "heap_request"},
-		{"dot", "longFuncs"},
-		{"text", "longFuncs"},
+		{"dot", "longNameFuncs"},
+		{"text", "longNameFuncs"},
 	}
 
 	baseVars := pprofVariables
@@ -440,8 +440,8 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 		p = contentionProfile()
 	case "symbolz":
 		p = symzProfile()
-	case "longFuncs":
-		p = longFuncsProfile()
+	case "longNameFuncs":
+		p = longNameFuncsProfile()
 	default:
 		return nil, "", fmt.Errorf("unexpected source: %s", s)
 	}
@@ -527,8 +527,8 @@ func fakeDemangler(name string) string {
 
 // Returns a profile with function names which should be shortened in
 // graph and flame views.
-func longFuncsProfile() *profile.Profile {
-	var longFuncsM = []*profile.Mapping{
+func longNameFuncsProfile() *profile.Profile {
+	var longNameFuncsM = []*profile.Mapping{
 		{
 			ID:              1,
 			Start:           0x1000,
@@ -541,35 +541,35 @@ func longFuncsProfile() *profile.Profile {
 		},
 	}
 
-	var longFuncsF = []*profile.Function{
+	var longNameFuncsF = []*profile.Function{
 		{ID: 1, Name: "path/to/package1.object.function1", SystemName: "path/to/package1.object.function1", Filename: "path/to/package1.go"},
 		{ID: 2, Name: "(anonymous namespace)::Bar::Foo", SystemName: "(anonymous namespace)::Bar::Foo", Filename: "a/long/path/to/package2.cc"},
 		{ID: 3, Name: "java.bar.foo.FooBar.run(java.lang.Runnable)", SystemName: "java.bar.foo.FooBar.run(java.lang.Runnable)", Filename: "FooBar.java"},
 	}
 
-	var longFuncsL = []*profile.Location{
+	var longNameFuncsL = []*profile.Location{
 		{
 			ID:      1000,
-			Mapping: longFuncsM[0],
+			Mapping: longNameFuncsM[0],
 			Address: 0x1000,
 			Line: []profile.Line{
-				{Function: longFuncsF[0], Line: 1},
+				{Function: longNameFuncsF[0], Line: 1},
 			},
 		},
 		{
 			ID:      2000,
-			Mapping: longFuncsM[0],
+			Mapping: longNameFuncsM[0],
 			Address: 0x2000,
 			Line: []profile.Line{
-				{Function: longFuncsF[1], Line: 4},
+				{Function: longNameFuncsF[1], Line: 4},
 			},
 		},
 		{
 			ID:      3000,
-			Mapping: longFuncsM[0],
+			Mapping: longNameFuncsM[0],
 			Address: 0x3000,
 			Line: []profile.Line{
-				{Function: longFuncsF[2], Line: 9},
+				{Function: longNameFuncsF[2], Line: 9},
 			},
 		},
 	}
@@ -584,21 +584,21 @@ func longFuncsProfile() *profile.Profile {
 		},
 		Sample: []*profile.Sample{
 			{
-				Location: []*profile.Location{longFuncsL[0], longFuncsL[1], longFuncsL[2]},
+				Location: []*profile.Location{longNameFuncsL[0], longNameFuncsL[1], longNameFuncsL[2]},
 				Value:    []int64{1000, 1000},
 			},
 			{
-				Location: []*profile.Location{longFuncsL[0], longFuncsL[1]},
+				Location: []*profile.Location{longNameFuncsL[0], longNameFuncsL[1]},
 				Value:    []int64{100, 100},
 			},
 			{
-				Location: []*profile.Location{longFuncsL[2]},
+				Location: []*profile.Location{longNameFuncsL[2]},
 				Value:    []int64{10, 10},
 			},
 		},
-		Location: longFuncsL,
-		Function: longFuncsF,
-		Mapping:  longFuncsM,
+		Location: longNameFuncsL,
+		Function: longNameFuncsF,
+		Mapping:  longNameFuncsM,
 	}
 }
 

@@ -399,7 +399,7 @@ func TestCreateNodes(t *testing.T) {
 	}
 }
 
-func TestGetNodeShortName(t *testing.T) {
+func TestShortenFunctionName(t *testing.T) {
 	type testCase struct {
 		name string
 		want string
