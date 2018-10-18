@@ -457,6 +457,10 @@ func TestShortenFunctionName(t *testing.T) {
 			"foo_bar::Foo::bar",
 			"Foo::bar",
 		},
+		{
+			"foo",
+			"foo",
+		},
 	}
 	for _, tc := range testcases {
 		name := ShortenFunctionName(tc.name)

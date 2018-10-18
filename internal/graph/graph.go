@@ -27,6 +27,12 @@ import (
 	"github.com/google/pprof/profile"
 )
 
+var (
+	javaRegExp = regexp.MustCompile(`^(?:[a-z]\w*\.)*([A-Z][\w\$]*\.(?:<init>|[a-z]\w*(?:\$\d+)?))(?:(?:\()|$)`)
+	goRegExp   = regexp.MustCompile(`^(?:[\w\-\.]+\/)+(.+)`)
+	cppRegExp  = regexp.MustCompile(`^(?:(?:\(anonymous namespace\)::)(\w+$))|(?:(?:\(anonymous namespace\)::)?(?:[_a-zA-Z]\w*\::|)*(_*[A-Z]\w*::~?[_a-zA-Z]\w*)$)`)
+)
+
 // Graph summarizes a performance profile into a format that is
 // suitable for visualization.
 type Graph struct {
@@ -421,32 +427,13 @@ func newTree(prof *profile.Profile, o *Options) (g *Graph) {
 	return selectNodesForGraph(nodes, o.DropNegative)
 }
 
-var javaRegExp = regexp.MustCompile(`^(?:[a-z]\w*\.)*([A-Z][\w\$]*\.(?:<init>|[a-z]\w*(?:\$\d+)?))(?:(?:\()|$)`)
-var goRegExp = regexp.MustCompile(`^(?:[\w\-\.]+\/)+(.+)`)
-var cppAnonymousPrefixRegExp = regexp.MustCompile(`^(?:\(anonymous namespace\)::)(.*)`)
-var cppRegExp = regexp.MustCompile(`^(?:[_a-zA-Z]\w*\::|)*(_*[A-Z]\w*::~?[_a-zA-Z]\w*)$`)
-
 // ShortenFunctionName returns a shortened version of a function's name.
 func ShortenFunctionName(f string) string {
-	regexps := []struct {
-		re          *regexp.Regexp
-		returnMatch bool
-	}{
-		{javaRegExp, true},
-		{goRegExp, true},
-		{cppAnonymousPrefixRegExp, false},
-		{cppRegExp, true},
-	}
-
-	for _, re := range regexps {
-		if matches := re.re.FindStringSubmatch(f); len(matches) >= 2 {
-			f = matches[1]
-			if re.returnMatch {
-				return f
-			}
+	for _, re := range []*regexp.Regexp{goRegExp, javaRegExp, cppRegExp} {
+		if matches := re.FindStringSubmatch(f); len(matches) >= 2 {
+			return strings.Join(matches[1:], "")
 		}
 	}
-
 	return f
 }
 
