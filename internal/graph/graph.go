@@ -19,11 +19,18 @@ import (
 	"fmt"
 	"math"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/google/pprof/profile"
+)
+
+var (
+	javaRegExp = regexp.MustCompile(`^(?:[a-z]\w*\.)*([A-Z][\w\$]*\.(?:<init>|[a-z]\w*(?:\$\d+)?))(?:(?:\()|$)`)
+	goRegExp   = regexp.MustCompile(`^(?:[\w\-\.]+\/)+(.+)`)
+	cppRegExp  = regexp.MustCompile(`^(?:(?:\(anonymous namespace\)::)(\w+$))|(?:(?:\(anonymous namespace\)::)?(?:[_a-zA-Z]\w*\::|)*(_*[A-Z]\w*::~?[_a-zA-Z]\w*)$)`)
 )
 
 // Graph summarizes a performance profile into a format that is
@@ -418,6 +425,16 @@ func newTree(prof *profile.Profile, o *Options) (g *Graph) {
 		nodes = append(nodes, nm.nodes()...)
 	}
 	return selectNodesForGraph(nodes, o.DropNegative)
+}
+
+// ShortenFunctionName returns a shortened version of a function's name.
+func ShortenFunctionName(f string) string {
+	for _, re := range []*regexp.Regexp{goRegExp, javaRegExp, cppRegExp} {
+		if matches := re.FindStringSubmatch(f); len(matches) >= 2 {
+			return strings.Join(matches[1:], "")
+		}
+	}
+	return f
 }
 
 // TrimTree trims a Graph in forest form, keeping only the nodes in kept. This

@@ -96,6 +96,8 @@ func TestParse(t *testing.T) {
 		{"peek=line.*01", "cpu"},
 		{"weblist=line[13],addresses,flat", "cpu"},
 		{"tags,tagfocus=400kb:", "heap_request"},
+		{"dot", "longNameFuncs"},
+		{"text", "longNameFuncs"},
 	}
 
 	baseVars := pprofVariables
@@ -438,6 +440,8 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 		p = contentionProfile()
 	case "symbolz":
 		p = symzProfile()
+	case "longNameFuncs":
+		p = longNameFuncsProfile()
 	default:
 		return nil, "", fmt.Errorf("unexpected source: %s", s)
 	}
@@ -518,6 +522,83 @@ func fakeDemangler(name string) string {
 		return "malloc"
 	default:
 		return name
+	}
+}
+
+// Returns a profile with function names which should be shortened in
+// graph and flame views.
+func longNameFuncsProfile() *profile.Profile {
+	var longNameFuncsM = []*profile.Mapping{
+		{
+			ID:              1,
+			Start:           0x1000,
+			Limit:           0x4000,
+			File:            "/path/to/testbinary",
+			HasFunctions:    true,
+			HasFilenames:    true,
+			HasLineNumbers:  true,
+			HasInlineFrames: true,
+		},
+	}
+
+	var longNameFuncsF = []*profile.Function{
+		{ID: 1, Name: "path/to/package1.object.function1", SystemName: "path/to/package1.object.function1", Filename: "path/to/package1.go"},
+		{ID: 2, Name: "(anonymous namespace)::Bar::Foo", SystemName: "(anonymous namespace)::Bar::Foo", Filename: "a/long/path/to/package2.cc"},
+		{ID: 3, Name: "java.bar.foo.FooBar.run(java.lang.Runnable)", SystemName: "java.bar.foo.FooBar.run(java.lang.Runnable)", Filename: "FooBar.java"},
+	}
+
+	var longNameFuncsL = []*profile.Location{
+		{
+			ID:      1000,
+			Mapping: longNameFuncsM[0],
+			Address: 0x1000,
+			Line: []profile.Line{
+				{Function: longNameFuncsF[0], Line: 1},
+			},
+		},
+		{
+			ID:      2000,
+			Mapping: longNameFuncsM[0],
+			Address: 0x2000,
+			Line: []profile.Line{
+				{Function: longNameFuncsF[1], Line: 4},
+			},
+		},
+		{
+			ID:      3000,
+			Mapping: longNameFuncsM[0],
+			Address: 0x3000,
+			Line: []profile.Line{
+				{Function: longNameFuncsF[2], Line: 9},
+			},
+		},
+	}
+
+	return &profile.Profile{
+		PeriodType:    &profile.ValueType{Type: "cpu", Unit: "milliseconds"},
+		Period:        1,
+		DurationNanos: 10e9,
+		SampleType: []*profile.ValueType{
+			{Type: "samples", Unit: "count"},
+			{Type: "cpu", Unit: "milliseconds"},
+		},
+		Sample: []*profile.Sample{
+			{
+				Location: []*profile.Location{longNameFuncsL[0], longNameFuncsL[1], longNameFuncsL[2]},
+				Value:    []int64{1000, 1000},
+			},
+			{
+				Location: []*profile.Location{longNameFuncsL[0], longNameFuncsL[1]},
+				Value:    []int64{100, 100},
+			},
+			{
+				Location: []*profile.Location{longNameFuncsL[2]},
+				Value:    []int64{10, 10},
+			},
+		},
+		Location: longNameFuncsL,
+		Function: longNameFuncsF,
+		Mapping:  longNameFuncsM,
 	}
 }
 
