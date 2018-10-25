@@ -398,3 +398,74 @@ func TestCreateNodes(t *testing.T) {
 		}
 	}
 }
+
+func TestShortenFunctionName(t *testing.T) {
+	type testCase struct {
+		name string
+		want string
+	}
+	testcases := []testCase{
+		{
+			"root",
+			"root",
+		},
+		{
+			"syscall.Syscall",
+			"syscall.Syscall",
+		},
+		{
+			"net/http.(*conn).serve",
+			"http.(*conn).serve",
+		},
+		{
+			"github.com/blahBlah/foo.Foo",
+			"foo.Foo",
+		},
+		{
+			"github.com/BlahBlah/foo.Foo",
+			"foo.Foo",
+		},
+		{
+			"github.com/blah-blah/foo_bar.(*FooBar).Foo",
+			"foo_bar.(*FooBar).Foo",
+		},
+		{
+			"encoding/json.(*structEncoder).(encoding/json.encode)-fm",
+			"json.(*structEncoder).(encoding/json.encode)-fm",
+		},
+		{
+			"github.com/blah/blah/vendor/gopkg.in/redis.v3.(*baseClient).(github.com/blah/blah/vendor/gopkg.in/redis.v3.process)-fm",
+			"redis.v3.(*baseClient).(github.com/blah/blah/vendor/gopkg.in/redis.v3.process)-fm",
+		},
+		{
+			"java.util.concurrent.ThreadPoolExecutor$Worker.run",
+			"ThreadPoolExecutor$Worker.run",
+		},
+		{
+			"java.bar.foo.FooBar.run(java.lang.Runnable)",
+			"FooBar.run",
+		},
+		{
+			"(anonymous namespace)::Bar::Foo",
+			"Bar::Foo",
+		},
+		{
+			"(anonymous namespace)::foo",
+			"foo",
+		},
+		{
+			"foo_bar::Foo::bar",
+			"Foo::bar",
+		},
+		{
+			"foo",
+			"foo",
+		},
+	}
+	for _, tc := range testcases {
+		name := ShortenFunctionName(tc.name)
+		if got, want := name, tc.want; got != want {
+			t.Errorf("ShortenFunctionName(%q) = %q, want %q", tc.name, got, want)
+		}
+	}
+}

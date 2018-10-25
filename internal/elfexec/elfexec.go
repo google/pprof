@@ -203,6 +203,9 @@ func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint6
 			return start - offset + loadSegment.Off - loadSegment.Vaddr, nil
 		}
 		// Various kernel heuristics and cases follow.
+		if loadSegment.Vaddr == start-offset {
+			return offset, nil
+		}
 		if start == 0 && limit != 0 {
 			// ChromeOS remaps its kernel to 0. Nothing else should come
 			// down this path. Empirical values:
