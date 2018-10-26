@@ -274,6 +274,7 @@ table tr td {
       <a title="{{.Help.ignore}}" href="?" id="ignore">Ignore</a>
       <a title="{{.Help.hide}}" href="?" id="hide">Hide</a>
       <a title="{{.Help.show}}" href="?" id="show">Show</a>
+      <a title="{{.Help.show_from}}" href="?" id="show-from">Show from</a>
       <hr>
       <a title="{{.Help.reset}}" href="?">Reset</a>
     </div>
@@ -754,6 +755,7 @@ function viewer(baseUrl, nodes) {
     if (id == 'ignore') param = 'i';
     if (id == 'hide') param = 'h';
     if (id == 'show') param = 's';
+    if (id == 'show-from') param = 'sf';
 
     // We update on mouseenter so middle-click/right-click work properly.
     elem.addEventListener('mouseenter', updater);
@@ -768,8 +770,8 @@ function viewer(baseUrl, nodes) {
 
       setHrefParams(elem, function (params) {
         if (re != '') {
-          // For focus/show, forget old parameter.  For others, add to re.
-          if (param != 'f' && param != 's' && params.has(param)) {
+          // For focus/show/show-from, forget old parameter. For others, add to re.
+          if (param != 'f' && param != 's' && param != 'sf' && params.has(param)) {
             const old = params.get(param);
             if (old != '') {
               re += '|' + old;
@@ -830,7 +832,7 @@ function viewer(baseUrl, nodes) {
     const enable = (search.value != '' || selected.size != 0);
     if (buttonsEnabled == enable) return;
     buttonsEnabled = enable;
-    for (const id of ['focus', 'ignore', 'hide', 'show']) {
+    for (const id of ['focus', 'ignore', 'hide', 'show', 'show-from']) {
       const link = document.getElementById(id);
       if (link != null) {
         link.classList.toggle('disabled', !enable);
@@ -852,7 +854,7 @@ function viewer(baseUrl, nodes) {
   }
 
   const ids = ['topbtn', 'graphbtn', 'peek', 'list', 'disasm',
-               'focus', 'ignore', 'hide', 'show'];
+               'focus', 'ignore', 'hide', 'show', 'show-from'];
   ids.forEach(makeSearchLinkDynamic);
 
   const sampleIDs = [{{range .SampleTypes}}'{{.}}', {{end}}];

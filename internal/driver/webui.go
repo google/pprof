@@ -200,6 +200,7 @@ func openBrowser(url string, o *plugin.Options) {
 	for _, p := range []struct{ param, key string }{
 		{"f", "focus"},
 		{"s", "show"},
+		{"sf", "show_from"},
 		{"i", "ignore"},
 		{"h", "hide"},
 		{"si", "sample_index"},
@@ -232,6 +233,7 @@ func varsFromURL(u *gourl.URL) variables {
 	vars := pprofVariables.makeCopy()
 	vars["focus"].value = u.Query().Get("f")
 	vars["show"].value = u.Query().Get("s")
+	vars["show_from"].value = u.Query().Get("sf")
 	vars["ignore"].value = u.Query().Get("i")
 	vars["hide"].value = u.Query().Get("h")
 	vars["sample_index"].value = u.Query().Get("si")
