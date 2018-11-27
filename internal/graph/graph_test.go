@@ -475,6 +475,14 @@ func TestShortenFunctionName(t *testing.T) {
 			"foo",
 			"foo",
 		},
+		{
+			"com.google.perftools.gwp.benchmark.FloatBench.lambda$run$0",
+			"FloatBench.lambda$run$0",
+		},
+		{
+			"java.bar.foo.FooBar.run$0",
+			"FooBar.run$0",
+		},
 	}
 	for _, tc := range testcases {
 		name := ShortenFunctionName(tc.name)
