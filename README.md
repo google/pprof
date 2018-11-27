@@ -27,7 +27,7 @@ them through the use of the native binutils tools (addr2line and nm).
 
 Prerequisites:
 
-- Go development kit. Requires Go 1.9 or newer.
+- Go development kit of a [supported version](https://golang.org/doc/devel/release.html#policy).
   Follow [these instructions](http://golang.org/doc/code.html) to install the 
   go tool and set up GOPATH.
 
