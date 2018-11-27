@@ -96,6 +96,7 @@ func TestParse(t *testing.T) {
 		{"peek=line.*01", "cpu"},
 		{"weblist=line[13],addresses,flat", "cpu"},
 		{"tags,tagfocus=400kb:", "heap_request"},
+		{"tags,tagfocus=+400kb:", "heap_request"},
 		{"dot", "longNameFuncs"},
 		{"text", "longNameFuncs"},
 	}
@@ -1438,6 +1439,20 @@ func TestNumericTagFilter(t *testing.T) {
 			"key2=256bytes",
 			map[string][]int64{"key1": {256}},
 			map[string]string{"key1": "bytes"},
+			false,
+		},
+		{
+			"Match negative key and range of values, value matches",
+			"bytes=-512b:-128b",
+			map[string][]int64{"bytes": {-256}},
+			map[string]string{"bytes": "bytes"},
+			true,
+		},
+		{
+			"Match negative key and range of values, value outside range",
+			"bytes=-512b:-128b",
+			map[string][]int64{"bytes": {-2048}},
+			map[string]string{"bytes": "bytes"},
 			false,
 		},
 	}
