@@ -1152,20 +1152,6 @@ func TestTagFilter(t *testing.T) {
 			map[string][]string{"key1": {"tag1"}},
 			false,
 		},
-		{
-			"Match negative key and range of values, value matches",
-			"bytes=-512b:-128b",
-			map[string][]int64{"bytes": {-256}},
-			map[string]string{"bytes": "bytes"},
-			true,
-		},
-		{
-			"Match negative key and range of values, value outside range",
-			"bytes=-512b:-128b",
-			map[string][]int64{"bytes": {-2048}},
-			map[string]string{"bytes": "bytes"},
-			false,
-		},
 	}
 	for _, test := range tagFilterTests {
 		t.Run(test.desc, func(*testing.T) {
@@ -1453,6 +1439,20 @@ func TestNumericTagFilter(t *testing.T) {
 			"key2=256bytes",
 			map[string][]int64{"key1": {256}},
 			map[string]string{"key1": "bytes"},
+			false,
+		},
+		{
+			"Match negative key and range of values, value matches",
+			"bytes=-512b:-128b",
+			map[string][]int64{"bytes": {-256}},
+			map[string]string{"bytes": "bytes"},
+			true,
+		},
+		{
+			"Match negative key and range of values, value outside range",
+			"bytes=-512b:-128b",
+			map[string][]int64{"bytes": {-2048}},
+			map[string]string{"bytes": "bytes"},
 			false,
 		},
 	}
