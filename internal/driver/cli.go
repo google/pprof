@@ -126,6 +126,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	si = sampleIndex(flagInUseObjects, si, "inuse_objects", "-inuse_objects", o.UI)
 	si = sampleIndex(flagAllocSpace, si, "alloc_space", "-alloc_space", o.UI)
 	si = sampleIndex(flagAllocObjects, si, "alloc_objects", "-alloc_objects", o.UI)
+
 	pprofVariables.set("sample_index", si)
 
 	if *flagMeanDelay {

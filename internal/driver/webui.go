@@ -179,9 +179,22 @@ func defaultWebServer(args *plugin.HTTPServerArgs) error {
 	// https://github.com/google/pprof/pull/348
 	mux := http.NewServeMux()
 	mux.Handle("/ui/", http.StripPrefix("/ui", handler))
-	mux.Handle("/", http.RedirectHandler("/ui/", http.StatusTemporaryRedirect))
+	mux.Handle("/", redirectWithQuery("/ui"))
 	s := &http.Server{Handler: mux}
 	return s.Serve(ln)
+}
+
+func redirectWithQuery(url string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var (
+			urlWithQuery = url
+			queryStr     = r.URL.Query().Encode()
+		)
+		if queryStr != "" {
+			urlWithQuery = urlWithQuery + "?" + queryStr
+		}
+		http.Redirect(w, r, urlWithQuery, http.StatusTemporaryRedirect)
+	}
 }
 
 func isLocalhost(host string) bool {
