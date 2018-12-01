@@ -186,14 +186,10 @@ func defaultWebServer(args *plugin.HTTPServerArgs) error {
 
 func redirectWithQuery(url string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var (
-			urlWithQuery = url
-			queryStr     = r.URL.Query().Encode()
-		)
-		if queryStr != "" {
-			urlWithQuery = urlWithQuery + "?" + queryStr
+		if queryStr := r.URL.Query().Encode(); queryStr != "" {
+			url = url + "?" + queryStr
 		}
-		http.Redirect(w, r, urlWithQuery, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	}
 }
 
