@@ -185,11 +185,12 @@ func defaultWebServer(args *plugin.HTTPServerArgs) error {
 }
 
 func redirectWithQuery(url string) http.HandlerFunc {
+	urlWithQuery := url
 	return func(w http.ResponseWriter, r *http.Request) {
 		if queryStr := r.URL.Query().Encode(); queryStr != "" {
-			url = url + "?" + queryStr
+			urlWithQuery = urlWithQuery + "?" + queryStr
 		}
-		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, urlWithQuery, http.StatusTemporaryRedirect)
 	}
 }
 
