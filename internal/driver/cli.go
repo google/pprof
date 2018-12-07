@@ -39,7 +39,7 @@ type source struct {
 	Comment      string
 }
 
-// Parse parses the command lines through the specified flags package
+// parseFlags parses the command lines through the specified flags package
 // and returns the source of the profile and optionally the command
 // for the kind of report to generate (nil for interactive use).
 func parseFlags(o *plugin.Options) (*source, []string, error) {

@@ -53,7 +53,7 @@ func newUI() driver.UI {
 	}
 }
 
-// Read returns a line of text (a command) read from the user.
+// ReadLine returns a line of text (a command) read from the user.
 // prompt is printed before reading the command.
 func (r *readlineUI) ReadLine(prompt string) (string, error) {
 	r.rl.SetPrompt(prompt)
@@ -70,7 +70,7 @@ func (r *readlineUI) Print(args ...interface{}) {
 	fmt.Fprint(r.rl.Stderr(), text)
 }
 
-// Print shows a message to the user, colored in red for emphasis.
+// PrintErr shows a message to the user, colored in red for emphasis.
 // It is printed over stderr as stdout is reserved for regular output.
 func (r *readlineUI) PrintErr(args ...interface{}) {
 	text := fmt.Sprint(args...)
@@ -97,7 +97,7 @@ func (r *readlineUI) IsTerminal() bool {
 	return readline.IsTerminal(int(syscall.Stdout))
 }
 
-// Start a browser on interactive mode.
+// WantBrowser; Start a browser on interactive mode.
 func (r *readlineUI) WantBrowser() bool {
 	return r.IsTerminal()
 }

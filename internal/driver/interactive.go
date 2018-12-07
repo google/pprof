@@ -407,7 +407,7 @@ func newCompleter(fns []string) func(string) string {
 	}
 }
 
-// matchCommand attempts to match a string token to the prefix of a Command.
+// matchVariableOrCommand attempts to match a string token to the prefix of a Command.
 func matchVariableOrCommand(v variables, token string) string {
 	token = strings.ToLower(token)
 	found := ""
