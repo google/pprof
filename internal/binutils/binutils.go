@@ -381,7 +381,7 @@ func (f *file) Close() error {
 
 func (f *file) Symbols(r *regexp.Regexp, addr uint64) ([]*plugin.Sym, error) {
 	// Get from nm a list of symbols sorted by address.
-	cmd := exec.Command(f.b.nm, "-n", f.name)
+	cmd := exec.Command(f.b.nm, "-n", "-C", f.name)
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("%v: %v", cmd.Args, err)

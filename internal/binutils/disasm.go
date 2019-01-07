@@ -25,10 +25,11 @@ import (
 )
 
 var (
-	nmOutputRE            = regexp.MustCompile(`^\s*([[:xdigit:]]+)\s+(.)\s+(.*)`)
-	objdumpAsmOutputRE    = regexp.MustCompile(`^\s*([[:xdigit:]]+):\s+(.*)`)
-	objdumpOutputFileLine = regexp.MustCompile(`^(.*):([0-9]+)`)
-	objdumpOutputFunction = regexp.MustCompile(`^(\S.*)\(\):`)
+	nmOutputRE                     = regexp.MustCompile(`^\s*([[:xdigit:]]+)\s+(.)\s+(.*)`)
+	objdumpAsmOutputRE             = regexp.MustCompile(`^\s*([[:xdigit:]]+):\s+(.*)`)
+	objdumpOutputFileLine          = regexp.MustCompile(`^(.*):([0-9]+)`)
+	objdumpOutputFunction          = regexp.MustCompile(`^(\S.*)\(\):`)
+	objdumpDemangledOutputFunction = regexp.MustCompile(`^\s*([[:xdigit:]]+)\s+(\<(.*)\>:)`)
 )
 
 func findSymbols(syms []byte, file string, r *regexp.Regexp, address uint64) ([]*plugin.Sym, error) {
@@ -107,6 +108,7 @@ func matchSymbol(names []string, start, end uint64, r *regexp.Regexp, address ui
 // disassemble parses the output of the objdump command and returns
 // the assembly instructions in a slice.
 func disassemble(asm []byte) ([]plugin.Inst, error) {
+	readDemangled := false
 	buf := bytes.NewBuffer(asm)
 	function, file, line := "", "", 0
 	var assembly []plugin.Inst
@@ -120,7 +122,11 @@ func disassemble(asm []byte) ([]plugin.Inst, error) {
 				break
 			}
 		}
-
+		if readDemangled {
+			// read a demangled function name previously, discard the current line containing mangled name.
+			readDemangled = false
+			continue
+		}
 		if fields := objdumpAsmOutputRE.FindStringSubmatch(input); len(fields) == 3 {
 			if address, err := strconv.ParseUint(fields[1], 16, 64); err == nil {
 				assembly = append(assembly,
@@ -140,8 +146,10 @@ func disassemble(asm []byte) ([]plugin.Inst, error) {
 			}
 			continue
 		}
-		if fields := objdumpOutputFunction.FindStringSubmatch(input); len(fields) == 2 {
-			function = fields[1]
+		if fields := objdumpDemangledOutputFunction.FindStringSubmatch(input); len(fields) == 4 {
+			function = fields[3]
+			// Next line will be the mangled function. read it and discard.
+			readDemangled = true
 			continue
 		}
 		// Reset on unrecognized lines.
