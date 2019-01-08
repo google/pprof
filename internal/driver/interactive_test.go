@@ -79,7 +79,7 @@ func TestShell(t *testing.T) {
 	ui := &proftest.TestUI{
 		T:       t,
 		Input:   []string{"cumulative=this"},
-		AllowRx: `Unrecognized value for cumulative: "this". Use one of cum, flat`,
+		AllowRx: `unrecognized value for cumulative: "this". Use one of cum, flat`,
 	}
 	o.UI = ui
 	if err := interactive(p, o); err != nil {
