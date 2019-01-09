@@ -530,7 +530,7 @@ func fakeDemangler(name string) string {
 	}
 }
 
-// Returns a profile with function names which should be shortened in
+// longNameFuncsProfile returns a profile with function names which should be shortened in
 // graph and flame views.
 func longNameFuncsProfile() *profile.Profile {
 	var longNameFuncsM = []*profile.Mapping{

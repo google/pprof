@@ -393,7 +393,7 @@ func nodeTestProfile() *profile.Profile {
 	}
 }
 
-// Check that nodes are properly created for a simple profile.
+// TestCreateNodes checks that nodes are properly created for a simple profile.
 func TestCreateNodes(t *testing.T) {
 	testProfile := nodeTestProfile()
 	wantNodeSet := NodeSet{
