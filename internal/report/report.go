@@ -31,6 +31,7 @@ import (
 	"github.com/google/pprof/internal/measurement"
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/profile"
+	"github.com/ianlancetaylor/demangle"
 )
 
 // Output formats.
@@ -413,6 +414,9 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 		}
 	}
 
+	// demangle symbols by default for disassembly report
+	options := []demangle.Option{demangle.NoParams, demangle.NoTemplateParams}
+
 	// Correlate the symbols from the binary with the profile samples.
 	for _, s := range syms {
 		sns := symNodes[s]
@@ -428,7 +432,7 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 
 		ns := annotateAssembly(insts, sns, s.base)
 
-		fmt.Fprintf(w, "ROUTINE ======================== %s\n", s.sym.Name[0])
+		fmt.Fprintf(w, "ROUTINE ======================== %s\n", demangle.Filter(s.sym.Name[0], options...))
 		for _, name := range s.sym.Name[1:] {
 			fmt.Fprintf(w, "    AKA ======================== %s\n", name)
 		}
@@ -443,7 +447,7 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 			if n.function != function || n.file != file || n.line != line {
 				function, file, line = n.function, n.file, n.line
 				if n.function != "" {
-					locStr = n.function + " "
+					locStr = demangle.Filter(n.function, options...) + " "
 				}
 				if n.file != "" {
 					locStr += n.file
