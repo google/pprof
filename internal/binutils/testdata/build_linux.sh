@@ -1,4 +1,4 @@
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2019 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +14,13 @@
 
 #!/bin/bash -x
 
-# This is a script that generates the test MacOS executables in this directory.
+# This is a script that generates the test Linux executables in this directory.
 # It should be needed very rarely to run this script. It is mostly provided
 # as a future reference on how the original binary set was created.
+
+# When a new executable is generated, hard coded addresses for main in the
+# function TestObjFile in binutils_test.go must be updated. If the addresses
+# are not updated, this test will fail.
 
 set -o errexit
 
@@ -29,17 +33,6 @@ int main() {
 }
 EOF
 
-cat <<EOF >/tmp/lib.c
-int foo() {
-  return 1;
-}
-
-int bar() {
-  return 2;
-}
-EOF
-
 cd $(dirname $0)
-rm -rf exe_mac_64* lib_mac_64*
-clang -g -o exe_mac_64 /tmp/hello.c
-clang -g -o lib_mac_64 -dynamiclib /tmp/lib.c
+rm -rf exe_linux_64*
+cc -g -o exe_linux_64 /tmp/hello.c

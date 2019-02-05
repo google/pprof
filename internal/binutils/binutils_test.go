@@ -218,6 +218,9 @@ func findSymbol(syms []*plugin.Sym, name string) *plugin.Sym {
 }
 
 func TestObjFile(t *testing.T) {
+	// If this test fails, check the address for main function in testdata/exe_linux_64
+	// using the command 'nm -n '. Update the hard coded addresses below to match
+	// the addresses from the output.
 	skipUnlessLinuxAmd64(t)
 	for _, tc := range []struct {
 		desc                 string
