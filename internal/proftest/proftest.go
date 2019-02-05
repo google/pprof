@@ -93,7 +93,7 @@ func (ui *TestUI) ReadLine(_ string) (string, error) {
 	input := ui.Input[ui.index]
 	ui.index++
 	if input == "**error**" {
-		return "", fmt.Errorf("Error: %s", input)
+		return "", fmt.Errorf("error: %s", input)
 	}
 	return input, nil
 }

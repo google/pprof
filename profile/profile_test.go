@@ -628,7 +628,7 @@ func checkAggregation(prof *Profile, a *aggTest) error {
 	return nil
 }
 
-// Test merge leaves the main binary in place.
+// TestMergeMain tests merge leaves the main binary in place.
 func TestMergeMain(t *testing.T) {
 	prof := testProfile1.Copy()
 	p1, err := Merge([]*Profile{prof})
