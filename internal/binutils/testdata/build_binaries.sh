@@ -14,9 +14,10 @@
 
 #!/bin/bash -x
 
-# This is a script that generates the test Linux executables in this directory.
-# It should be needed very rarely to run this script. It is mostly provided
-# as a future reference on how the original binary set was created.
+# This is a script that generates the test executables for MacOS and Linux
+# in this directory. It should be needed very rarely to run this script.
+# It is mostly provided as a future reference on how the original binary
+# set was created.
 
 # When a new executable is generated, hard coded addresses for main in the
 # function TestObjFile in binutils_test.go must be updated. If the addresses
@@ -34,5 +35,25 @@ int main() {
 EOF
 
 cd $(dirname $0)
-rm -rf exe_linux_64*
-cc -g -o exe_linux_64 /tmp/hello.c
+
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+  rm -rf exe_linux_64*
+  cc -g -o exe_linux_64 /tmp/hello.c
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  cat <<EOF >/tmp/lib.c
+  int foo() {
+    return 1;
+  }
+
+  int bar() {
+    return 2;
+  }
+  EOF
+
+  rm -rf exe_mac_64* lib_mac_64*
+  clang -g -o exe_mac_64 /tmp/hello.c
+  clang -g -o lib_mac_64 -dynamiclib /tmp/lib.ca
+else
+  echo "Unknown OS: $OSTYPE"
+  exit 1
+fi
