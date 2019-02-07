@@ -268,7 +268,7 @@ func TestObjFile(t *testing.T) {
 
 func TestMachoFiles(t *testing.T) {
 	// If this test fails, check the address for main function in testdata/exe_mac_64
-	// and testdata/lib_mac_64 using addr2line or gaddr2line . Update the
+	// and testdata/lib_mac_64 using addr2line or gaddr2line. Update the
 	// hardcoded addresses below to match the addresses from the output.
 	skipUnlessDarwinAmd64(t)
 
