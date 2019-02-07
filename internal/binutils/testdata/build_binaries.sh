@@ -19,7 +19,7 @@
 # It is mostly provided as a future reference on how the original binary
 # set was created.
 
-# When a new executable is generated, hard coded addresses for main in the
+# When a new executable is generated, hardcoded addresses for main in the
 # function TestObjFile in binutils_test.go must be updated. If the addresses
 # are not updated, this test will fail.
 
