@@ -328,7 +328,7 @@ function parameters. This can be controlled with the `-symbolize=demangle`
 option. Note that for remote symbolization mangled names may not be provided by
 the symbolization handler.
 
-* **--symbolize=demangle=none:** Do not perform any demangling. Show mangled
+* **-symbolize=demangle=none:** Do not perform any demangling. Show mangled
   names if available.
 
 * **-symbolize=demangle=full:** Demangle, but do not perform any
