@@ -179,7 +179,11 @@ func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFi
 	// This uses magic numbers, mainly to provide better error messages but
 	// it should also help speed.
 
-	if _, err := os.Stat(name); err != nil {
+	abspath, err := filepath.Abs(name)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := os.Stat(abspath); err != nil {
 		// For testing, do not require file name to exist.
 		if strings.Contains(b.addr2line, "testdata/") {
 			return &fileAddr2Line{file: file{b: b, name: name}}, nil
