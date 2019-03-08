@@ -135,11 +135,6 @@ func (ui *TestUI) WantBrowser() bool {
 	return false
 }
 
-// DisableBrowser forces WantBrowser() to return false.
-func (ui *TestUI) DisableBrowser() {
-
-}
-
 // SetAutoComplete is not supported by the test UI.
 func (ui *TestUI) SetAutoComplete(_ func(string) string) {
 }

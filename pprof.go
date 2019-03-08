@@ -56,9 +56,6 @@ func newUI() driver.UI {
 
 	return &readlineUI{
 		rl: rl,
-		// IsTerminal returns whether the UI is known to be tied to an
-		// interactive terminal (as opposed to being redirected to a file).
-		browser: isTerminal(),
 	}
 }
 
@@ -108,11 +105,7 @@ func (r *readlineUI) IsTerminal() bool {
 
 // WantBrowser starts a browser on interactive mode.
 func (r *readlineUI) WantBrowser() bool {
-	return r.browser
-}
-
-func (r *readlineUI) DisableBrowser() {
-	r.browser = false
+	return isTerminal()
 }
 
 // SetAutoComplete instructs the UI to call complete(cmd) to obtain

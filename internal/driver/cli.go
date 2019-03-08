@@ -32,11 +32,12 @@ type source struct {
 	DiffBase  bool
 	Normalize bool
 
-	Seconds      int
-	Timeout      int
-	Symbolize    string
-	HTTPHostport string
-	Comment      string
+	Seconds            int
+	Timeout            int
+	Symbolize          string
+	HTTPHostport       string
+	HTTPDisableBrowser bool
+	Comment            string
 }
 
 // parseFlags parses the command lines through the specified flags package
@@ -123,7 +124,6 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		if *flagHTTP == "" {
 			return nil, nil, errors.New("-no_browser only makes sense with -http")
 		}
-		o.UI.DisableBrowser()
 	}
 
 	si := pprofVariables["sample_index"].value
@@ -141,14 +141,15 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	}
 
 	source := &source{
-		Sources:      args,
-		ExecName:     execName,
-		BuildID:      *flagBuildID,
-		Seconds:      *flagSeconds,
-		Timeout:      *flagTimeout,
-		Symbolize:    *flagSymbolize,
-		HTTPHostport: *flagHTTP,
-		Comment:      *flagAddComment,
+		Sources:            args,
+		ExecName:           execName,
+		BuildID:            *flagBuildID,
+		Seconds:            *flagSeconds,
+		Timeout:            *flagTimeout,
+		Symbolize:          *flagSymbolize,
+		HTTPHostport:       *flagHTTP,
+		HTTPDisableBrowser: *flagNoBrowser,
+		Comment:            *flagAddComment,
 	}
 
 	if err := source.addBaseProfiles(*flagBase, *flagDiffBase); err != nil {

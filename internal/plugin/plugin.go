@@ -200,9 +200,6 @@ type UI interface {
 	// WantBrowser indicates whether a browser should be opened with the -http option.
 	WantBrowser() bool
 
-	// DisableBrowser forces WantBrowser() to return false.
-	DisableBrowser()
-
 	// SetAutoComplete instructs the UI to call complete(cmd) to obtain
 	// the auto-completion of cmd, if the UI supports auto-completion at all.
 	SetAutoComplete(complete func(string) string)
