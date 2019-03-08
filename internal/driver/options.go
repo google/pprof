@@ -44,7 +44,7 @@ func setDefaults(o *plugin.Options) *plugin.Options {
 		d.Obj = &binutils.Binutils{}
 	}
 	if d.UI == nil {
-		d.UI = &stdUI{r: bufio.NewReader(os.Stdin)}
+		d.UI = &stdUI{r: bufio.NewReader(os.Stdin), browser: true}
 	}
 	if d.HTTPTransport == nil {
 		d.HTTPTransport = transport.New(d.Flagset)
@@ -56,7 +56,8 @@ func setDefaults(o *plugin.Options) *plugin.Options {
 }
 
 type stdUI struct {
-	r *bufio.Reader
+	r       *bufio.Reader
+	browser bool
 }
 
 func (ui *stdUI) ReadLine(prompt string) (string, error) {
@@ -77,7 +78,11 @@ func (ui *stdUI) IsTerminal() bool {
 }
 
 func (ui *stdUI) WantBrowser() bool {
-	return true
+	return ui.browser
+}
+
+func (ui *stdUI) DisableBrowser() {
+	ui.browser = false
 }
 
 func (ui *stdUI) SetAutoComplete(func(string) string) {

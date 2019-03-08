@@ -66,6 +66,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	flagTools := flag.String("tools", os.Getenv("PPROF_TOOLS"), "Path for object tool pathnames")
 
 	flagHTTP := flag.String("http", "", "Present interactive web based UI at the specified http host:port")
+	flagNoBrowser := flag.Bool("no_browser", false, "Skip opening a browswer for the interactive web UI")
 
 	// Flags used during command processing
 	installedFlags := installFlags(flag)
@@ -116,6 +117,13 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	}
 	if cmd != nil && *flagHTTP != "" {
 		return nil, nil, errors.New("-http is not compatible with an output format on the command line")
+	}
+
+	if *flagNoBrowser {
+		if *flagHTTP == "" {
+			return nil, nil, errors.New("-no_browser only makes sense with -http")
+		}
+		o.UI.DisableBrowser()
 	}
 
 	si := pprofVariables["sample_index"].value

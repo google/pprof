@@ -117,8 +117,12 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options) e
 		},
 	}
 
+	url := "http://" + args.Hostport
+
+	o.UI.Print("Serving web UI on ", url)
+
 	if o.UI.WantBrowser() {
-		go openBrowser("http://"+args.Hostport, o)
+		go openBrowser(url, o)
 	}
 	return server(args)
 }
