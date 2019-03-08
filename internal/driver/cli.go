@@ -66,7 +66,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	flagMeanDelay := flag.Bool("mean_delay", false, "Display mean delay at each region")
 	flagTools := flag.String("tools", os.Getenv("PPROF_TOOLS"), "Path for object tool pathnames")
 
-	flagHTTP := flag.String("http", "", "Present interactive web based UI at the specified http host:port")
+	flagHTTP := flag.String("http", "", "Present interactive web UI at the specified http host:port")
 	flagNoBrowser := flag.Bool("no_browser", false, "Skip opening a browswer for the interactive web UI")
 
 	// Flags used during command processing
@@ -334,7 +334,7 @@ var usageMsgSrc = "\n\n" +
 
 var usageMsgVars = "\n\n" +
 	"  Misc options:\n" +
-	"   -http              Provide web based interface at host:port.\n" +
+	"   -http              Provide web interface at host:port.\n" +
 	"                      Host is optional and 'localhost' by default.\n" +
 	"                      Port is optional and a randomly available port by default.\n" +
 	"   -no_browser        Skip opening a browser for the interactive web UI.\n" +
