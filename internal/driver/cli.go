@@ -338,6 +338,7 @@ var usageMsgVars = "\n\n" +
 	"   -http              Provide web based interface at host:port.\n" +
 	"                      Host is optional and 'localhost' by default.\n" +
 	"                      Port is optional and a randomly available port by default.\n" +
+	"   -no-browser        Skip opening a browser for the interactive web UI.\n" +
 	"   -tools             Search path for object tools\n" +
 	"\n" +
 	"  Legacy convenience options:\n" +
