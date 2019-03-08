@@ -42,17 +42,12 @@ type readlineUI struct {
 	rl *readline.Instance
 }
 
-func isTerminal() bool {
-	return readline.IsTerminal(int(syscall.Stdout))
-}
-
 func newUI() driver.UI {
 	rl, err := readline.New("")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "readline: %v", err)
 		return nil
 	}
-
 	return &readlineUI{
 		rl: rl,
 	}
@@ -99,12 +94,12 @@ func colorize(msg string) string {
 // IsTerminal returns whether the UI is known to be tied to an
 // interactive terminal (as opposed to being redirected to a file).
 func (r *readlineUI) IsTerminal() bool {
-	return isTerminal()
+	return readline.IsTerminal(int(syscall.Stdout))
 }
 
 // WantBrowser starts a browser on interactive mode.
 func (r *readlineUI) WantBrowser() bool {
-	return isTerminal()
+	return r.IsTerminal()
 }
 
 // SetAutoComplete instructs the UI to call complete(cmd) to obtain
