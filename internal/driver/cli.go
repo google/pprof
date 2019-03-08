@@ -120,10 +120,8 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		return nil, nil, errors.New("-http is not compatible with an output format on the command line")
 	}
 
-	if *flagNoBrowser {
-		if *flagHTTP == "" {
-			return nil, nil, errors.New("-no_browser only makes sense with -http")
-		}
+	if *flagNoBrowser && *flagHTTP == "" {
+		return nil, nil, errors.New("-no_browser only makes sense with -http")
 	}
 
 	si := pprofVariables["sample_index"].value
