@@ -39,8 +39,7 @@ func main() {
 // dependency in the vendored copy of pprof in the Go distribution,
 // which does not use this file.
 type readlineUI struct {
-	rl      *readline.Instance
-	browser bool
+	rl *readline.Instance
 }
 
 func isTerminal() bool {
