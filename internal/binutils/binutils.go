@@ -163,6 +163,14 @@ func (bu *Binutils) Disasm(file string, start, end uint64) ([]plugin.Inst, error
 		fmt.Sprintf("--start-address=%#x", start),
 		fmt.Sprintf("--stop-address=%#x", end),
 		file)
+
+	if runtime.GOOS == "darwin" {
+		cmd = exec.Command(b.objdump, "-disassemble-all", "-no-show-raw-insn",
+			"-line-numbers", fmt.Sprintf("-start-address=%#x", start),
+			fmt.Sprintf("-stop-address=%#x", end),
+			file)
+	}
+
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("%v: %v", cmd.Args, err)

@@ -432,7 +432,13 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 
 		ns := annotateAssembly(insts, sns, s.base)
 
-		fmt.Fprintf(w, "ROUTINE ======================== %s\n", demangle.Filter(s.sym.Name[0], options...))
+		if strings.HasPrefix(s.sym.Name[0], "__Z") {
+			// Workaround to handle double leading underscores on Mac
+			// which are not properly handled by the demangle.Filter
+			fmt.Fprintf(w, "ROUTINE ======================== %s\n", demangle.Filter(s.sym.Name[0][1:], options...))
+		} else {
+			fmt.Fprintf(w, "ROUTINE ======================== %s\n", demangle.Filter(s.sym.Name[0], options...))
+		}
 		for _, name := range s.sym.Name[1:] {
 			fmt.Fprintf(w, "    AKA ======================== %s\n", name)
 		}
