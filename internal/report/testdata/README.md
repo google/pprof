@@ -8,3 +8,11 @@ To update the binary and profile:
 go build -o sample.bin ./sample
 ./sample.bin -cpuprofile sample.cpu
 ```
+
+To update the binary used for PrintAssembly test:
+```shell
+g++ -o disasm[.mac].bin disasm.cc
+```
+
+The address for testL[5] need to be manually updated 
+with the new adddess for the corresponding symbols

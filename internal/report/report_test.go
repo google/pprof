@@ -17,8 +17,11 @@ package report
 import (
 	"bytes"
 	"io/ioutil"
+	"os/exec"
 	"regexp"
 	"runtime"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/google/pprof/internal/binutils"
@@ -100,6 +103,15 @@ var testM = []*profile.Mapping{
 		HasLineNumbers:  true,
 		HasInlineFrames: true,
 	},
+	{
+		// Entry for disassembly demangle test
+		ID:              2,
+		File:            "testdata/disasm.bin",
+		HasFunctions:    true,
+		HasFilenames:    true,
+		HasLineNumbers:  true,
+		HasInlineFrames: true,
+	},
 }
 
 var testF = []*profile.Function{
@@ -122,6 +134,12 @@ var testF = []*profile.Function{
 		ID:       4,
 		Name:     "tee",
 		Filename: "/some/path/testdata/source2",
+	},
+	{
+		// Entry for disassembly demangle test
+		ID:       5,
+		Name:     "_ZStL8__ioinit",
+		Filename: "testdata/sample/disasm.cc",
 	},
 }
 
@@ -176,6 +194,19 @@ var testL = []*profile.Location{
 			},
 		},
 	},
+	{
+		// Entry for disassembly demangle test
+		ID:      6,
+		Mapping: testM[1],
+		// Update the following address if the binary disasm.bin is rebuilt
+		Address: 2101617,
+		Line: []profile.Line{
+			{
+				Function: testF[4],
+				Line:     2,
+			},
+		},
+	},
 }
 
 var testProfile = &profile.Profile{
@@ -211,6 +242,86 @@ var testProfile = &profile.Profile{
 	Location: testL,
 	Function: testF,
 	Mapping:  testM,
+}
+
+func TestPrintAssembly(t *testing.T) {
+
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+		t.Skip("This test only works on Linux or Mac")
+	}
+
+	demangled := "ioinit"
+
+	if runtime.GOOS == "darwin" {
+		// get objdump version and skip test if < 9.0
+		// binutils does not export get(). Try to get objdump version on our own.
+		// only works if objdump is in path.
+		cmdOut, err := exec.Command("objdump", "-version").Output()
+		if err != nil {
+			t.Skip("cannot determine objdump version.", err)
+		}
+
+		re := regexp.MustCompile(`.*version (([0-9]*)\.([0-9]*)\.([0-9]*)).*$`)
+		fields := re.FindStringSubmatch(strings.Split(string(cmdOut), "\n")[0])
+		if len(fields) != 5 {
+			t.Skip("cannot determine objdump version.", fields)
+		}
+
+		if ver, _ := strconv.Atoi(fields[2]); ver < 9 {
+			t.Skip("objdump version too old. ", fields[0])
+		}
+
+		testM[1].File = "testdata/disasm.mac.bin"
+		testM[1].Start = 0x100000000
+		testL[5].Address = 0
+		testF[4].Name = "__ZNSt3__111char_traitsIcE11eq_int_typeEii"
+		// Update the following address if the binary, disasm.mac.bin is rebuilt
+		testL[5].Address = 0x100001cd0
+		demangled = "eq_int_type"
+	}
+
+	sampleValue1 := func(v []int64) int64 {
+		return v[1]
+	}
+
+	asmProfile := testProfile.Copy()
+	asmProfile.Sample = []*profile.Sample{
+		{
+			Location: []*profile.Location{testL[5]},
+			Value:    []int64{1, 1000},
+		},
+	}
+
+	tc := testcase{
+		rpt: New(
+			asmProfile,
+			&Options{
+				OutputFormat: Dis,
+				Symbol:       regexp.MustCompile(`.`),
+				TrimPath:     "/some/path",
+				SampleValue:  sampleValue1,
+			},
+		),
+		want: demangled,
+	}
+
+	var b bytes.Buffer
+	if err := Generate(&b, tc.rpt, &binutils.Binutils{}); err != nil {
+		t.Fatalf("%s: %v", tc.want, err)
+	}
+
+	r := regexp.MustCompile(`( *ROUTINE.*={24} )(.*)`)
+	fields := r.FindStringSubmatch(b.String())
+	if len(fields) != 3 {
+		t.Fatalf("want: %s\n got: %s\n", tc.want, string(b.String()))
+	}
+
+	demangledName := fields[2]
+
+	if !(strings.Contains(demangledName, tc.want)) ||
+		(strings.Contains(demangledName, "_Z")) {
+		t.Fatalf("want: %s\n got: %s\n", tc.want, string(b.String()))
+	}
 }
 
 func TestDisambiguation(t *testing.T) {
