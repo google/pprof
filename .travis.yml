@@ -11,15 +11,6 @@ matrix:
     - os: linux
       go: master
     - os: osx
-      osx_image: xcode8.3
-      go: 1.10.x
-    - os: osx
-      osx_image: xcode8.3
-      go: 1.11.x
-    - os: osx
-      osx_image: xcode8.3
-      go: master
-    - os: osx
       osx_image: xcode9.4
       go: 1.10.x
     - os: osx
