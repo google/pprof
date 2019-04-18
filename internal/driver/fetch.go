@@ -423,7 +423,7 @@ mapping:
 				if f, err := obj.Open(name, m.Start, m.Limit, m.Offset); err == nil {
 					defer f.Close()
 					fileBuildID := f.BuildID()
-					if m.BuildID != "" && m.BuildID != fileBuildID {
+					if !s.IgnoreBuildID && m.BuildID != "" && m.BuildID != fileBuildID {
 						ui.PrintErr("Ignoring local file " + name + ": build-id mismatch (" + m.BuildID + " != " + fileBuildID + ")")
 					} else {
 						m.File = name

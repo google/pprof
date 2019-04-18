@@ -71,6 +71,7 @@ func TestSymbolizationPath(t *testing.T) {
 		{"/usr", "/bin/binary", "", "/usr/bin/binary", 0},
 		{"", "/prod/path/binary", "abcde10001", filepath.Join(tempdir, "pprof/binaries/abcde10001/binary"), 0},
 		{"/alternate/architecture", "/usr/bin/binary", "", "/alternate/architecture/binary", 0},
+		{"/alternate/architecture", "/usr/bin/binary", "WRONG", "/usr/bin/binary", 1},
 		{"/alternate/architecture", "/usr/bin/binary", "abcde10001", "/alternate/architecture/binary", 0},
 		{"/nowhere:/alternate/architecture", "/usr/bin/binary", "fedcb10000", "/usr/bin/binary", 1},
 		{"/nowhere:/alternate/architecture", "/usr/bin/binary", "abcde10002", "/usr/bin/binary", 1},
@@ -85,6 +86,53 @@ func TestSymbolizationPath(t *testing.T) {
 			},
 		}
 		s := &source{}
+		locateBinaries(p, s, obj, &proftest.TestUI{T: t, Ignore: tc.msgCount})
+		if file := p.Mapping[0].File; file != tc.want {
+			t.Errorf("%s:%s:%s, want %s, got %s", tc.env, tc.file, tc.buildID, tc.want, file)
+		}
+	}
+	os.Setenv(homeEnv(), saveHome)
+	os.Setenv("PPROF_BINARY_PATH", savePath)
+}
+
+func TestSymbolizationPathIgnoreBuildID(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("test assumes Unix paths")
+	}
+
+	// Save environment variables to restore after test
+	saveHome := os.Getenv(homeEnv())
+	savePath := os.Getenv("PPROF_BINARY_PATH")
+
+	tempdir, err := ioutil.TempDir("", "home")
+	if err != nil {
+		t.Fatal("creating temp dir: ", err)
+	}
+	defer os.RemoveAll(tempdir)
+	os.MkdirAll(filepath.Join(tempdir, "pprof", "binaries", "abcde10001"), 0700)
+	os.Create(filepath.Join(tempdir, "pprof", "binaries", "abcde10001", "binary"))
+
+	obj := testObj{tempdir}
+	os.Setenv(homeEnv(), tempdir)
+	for _, tc := range []struct {
+		env, file, buildID, want string
+		msgCount                 int
+	}{
+		{"/alternate/architecture", "/usr/bin/binary", "WRONG", "/alternate/architecture/binary", 0},
+		{"/alternate/architecture", "/usr/bin/binary", "abcde10001", "/alternate/architecture/binary", 0},
+	} {
+		os.Setenv("PPROF_BINARY_PATH", tc.env)
+		p := &profile.Profile{
+			Mapping: []*profile.Mapping{
+				{
+					File:    tc.file,
+					BuildID: tc.buildID,
+				},
+			},
+		}
+		s := &source{
+			IgnoreBuildID: true,
+		}
 		locateBinaries(p, s, obj, &proftest.TestUI{T: t, Ignore: tc.msgCount})
 		if file := p.Mapping[0].File; file != tc.want {
 			t.Errorf("%s:%s:%s, want %s, got %s", tc.env, tc.file, tc.buildID, tc.want, file)
