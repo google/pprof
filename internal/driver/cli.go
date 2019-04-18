@@ -296,18 +296,18 @@ var usageMsgHdr = `usage:
 
 Produce output in the specified format.
 
-   pprof <format> [options] [binary] <source> ...
+   pprof [binary] <format> [options] <source> ...
 
 Omit the format to get an interactive shell whose commands can be used
 to generate various views of a profile
 
-   pprof [options] [binary] <source> ...
+   pprof [binary] [options] <source> ...
 
 Omit the format and provide the "-http" flag to get an interactive web
 interface at the specified host:port that can be used to navigate through
 various views of a profile.
 
-   pprof -http [host]:[port] [options] [binary] <source> ...
+   pprof [binary] -http [host]:[port] [options] <source> ...
 
 Details:
 `
