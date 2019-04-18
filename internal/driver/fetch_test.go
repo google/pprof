@@ -118,7 +118,7 @@ func TestSymbolizationPathIgnoreBuildID(t *testing.T) {
 		env, file, buildID, want string
 		msgCount                 int
 	}{
-		{"/alternate/architecture", "/usr/bin/binary", "WRONG", "/alternate/architecture/binary", 0},
+		{"/alternate/architecture", "/usr/bin/binary", "WRONG", "/alternate/architecture/binary", 1},
 		{"/alternate/architecture", "/usr/bin/binary", "abcde10001", "/alternate/architecture/binary", 0},
 	} {
 		os.Setenv("PPROF_BINARY_PATH", tc.env)

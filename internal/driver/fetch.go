@@ -426,6 +426,9 @@ mapping:
 					if !s.IgnoreBuildID && m.BuildID != "" && m.BuildID != fileBuildID {
 						ui.PrintErr("Ignoring local file " + name + ": build-id mismatch (" + m.BuildID + " != " + fileBuildID + ")")
 					} else {
+						if s.IgnoreBuildID && m.BuildID != "" && m.BuildID != fileBuildID {
+							ui.PrintErr("Using local focal file " + name + " with build-id mismatch (" + m.BuildID + " != " + fileBuildID + ") because --force_ignore_buildid was specified. THIS CAN LEAD TO COMPLETELY INCORRECT RESULTS. PROCEED WITH CAUTION.")
+						}
 						m.File = name
 						continue mapping
 					}

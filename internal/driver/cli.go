@@ -69,7 +69,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 
 	flagHTTP := flag.String("http", "", "Present interactive web UI at the specified http host:port")
 	flagNoBrowser := flag.Bool("no_browser", false, "Skip opening a browswer for the interactive web UI")
-	flagIgnoreBuildID := flag.Bool("ignore_buildid", false, "Ignore build ID when reading local symbol files.")
+	flagIgnoreBuildID := flag.Bool("force_ignore_buildid", false, "Ignore build ID when reading local symbol files.")
 
 	// Flags used during command processing
 	installedFlags := installFlags(flag)
