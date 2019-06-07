@@ -396,22 +396,37 @@ func locateBinaries(p *profile.Profile, s *source, obj plugin.ObjTool, ui plugin
 		searchPath = filepath.Join(os.Getenv(homeEnv()), "pprof", "binaries")
 	}
 mapping:
+
 	for _, m := range p.Mapping {
 		var baseName string
 		if m.File != "" {
 			baseName = filepath.Base(m.File)
 		}
-
-		for _, path := range filepath.SplitList(searchPath) {
-			var fileNames []string
-			if m.BuildID != "" {
-				fileNames = []string{filepath.Join(path, m.BuildID, baseName)}
+		var fileNames []string
+		if m.BuildID != "" {
+			var debugInfoName string
+			// gdb-style debuginfo expects a 160-bit sha-1 string as a build id.
+			// Look in paths like .build-id/ab/cdef0123456.debug
+			if len(m.BuildID) == 40 {
+				debugInfoName = filepath.Join(".build-id", m.BuildID[:2], m.BuildID[2:]+".debug")
+			}
+			if runtime.GOOS != "windows" && debugInfoName != "" {
+				// Standard global gdb search path.
+				fileNames = append(fileNames, filepath.Join("/usr/lib/debug", debugInfoName))
+			}
+			for _, path := range filepath.SplitList(searchPath) {
+				fileNames = append(fileNames, filepath.Join(path, m.BuildID, baseName))
 				if matches, err := filepath.Glob(filepath.Join(path, m.BuildID, "*")); err == nil {
 					fileNames = append(fileNames, matches...)
 				}
 				fileNames = append(fileNames, filepath.Join(path, m.File, m.BuildID)) // perf path format
+				if runtime.GOOS != "windows" && debugInfoName != "" {
+					fileNames = append(fileNames, filepath.Join(path, debugInfoName)) // debuginfo format
+				}
 			}
-			if m.File != "" {
+		}
+		if m.File != "" {
+			for _, path := range filepath.SplitList(searchPath) {
 				// Try both the basename and the full path, to support the same directory
 				// structure as the perf symfs option.
 				if baseName != "" {
@@ -419,16 +434,16 @@ mapping:
 				}
 				fileNames = append(fileNames, filepath.Join(path, m.File))
 			}
-			for _, name := range fileNames {
-				if f, err := obj.Open(name, m.Start, m.Limit, m.Offset); err == nil {
-					defer f.Close()
-					fileBuildID := f.BuildID()
-					if m.BuildID != "" && m.BuildID != fileBuildID {
-						ui.PrintErr("Ignoring local file " + name + ": build-id mismatch (" + m.BuildID + " != " + fileBuildID + ")")
-					} else {
-						m.File = name
-						continue mapping
-					}
+		}
+		for _, name := range fileNames {
+			if f, err := obj.Open(name, m.Start, m.Limit, m.Offset); err == nil {
+				defer f.Close()
+				fileBuildID := f.BuildID()
+				if m.BuildID != "" && m.BuildID != fileBuildID {
+					ui.PrintErr("Ignoring local file " + name + ": build-id mismatch (" + m.BuildID + " != " + fileBuildID + ")")
+				} else {
+					m.File = name
+					continue mapping
 				}
 			}
 		}

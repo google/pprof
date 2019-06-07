@@ -70,6 +70,7 @@ func TestSymbolizationPath(t *testing.T) {
 		{"", "/usr/bin/binary", "fedcb10000", "/usr/bin/binary", 0},
 		{"/usr", "/bin/binary", "", "/usr/bin/binary", 0},
 		{"", "/prod/path/binary", "abcde10001", filepath.Join(tempdir, "pprof/binaries/abcde10001/binary"), 0},
+		{"", "/prod/path/binary", "efdd0b5e69b0742fa5e5bad0771df4d1df2459d1", filepath.Join(tempdir, "pprof/binaries/.build-id/ef/dd0b5e69b0742fa5e5bad0771df4d1df2459d1.debug"), 0},
 		{"/alternate/architecture", "/usr/bin/binary", "", "/alternate/architecture/binary", 0},
 		{"/alternate/architecture", "/usr/bin/binary", "abcde10001", "/alternate/architecture/binary", 0},
 		{"/nowhere:/alternate/architecture", "/usr/bin/binary", "fedcb10000", "/usr/bin/binary", 1},
@@ -155,6 +156,8 @@ func (o testObj) Open(file string, start, limit, offset uint64) (plugin.ObjFile,
 		return testFile{file, "fedcb10000"}, nil
 	case filepath.Join(o.home, "pprof/binaries/abcde10001/binary"):
 		return testFile{file, "abcde10001"}, nil
+	case filepath.Join(o.home, "pprof/binaries/.build-id/ef/dd0b5e69b0742fa5e5bad0771df4d1df2459d1.debug"):
+		return testFile{file, "efdd0b5e69b0742fa5e5bad0771df4d1df2459d1"}, nil
 	}
 	return nil, fmt.Errorf("not found: %s", file)
 }
