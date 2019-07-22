@@ -610,8 +610,9 @@ function viewer(baseUrl, nodes) {
 
   function handleKey(e) {
     if (e.keyCode != 13) return;
-    window.location.href =
-        updateUrl(new URL(window.location.href), 'f');
+    setHrefParams(window.location, function (params) {
+      params.set('f', search.value);
+    });
     e.preventDefault();
   }
 
@@ -650,9 +651,11 @@ function viewer(baseUrl, nodes) {
     })
 
     // add matching items that are not currently selected.
-    for (let n = 0; n < nodes.length; n++) {
-      if (!selected.has(n) && match(nodes[n])) {
-        select(n, document.getElementById('node' + n));
+    if (nodes) {
+      for (let n = 0; n < nodes.length; n++) {
+        if (!selected.has(n) && match(nodes[n])) {
+          select(n, document.getElementById('node' + n));
+        }
       }
     }
 
