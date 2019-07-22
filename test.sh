@@ -23,13 +23,7 @@ echo "mode: $MODE" > coverage.txt
 # All packages.
 PKG=$(go list ./...)
 
-staticcheck -ignore '
-github.com/google/pprof/internal/binutils/binutils_test.go:SA6004
-github.com/google/pprof/internal/driver/svg.go:SA6004
-github.com/google/pprof/internal/report/source_test.go:SA6004
-github.com/google/pprof/profile/filter_test.go:SA6004
-' $PKG
-unused $PKG
+staticcheck $PKG
 
 # Packages that have any tests.
 PKG=$(go list -f '{{if .TestGoFiles}} {{.ImportPath}} {{end}}' ./...)
