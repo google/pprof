@@ -10,6 +10,7 @@ matrix:
       go: 1.12.x
     - os: linux
       go: master
+      env: WITH_FUZZIT=1
     - os: osx
       osx_image: xcode8.3
       go: 1.11.x
@@ -55,6 +56,11 @@ script:
   - golintlint=$(golint ./...) && if [ -n "$golintlint" ]; then printf 'golint found:\n%s\n' "$golintlint" && exit 1; fi
   - go vet -all ./...
   - ./test.sh
+  - ./fuzzit.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+
+env:
+  global:
+    secure: "f5iqvHrpwpgTT670w8Zu/Cwc8/jukjf1QDt82W0/a7WunV/TJ4S0MTh1vM6qyvChC1r9xzBYWWiNcCyLkUdSMkY1hxVAIQ4tjy2zUWS26iYJ4oVfO4E0KuUp6YoBQXfQiyGzhTMrsGsMXXKMV3Ger/S3GPEy2eMD3qJteSGm1MW1lrs2SHLR/7H2G2a6dD4oEA732Sy/lXUkpr3CELGPs5LCjek7FcaXcgtrtF46zAd1kAhRtlbD28WRMvJNefdrhhSvM/mSQTVYp9btBoz6R/WS6+qD2COo8sZrpgxQjwMCKJrPdlPnrTzTBezUBqhjo9LEJYw06HAVD4KYQc3JTFeGegHhT0raCopLNCV0vy+D3yJfaBirshNKmXAP5AiQzL8VW1KOFsQa+LOd9I3o/7eYr2hu//ne4GFVlNXhYBM5+wuRZ+DLOUV2s4W3LZM9KqBfXB+I8ijTfgiu8NsaAQBqX62RYN0xqfwEKf/NjITtVggxEHREn6cGmSCumLD29MZzdTODURMy1V6yGcrzhGhgRyRRmYa3xxI/F0udDIM4bVPJjAa72kRTfme+koQ9q/AWRErxEAW36A6FyfMnr8PHBgzCh+I1zx9wCNwcgDkM2tKJbLhcz3XyjOV2PsJ6GMdQd9djSaIk/zrH7+JOGQKjC7Ztr6WGlMInV9VtO9Y="

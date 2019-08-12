@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/google/pprof.svg?branch=master)](https://travis-ci.org/google/pprof)
 [![codecov](https://codecov.io/gh/google/pprof/graph/badge.svg)](https://codecov.io/gh/google/pprof)
+[![fuzzit](https://app.fuzzit.dev/badge?org_id=google-pprof&branch=master)](https://fuzzit.dev)
 
 # Introduction
 
