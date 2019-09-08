@@ -191,7 +191,7 @@ type NodeSet map[NodeInfo]bool
 // works as a unique identifier; however, in a tree multiple nodes may share
 // identical NodeInfos. A *Node does uniquely identify a node so we can use that
 // instead. Though a *Node also uniquely identifies a node in a graph,
-// currently, during trimming, graphs are rebult from scratch using only the
+// currently, during trimming, graphs are rebuilt from scratch using only the
 // NodeSet, so there would not be the required context of the initial graph to
 // allow for the use of *Node.
 type NodePtrSet map[*Node]bool
