@@ -325,8 +325,9 @@ func printHeader(w io.Writer, rpt *Report) {
 	fmt.Fprintln(w, weblistPageScript)
 	fmt.Fprint(w, "</head>\n<body>\n\n")
 
-	var labels []string
-	for _, l := range ProfileLabels(rpt) {
+	ps := ProfileLabels(rpt)
+	labels := make([]string, 0, len(ps))
+	for _, l := range ps {
 		labels = append(labels, template.HTMLEscapeString(l))
 	}
 

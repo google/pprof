@@ -386,7 +386,7 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 	symNodes := nodesPerSymbol(g.Nodes, symbols)
 
 	// Sort for printing.
-	var syms []*objSymbol
+	syms := make([]*objSymbol, 0, len(symNodes))
 	for s := range symNodes {
 		syms = append(syms, s)
 	}
