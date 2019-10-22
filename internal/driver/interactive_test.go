@@ -303,7 +303,7 @@ func TestInteractiveCommands(t *testing.T) {
 		// Get report output format
 		c := pprofCommands[cmd[0]]
 		if c == nil {
-			t.Errorf("unexpected nil command")
+			t.Fatalf("unexpected nil command")
 		}
 		vars = applyCommandOverrides(cmd[0], c.format, vars)
 
