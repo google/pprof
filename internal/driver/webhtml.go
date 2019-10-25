@@ -1094,6 +1094,7 @@ function viewer(baseUrl, nodes) {
       .transitionDuration(750)
       .transitionEase(d3.easeCubic)
       .inverted(true)
+      .sort(true)
       .title('')
       .tooltip(false)
       .details(document.getElementById('flamegraphdetails'));
