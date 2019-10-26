@@ -20,8 +20,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/pprof/internal/measurement"
 	"github.com/google/pprof/internal/plugin"
+	"github.com/google/pprof/measurement"
 	"github.com/google/pprof/profile"
 )
 

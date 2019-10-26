@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/google/pprof/internal/plugin"
-	"github.com/google/pprof/internal/report"
+	"github.com/google/pprof/report"
 )
 
 // commands describes the commands accepted by pprof.
