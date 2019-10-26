@@ -22,9 +22,9 @@ import (
 
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/internal/proftest"
-	"github.com/google/pprof/internal/report"
 	"github.com/google/pprof/internal/transport"
 	"github.com/google/pprof/profile"
+	"github.com/google/pprof/report"
 )
 
 func TestShell(t *testing.T) {
