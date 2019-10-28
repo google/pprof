@@ -468,6 +468,10 @@ func TestShortenFunctionName(t *testing.T) {
 			"foo",
 		},
 		{
+			"cpp::namespace::Class::method()::$_100::operator()",
+			"Class::method",
+		},
+		{
 			"foo_bar::Foo::bar",
 			"Foo::bar",
 		},
