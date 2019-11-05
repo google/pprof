@@ -28,9 +28,18 @@ import (
 )
 
 var (
-	javaRegExp               = regexp.MustCompile(`^(?:[a-z]\w*\.)*([A-Z][\w\$]*\.(?:<init>|[a-z][\w\$]*(?:\$\d+)?))(?:(?:\()|$)`)
-	goRegExp                 = regexp.MustCompile(`^(?:[\w\-\.]+\/)+(.+)`)
-	cppRegExp                = regexp.MustCompile(`^(?:[_a-zA-Z]\w*::)+(_*[A-Z]\w*::~?[_a-zA-Z]\w*)`)
+	// Removes package name and method arugments for Java method names.
+	// See tests for examples.
+	javaRegExp = regexp.MustCompile(`^(?:[a-z]\w*\.)*([A-Z][\w\$]*\.(?:<init>|[a-z][\w\$]*(?:\$\d+)?))(?:(?:\()|$)`)
+	// Removes package name and method arugments for Go function names.
+	// See tests for examples.
+	goRegExp = regexp.MustCompile(`^(?:[\w\-\.]+\/)+(.+)`)
+	// Strips C++ namespace prefix from a C++ function / method name.
+	// NOTE: Make sure to keep the template parameters in the name. Normally,
+	// template parameters are stripped from the C++ names but when
+	// -symbolize=demangle=templates flag is used, they will not be.
+	// See tests for examples.
+	cppRegExp                = regexp.MustCompile(`^(?:[_a-zA-Z]\w*::)+(_*[A-Z]\w*::~?[_a-zA-Z]\w*(?:<.*>)?)`)
 	cppAnonymousPrefixRegExp = regexp.MustCompile(`^\(anonymous namespace\)::`)
 )
 
