@@ -476,8 +476,8 @@ func TestShortenFunctionName(t *testing.T) {
 			"Foo::bar",
 		},
 		{
-			"Foo::bar::baz<float, long, int>::operator()",
-			"Foo::bar::baz<float, long, int>::operator()",
+			"cpp::namespace::Class::method<float, long, int>()",
+			"Class::method<float, long, int>",
 		},
 		{
 			"foo",
