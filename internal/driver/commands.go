@@ -93,6 +93,7 @@ var pprofCommands = commands{
 	"raw":      {report.Raw, nil, nil, false, "Outputs a text representation of the raw profile", ""},
 	"tags":     {report.Tags, nil, nil, false, "Outputs all tags in the profile", "tags [tag_regex]* [-ignore_regex]* [>file]\nList tags with key:value matching tag_regex and exclude ignore_regex."},
 	"text":     {report.Text, nil, nil, false, "Outputs top entries in text form", reportHelp("text", true, true)},
+	"csv":      {report.CSV, nil, nil, false, "Outputs top entries in CSV form", reportHelp("csv", true, true)},
 	"top":      {report.Text, nil, nil, false, "Outputs top entries in text form", reportHelp("top", true, true)},
 	"traces":   {report.Traces, nil, nil, false, "Outputs all profile samples in text form", ""},
 	"tree":     {report.Tree, nil, nil, false, "Outputs a text rendering of call graph", reportHelp("tree", true, true)},

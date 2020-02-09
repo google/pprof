@@ -154,7 +154,7 @@ func (b *builder) addNode(node *Node, nodeID int, maxFlat float64) {
 	if flat != 0 {
 		label = label + fmt.Sprintf(`%s (%s)`,
 			flatValue,
-			strings.TrimSpace(measurement.Percentage(flat, b.config.Total)))
+			measurement.Percentage(flat, b.config.Total))
 	} else {
 		label = label + "0"
 	}
@@ -168,7 +168,7 @@ func (b *builder) addNode(node *Node, nodeID int, maxFlat float64) {
 		cumValue = b.config.FormatValue(cum)
 		label = label + fmt.Sprintf(`of %s (%s)`,
 			cumValue,
-			strings.TrimSpace(measurement.Percentage(cum, b.config.Total)))
+			measurement.Percentage(cum, b.config.Total))
 	}
 
 	// Scale font sizes from 8 to 24 based on percentage of flat frequency.

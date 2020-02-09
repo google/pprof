@@ -17,6 +17,7 @@
 package report
 
 import (
+	"encoding/csv"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -36,6 +37,7 @@ import (
 // Output formats.
 const (
 	Callgrind = iota
+	CSV
 	Comments
 	Dis
 	Dot
@@ -88,6 +90,8 @@ func Generate(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 	switch o.OutputFormat {
 	case Comments:
 		return printComments(w, rpt)
+	case CSV:
+		return printCSV(w, rpt)
 	case Dot:
 		return printDOT(w, rpt)
 	case Tree:
@@ -730,7 +734,7 @@ func printTags(w io.Writer, rpt *Report) error {
 		for _, t := range graph.SortTags(tags, true) {
 			f, u := measurement.Scale(t.FlatValue(), o.SampleUnit, o.OutputUnit)
 			if total > 0 {
-				fmt.Fprintf(tabw, " \t%.1f%s (%s):\t %s\n", f, u, measurement.Percentage(t.FlatValue(), total), t.Name)
+				fmt.Fprintf(tabw, " \t%.1f%s (%6s):\t %s\n", f, u, measurement.Percentage(t.FlatValue(), total), t.Name)
 			} else {
 				fmt.Fprintf(tabw, " \t%.1f%s:\t %s\n", f, u, t.Name)
 			}
@@ -814,13 +818,36 @@ func printText(w io.Writer, rpt *Report) error {
 			inl = " " + inl
 		}
 		flatSum += item.Flat
-		fmt.Fprintf(w, "%10s %s %s %10s %s  %s%s\n",
+		fmt.Fprintf(w, "%10s %6s %6s %10s %6s  %s%s\n",
 			item.FlatFormat, measurement.Percentage(item.Flat, rpt.total),
 			measurement.Percentage(flatSum, rpt.total),
 			item.CumFormat, measurement.Percentage(item.Cum, rpt.total),
 			item.Name, inl)
 	}
 	return nil
+}
+
+// printCSV prints a flat text report for a profile as a CSV.
+func printCSV(w io.Writer, rpt *Report) error {
+	items, _ := TextItems(rpt)
+	// Do not print the header with labels and profile summary, so that the
+	// output from this report is a completely valid CSV.
+	cw := csv.NewWriter(w)
+	defer cw.Flush()
+	cw.Write([]string{"flat", "flat%", "sum", "cum", "cum%", "name", "inline?"})
+	var flatSum int64
+	for _, item := range items {
+		cw.Write([]string{
+			item.FlatFormat,
+			measurement.Percentage(item.Flat, rpt.total),
+			measurement.Percentage(flatSum, rpt.total),
+			item.CumFormat,
+			measurement.Percentage(item.Cum, rpt.total),
+			item.Name,
+			item.InlineLabel,
+		})
+	}
+	return cw.Error()
 }
 
 // printTraces prints all traces from a profile.
@@ -1055,13 +1082,13 @@ func printTree(w io.Writer, rpt *Report) error {
 			if in.Inline {
 				inline = " (inline)"
 			}
-			fmt.Fprintf(w, "%50s %s |   %s%s\n", rpt.formatValue(in.Weight),
+			fmt.Fprintf(w, "%50s %6s |   %s%s\n", rpt.formatValue(in.Weight),
 				measurement.Percentage(in.Weight, cum), in.Src.Info.PrintableName(), inline)
 		}
 
 		// Print current node.
 		flatSum += flat
-		fmt.Fprintf(w, "%10s %s %s %10s %s                | %s\n",
+		fmt.Fprintf(w, "%10s %6s %6s %10s %6s                | %s\n",
 			rpt.formatValue(flat),
 			measurement.Percentage(flat, rpt.total),
 			measurement.Percentage(flatSum, rpt.total),
@@ -1076,7 +1103,7 @@ func printTree(w io.Writer, rpt *Report) error {
 			if out.Inline {
 				inline = " (inline)"
 			}
-			fmt.Fprintf(w, "%50s %s |   %s%s\n", rpt.formatValue(out.Weight),
+			fmt.Fprintf(w, "%50s %6s |   %s%s\n", rpt.formatValue(out.Weight),
 				measurement.Percentage(out.Weight, cum), out.Dest.Info.PrintableName(), inline)
 		}
 	}
@@ -1171,7 +1198,7 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 		label = append(label, activeFilters...)
 	}
 
-	label = append(label, fmt.Sprintf("Showing nodes accounting for %s, %s of %s total", rpt.formatValue(flatSum), strings.TrimSpace(measurement.Percentage(flatSum, rpt.total)), rpt.formatValue(rpt.total)))
+	label = append(label, fmt.Sprintf("Showing nodes accounting for %s, %s of %s total", rpt.formatValue(flatSum), measurement.Percentage(flatSum, rpt.total), rpt.formatValue(rpt.total)))
 
 	if rpt.total != 0 {
 		if droppedNodes > 0 {

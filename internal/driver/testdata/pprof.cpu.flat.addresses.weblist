@@ -79,7 +79,7 @@ Duration: 10s, Total samples = 1.12s (11.20%)<br>Total: 1.12s</div><h2>line1000<
 </pre>
 <h2>line3000</h2><p class="filename">testdata/file3000.src</p>
 <pre onClick="pprof_toggle_asm(event)">
-  Total:        10ms      1.12s (flat, cum)   100%
+  Total:        10ms      1.12s (flat, cum) 100%
 <span class=line>      1</span> <span class=nop>           .          .           line1 </span>
 <span class=line>      2</span> <span class=nop>           .          .           line2 </span>
 <span class=line>      3</span> <span class=nop>           .          .           line3 </span>

@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"html/template"
 	"net/http"
-	"strings"
 
 	"github.com/google/pprof/internal/graph"
 	"github.com/google/pprof/internal/measurement"
@@ -59,7 +58,7 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 			FullName:  fullName,
 			Cum:       v,
 			CumFormat: config.FormatValue(v),
-			Percent:   strings.TrimSpace(measurement.Percentage(v, config.Total)),
+			Percent:   measurement.Percentage(v, config.Total),
 		}
 		nodes = append(nodes, node)
 		if len(n.In) == 0 {
@@ -84,7 +83,7 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 		FullName:  "root",
 		Cum:       rootValue,
 		CumFormat: config.FormatValue(rootValue),
-		Percent:   strings.TrimSpace(measurement.Percentage(rootValue, config.Total)),
+		Percent:   measurement.Percentage(rootValue, config.Total),
 		Children:  nodes[0:nroots],
 	}
 

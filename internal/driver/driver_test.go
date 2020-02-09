@@ -99,6 +99,7 @@ func TestParse(t *testing.T) {
 		{"tags,tagfocus=+400kb:", "heap_request"},
 		{"dot", "long_name_funcs"},
 		{"text", "long_name_funcs"},
+		{"csv", "cpu"},
 	}
 
 	baseVars := pprofVariables
@@ -262,7 +263,7 @@ func solutionFilename(source string, f *testFlags) string {
 	name = addString(name, f, []string{"relative_percentages"})
 	name = addString(name, f, []string{"seconds"})
 	name = addString(name, f, []string{"call_tree"})
-	name = addString(name, f, []string{"text", "tree", "callgrind", "dot", "svg", "tags", "dot", "traces", "disasm", "peek", "weblist", "topproto", "comments"})
+	name = addString(name, f, []string{"text", "tree", "callgrind", "dot", "svg", "tags", "dot", "traces", "disasm", "peek", "weblist", "topproto", "comments", "csv"})
 	if f.strings["focus"] != "" || f.strings["tagfocus"] != "" {
 		name = append(name, "focus")
 	}

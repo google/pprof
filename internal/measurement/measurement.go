@@ -164,11 +164,11 @@ func Percentage(value, total int64) string {
 	}
 	switch {
 	case math.Abs(ratio) >= 99.95 && math.Abs(ratio) <= 100.05:
-		return "  100%"
+		return "100%"
 	case math.Abs(ratio) >= 1.0:
-		return fmt.Sprintf("%5.2f%%", ratio)
+		return fmt.Sprintf("%.2f%%", ratio)
 	default:
-		return fmt.Sprintf("%5.2g%%", ratio)
+		return fmt.Sprintf("%.2g%%", ratio)
 	}
 }
 
