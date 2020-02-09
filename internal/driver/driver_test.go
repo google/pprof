@@ -330,38 +330,6 @@ func (f testFlags) String(s, d, c string) *string {
 	return &d
 }
 
-func (f testFlags) BoolVar(p *bool, s string, d bool, c string) {
-	if b, ok := f.bools[s]; ok {
-		*p = b
-	} else {
-		*p = d
-	}
-}
-
-func (f testFlags) IntVar(p *int, s string, d int, c string) {
-	if i, ok := f.ints[s]; ok {
-		*p = i
-	} else {
-		*p = d
-	}
-}
-
-func (f testFlags) Float64Var(p *float64, s string, d float64, c string) {
-	if g, ok := f.floats[s]; ok {
-		*p = g
-	} else {
-		*p = d
-	}
-}
-
-func (f testFlags) StringVar(p *string, s, d, c string) {
-	if t, ok := f.strings[s]; ok {
-		*p = t
-	} else {
-		*p = d
-	}
-}
-
 func (f testFlags) StringList(s, d, c string) *[]*string {
 	if t, ok := f.stringLists[s]; ok {
 		// convert slice of strings to slice of string pointers before returning.
