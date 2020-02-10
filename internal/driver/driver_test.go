@@ -97,8 +97,8 @@ func TestParse(t *testing.T) {
 		{"weblist=line[13],addresses,flat", "cpu"},
 		{"tags,tagfocus=400kb:", "heap_request"},
 		{"tags,tagfocus=+400kb:", "heap_request"},
-		{"dot", "longNameFuncs"},
-		{"text", "longNameFuncs"},
+		{"dot", "long_name_funcs"},
+		{"text", "long_name_funcs"},
 	}
 
 	baseVars := pprofVariables
@@ -445,7 +445,7 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 		p = contentionProfile()
 	case "symbolz":
 		p = symzProfile()
-	case "longNameFuncs":
+	case "long_name_funcs":
 		p = longNameFuncsProfile()
 	default:
 		return nil, "", fmt.Errorf("unexpected source: %s", s)
@@ -530,8 +530,8 @@ func fakeDemangler(name string) string {
 	}
 }
 
-// longNameFuncsProfile returns a profile with function names which should be shortened in
-// graph and flame views.
+// longNameFuncsProfile returns a profile with function names which should be
+// shortened in graph and flame views.
 func longNameFuncsProfile() *profile.Profile {
 	var longNameFuncsM = []*profile.Mapping{
 		{
