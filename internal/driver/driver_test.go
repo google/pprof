@@ -1455,6 +1455,55 @@ func TestNumericTagFilter(t *testing.T) {
 			map[string]string{"bytes": "bytes"},
 			false,
 		},
+		{
+			"Match exact value, unitless tag",
+			"pid=123",
+			map[string][]int64{"pid": {123}},
+			nil,
+			true,
+		},
+		{
+			"Match range, unitless tag",
+			"pid=123:123",
+			map[string][]int64{"pid": {123}},
+			nil,
+			true,
+		},
+		{
+			"Don't match range, unitless tag",
+			"pid=124:124",
+			map[string][]int64{"pid": {123}},
+			nil,
+			false,
+		},
+		{
+			"Match range without upper bound, unitless tag",
+			"pid=100:",
+			map[string][]int64{"pid": {123}},
+			nil,
+			true,
+		},
+		{
+			"Don't match range without upper bound, unitless tag",
+			"pid=200:",
+			map[string][]int64{"pid": {123}},
+			nil,
+			false,
+		},
+		{
+			"Match range without lower bound, unitless tag",
+			"pid=:200",
+			map[string][]int64{"pid": {123}},
+			nil,
+			true,
+		},
+		{
+			"Don't match range without lower bound, unitless tag",
+			"pid=:100",
+			map[string][]int64{"pid": {123}},
+			nil,
+			false,
+		},
 	}
 	for _, test := range tagFilterTests {
 		t.Run(test.desc, func(t *testing.T) {
