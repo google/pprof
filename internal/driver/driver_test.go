@@ -97,8 +97,8 @@ func TestParse(t *testing.T) {
 		{"weblist=line[13],addresses,flat", "cpu"},
 		{"tags,tagfocus=400kb:", "heap_request"},
 		{"tags,tagfocus=+400kb:", "heap_request"},
-		{"dot", "longNameFuncs"},
-		{"text", "longNameFuncs"},
+		{"dot", "long_name_funcs"},
+		{"text", "long_name_funcs"},
 	}
 
 	baseVars := pprofVariables
@@ -413,7 +413,7 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 		p = contentionProfile()
 	case "symbolz":
 		p = symzProfile()
-	case "longNameFuncs":
+	case "long_name_funcs":
 		p = longNameFuncsProfile()
 	default:
 		return nil, "", fmt.Errorf("unexpected source: %s", s)
@@ -498,8 +498,8 @@ func fakeDemangler(name string) string {
 	}
 }
 
-// longNameFuncsProfile returns a profile with function names which should be shortened in
-// graph and flame views.
+// longNameFuncsProfile returns a profile with function names which should be
+// shortened in graph and flame views.
 func longNameFuncsProfile() *profile.Profile {
 	var longNameFuncsM = []*profile.Mapping{
 		{
@@ -1421,6 +1421,55 @@ func TestNumericTagFilter(t *testing.T) {
 			"bytes=-512b:-128b",
 			map[string][]int64{"bytes": {-2048}},
 			map[string]string{"bytes": "bytes"},
+			false,
+		},
+		{
+			"Match exact value, unitless tag",
+			"pid=123",
+			map[string][]int64{"pid": {123}},
+			nil,
+			true,
+		},
+		{
+			"Match range, unitless tag",
+			"pid=123:123",
+			map[string][]int64{"pid": {123}},
+			nil,
+			true,
+		},
+		{
+			"Don't match range, unitless tag",
+			"pid=124:124",
+			map[string][]int64{"pid": {123}},
+			nil,
+			false,
+		},
+		{
+			"Match range without upper bound, unitless tag",
+			"pid=100:",
+			map[string][]int64{"pid": {123}},
+			nil,
+			true,
+		},
+		{
+			"Don't match range without upper bound, unitless tag",
+			"pid=200:",
+			map[string][]int64{"pid": {123}},
+			nil,
+			false,
+		},
+		{
+			"Match range without lower bound, unitless tag",
+			"pid=:200",
+			map[string][]int64{"pid": {123}},
+			nil,
+			true,
+		},
+		{
+			"Don't match range without lower bound, unitless tag",
+			"pid=:100",
+			map[string][]int64{"pid": {123}},
+			nil,
 			false,
 		},
 	}
