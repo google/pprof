@@ -86,6 +86,7 @@ func TestParse(t *testing.T) {
 		{"tags", "heap"},
 		{"tags,unit=bytes", "heap"},
 		{"traces", "cpu"},
+		{"traces,addresses", "cpu"},
 		{"traces", "heap_tags"},
 		{"dot,alloc_space,flat,focus=[234]00", "heap_alloc"},
 		{"dot,alloc_space,flat,tagshow=[2]00", "heap_alloc"},
