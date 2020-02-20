@@ -6,27 +6,27 @@ Type: inuse_space
      bytes:  100kB
    request:  100kB
     1000kB   line1000
-             line2001
+             line2001 (inline)
              line2000
-             line3002
-             line3001
+             line3002 (inline)
+             line3001 (inline)
              line3000
 -----------+-------------------------------------------------------
      bytes:  200kB
     3.91MB   line1000
-             line3001
+             line3001 (inline)
              line3000
 -----------+-------------------------------------------------------
       key1:  tag
      bytes:  1.56MB
    request:  1.56MB
-   62.50MB   line2001
+   62.50MB   line2001 (inline)
              line2000
-             line3002
+             line3002 (inline)
              line3000
 -----------+-------------------------------------------------------
      bytes:  400kB
-   31.25MB   line3002
-             line3001
+   31.25MB   line3002 (inline)
+             line3001 (inline)
              line3000
 -----------+-------------------------------------------------------
