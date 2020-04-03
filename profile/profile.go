@@ -402,6 +402,8 @@ func (p *Profile) CheckValid() error {
 				if f.ID == 0 || functions[f.ID] != f {
 					return fmt.Errorf("inconsistent function %p: %d", f, f.ID)
 				}
+			} else {
+				return fmt.Errorf("profile has nil function in location line")
 			}
 		}
 	}
