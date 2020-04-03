@@ -177,7 +177,7 @@ func TestCheckValid(t *testing.T) {
 		},
 		{
 			mutateFn: func(p *Profile) { p.Location[0].Line = append(p.Location[0].Line, Line{}) },
-			wantErr:  "profile has nil function in location line",
+			wantErr:  "has a line with nil function",
 		},
 	} {
 		t.Run(tc.wantErr, func(t *testing.T) {
