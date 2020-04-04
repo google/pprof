@@ -200,6 +200,8 @@ table thead {
   font-family: 'Roboto Medium', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
 }
 table tr th {
+  position: sticky;
+  top: 0;
   background-color: #ddd;
   text-align: right;
   padding: .3em .5em;
