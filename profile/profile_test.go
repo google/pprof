@@ -175,6 +175,10 @@ func TestCheckValid(t *testing.T) {
 			mutateFn: func(p *Profile) { p.Function[0] = nil },
 			wantErr:  "profile has nil function",
 		},
+		{
+			mutateFn: func(p *Profile) { p.Location[0].Line = append(p.Location[0].Line, Line{}) },
+			wantErr:  "has a line with nil function",
+		},
 	} {
 		t.Run(tc.wantErr, func(t *testing.T) {
 			p := p.Copy()
