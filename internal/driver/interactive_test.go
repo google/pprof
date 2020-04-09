@@ -152,13 +152,6 @@ func makeShortcuts(input []string, seed int) (shortcuts, []string) {
 	return s, output
 }
 
-func newUI(t *testing.T, input []string) plugin.UI {
-	return &proftest.TestUI{
-		T:     t,
-		Input: input,
-	}
-}
-
 func checkValue(p *profile.Profile, cmd []string, vars variables, o *plugin.Options) error {
 	if len(cmd) != 2 {
 		return fmt.Errorf("expected len(cmd)==2, got %v", cmd)
