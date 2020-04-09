@@ -157,7 +157,7 @@ var pprofVariables = variables{
 
 	// Filtering options
 	"nodecount": &variable{intKind, "-1", "", helpText(
-		"Max number of nodes to show",
+		"<n> is the max number of nodes to show",
 		"Uses heuristics to limit the number of locations to be displayed.",
 		"On graphs, dotted edges represent paths through nodes that have been removed.")},
 	"nodefraction": &variable{floatKind, "0.005", "", "Hide nodes below <f>*total"},
@@ -208,7 +208,7 @@ var pprofVariables = variables{
 		"Discard tags that match this regexp")},
 	// Heap profile options
 	"divide_by": &variable{floatKind, "1", "", helpText(
-		"Ratio to divide all samples before visualization",
+		"<f> is the ratio to divide all samples before visualization",
 		"Divide all samples values by a constant, eg the number of processors or jobs.")},
 	"mean": &variable{boolKind, "f", "", helpText(
 		"Average sample value over first value (count)",
@@ -273,7 +273,9 @@ func usage(commandLine bool) string {
 	}
 
 	help = help + strings.Join(commands, "\n") + "\n\n" +
-		"  Options:\n"
+		"  Options:\n" +
+		"    General format is <option> = <value>\n" +
+		"    If the option is a boolean value, then you can simply type <option>\n\n"
 
 	// Print help for variables after sorting them.
 	// Collect radio variables by their group name to print them together.
