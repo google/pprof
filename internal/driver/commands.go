@@ -246,6 +246,22 @@ func helpText(s ...string) string {
 	return strings.Join(s, "\n") + "\n"
 }
 
+func addVariablesPostFix(name string, vr *variable) string {
+	var postfix string
+	switch vr.kind {
+	case intKind:
+		postfix = "=<n>"
+	case floatKind:
+		postfix = "=<f>"
+	case stringKind:
+		postfix = "=<s>"
+	}
+	if name == "sample_index" {
+		postfix = "=<x>"
+	}
+	return postfix
+}
+
 // usage returns a string describing the pprof commands and variables.
 // if commandLine is set, the output reflect cli usage.
 func usage(commandLine bool) string {
@@ -275,8 +291,9 @@ func usage(commandLine bool) string {
 	help = help + strings.Join(commands, "\n") + "\n\n" +
 		"  Options:\n" +
 		"    General format is <option>=<value>\n" +
-		"    <f> is a float and <n> is an integer\n" +
-		"    If the option is a boolean value, then you can simply type <option>\n\n"
+		"    <f> is a float, <n> is an integer, and <s> is a string\n" +
+		"    If the option is a boolean value, then you can simply type <option>\n" +
+		"    Type \"help <option>\" for detailed usage\n\n"
 
 	// Print help for variables after sorting them.
 	// Collect radio variables by their group name to print them together.
@@ -287,14 +304,7 @@ func usage(commandLine bool) string {
 			radioOptions[vr.group] = append(radioOptions[vr.group], name)
 			continue
 		}
-		option := prefix + name
-		if vr.kind == intKind {
-			option += "=<n>"
-		} else if vr.kind == floatKind {
-			option += "=<f>"
-		} else if name == "sample_index" {
-			option += "=<x>"
-		}
+		option := prefix + name + addVariablesPostFix(name, vr)
 
 		variables = append(variables, fmtHelp(option, vr.help))
 	}

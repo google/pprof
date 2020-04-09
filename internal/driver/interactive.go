@@ -72,16 +72,8 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 				if v := pprofVariables[name]; v != nil {
 					// All non-bool options require inputs
 					if v.kind != boolKind && value == "" {
-						var value string
-						switch v.kind {
-						case intKind:
-							value = "<n>"
-						case floatKind:
-							value = "<f>"
-						case stringKind:
-							value = "<x>"
-						}
-						o.UI.PrintErr(fmt.Errorf("please input a value, e.g. %v=%v", name, value))
+						example := name + addVariablesPostFix(name, v)
+						o.UI.PrintErr(fmt.Errorf("Please input a value, e.g. %v", example))
 						continue
 					}
 					if name == "sample_index" {
