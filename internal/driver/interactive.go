@@ -73,7 +73,7 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 					// All non-bool options require inputs
 					if v.kind != boolKind && value == "" {
 						example := name + addVariablesPostFix(name, v)
-						o.UI.PrintErr(fmt.Errorf("Please input a value, e.g. %v", example))
+						o.UI.PrintErr(fmt.Errorf("please input a value, e.g. %v", example))
 						continue
 					}
 					if name == "sample_index" {
