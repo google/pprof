@@ -81,7 +81,7 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 						case stringKind:
 							value = "<x>"
 						}
-						o.UI.PrintErr(fmt.Errorf("please input a value, e.g. %v = %v", name, value))
+						o.UI.PrintErr(fmt.Errorf("please input a value, e.g. %v=%v", name, value))
 						continue
 					}
 					if name == "sample_index" {

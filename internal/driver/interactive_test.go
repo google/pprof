@@ -56,8 +56,8 @@ func TestShell(t *testing.T) {
 		{"Random interleave of independent scripts with shortcuts 1", scScript1, shortcuts1, "", 0, false},
 		{"Random interleave of independent scripts with shortcuts 2", scScript2, shortcuts2, "", 0, false},
 		{"Group with invalid vale", []string{"cumulative=this"}, pprofShortcuts, `unrecognized value for cumulative: "this". Use one of cum, flat`, 1, false},
-		{"No value provided for the option 1", []string{"sample_index"}, pprofShortcuts, `please input a value, e.g. sample_index = <x>`, 1, false},
-		{"No value provided for the option 2", []string{"focus = "}, pprofShortcuts, `please input a value, e.g. focus = <x>`, 1, false},
+		{"No value provided for the option 1", []string{"sample_index"}, pprofShortcuts, `please input a value, e.g. sample_index=<x>`, 1, false},
+		{"No value provided for the option 2", []string{"focus="}, pprofShortcuts, `please input a value, e.g. focus=<x>`, 1, false},
 		{"Helpful input format reminder", []string{"sample_index 0"}, pprofShortcuts, `do you mean: "sample_index=0`, 1, false},
 		{"Verify propagation of IO errors", []string{"**error**"}, pprofShortcuts, "", 0, false},
 	}

@@ -274,7 +274,7 @@ func usage(commandLine bool) string {
 
 	help = help + strings.Join(commands, "\n") + "\n\n" +
 		"  Options:\n" +
-		"    General format is <option> = <value>\n" +
+		"    General format is <option>=<value>\n" +
 		"    <f> is a float and <n> is an integer\n" +
 		"    If the option is a boolean value, then you can simply type <option>\n\n"
 
@@ -289,11 +289,11 @@ func usage(commandLine bool) string {
 		}
 		option := prefix + name
 		if vr.kind == intKind {
-			option += " = <n>"
+			option += "=<n>"
 		} else if vr.kind == floatKind {
-			option += " = <f>"
+			option += "=<f>"
 		} else if name == "sample_index" {
-			option += " = <x>"
+			option += "=<x>"
 		}
 
 		variables = append(variables, fmtHelp(option, vr.help))
