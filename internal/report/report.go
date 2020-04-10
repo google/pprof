@@ -80,7 +80,7 @@ type Options struct {
 	SourcePath string         // Search path for source files.
 	TrimPath   string         // Paths to trim from source file paths.
 
-	IntelSyntax bool // Whether or not to print assembly in Intel syntax
+	IntelSyntax bool // Whether or not to print assembly in Intel syntax.
 }
 
 // Generate generates a report as directed by the Report.
