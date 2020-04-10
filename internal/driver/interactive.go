@@ -372,6 +372,7 @@ func commandHelp(args string, ui plugin.UI) {
 	}
 
 	if v := pprofVariables[args]; v != nil {
+		ui.Print(args + variablesPostFix(args, v) + "\n")
 		ui.Print(v.help + "\n")
 		return
 	}

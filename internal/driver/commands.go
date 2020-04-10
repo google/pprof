@@ -291,9 +291,7 @@ func usage(commandLine bool) string {
 	help = help + strings.Join(commands, "\n") + "\n\n" +
 		"  Options:\n" +
 		"    General format is <option>=<value>\n" +
-		"    <f> is a float, <n> is an integer, and <s> is a string\n" +
-		"    If the option is a boolean value, then you can simply type <option>\n" +
-		"    Type \"help <option>\" for detailed usage\n\n"
+		"    <f> is a float, <n> is an integer, and <s> is a string\n\n"
 
 	// Print help for variables after sorting them.
 	// Collect radio variables by their group name to print them together.
