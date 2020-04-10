@@ -190,7 +190,7 @@ func skipUnlessDarwinAmd64(t *testing.T) {
 
 func testDisasm(t *testing.T, intelSyntax bool) {
 	bu := &Binutils{}
-	insts, err := bu.Disasm(filepath.Join("testdata", "exe_linux_64"), 0, math.MaxUint64, false)
+	insts, err := bu.Disasm(filepath.Join("testdata", "exe_linux_64"), 0, math.MaxUint64, intelSyntax)
 	if err != nil {
 		t.Fatalf("Disasm: unexpected error %v", err)
 	}
