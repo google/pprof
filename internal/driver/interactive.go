@@ -72,7 +72,7 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 				if v := pprofVariables[name]; v != nil {
 					// All non-bool options require inputs
 					if v.kind != boolKind && value == "" {
-						example := name + addVariablesPostFix(name, v)
+						example := name + variablesPostFix(name, v)
 						o.UI.PrintErr(fmt.Errorf("please input a value, e.g. %v", example))
 						continue
 					}
