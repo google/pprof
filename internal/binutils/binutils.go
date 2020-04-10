@@ -160,24 +160,19 @@ func findExe(cmd string, paths []string) (string, bool) {
 func (bu *Binutils) Disasm(file string, start, end uint64, intelSyntax bool) ([]plugin.Inst, error) {
 	b := bu.get()
 	var cmd *exec.Cmd
+	args := []string{"-d", "-C", "--no-show-raw-insn", "-l",
+		fmt.Sprintf("--start-address=%#x", start),
+		fmt.Sprintf("--stop-address=%#x", end),
+		file}
+
 	if intelSyntax {
 		if runtime.GOOS == "darwin" {
-			cmd = exec.Command(b.objdump, "-x86-asm-syntax=intel", "-d", "-C", "--no-show-raw-insn", "-l",
-				fmt.Sprintf("--start-address=%#x", start),
-				fmt.Sprintf("--stop-address=%#x", end),
-				file)
+			args = append([]string{"-x86-asm-syntax=intel"}, args...)
 		} else {
-			cmd = exec.Command(b.objdump, "-M", "intel", "-d", "-C", "--no-show-raw-insn", "-l",
-				fmt.Sprintf("--start-address=%#x", start),
-				fmt.Sprintf("--stop-address=%#x", end),
-				file)
+			args = append([]string{"-M", "intel"}, args...)
 		}
-	} else {
-		cmd = exec.Command(b.objdump, "-d", "-C", "--no-show-raw-insn", "-l",
-			fmt.Sprintf("--start-address=%#x", start),
-			fmt.Sprintf("--stop-address=%#x", end),
-			file)
 	}
+	cmd = exec.Command(b.objdump, args...)
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("%v: %v", cmd.Args, err)

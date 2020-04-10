@@ -156,7 +156,7 @@ var pprofVariables = variables{
 	"trim_path":      &variable{stringKind, "", "", "Path to trim from source paths before search"},
 	"intel_syntax": &variable{boolKind, "f", "", helpText(
 		"Show assembly in Intel syntax",
-		"Only useful for command `disasm` and `weblist`")},
+		"Only applicable to command `disasm` and `weblist`")},
 
 	// Filtering options
 	"nodecount": &variable{intKind, "-1", "", helpText(

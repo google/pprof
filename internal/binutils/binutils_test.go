@@ -188,7 +188,7 @@ func skipUnlessDarwinAmd64(t *testing.T) {
 	}
 }
 
-func DisasmTestingInternal(t *testing.T, intelSyntax bool) {
+func testDisasm(t *testing.T, intelSyntax bool) {
 	bu := &Binutils{}
 	insts, err := bu.Disasm(filepath.Join("testdata", "exe_linux_64"), 0, math.MaxUint64, false)
 	if err != nil {
@@ -207,8 +207,8 @@ func DisasmTestingInternal(t *testing.T, intelSyntax bool) {
 
 func TestDisasm(t *testing.T) {
 	skipUnlessLinuxAmd64(t)
-	DisasmTestingInternal(t, true)
-	DisasmTestingInternal(t, false)
+	testDisasm(t, true)
+	testDisasm(t, false)
 }
 
 func findSymbol(syms []*plugin.Sym, name string) *plugin.Sym {

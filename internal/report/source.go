@@ -239,8 +239,7 @@ func sourceCoordinates(asm map[int][]assemblyInstruction) (start, end int) {
 // assemblyPerSourceLine disassembles the binary containing a symbol
 // and classifies the assembly instructions according to its
 // corresponding source line, annotating them with a set of samples.
-func assemblyPerSourceLine(objSyms []*objSymbol, rs graph.Nodes,
-	src string, obj plugin.ObjTool, intelSyntax bool) map[int][]assemblyInstruction {
+func assemblyPerSourceLine(objSyms []*objSymbol, rs graph.Nodes, src string, obj plugin.ObjTool, intelSyntax bool) map[int][]assemblyInstruction {
 	assembly := make(map[int][]assemblyInstruction)
 	// Identify symbol to use for this collection of samples.
 	o := findMatchingSymbol(objSyms, rs)
