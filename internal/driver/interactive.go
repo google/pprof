@@ -72,7 +72,7 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 				if v := pprofVariables[name]; v != nil {
 					// All non-bool options require inputs
 					if v.kind != boolKind && value == "" {
-						example := name + variablesPostFix(name, v)
+						example := name + addOptionInputHelpText(name, v)
 						o.UI.PrintErr(fmt.Errorf("please input a value, e.g. %v", example))
 						continue
 					}
@@ -274,7 +274,7 @@ func parseCommandLine(input []string) ([]string, variables, error) {
 	}
 	if c == nil {
 		if v := pprofVariables[name]; v != nil {
-			return nil, nil, fmt.Errorf("do you mean: \"%v=%v\"?", name, args[0])
+			return nil, nil, fmt.Errorf(`did you mean: %s?`, name+"="+args[0])
 		}
 		return nil, nil, fmt.Errorf("unrecognized command: %q", name)
 	}
@@ -372,7 +372,7 @@ func commandHelp(args string, ui plugin.UI) {
 	}
 
 	if v := pprofVariables[args]; v != nil {
-		ui.Print(args + variablesPostFix(args, v) + "\n")
+		ui.Print(args + addOptionInputHelpText(args, v) + "\n")
 		ui.Print(v.help + "\n")
 		return
 	}

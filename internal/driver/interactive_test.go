@@ -59,7 +59,7 @@ func TestShell(t *testing.T) {
 		{"No special value provided for the option", []string{"sample_index"}, pprofShortcuts, `please input a value, e.g. sample_index=<x>`, 1, false},
 		{"No string value provided for the option", []string{"focus="}, pprofShortcuts, `please input a value, e.g. focus=<s>`, 1, false},
 		{"No float value provided for the option", []string{"divide_by"}, pprofShortcuts, `please input a value, e.g. divide_by=<f>`, 1, false},
-		{"Helpful input format reminder", []string{"sample_index 0"}, pprofShortcuts, `do you mean: "sample_index=0`, 1, false},
+		{"Helpful input format reminder", []string{"sample_index 0"}, pprofShortcuts, `did you mean: sample_index=0`, 1, false},
 		{"Verify propagation of IO errors", []string{"**error**"}, pprofShortcuts, "", 0, false},
 	}
 

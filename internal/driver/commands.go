@@ -246,7 +246,7 @@ func helpText(s ...string) string {
 	return strings.Join(s, "\n") + "\n"
 }
 
-func variablesPostFix(name string, vr *variable) string {
+func addOptionInputHelpText(name string, vr *variable) string {
 	var postfix string
 	switch vr.kind {
 	case intKind:
@@ -270,7 +270,7 @@ func usage(commandLine bool) string {
 		prefix = "-"
 	}
 	fmtHelp := func(c, d string) string {
-		return fmt.Sprintf("    %-22s %s", c, strings.SplitN(d, "\n", 2)[0])
+		return fmt.Sprintf("    %-16s %s", c, strings.SplitN(d, "\n", 2)[0])
 	}
 
 	var commands []string
@@ -291,7 +291,8 @@ func usage(commandLine bool) string {
 	help = help + strings.Join(commands, "\n") + "\n\n" +
 		"  Options:\n" +
 		"    General format is <option>=<value>\n" +
-		"    <f> is a float, <n> is an integer, and <s> is a string\n\n"
+		"    <f> is a float, <n> is an integer, and <s> is a string\n" +
+		"    Use <option> or <option>=t to set a boolean flag to true and <option>=f to set it to false\n\n"
 
 	// Print help for variables after sorting them.
 	// Collect radio variables by their group name to print them together.
@@ -302,7 +303,7 @@ func usage(commandLine bool) string {
 			radioOptions[vr.group] = append(radioOptions[vr.group], name)
 			continue
 		}
-		option := prefix + name + variablesPostFix(name, vr)
+		option := prefix + name + addOptionInputHelpText(name, vr)
 
 		variables = append(variables, fmtHelp(option, vr.help))
 	}
