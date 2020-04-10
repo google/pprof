@@ -218,7 +218,7 @@ var pprofVariables = variables{
 		"For memory profiles, report average memory per allocation.",
 		"For time-based profiles, report average time per event.")},
 	"sample_index": &variable{stringKind, "", "", helpText(
-		"Sample value to report (<x> is 0-based index or name)",
+		"Sample value to report (0-based index or name)",
 		"Profiles contain multiple values per sample.",
 		"Use sample_index=i to select the ith value (starting at 0).")},
 	"normalize": &variable{boolKind, "f", "", helpText(
@@ -257,7 +257,7 @@ func usage(commandLine bool) string {
 		prefix = "-"
 	}
 	fmtHelp := func(c, d string) string {
-		return fmt.Sprintf("    %-22s %s", c, strings.SplitN(d, "\n", 2)[0])
+		return fmt.Sprintf("    %-16s %s", c, strings.SplitN(d, "\n", 2)[0])
 	}
 
 	var commands []string
@@ -287,16 +287,7 @@ func usage(commandLine bool) string {
 			radioOptions[vr.group] = append(radioOptions[vr.group], name)
 			continue
 		}
-		option := prefix + name
-		if vr.kind == intKind {
-			option += " = <n>"
-		} else if vr.kind == floatKind {
-			option += " = <f>"
-		} else if name == "sample_index" {
-			option += " = <x>"
-		}
-
-		variables = append(variables, fmtHelp(option, vr.help))
+		variables = append(variables, fmtHelp(prefix+name, vr.help))
 	}
 	sort.Strings(variables)
 

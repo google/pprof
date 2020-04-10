@@ -85,19 +85,6 @@ func TestShell(t *testing.T) {
 	if err := interactive(p, o); err != nil {
 		t.Error("invalid group value:", err)
 	}
-
-	// No value provided for the option
-	pprofVariables = testVariables(savedVariables)
-	ui = &proftest.TestUI{
-		T:       t,
-		Input:   []string{"sample_index"},
-		AllowRx: `please input a value, e.g. option = value`,
-	}
-	o.UI = ui
-	if err := interactive(p, o); err != nil {
-		t.Error("no value for the option:", err)
-	}
-
 	// Confirm error message written out once.
 	if ui.NumAllowRxMatches != 1 {
 		t.Errorf("want error message to be printed 1 time, got %v", ui.NumAllowRxMatches)
@@ -145,7 +132,7 @@ var script = []string{
 	"f=-1;f=-2.5;check f=-2.5;f=0.0001;check f=0.0001",
 	"check ff=0;ff=-1.01;check ff=-1.01;ff=100;check ff=100",
 	"s=one;s=two;check s=two",
-	"ss=tree;check ss=tree;ss=forest;check ss=forest",
+	"ss=tree;check ss=tree;ss=;check ss;ss=forest;check ss=forest",
 	"ta=true;check ta=true;check tb=false;check tc=false;tb=1;check tb=true;check ta=false;check tc=false;tc=yes;check tb=false;check ta=false;check tc=true",
 }
 
