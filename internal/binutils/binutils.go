@@ -157,12 +157,22 @@ func findExe(cmd string, paths []string) (string, bool) {
 
 // Disasm returns the assembly instructions for the specified address range
 // of a binary.
-func (bu *Binutils) Disasm(file string, start, end uint64) ([]plugin.Inst, error) {
+func (bu *Binutils) Disasm(file string, start, end uint64, intelSyntax bool) ([]plugin.Inst, error) {
 	b := bu.get()
-	cmd := exec.Command(b.objdump, "-d", "-C", "--no-show-raw-insn", "-l",
+	args := []string{"-d", "-C", "--no-show-raw-insn", "-l",
 		fmt.Sprintf("--start-address=%#x", start),
-		fmt.Sprintf("--stop-address=%#x", end),
-		file)
+		fmt.Sprintf("--stop-address=%#x", end)}
+
+	if intelSyntax {
+		if runtime.GOOS == "darwin" {
+			args = append(args, "-x86-asm-syntax=intel")
+		} else {
+			args = append(args, "-M", "intel")
+		}
+	}
+
+	args = append(args, file)
+	cmd := exec.Command(b.objdump, args...)
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("%v: %v", cmd.Args, err)
