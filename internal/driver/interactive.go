@@ -72,8 +72,7 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 				if v := pprofVariables[name]; v != nil {
 					// All non-bool options require inputs
 					if v.kind != boolKind && value == "" {
-						example := name + addOptionInputHelpText(name, v)
-						o.UI.PrintErr(fmt.Errorf("please input a value, e.g. %v", example))
+						o.UI.PrintErr(fmt.Errorf("please input a value, e.g. %v", name+"=<val>"))
 						continue
 					}
 					if name == "sample_index" {
@@ -372,7 +371,6 @@ func commandHelp(args string, ui plugin.UI) {
 	}
 
 	if v := pprofVariables[args]; v != nil {
-		ui.Print(args + addOptionInputHelpText(args, v) + "\n")
 		ui.Print(v.help + "\n")
 		return
 	}
