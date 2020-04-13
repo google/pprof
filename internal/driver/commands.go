@@ -154,12 +154,9 @@ var pprofVariables = variables{
 	"compact_labels": &variable{boolKind, "f", "", "Show minimal headers"},
 	"source_path":    &variable{stringKind, "", "", "Search path for source files"},
 	"trim_path":      &variable{stringKind, "", "", "Path to trim from source paths before search"},
-<<<<<<< HEAD
-=======
 	"intel_syntax": &variable{boolKind, "f", "", helpText(
 		"Show assembly in Intel syntax",
 		"Only applicable to commands `disasm` and `weblist`")},
->>>>>>> 54872a36fdc7d28efd44798e90bda4a3207eceef
 
 	// Filtering options
 	"nodecount": &variable{intKind, "-1", "", helpText(
