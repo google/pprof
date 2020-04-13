@@ -1562,7 +1562,7 @@ func (*mockObjTool) Open(file string, start, limit, offset uint64) (plugin.ObjFi
 	return &mockFile{file, "abcdef", 0}, nil
 }
 
-func (m *mockObjTool) Disasm(file string, start, end uint64) ([]plugin.Inst, error) {
+func (m *mockObjTool) Disasm(file string, start, end uint64, intelSyntax bool) ([]plugin.Inst, error) {
 	switch start {
 	case 0x1000:
 		return []plugin.Inst{

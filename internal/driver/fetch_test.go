@@ -161,7 +161,9 @@ func (o testObj) Open(file string, start, limit, offset uint64) (plugin.ObjFile,
 func (testObj) Demangler(_ string) func(names []string) (map[string]string, error) {
 	return func(names []string) (map[string]string, error) { return nil, nil }
 }
-func (testObj) Disasm(file string, start, end uint64) ([]plugin.Inst, error) { return nil, nil }
+func (testObj) Disasm(file string, start, end uint64, intelSyntax bool) ([]plugin.Inst, error) {
+	return nil, nil
+}
 
 type testFile struct{ name, buildID string }
 
