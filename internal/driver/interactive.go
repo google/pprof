@@ -72,7 +72,7 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 				if v := pprofVariables[name]; v != nil {
 					// All non-bool options require inputs
 					if v.kind != boolKind && value == "" {
-						o.UI.PrintErr(fmt.Errorf("please input a value, e.g. %v", name+"=<val>"))
+						o.UI.PrintErr(fmt.Errorf("please input a value, e.g. %s=<val>", name))
 						continue
 					}
 					if name == "sample_index" {
@@ -273,7 +273,7 @@ func parseCommandLine(input []string) ([]string, variables, error) {
 	}
 	if c == nil {
 		if v := pprofVariables[name]; v != nil {
-			return nil, nil, fmt.Errorf(`did you mean: %s?`, name+"="+args[0])
+			return nil, nil, fmt.Errorf("did you mean: %s=%s", name, args[0])
 		}
 		return nil, nil, fmt.Errorf("unrecognized command: %q", name)
 	}

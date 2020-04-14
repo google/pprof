@@ -77,12 +77,12 @@ func TestShell(t *testing.T) {
 
 			err := interactive(p, o)
 			if (tc.propagateError && err == nil) || (tc.propagateError && err != nil) {
-				t.Errorf("%v: %v", tc.name, err)
+				t.Errorf("%s: %v", tc.name, err)
 			}
 
 			// Confirm error message written out once.
 			if tc.numAllowRxMatches != ui.NumAllowRxMatches {
-				t.Errorf("want error message to be printed %v time(s), got %v",
+				t.Errorf("want error message to be printed %d time(s), got %d",
 					tc.numAllowRxMatches, ui.NumAllowRxMatches)
 			}
 		})
