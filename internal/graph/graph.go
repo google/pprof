@@ -686,6 +686,8 @@ func defaultLabelFormat(v int64, key string) string {
 func (m TagMap) findOrAddTag(label, unit string, value int64) *Tag {
 	l := m[label]
 	if l == nil {
+		// Filter out all null characters since dot is not able to parse them
+		label = strings.ReplaceAll(label, "\000", "")
 		l = &Tag{
 			Name:  label,
 			Unit:  unit,
