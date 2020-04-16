@@ -5,35 +5,35 @@ go_import_path: github.com/google/pprof
 matrix:
   include:
     - os: linux
-      go: 1.12.x
-    - os: linux
       go: 1.13.x
+    - os: linux
+      go: 1.14.x
     - os: linux
       go: master
     - os: osx
       osx_image: xcode8.3
-      go: 1.12.x
+      go: 1.13.x
     - os: osx
       osx_image: xcode8.3
-      go: 1.13.x
+      go: 1.14.x
     - os: osx
       osx_image: xcode8.3
       go: master
     - os: osx
       osx_image: xcode9.4
-      go: 1.12.x
+      go: 1.13.x
     - os: osx
       osx_image: xcode9.4
-      go: 1.13.x
+      go: 1.14.x
     - os: osx
       osx_image: xcode9.4
       go: master
     - os: osx
       osx_image: xcode10.1
-      go: 1.12.x
+      go: 1.13.x
     - os: osx
       osx_image: xcode10.1
-      go: 1.13.x
+      go: 1.14.x
     - os: osx
       osx_image: xcode10.1
       go: master
