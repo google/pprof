@@ -60,7 +60,7 @@ func TestShell(t *testing.T) {
 		{"No string value provided for the option", []string{"focus="}, pprofShortcuts, `please input a value, e.g. focus=<val>`, 1, false},
 		{"No float value provided for the option", []string{"divide_by"}, pprofShortcuts, `please input a value, e.g. divide_by=<val>`, 1, false},
 		{"Helpful input format reminder", []string{"sample_index 0"}, pprofShortcuts, `did you mean: sample_index=0`, 1, false},
-		{"Verify propagation of IO errors", []string{"**error**"}, pprofShortcuts, "", 0, false},
+		{"Verify propagation of IO errors", []string{"**error**"}, pprofShortcuts, "", 0, true},
 	}
 
 	o := setDefaults(&plugin.Options{HTTPTransport: transport.New(nil)})
@@ -76,7 +76,7 @@ func TestShell(t *testing.T) {
 			o.UI = ui
 
 			err := interactive(p, o)
-			if (tc.propagateError && err == nil) || (tc.propagateError && err != nil) {
+			if (tc.propagateError && err == nil) || (!tc.propagateError && err != nil) {
 				t.Errorf("%s: %v", tc.name, err)
 			}
 
