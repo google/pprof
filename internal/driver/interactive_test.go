@@ -56,9 +56,9 @@ func TestShell(t *testing.T) {
 		{"Random interleave of independent scripts with shortcuts 1", scScript1, shortcuts1, "", 0, false},
 		{"Random interleave of independent scripts with shortcuts 2", scScript2, shortcuts2, "", 0, false},
 		{"Group with invalid value", []string{"cumulative=this"}, pprofShortcuts, `unrecognized value for cumulative: "this". Use one of cum, flat`, 1, false},
-		{"No special value provided for the option", []string{"sample_index"}, pprofShortcuts, `please input a value, e.g. sample_index=<val>`, 1, false},
-		{"No string value provided for the option", []string{"focus="}, pprofShortcuts, `please input a value, e.g. focus=<val>`, 1, false},
-		{"No float value provided for the option", []string{"divide_by"}, pprofShortcuts, `please input a value, e.g. divide_by=<val>`, 1, false},
+		{"No special value provided for the option", []string{"sample_index"}, pprofShortcuts, `please specify a value, e.g. sample_index=<val>`, 1, false},
+		{"No string value provided for the option", []string{"focus="}, pprofShortcuts, `please specify a value, e.g. focus=<val>`, 1, false},
+		{"No float value provided for the option", []string{"divide_by"}, pprofShortcuts, `please specify a value, e.g. divide_by=<val>`, 1, false},
 		{"Helpful input format reminder", []string{"sample_index 0"}, pprofShortcuts, `did you mean: sample_index=0`, 1, false},
 		{"Verify propagation of IO errors", []string{"**error**"}, pprofShortcuts, "", 0, true},
 	}

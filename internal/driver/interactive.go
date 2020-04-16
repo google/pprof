@@ -72,7 +72,7 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 				if v := pprofVariables[name]; v != nil {
 					// All non-bool options require inputs
 					if v.kind != boolKind && value == "" {
-						o.UI.PrintErr(fmt.Errorf("please input a value, e.g. %s=<val>", name))
+						o.UI.PrintErr(fmt.Errorf("please specify a value, e.g. %s=<val>", name))
 						continue
 					}
 					if name == "sample_index" {
