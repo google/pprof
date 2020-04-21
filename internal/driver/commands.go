@@ -272,7 +272,7 @@ func usage(commandLine bool) string {
 	} else {
 		help = "  Commands:\n"
 		commands = append(commands, fmtHelp("o/options", "List options and their current values"))
-		commands = append(commands, fmtHelp("quit/exit/^D", "Exit pprof"))
+		commands = append(commands, fmtHelp("q/quit/exit/^D", "Exit pprof"))
 	}
 
 	help = help + strings.Join(commands, "\n") + "\n\n" +

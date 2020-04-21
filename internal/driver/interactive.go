@@ -110,7 +110,7 @@ func interactive(p *profile.Profile, o *plugin.Options) error {
 			case "o", "options":
 				printCurrentOptions(p, o.UI)
 				continue
-			case "exit", "quit":
+			case "exit", "quit", "q":
 				return nil
 			case "help":
 				commandHelp(strings.Join(tokens[1:], " "), o.UI)
