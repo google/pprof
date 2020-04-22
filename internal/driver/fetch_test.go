@@ -663,7 +663,6 @@ func TestHTTPSWithServerCertFetch(t *testing.T) {
 	address := "https://" + "localhost:" + portStr + "/debug/pprof/goroutine"
 	s := &source{
 		Sources:   []string{address},
-		Seconds:   10,
 		Timeout:   10,
 		Symbolize: "remote",
 	}
