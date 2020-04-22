@@ -40,62 +40,53 @@ func TestShell(t *testing.T) {
 	savedVariables := pprofVariables
 	defer func() { pprofVariables = savedVariables }()
 
-	// Random interleave of independent scripts
-	pprofVariables = testVariables(savedVariables)
+	shortcuts1, scScript1 := makeShortcuts(interleave(script, 2), 1)
+	shortcuts2, scScript2 := makeShortcuts(interleave(script, 1), 2)
 
-	// pass in HTTPTransport when setting defaults, because otherwise default
-	// transport will try to add flags to the default flag set.
+	var testcases = []struct {
+		name              string
+		input             []string
+		shortcuts         shortcuts
+		allowRx           string
+		numAllowRxMatches int
+		propagateError    bool
+	}{
+		{"Random interleave of independent scripts 1", interleave(script, 0), pprofShortcuts, "", 0, false},
+		{"Random interleave of independent scripts 2", interleave(script, 1), pprofShortcuts, "", 0, false},
+		{"Random interleave of independent scripts with shortcuts 1", scScript1, shortcuts1, "", 0, false},
+		{"Random interleave of independent scripts with shortcuts 2", scScript2, shortcuts2, "", 0, false},
+		{"Group with invalid value", []string{"cumulative=this"}, pprofShortcuts, `unrecognized value for cumulative: "this". Use one of cum, flat`, 1, false},
+		{"No special value provided for the option", []string{"sample_index"}, pprofShortcuts, `please specify a value, e.g. sample_index=<val>`, 1, false},
+		{"No string value provided for the option", []string{"focus="}, pprofShortcuts, `please specify a value, e.g. focus=<val>`, 1, false},
+		{"No float value provided for the option", []string{"divide_by"}, pprofShortcuts, `please specify a value, e.g. divide_by=<val>`, 1, false},
+		{"Helpful input format reminder", []string{"sample_index 0"}, pprofShortcuts, `did you mean: sample_index=0`, 1, false},
+		{"Verify propagation of IO errors", []string{"**error**"}, pprofShortcuts, "", 0, true},
+	}
+
 	o := setDefaults(&plugin.Options{HTTPTransport: transport.New(nil)})
-	o.UI = newUI(t, interleave(script, 0))
-	if err := interactive(p, o); err != nil {
-		t.Error("first attempt:", err)
-	}
-	// Random interleave of independent scripts
-	pprofVariables = testVariables(savedVariables)
-	o.UI = newUI(t, interleave(script, 1))
-	if err := interactive(p, o); err != nil {
-		t.Error("second attempt:", err)
-	}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			pprofVariables = testVariables(savedVariables)
+			pprofShortcuts = tc.shortcuts
+			ui := &proftest.TestUI{
+				T:       t,
+				Input:   tc.input,
+				AllowRx: tc.allowRx,
+			}
+			o.UI = ui
 
-	// Random interleave of independent scripts with shortcuts
-	pprofVariables = testVariables(savedVariables)
-	var scScript []string
-	pprofShortcuts, scScript = makeShortcuts(interleave(script, 2), 1)
-	o.UI = newUI(t, scScript)
-	if err := interactive(p, o); err != nil {
-		t.Error("first shortcut attempt:", err)
-	}
+			err := interactive(p, o)
+			if (tc.propagateError && err == nil) || (!tc.propagateError && err != nil) {
+				t.Errorf("%s: %v", tc.name, err)
+			}
 
-	// Random interleave of independent scripts with shortcuts
-	pprofVariables = testVariables(savedVariables)
-	pprofShortcuts, scScript = makeShortcuts(interleave(script, 1), 2)
-	o.UI = newUI(t, scScript)
-	if err := interactive(p, o); err != nil {
-		t.Error("second shortcut attempt:", err)
+			// Confirm error message written out once.
+			if tc.numAllowRxMatches != ui.NumAllowRxMatches {
+				t.Errorf("want error message to be printed %d time(s), got %d",
+					tc.numAllowRxMatches, ui.NumAllowRxMatches)
+			}
+		})
 	}
-
-	// Group with invalid value
-	pprofVariables = testVariables(savedVariables)
-	ui := &proftest.TestUI{
-		T:       t,
-		Input:   []string{"cumulative=this"},
-		AllowRx: `unrecognized value for cumulative: "this". Use one of cum, flat`,
-	}
-	o.UI = ui
-	if err := interactive(p, o); err != nil {
-		t.Error("invalid group value:", err)
-	}
-	// Confirm error message written out once.
-	if ui.NumAllowRxMatches != 1 {
-		t.Errorf("want error message to be printed 1 time, got %v", ui.NumAllowRxMatches)
-	}
-	// Verify propagation of IO errors
-	pprofVariables = testVariables(savedVariables)
-	o.UI = newUI(t, []string{"**error**"})
-	if err := interactive(p, o); err == nil {
-		t.Error("expected IO error, got nil")
-	}
-
 }
 
 var testCommands = commands{
@@ -132,7 +123,7 @@ var script = []string{
 	"f=-1;f=-2.5;check f=-2.5;f=0.0001;check f=0.0001",
 	"check ff=0;ff=-1.01;check ff=-1.01;ff=100;check ff=100",
 	"s=one;s=two;check s=two",
-	"ss=tree;check ss=tree;ss=;check ss;ss=forest;check ss=forest",
+	"ss=tree;check ss=tree;ss=forest;check ss=forest",
 	"ta=true;check ta=true;check tb=false;check tc=false;tb=1;check tb=true;check ta=false;check tc=false;tc=yes;check tb=false;check ta=false;check tc=true",
 }
 
@@ -160,13 +151,6 @@ func makeShortcuts(input []string, seed int) (shortcuts, []string) {
 	}
 	output = append(output, chunk...)
 	return s, output
-}
-
-func newUI(t *testing.T, input []string) plugin.UI {
-	return &proftest.TestUI{
-		T:     t,
-		Input: input,
-	}
 }
 
 func checkValue(p *profile.Profile, cmd []string, vars variables, o *plugin.Options) error {
