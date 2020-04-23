@@ -189,7 +189,34 @@ paths with the highest cum weight.
 * **-svg:** Generates a report in SVG format.
 * **-web:** Generates a report in SVG format on a temp file, and starts a web
   browser to view it.
-* **-png, -jpg, -gif, -pdf:** Generates a report in these formats,
+* **-png, -jpg, -gif, -pdf:** Generates a report in these formats.
+
+### Interpreting the Callgraph
+
+*   **Total Value**: amount of resource used by location and all location it
+    calls.
+
+    *   Redder nodes have larger total values.
+    *   Greyer nodes have smaller total values.
+
+*   **Self Value**: amount of resource used by lines of code within the
+    location.
+
+    *   Nodes with larger text have larger self values.
+    *   Nodes with smaller text have smaller self values.
+
+![callgraph1](images/callgraph1.svg)
+
+*   **Dashed Edges**: some locations between two connected locations were
+    pruned.
+
+*   **Solid Edges**: one location directly calls the other.
+
+*   **Thicker & Redder Edges**: more resources were along that path.
+
+*   **Thinner & Greyer Edges**: less resources were along that path.
+
+![callgraph2](images/callgraph2.svg)
 
 ## Annotated code
 
