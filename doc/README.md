@@ -196,16 +196,15 @@ paths with the highest cum weight.
 
 ### Interpreting the Callgraph
 
-*  **_cum_ value**, the value of a location plus all of its descendants, is indicated by the nodes' color.
+* **_flat_ value**: the value of a location itself, is indicated by the box size.
 
-    *   Redder nodes have larger _cum_ values.
+    *   Nodes with larger box have larger _flat_ values.
+    *   Nodes with smaller box have smaller _flat_ values.
+
+*  **_cum_ value**: the value of a location plus all of its descendants, is indicated by the nodes' color.
+
+    *   Redder nodes have greater _cum_ values.
     *   Greyer nodes have smaller _cum_ values.
-
-
-* **_flat_ value**, the value of a location itself, is indicated by the font size.
-
-    *   Nodes with larger text have larger _flat_ values.
-    *   Nodes with smaller text have smaller _flat_ values.
 
 *   **Dashed Edges**: some locations between the two connected locations were
     removed.
@@ -216,22 +215,22 @@ paths with the highest cum weight.
 
 *   **Thinner & Greyer Edges**: less resources (i.e. smaller value) were used along that path.
 
+Let's consider the following example graph:
+
 ![callgraph](images/callgraph.svg)
 
-In the graph: 
-* Nodes:
-  * Node `NewWriter` (grey and small font) has a small _cum_ value and a small _flat_ value.
-  * Node `deflate` (red and large font) has a large _cum_ value and a large _flat_ value.
-  * Node `Flush` (red and small font) has a large _cum_ value and a small _flat_ value.
+* In terms of nodes, we notice that:
+  * `NewWriter` has a small _flat_ value and a small _cum_ value because the node is small and grey,
+  * `deflate` has a large _flat_ value and a large _cum_ value because the node is large and red,
+  * `Flush` has a small _flat_ value and a large _cum_ value because the node is small and red.
 
-* Edges:
-  * Red and dashed edge between node `(*Writer) Write` and node `(*compressor) write`: 
-    * Some nodes were removed between those two nodes.
-    * More resources were used in call stacks between those two nodes.
-
-  * Grey and solid edge between node `NewWriter` and node `newobject`: 
-    * No nodes between those two nodes (i.e. it was a direct call).
-    * Fewer resrouces were used in call stacks between those two nodes.
+* In terms of edges, we take a look at
+  * the edge between `(*Writer) Write` and `(*compressor) write`: 
+    * since it is a dashed edge, some nodes were removed between those two;
+    * since it is red, more resources were used in call stacks between those two nodes; 
+  * and the edge between `NewWriter` and `newobject`: 
+    * since it is solid, there are no nodes between those two (i.e. it was a direct call);
+    * since it is grey, fewer resrouces were used in call stacks between those two nodes.
   
 ## Annotated code
 
