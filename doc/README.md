@@ -66,10 +66,13 @@ in a browser to see the interface.
 
 The objective of pprof is to generate a report for a profile. The report is
 generated from a location hierarchy, which is reconstructed from the profile
-samples. Each location contains two values: *flat* is the value of the location
-itself, while *cum* is the value of the location plus all its
-descendants. Samples that include a location multiple times (eg for recursive
-functions) are counted only once per location.
+samples. Each location contains two values: 
+
+* *flat*: the value of the location itself.
+* *cum*: the value of the location plus all its descendants. 
+
+Samples that include a location multiple times (eg for recursive functions) 
+are counted only once per location.
 
 ## Options
 
@@ -191,32 +194,33 @@ paths with the highest cum weight.
   browser to view it.
 * **-png, -jpg, -gif, -pdf:** Generates a report in these formats.
 
-### Interpreting the Callgraph
+### Interpreting the Nodes
 
-*   **Total Value**: amount of resource used by location and all location it
-    calls.
+![callgraph1](images/callgraph_nodes.svg)
+
+*  _cum_ value is indiated by the nodes' color.
 
     *   Redder nodes have larger total values.
     *   Greyer nodes have smaller total values.
 
-*   **Self Value**: amount of resource used by lines of code within the
-    location.
+* _flat_ value is indicated by the font size.
 
     *   Nodes with larger text have larger self values.
     *   Nodes with smaller text have smaller self values.
 
-![callgraph1](images/callgraph1.svg)
+
+### Interpreting the Edges 
+
+![callgraph2](images/callgraph_edges.svg)
 
 *   **Dashed Edges**: some locations between two connected locations were
-    pruned.
+    removed.
 
 *   **Solid Edges**: one location directly calls the other.
 
 *   **Thicker & Redder Edges**: more resources were along that path.
 
 *   **Thinner & Greyer Edges**: less resources were along that path.
-
-![callgraph2](images/callgraph2.svg)
 
 ## Annotated code
 
