@@ -194,24 +194,18 @@ paths with the highest cum weight.
   browser to view it.
 * **-png, -jpg, -gif, -pdf:** Generates a report in these formats.
 
-### Interpreting the Nodes
+### Interpreting the Callview Graph 
 
-![callgraph1](images/callgraph_nodes.svg)
-
-*  _cum_ value, the value of a location plus all of its descendants, is indicated by the nodes' color.
+*  **_cum_ value**, the value of a location plus all of its descendants, is indicated by the nodes' color.
 
     *   Redder nodes have larger total values.
     *   Greyer nodes have smaller total values.
 
-* _flat_ value, the value of a location itself, is indicated by the font size.
+
+* **_flat_ value**, the value of a location itself, is indicated by the font size.
 
     *   Nodes with larger text have larger self values.
     *   Nodes with smaller text have smaller self values.
-
-
-### Interpreting the Edges 
-
-![callgraph2](images/callgraph_edges.svg)
 
 *   **Dashed Edges**: some locations between the two connected locations were
     removed.
@@ -221,6 +215,24 @@ paths with the highest cum weight.
 *   **Thicker & Redder Edges**: more resources (i.e. larger value) were used along that path.
 
 *   **Thinner & Greyer Edges**: less resources (i.e. smaller value) were used along that path.
+
+![callgraph](images/callgraph.svg)
+
+In the graph: 
+* Nodes:
+  * `NewWriter` (grey and small font) has a small _cum_ value and a small _flat_ value.
+  * `deflate` (red and large font) has a large _cum_ value and a large _flat_ value.
+  * `Flush` (red and small font) has a large _cum_ value and a small _flat_ value.
+
+* Edges:
+  * Red dashed edge between node `(*Writer) Write` and node `(*compressor) write`: 
+    * Some nodes were removed between those two nodes.
+    * More resources were used in call stacks between those two nodes.
+
+  * Grey solid edge between node `NewWriter` and node `newobject`: 
+    * No nodes between those two nodes.
+    * Fewer resrouces were used in call stacks between those two nodes.
+  
 
 ## Annotated code
 
