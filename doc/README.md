@@ -218,9 +218,9 @@ paths with the highest cum weight.
 
 *   **Solid Edges**: one location directly calls the other.
 
-*   **Thicker & Redder Edges**: more resources were along that path.
+*   **Thicker & Redder Edges**: more resources (i.e. larger value) were used along that path.
 
-*   **Thinner & Greyer Edges**: less resources were along that path.
+*   **Thinner & Greyer Edges**: less resources (i.e smaller value) were used along that path.
 
 ## Annotated code
 
