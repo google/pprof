@@ -194,7 +194,7 @@ paths with the highest cum weight.
   browser to view it.
 * **-png, -jpg, -gif, -pdf:** Generates a report in these formats.
 
-### Interpreting the Callview Graph 
+### Interpreting the Callgraph
 
 *  **_cum_ value**, the value of a location plus all of its descendants, is indicated by the nodes' color.
 
