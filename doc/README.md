@@ -220,20 +220,19 @@ paths with the highest cum weight.
 
 In the graph: 
 * Nodes:
-  * `NewWriter` (grey and small font) has a small _cum_ value and a small _flat_ value.
-  * `deflate` (red and large font) has a large _cum_ value and a large _flat_ value.
-  * `Flush` (red and small font) has a large _cum_ value and a small _flat_ value.
+  * Node `NewWriter` (grey and small font) has a small _cum_ value and a small _flat_ value.
+  * Node `deflate` (red and large font) has a large _cum_ value and a large _flat_ value.
+  * Node `Flush` (red and small font) has a large _cum_ value and a small _flat_ value.
 
 * Edges:
-  * Red dashed edge between node `(*Writer) Write` and node `(*compressor) write`: 
+  * Red and dashed edge between node `(*Writer) Write` and node `(*compressor) write`: 
     * Some nodes were removed between those two nodes.
     * More resources were used in call stacks between those two nodes.
 
-  * Grey solid edge between node `NewWriter` and node `newobject`: 
-    * No nodes between those two nodes.
+  * Grey and solid edge between node `NewWriter` and node `newobject`: 
+    * No nodes between those two nodes (i.e. it was a direct call).
     * Fewer resrouces were used in call stacks between those two nodes.
   
-
 ## Annotated code
 
 pprof can also generate reports of annotated source with samples associated to
