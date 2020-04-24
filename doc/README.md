@@ -198,12 +198,12 @@ paths with the highest cum weight.
 
 ![callgraph1](images/callgraph_nodes.svg)
 
-*  _cum_ value is indiated by the nodes' color.
+*  _cum_ value, the value of a location plus all of its descendants, is indicated by the nodes' color.
 
     *   Redder nodes have larger total values.
     *   Greyer nodes have smaller total values.
 
-* _flat_ value is indicated by the font size.
+* _flat_ value, the value of a location itself, is indicated by the font size.
 
     *   Nodes with larger text have larger self values.
     *   Nodes with smaller text have smaller self values.
@@ -213,7 +213,7 @@ paths with the highest cum weight.
 
 ![callgraph2](images/callgraph_edges.svg)
 
-*   **Dashed Edges**: some locations between two connected locations were
+*   **Dashed Edges**: some locations between the two connected locations were
     removed.
 
 *   **Solid Edges**: one location directly calls the other.
