@@ -220,7 +220,7 @@ paths with the highest cum weight.
 
 *   **Thicker & Redder Edges**: more resources (i.e. larger value) were used along that path.
 
-*   **Thinner & Greyer Edges**: less resources (i.e smaller value) were used along that path.
+*   **Thinner & Greyer Edges**: less resources (i.e. smaller value) were used along that path.
 
 ## Annotated code
 
