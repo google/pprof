@@ -198,14 +198,14 @@ paths with the highest cum weight.
 
 *  **_cum_ value**, the value of a location plus all of its descendants, is indicated by the nodes' color.
 
-    *   Redder nodes have larger total values.
-    *   Greyer nodes have smaller total values.
+    *   Redder nodes have larger _cum_ values.
+    *   Greyer nodes have smaller _cum_ values.
 
 
 * **_flat_ value**, the value of a location itself, is indicated by the font size.
 
-    *   Nodes with larger text have larger self values.
-    *   Nodes with smaller text have smaller self values.
+    *   Nodes with larger text have larger _flat_ values.
+    *   Nodes with smaller text have smaller _flat_ values.
 
 *   **Dashed Edges**: some locations between the two connected locations were
     removed.
