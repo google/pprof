@@ -211,6 +211,8 @@ the graph, controlled by the *nodecount* option.
 * **Thinner & Greyer Edges**: less resources (i.e. smaller value) were used
   along that path.
 
+* **"(inline)" Edge Marker**: the call has been inlined into the caller.
+
 Let's consider the following example graph:
 
 ![callgraph](images/callgraph.svg)
@@ -221,10 +223,10 @@ Let's consider the following example graph:
   * `deflate` has a large flat value and a large cum value because the node
     is large and red
   * `Flush` has a small flat value and a large cum value because the node is
-    small and red
+    small and red.
 
 * In terms of edges, we take a look at:
-  * the edge between `(*Writer) Write` and `(*compressor) write`: 
+  * the edge between `(*Writer).Write` and `(*compressor).write`: 
     * since it is a dashed edge, some nodes were removed between those two
     * since it is red, more resources were used in call stacks between those two
       nodes 
@@ -232,7 +234,7 @@ Let's consider the following example graph:
     * since it is solid, there are no nodes between those two (i.e. it was a
       direct call)
     * since it is grey, fewer resrouces were used in call stacks between those
-      two nodes
+      two nodes.
   
 ## Annotated code
 
