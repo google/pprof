@@ -201,7 +201,7 @@ the graph, controlled by the *nodecount* option.
     *   Greyer nodes have smaller cum values.
 
 * **Dashed Edges**: some locations between the two connected locations were
-  removed.
+  removed. Note that there is **only one** type of dashed edge.
 
 * **Solid Edges**: one location directly calls the other.
 
