@@ -190,12 +190,12 @@ the graph, controlled by the *nodecount* option.
 
 ### Interpreting the Callgraph
 
-* **Flat Value**: the value of a location itself, is indicated by the box
+* **Flat Value**: the value of a location itself. This is indicated by the font 
   size.
-    *   Nodes with larger box have larger flat values.
-    *   Nodes with smaller box have smaller flat values.
+    *   Nodes with larger font have larger flat values.
+    *   Nodes with smaller font have smaller flat values.
 
-* **Cum Value**: the value of a location plus all of its descendants, is
+* **Cum Value**: the value of a location plus all of its descendants. This is
   indicated by the nodes' color.
     *   Redder nodes have greater cum values.
     *   Greyer nodes have smaller cum values.
@@ -219,9 +219,9 @@ Let's consider the following example graph:
 
 * In terms of nodes, we notice that:
   * `NewWriter` has a small flat value and a small cum value because the
-    node is small and grey
-  * `deflate` has a large flat value and a large cum value because the node
-    is large and red
+    the font is small and the node is grey
+  * `deflate` has a large flat value and a large cum value because the font 
+    is large and the node is red
   * `Flush` has a small flat value and a large cum value because the node is
     small and red.
 
