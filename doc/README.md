@@ -215,26 +215,25 @@ the graph, controlled by the *nodecount* option.
 
 Let's consider the following example graph:
 
-![callgraph](images/callgraph.svg)
+![callgraph](images/callgraph.png)
 
 * In terms of nodes, we notice that:
-  * `NewWriter` has a small flat value and a small cum value because the
+  * `(*Rand).Read` has a small flat value and a small cum value because the
     the font is small and the node is grey
-  * `deflate` has a large flat value and a large cum value because the font 
+  * `(*compressor).deflate` has a large flat value and a large cum value because the font 
     is large and the node is red
-  * `Flush` has a small flat value and a large cum value because the node is
-    small and red.
+  * `(*Writer).Flush` has a small flat value and a large cum value because the font is
+    small and the node is red.
 
 * In terms of edges, we take a look at:
   * the edge between `(*Writer).Write` and `(*compressor).write`: 
     * since it is a dashed edge, some nodes were removed between those two
-    * since it is red, more resources were used in call stacks between those two
-      nodes 
-  * and the edge between `NewWriter` and `newobject`:
-    * since it is solid, there are no nodes between those two (i.e. it was a
-      direct call)
-    * since it is grey, fewer resrouces were used in call stacks between those
-      two nodes.
+    * since it is thick and red, more resources were used in call stacks between
+    those two nodes 
+  * and the edge between `(*Rand).Read` and `read`:
+    * since it is a dashed edge, some nodes were removed between those two
+    * since it is thin and grey, fewer resrouces were used in call stacks 
+    between those two nodes.
   
 ## Annotated code
 
