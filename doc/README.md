@@ -192,8 +192,8 @@ the graph, controlled by the *nodecount* option.
 
 * **Flat Value**: the value of a location itself. This is indicated by the font 
   size.
-    *   Nodes with larger font have larger flat values.
-    *   Nodes with smaller font have smaller flat values.
+    *   Nodes with larger font sizes have larger flat values.
+    *   Nodes with smaller font sizes have smaller flat values.
 
 * **Cum Value**: the value of a location plus all of its descendants. This is
   indicated by the node's color.
@@ -208,7 +208,7 @@ the graph, controlled by the *nodecount* option.
 * **Thicker & Redder Edges**: more resources (i.e. larger value) were used
   along that path.
 
-* **Thinner & Greyer Edges**: less resources (i.e. smaller value) were used
+* **Thinner & Greyer Edges**: fewer resources (i.e. smaller value) were used
   along that path.
 
 * **"(inline)" Edge Marker**: the call has been inlined into the caller.
@@ -230,10 +230,15 @@ Let's consider the following example graph:
     * Since it is a dashed edge, some nodes were removed between those two.
     * Since it is thick and red, more resources were used in call stacks between
     those two nodes.
-  * and the edge between `(*Rand).Read` and `read`:
+  * the edge between `(*Rand).Read` and `read`:
     * Since it is a dashed edge, some nodes were removed between those two.
     * Since it is thin and grey, fewer resources were used in call stacks 
     between those two nodes.
+  * the edge between `read` and `(*rngSource).Int63`:
+    * Since it is a solid edge, there are no nodes between those two (i.e. it
+      was a direct call).
+    * Since it is thin and grey, fewer resrouces were used in call stacks
+      between those two nodes.
   
 ## Annotated code
 
