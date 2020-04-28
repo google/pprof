@@ -196,12 +196,12 @@ the graph, controlled by the *nodecount* option.
     *   Nodes with smaller font have smaller flat values.
 
 * **Cum Value**: the value of a location plus all of its descendants. This is
-  indicated by the nodes' color.
+  indicated by the node's color.
     *   Redder nodes have greater cum values.
     *   Greyer nodes have smaller cum values.
 
 * **Dashed Edges**: some locations between the two connected locations were
-  removed. Note that there is **only one** type of dashed edge.
+  removed.
 
 * **Solid Edges**: one location directly calls the other.
 
@@ -217,22 +217,22 @@ Let's consider the following example graph:
 
 ![callgraph](images/callgraph.png)
 
-* In terms of nodes, we notice that:
+* For nodes:
   * `(*Rand).Read` has a small flat value and a small cum value because the
-    the font is small and the node is grey
+    the font is small and the node is grey.
   * `(*compressor).deflate` has a large flat value and a large cum value because the font 
-    is large and the node is red
+    is large and the node is red.
   * `(*Writer).Flush` has a small flat value and a large cum value because the font is
     small and the node is red.
 
-* In terms of edges, we take a look at:
+* For edges:
   * the edge between `(*Writer).Write` and `(*compressor).write`: 
-    * since it is a dashed edge, some nodes were removed between those two
-    * since it is thick and red, more resources were used in call stacks between
-    those two nodes 
+    * Since it is a dashed edge, some nodes were removed between those two.
+    * Since it is thick and red, more resources were used in call stacks between
+    those two nodes.
   * and the edge between `(*Rand).Read` and `read`:
-    * since it is a dashed edge, some nodes were removed between those two
-    * since it is thin and grey, fewer resrouces were used in call stacks 
+    * Since it is a dashed edge, some nodes were removed between those two.
+    * Since it is thin and grey, fewer resources were used in call stacks 
     between those two nodes.
   
 ## Annotated code
