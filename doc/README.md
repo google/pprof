@@ -200,13 +200,13 @@ the graph, controlled by the *nodecount* option.
   * smaller font size means smaller flat values. 
 
 * **Edge Weight**:
-    * thicker edges indicate more resources were used along that path.
-    * thinner edges indicate fewer resources were used along that path.
+  * thicker edges indicate more resources were used along that path.
+  * thinner edges indicate fewer resources were used along that path.
 
 * **Edge Color**:
-    * large positive values are red.
-    * large negative values are green.
-    * values close to zero are grey.
+  * large positive values are red.
+  * large negative values are green.
+  * values close to zero are grey.
 
 * **Dashed Edges**: some locations between the two connected locations were
   removed.
