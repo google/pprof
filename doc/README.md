@@ -213,6 +213,10 @@ the graph, controlled by the *nodecount* option.
 
 * **"(inline)" Edge Marker**: the call has been inlined into the caller.
 
+* **Green Edges/Nodes**: when [comparing two profiles](#comparing-profiles), the
+  difference of two values is indicated by a color scale from green to grey to
+  red, where green is negative, grey is zero and red is positive. 
+
 Let's consider the following example graph:
 
 ![callgraph](images/callgraph.png)
