@@ -1,6 +1,6 @@
 digraph "unnamed" {
 node [style=filled fillcolor="#f8f8f8"]
-subgraph cluster_L { "Build ID: buildid" [shape=box fontsize=16 label="Build ID: buildid\lcomment\lType: inuse_space\lShowing nodes accounting for 93.75MB, 95.05% of 98.63MB total\lDropped 1 node (cum <= 4.93MB)\l"] }
+subgraph cluster_L { "Build ID: buildid" [shape=box fontsize=16 label="Build ID: buildid\lcomment\lType: inuse_space\lShowing nodes accounting for 93.75MB, 95.05% of 98.63MB total\lDropped 1 node (cum <= 4.93MB)\l\lSee https://git.io/JfYMW for how to read the graph\l"] }
 N1 [label="line3002\n31.25MB (31.68%)\nof 94.73MB (96.04%)" id="node1" fontsize=20 shape=box tooltip="line3002 (94.73MB)" color="#b20200" fillcolor="#edd5d5"]
 NN1_0 [label = "16B..64B" id="NN1_0" fontsize=8 shape=box3d tooltip="93.75MB"]
 N1 -> NN1_0 [label=" 93.75MB" weight=100 tooltip="93.75MB" labeltooltip="93.75MB"]
