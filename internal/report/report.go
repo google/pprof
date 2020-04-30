@@ -765,7 +765,7 @@ type TextItem struct {
 func TextItems(rpt *Report) ([]TextItem, []string) {
 	g, origCount, droppedNodes, _ := rpt.newTrimmedGraph()
 	rpt.selectOutputUnit(g)
-	labels := reportLabels(rpt, g, origCount, droppedNodes, 0, false, false)
+	labels := reportLabels(rpt, g, origCount, droppedNodes, 0, false)
 
 	var items []TextItem
 	var flatSum int64
@@ -1048,7 +1048,7 @@ func printTree(w io.Writer, rpt *Report) error {
 	g, origCount, droppedNodes, _ := rpt.newTrimmedGraph()
 	rpt.selectOutputUnit(g)
 
-	fmt.Fprintln(w, strings.Join(reportLabels(rpt, g, origCount, droppedNodes, 0, false, false), "\n"))
+	fmt.Fprintln(w, strings.Join(reportLabels(rpt, g, origCount, droppedNodes, 0, false), "\n"))
 
 	fmt.Fprintln(w, separator)
 	fmt.Fprintln(w, legend)
@@ -1107,7 +1107,7 @@ func printTree(w io.Writer, rpt *Report) error {
 func GetDOT(rpt *Report) (*graph.Graph, *graph.DotConfig) {
 	g, origCount, droppedNodes, droppedEdges := rpt.newTrimmedGraph()
 	rpt.selectOutputUnit(g)
-	labels := reportLabels(rpt, g, origCount, droppedNodes, droppedEdges, true, true)
+	labels := reportLabels(rpt, g, origCount, droppedNodes, droppedEdges, true)
 
 	c := &graph.DotConfig{
 		Title:       rpt.options.Title,
@@ -1165,7 +1165,7 @@ func ProfileLabels(rpt *Report) []string {
 
 // reportLabels returns printable labels for a report. Includes
 // profileLabels.
-func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedEdges int, fullHeaders bool, helperURL bool) []string {
+func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedEdges int, fullHeaders bool) []string {
 	nodeFraction := rpt.options.NodeFraction
 	edgeFraction := rpt.options.EdgeFraction
 	nodeCount := len(g.Nodes)
@@ -1206,7 +1206,7 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 
 	// Help new users understand the graph.
 	// A new line is intentionally added here to better show this message.
-	if helperURL {
+	if fullHeaders {
 		label = append(label, "\\lSee https://git.io/JfYMW for how to read the graph")
 	}
 
