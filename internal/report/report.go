@@ -1203,6 +1203,11 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 				nodeCount, origCount))
 		}
 	}
+
+	// Help new users understand the graph.
+	// A new line is intentionally added here to better show this message.
+	label = append(label, "\\lSee https://git.io/JfYMW for how to read the graph")
+
 	return label
 }
 
