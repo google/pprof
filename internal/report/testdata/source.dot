@@ -1,6 +1,6 @@
 digraph "unnamed" {
 node [style=filled fillcolor="#f8f8f8"]
-subgraph cluster_L { "Duration: 10s, Total samples = 11111 " [shape=box fontsize=16 label="Duration: 10s, Total samples = 11111 \lShowing nodes accounting for 11111, 100% of 11111 total\l"] }
+subgraph cluster_L { "Duration: 10s, Total samples = 11111 " [shape=box fontsize=16 label="Duration: 10s, Total samples = 11111 \lShowing nodes accounting for 11111, 100% of 11111 total\l\lSee https://git.io/JfYMW for how to read the graph\l"] }
 N1 [label="tee\nsource2:8\n10000 (90.00%)" id="node1" fontsize=24 shape=box tooltip="tee testdata/source2:8 (10000)" color="#b20500" fillcolor="#edd6d5"]
 N2 [label="main\nsource1:2\n1 (0.009%)\nof 11111 (100%)" id="node2" fontsize=9 shape=box tooltip="main testdata/source1:2 (11111)" color="#b20000" fillcolor="#edd5d5"]
 N3 [label="tee\nsource2:2\n1000 (9.00%)\nof 11000 (99.00%)" id="node3" fontsize=14 shape=box tooltip="tee testdata/source2:2 (11000)" color="#b20000" fillcolor="#edd5d5"]
