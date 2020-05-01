@@ -193,11 +193,11 @@ the graph, controlled by the *nodecount* option.
 * **Node Color**:
   * large positive cum values are red.
   * large negative cum values are green.
-  * values close to zero are grey.
+  * cum values close to zero are grey.
 
 * **Node Font Size**:
-  * larger font size means larger flat values.
-  * smaller font size means smaller flat values. 
+  * larger font size means larger absolute flat values.
+  * smaller font size means smaller absolute flat values. 
 
 * **Edge Weight**:
   * thicker edges indicate more resources were used along that path.
