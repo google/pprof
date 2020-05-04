@@ -190,26 +190,28 @@ the graph, controlled by the *nodecount* option.
 
 ### Interpreting the Callgraph
 
-* **Flat Value**: the value of a location itself. This is indicated by the font 
-  size.
-    *   Nodes with larger font sizes have larger flat values.
-    *   Nodes with smaller font sizes have smaller flat values.
+* **Node Color**:
+  * large positive cum values are red.
+  * large negative cum values are green.
+  * cum values close to zero are grey.
 
-* **Cum Value**: the value of a location plus all of its descendants. This is
-  indicated by the node's color.
-    *   Redder nodes have greater cum values.
-    *   Greyer nodes have smaller cum values.
+* **Node Font Size**:
+  * larger font size means larger absolute flat values.
+  * smaller font size means smaller absolute flat values. 
+
+* **Edge Weight**:
+  * thicker edges indicate more resources were used along that path.
+  * thinner edges indicate fewer resources were used along that path.
+
+* **Edge Color**:
+  * large positive values are red.
+  * large negative values are green.
+  * values close to zero are grey.
 
 * **Dashed Edges**: some locations between the two connected locations were
   removed.
 
 * **Solid Edges**: one location directly calls the other.
-
-* **Thicker & Redder Edges**: more resources (i.e. larger value) were used
-  along that path.
-
-* **Thinner & Greyer Edges**: fewer resources (i.e. smaller value) were used
-  along that path.
 
 * **"(inline)" Edge Marker**: the call has been inlined into the caller.
 
