@@ -18,6 +18,7 @@ package binutils
 import (
 	"debug/elf"
 	"debug/macho"
+	"debug/pe"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -241,7 +242,34 @@ func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFi
 		return f, nil
 	}
 
-	return nil, fmt.Errorf("unrecognized binary format: %s", name)
+	if string(header[:2]) == "MZ" {
+		f, err := b.openPE(name, start, limit, offset)
+		if err != nil {
+			return nil, fmt.Errorf("error reading PE file %s: %v", name, err)
+		}
+		return f, nil
+	}
+
+	return nil, fmt.Errorf(": %s", name)
+}
+
+func (b *binrep) openPE(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
+	of, err := pe.Open(name)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing %s: %v", name, err)
+	}
+	defer of.Close()
+	var imageBase uint64
+	switch oh := of.OptionalHeader.(type) {
+	case *pe.OptionalHeader32:
+		imageBase = uint64(oh.ImageBase)
+	case *pe.OptionalHeader64:
+		imageBase = oh.ImageBase
+	default:
+		return nil, fmt.Errorf("PE file format not recognized")
+	}
+	base := start - imageBase
+	return &fileAddr2Line{file: file{b: b, name: name, base: base}}, nil
 }
 
 func (b *binrep) openMachOCommon(name string, of *macho.File, start, limit, offset uint64) (plugin.ObjFile, error) {
