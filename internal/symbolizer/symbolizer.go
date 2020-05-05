@@ -223,7 +223,9 @@ func Demangle(prof *profile.Profile, force bool, demanglerMode string) {
 		if fn.Name != "" && fn.SystemName != fn.Name {
 			continue // Already demangled.
 		}
-		copy(o, options)
+		if(strings.HasPrefix(fn.SystemName, "__")) {
+			fn.SystemName = fn.SystemName[1:]
+		}
 		if demangled := demangle.Filter(fn.SystemName, o...); demangled != fn.SystemName {
 			fn.Name = demangled
 			continue
