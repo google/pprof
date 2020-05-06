@@ -54,7 +54,7 @@ func PProf(eo *plugin.Options) error {
 	}
 
 	if src.HTTPHostport != "" {
-		return serveWebInterface(src.HTTPHostport, p, o)
+		return serveWebInterface(src.HTTPHostport, p, o, src.HTTPDisableBrowser)
 	}
 	return interactive(p, o)
 }
@@ -281,6 +281,8 @@ func reportOptions(p *profile.Profile, numLabelUnits map[string]string, vars var
 
 		SourcePath: vars["source_path"].stringValue(),
 		TrimPath:   vars["trim_path"].stringValue(),
+
+		IntelSyntax: vars["intel_syntax"].boolValue(),
 	}
 
 	if len(p.Mapping) > 0 && p.Mapping[0].File != "" {

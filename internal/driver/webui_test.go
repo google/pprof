@@ -58,7 +58,7 @@ func TestWebInterface(t *testing.T) {
 		Obj:        fakeObjTool{},
 		UI:         &proftest.TestUI{},
 		HTTPServer: creator,
-	})
+	}, false)
 	<-serverCreated
 	defer server.Close()
 
@@ -172,7 +172,7 @@ func (obj fakeObjTool) Open(file string, start, limit, offset uint64) (plugin.Ob
 	return fakeObj{}, nil
 }
 
-func (obj fakeObjTool) Disasm(file string, start, end uint64) ([]plugin.Inst, error) {
+func (obj fakeObjTool) Disasm(file string, start, end uint64, intelSyntax bool) ([]plugin.Inst, error) {
 	return []plugin.Inst{
 		{Addr: addrBase + 0, Text: "f1:asm", Function: "F1"},
 		{Addr: addrBase + 10, Text: "f2:asm", Function: "F2"},

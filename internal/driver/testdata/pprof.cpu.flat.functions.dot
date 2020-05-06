@@ -1,6 +1,6 @@
 digraph "testbinary" {
 node [style=filled fillcolor="#f8f8f8"]
-subgraph cluster_L { "File: testbinary" [shape=box fontsize=16 label="File: testbinary\lType: cpu\lDuration: 10s, Total samples = 1.12s (11.20%)\lShowing nodes accounting for 1.12s, 100% of 1.12s total\l" tooltip="testbinary"] }
+subgraph cluster_L { "File: testbinary" [shape=box fontsize=16 label="File: testbinary\lType: cpu\lDuration: 10s, Total samples = 1.12s (11.20%)\lShowing nodes accounting for 1.12s, 100% of 1.12s total\l\lSee https://git.io/JfYMW for how to read the graph\l" tooltip="testbinary"] }
 N1 [label="line1000\n1.10s (98.21%)" id="node1" fontsize=24 shape=box tooltip="line1000 (1.10s)" color="#b20000" fillcolor="#edd5d5"]
 N1_0 [label = "key1:tag1\nkey2:tag1" id="N1_0" fontsize=8 shape=box3d tooltip="1s"]
 N1 -> N1_0 [label=" 1s" weight=100 tooltip="1s" labeltooltip="1s"]

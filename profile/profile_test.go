@@ -16,6 +16,7 @@ package profile
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -26,6 +27,8 @@ import (
 
 	"github.com/google/pprof/internal/proftest"
 )
+
+var update = flag.Bool("update", false, "Update the golden files")
 
 func TestParse(t *testing.T) {
 	const path = "testdata/"
@@ -57,6 +60,12 @@ func TestParse(t *testing.T) {
 
 		js := p.String()
 		goldFilename := path + source + ".string"
+		if *update {
+			err := ioutil.WriteFile(goldFilename, []byte(js), 0644)
+			if err != nil {
+				t.Errorf("failed to update the golden file file %q: %v", goldFilename, err)
+			}
+		}
 		gold, err := ioutil.ReadFile(goldFilename)
 		if err != nil {
 			t.Fatalf("%s: %v", source, err)
@@ -165,6 +174,10 @@ func TestCheckValid(t *testing.T) {
 		{
 			mutateFn: func(p *Profile) { p.Function[0] = nil },
 			wantErr:  "profile has nil function",
+		},
+		{
+			mutateFn: func(p *Profile) { p.Location[0].Line = append(p.Location[0].Line, Line{}) },
+			wantErr:  "has a line with nil function",
 		},
 	} {
 		t.Run(tc.wantErr, func(t *testing.T) {
