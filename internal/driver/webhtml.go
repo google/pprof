@@ -749,7 +749,8 @@ function initConfigManager() {
   function commitSave(e) {
     const name = saveInput.value;
     const url = new URL(document.URL);
-    url.pathname = '/saveconfig';
+    // Set path relative to existing path.
+    url.pathname = new URL('./saveconfig', document.URL).pathname;
     url.searchParams.set('config', name);
     saveError.innerText = '';
     sendURL('POST', url, (ok) => {
@@ -777,7 +778,7 @@ function initConfigManager() {
   function commitDelete(e, elem) {
     if (!currentDeleteTarget) return;
     const config = currentDeleteTarget.dataset.config;
-    const url = new URL('/deleteconfig', document.URL);
+    const url = new URL('./deleteconfig', document.URL);
     url.searchParams.set('config', config);
     delError.innerText = '';
     sendURL('DELETE', url, (ok) => {

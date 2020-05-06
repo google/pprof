@@ -23,18 +23,16 @@ type namedConfig struct {
 
 // settingsFileName returns the name of the file where settings should be saved.
 func settingsFileName() (string, error) {
-	dir := os.Getenv("XDG_CONFIG_HOME")
-	if dir == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		dir = filepath.Join(home, ".config")
+	// Return "pprof/settings.json" under os.UserConfigDir().
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
 	}
+	dir = filepath.Join(dir, "pprof")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, "pprof.json"), nil
+	return filepath.Join(dir, "settings.json"), nil
 }
 
 // readSettings reads settings from fname.
