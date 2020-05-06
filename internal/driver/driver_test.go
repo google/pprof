@@ -102,12 +102,12 @@ func TestParse(t *testing.T) {
 		{"text", "long_name_funcs"},
 	}
 
-	baseVars := pprofVariables
-	defer func() { pprofVariables = baseVars }()
+	baseConfig := currentConfig()
+	defer setCurrentConfig(baseConfig)
 	for _, tc := range testcase {
 		t.Run(tc.flags+":"+tc.source, func(t *testing.T) {
-			// Reset the pprof variables before processing
-			pprofVariables = baseVars.makeCopy()
+			// Reset config before processing
+			setCurrentConfig(baseConfig)
 
 			testUI := &proftest.TestUI{T: t, AllowRx: "Generating report in|Ignoring local file|expression matched no samples|Interpreted .* as range, not regexp"}
 
@@ -141,8 +141,8 @@ func TestParse(t *testing.T) {
 			if err := PProf(o1); err != nil {
 				t.Fatalf("%s %q:  %v", tc.source, tc.flags, err)
 			}
-			// Reset the pprof variables after the proto invocation
-			pprofVariables = baseVars.makeCopy()
+			// Reset config after the proto invocation
+			setCurrentConfig(baseConfig)
 
 			// Read the profile from the encoded protobuf
 			outputTempFile, err := ioutil.TempFile("", "profile_output")
@@ -1492,6 +1492,23 @@ func TestNumericTagFilter(t *testing.T) {
 	}
 }
 
+// TestOptionsHaveHelp tests that a help message is supplied for every
+// selectable option.
+func TestOptionsHaveHelp(t *testing.T) {
+	for _, f := range configFields {
+		// Check all choices if this is a group, else check f.name.
+		names := f.choices
+		if len(names) == 0 {
+			names = []string{f.name}
+		}
+		for _, name := range names {
+			if _, ok := configHelp[name]; !ok {
+				t.Errorf("missing help message for %q", name)
+			}
+		}
+	}
+}
+
 type testSymbolzMergeFetcher struct{}
 
 func (testSymbolzMergeFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string, error) {
@@ -1513,9 +1530,8 @@ func (testSymbolzMergeFetcher) Fetch(s string, d, t time.Duration) (*profile.Pro
 }
 
 func TestSymbolzAfterMerge(t *testing.T) {
-	baseVars := pprofVariables
-	pprofVariables = baseVars.makeCopy()
-	defer func() { pprofVariables = baseVars }()
+	baseConfig := currentConfig()
+	defer setCurrentConfig(baseConfig)
 
 	f := baseFlags()
 	f.args = []string{

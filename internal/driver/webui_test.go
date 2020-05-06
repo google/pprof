@@ -56,7 +56,7 @@ func TestWebInterface(t *testing.T) {
 	// Start server and wait for it to be initialized
 	go serveWebInterface("unused:1234", prof, &plugin.Options{
 		Obj:        fakeObjTool{},
-		UI:         &proftest.TestUI{},
+		UI:         &proftest.TestUI{T: t},
 		HTTPServer: creator,
 	}, false)
 	<-serverCreated
