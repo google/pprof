@@ -190,13 +190,18 @@ func skipUnlessDarwinAmd64(t *testing.T) {
 
 func testDisasm(t *testing.T, intelSyntax bool) {
 	bu := &Binutils{}
-	insts, err := bu.Disasm(filepath.Join("testdata", "exe_linux_64"), 0, math.MaxUint64, intelSyntax)
+	testexe := "exe_linux_64"
+	if runtime.GOOS == "darwin" {
+		testexe = "exe_mac_64"
+	}
+
+	insts, err := bu.Disasm(filepath.Join("testdata", testexe), 0, math.MaxUint64, intelSyntax)
 	if err != nil {
 		t.Fatalf("Disasm: unexpected error %v", err)
 	}
 	mainCount := 0
 	for _, x := range insts {
-		if x.Function == "main" {
+		if x.Function == "main" || x.Function == "_main" {
 			mainCount++
 		}
 	}
@@ -206,7 +211,9 @@ func testDisasm(t *testing.T, intelSyntax bool) {
 }
 
 func TestDisasm(t *testing.T) {
-	skipUnlessLinuxAmd64(t)
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+		t.Skip("This test only works on Linux or Mac")
+	}
 	testDisasm(t, true)
 	testDisasm(t, false)
 }
