@@ -17,13 +17,7 @@ func settingsDirAndFile(t *testing.T) (string, string) {
 	if err != nil {
 		t.Fatalf("error creating temporary directory: %v", err)
 	}
-	// Test with a directory similar to what settingsFile uses by default.
-	os.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpDir, ".config"))
-	fname, err := settingsFileName()
-	if err != nil {
-		t.Fatalf("error fetching settings file name: %v", err)
-	}
-	return tmpDir, fname
+	return tmpDir, filepath.Join(tmpDir, "settings.json")
 }
 
 func TestSettings(t *testing.T) {
