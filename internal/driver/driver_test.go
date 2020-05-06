@@ -86,6 +86,7 @@ func TestParse(t *testing.T) {
 		{"tags", "heap"},
 		{"tags,unit=bytes", "heap"},
 		{"traces", "cpu"},
+		{"traces,addresses", "cpu"},
 		{"traces", "heap_tags"},
 		{"dot,alloc_space,flat,focus=[234]00", "heap_alloc"},
 		{"dot,alloc_space,flat,tagshow=[2]00", "heap_alloc"},
@@ -97,8 +98,8 @@ func TestParse(t *testing.T) {
 		{"weblist=line[13],addresses,flat", "cpu"},
 		{"tags,tagfocus=400kb:", "heap_request"},
 		{"tags,tagfocus=+400kb:", "heap_request"},
-		{"dot", "longNameFuncs"},
-		{"text", "longNameFuncs"},
+		{"dot", "long_name_funcs"},
+		{"text", "long_name_funcs"},
 	}
 
 	baseVars := pprofVariables
@@ -330,38 +331,6 @@ func (f testFlags) String(s, d, c string) *string {
 	return &d
 }
 
-func (f testFlags) BoolVar(p *bool, s string, d bool, c string) {
-	if b, ok := f.bools[s]; ok {
-		*p = b
-	} else {
-		*p = d
-	}
-}
-
-func (f testFlags) IntVar(p *int, s string, d int, c string) {
-	if i, ok := f.ints[s]; ok {
-		*p = i
-	} else {
-		*p = d
-	}
-}
-
-func (f testFlags) Float64Var(p *float64, s string, d float64, c string) {
-	if g, ok := f.floats[s]; ok {
-		*p = g
-	} else {
-		*p = d
-	}
-}
-
-func (f testFlags) StringVar(p *string, s, d, c string) {
-	if t, ok := f.strings[s]; ok {
-		*p = t
-	} else {
-		*p = d
-	}
-}
-
 func (f testFlags) StringList(s, d, c string) *[]*string {
 	if t, ok := f.stringLists[s]; ok {
 		// convert slice of strings to slice of string pointers before returning.
@@ -445,7 +414,7 @@ func (testFetcher) Fetch(s string, d, t time.Duration) (*profile.Profile, string
 		p = contentionProfile()
 	case "symbolz":
 		p = symzProfile()
-	case "longNameFuncs":
+	case "long_name_funcs":
 		p = longNameFuncsProfile()
 	default:
 		return nil, "", fmt.Errorf("unexpected source: %s", s)
@@ -530,8 +499,8 @@ func fakeDemangler(name string) string {
 	}
 }
 
-// longNameFuncsProfile returns a profile with function names which should be shortened in
-// graph and flame views.
+// longNameFuncsProfile returns a profile with function names which should be
+// shortened in graph and flame views.
 func longNameFuncsProfile() *profile.Profile {
 	var longNameFuncsM = []*profile.Mapping{
 		{
@@ -1154,7 +1123,7 @@ func TestTagFilter(t *testing.T) {
 		},
 	}
 	for _, test := range tagFilterTests {
-		t.Run(test.desc, func(*testing.T) {
+		t.Run(test.desc, func(t *testing.T) {
 			filter, err := compileTagFilter(test.desc, test.value, nil, &proftest.TestUI{T: t}, nil)
 			if err != nil {
 				t.Fatalf("tagFilter %s:%v", test.desc, err)
@@ -1280,7 +1249,7 @@ func TestIdentifyNumLabelUnits(t *testing.T) {
 		},
 	}
 	for _, test := range tagFilterTests {
-		t.Run(test.desc, func(*testing.T) {
+		t.Run(test.desc, func(t *testing.T) {
 			p := profile.Profile{Sample: make([]*profile.Sample, len(test.tagVals))}
 			for i, numLabel := range test.tagVals {
 				s := profile.Sample{
@@ -1455,9 +1424,58 @@ func TestNumericTagFilter(t *testing.T) {
 			map[string]string{"bytes": "bytes"},
 			false,
 		},
+		{
+			"Match exact value, unitless tag",
+			"pid=123",
+			map[string][]int64{"pid": {123}},
+			nil,
+			true,
+		},
+		{
+			"Match range, unitless tag",
+			"pid=123:123",
+			map[string][]int64{"pid": {123}},
+			nil,
+			true,
+		},
+		{
+			"Don't match range, unitless tag",
+			"pid=124:124",
+			map[string][]int64{"pid": {123}},
+			nil,
+			false,
+		},
+		{
+			"Match range without upper bound, unitless tag",
+			"pid=100:",
+			map[string][]int64{"pid": {123}},
+			nil,
+			true,
+		},
+		{
+			"Don't match range without upper bound, unitless tag",
+			"pid=200:",
+			map[string][]int64{"pid": {123}},
+			nil,
+			false,
+		},
+		{
+			"Match range without lower bound, unitless tag",
+			"pid=:200",
+			map[string][]int64{"pid": {123}},
+			nil,
+			true,
+		},
+		{
+			"Don't match range without lower bound, unitless tag",
+			"pid=:100",
+			map[string][]int64{"pid": {123}},
+			nil,
+			false,
+		},
 	}
 	for _, test := range tagFilterTests {
-		t.Run(test.desc, func(*testing.T) {
+		t.Run(test.desc, func(t *testing.T) {
 			wantErrMsg := strings.Join([]string{"(", test.desc, ":Interpreted '", test.value[strings.Index(test.value, "=")+1:], "' as range, not regexp", ")"}, "")
 			filter, err := compileTagFilter(test.desc, test.value, test.identifiedUnits, &proftest.TestUI{T: t,
 				AllowRx: wantErrMsg}, nil)
@@ -1544,7 +1562,7 @@ func (*mockObjTool) Open(file string, start, limit, offset uint64) (plugin.ObjFi
 	return &mockFile{file, "abcdef", 0}, nil
 }
 
-func (m *mockObjTool) Disasm(file string, start, end uint64) ([]plugin.Inst, error) {
+func (m *mockObjTool) Disasm(file string, start, end uint64, intelSyntax bool) ([]plugin.Inst, error) {
 	switch start {
 	case 0x1000:
 		return []plugin.Inst{

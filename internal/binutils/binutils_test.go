@@ -188,10 +188,9 @@ func skipUnlessDarwinAmd64(t *testing.T) {
 	}
 }
 
-func TestDisasm(t *testing.T) {
-	skipUnlessLinuxAmd64(t)
+func testDisasm(t *testing.T, intelSyntax bool) {
 	bu := &Binutils{}
-	insts, err := bu.Disasm(filepath.Join("testdata", "exe_linux_64"), 0, math.MaxUint64)
+	insts, err := bu.Disasm(filepath.Join("testdata", "exe_linux_64"), 0, math.MaxUint64, intelSyntax)
 	if err != nil {
 		t.Fatalf("Disasm: unexpected error %v", err)
 	}
@@ -204,6 +203,12 @@ func TestDisasm(t *testing.T) {
 	if mainCount == 0 {
 		t.Error("Disasm: found no main instructions")
 	}
+}
+
+func TestDisasm(t *testing.T) {
+	skipUnlessLinuxAmd64(t)
+	testDisasm(t, true)
+	testDisasm(t, false)
 }
 
 func findSymbol(syms []*plugin.Sym, name string) *plugin.Sym {
