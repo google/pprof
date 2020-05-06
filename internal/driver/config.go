@@ -119,8 +119,8 @@ func init() {
 	// choices holds the list of allowed values for config fields that can
 	// take on one of a bounded set of values.
 	choices := map[string][]string{
-		"sort":        []string{"cum", "flat"},
-		"granularity": []string{"functions", "filefunctions", "files", "lines", "addresses"},
+		"sort":        {"cum", "flat"},
+		"granularity": {"functions", "filefunctions", "files", "lines", "addresses"},
 	}
 
 	// urlparam holds the mapping from a config field name to the URL
