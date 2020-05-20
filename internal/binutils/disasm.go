@@ -27,9 +27,9 @@ import (
 var (
 	nmOutputRE                = regexp.MustCompile(`^\s*([[:xdigit:]]+)\s+(.)\s+(.*)`)
 	objdumpAsmOutputRE        = regexp.MustCompile(`^\s*([[:xdigit:]]+):\s+(.*)`)
-	objdumpOutputFileLine     = regexp.MustCompile(`^(.*):([0-9]+)`)
-	objdumpOutputFunction     = regexp.MustCompile(`^(\S.*)\(\):`)
-	objdumpOutputFunctionLLVM = regexp.MustCompile(`^([[:xdigit:]]+)\s(.*):`)
+	objdumpOutputFileLine     = regexp.MustCompile(`^;?\s?(.*):([0-9]+)`)
+	objdumpOutputFunction     = regexp.MustCompile(`^;?\s?(\S.*)\(\):`)
+	objdumpOutputFunctionLLVM = regexp.MustCompile(`^([[:xdigit:]]+)?\s?(.*):`)
 )
 
 func findSymbols(syms []byte, file string, r *regexp.Regexp, address uint64) ([]*plugin.Sym, error) {

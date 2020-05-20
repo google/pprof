@@ -387,3 +387,37 @@ the symbolization handler.
 
 * **-symbolize=demangle=templates:** Demangle, and trim function parameters, but
   not template parameters.
+
+# Web Interface
+
+When the user requests a web interface (by supplying an `-http=[host]:[port]`
+argument on the command-line), pprof starts a web server and opens a browser
+window pointing at that server. The web interface provided by the server allows
+the user to interactively view profile data in multiple formats.
+
+The top of the display is a header that contains some buttons and menus.
+
+## Config
+
+The `Config` menu allows the user to save the current refinement
+settings (e.g., the focus and hide list) as a named configuration. A
+saved configuration can later be re-applied to reinstitue the saved
+refinements. The `Config` menu contains:
+
+**Save as ...**: shows a dialog where the user can type in a
+configuration name. The current refinement settings are saved under
+the specified name.
+
+**Default**: switches back to the default view by removing all refinements.
+
+The `Config` menu also contains an entry per named
+configuration. Selecting such an entry applies that configuration. The
+currently selected entry is marked with a ✓. Clicking on the 🗙 on the
+right-hand side of such an entry deletes the configuration (after
+prompting the user to confirm).
+
+## TODO: cover the following issues:
+
+*   Overall layout
+*   Menu entries
+*   Explanation of all the views
