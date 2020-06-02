@@ -28,11 +28,7 @@ func settingsFileName() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dir = filepath.Join(dir, "pprof")
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return "", err
-	}
-	return filepath.Join(dir, "settings.json"), nil
+	return filepath.Join(dir, "pprof", "settings.json"), nil
 }
 
 // readSettings reads settings from fname.
@@ -60,6 +56,17 @@ func writeSettings(fname string, settings *settings) error {
 	if err != nil {
 		return fmt.Errorf("could not encode settings: %w", err)
 	}
+
+	// create the settings directory if it does not exist
+	fdir := filepath.Dir(fname)
+	if _, err := os.Stat(fdir); os.IsNotExist(err) {
+		// XDG specifies permissions 0700 when creating settings dirs:
+		// https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+		if err := os.MkdirAll(fdir, 0700); err != nil {
+			return err
+		}
+	}
+
 	if err := ioutil.WriteFile(fname, data, 0644); err != nil {
 		return fmt.Errorf("failed to write settings: %w", err)
 	}
