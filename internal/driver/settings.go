@@ -58,13 +58,10 @@ func writeSettings(fname string, settings *settings) error {
 	}
 
 	// create the settings directory if it does not exist
-	fdir := filepath.Dir(fname)
-	if _, err := os.Stat(fdir); os.IsNotExist(err) {
-		// XDG specifies permissions 0700 when creating settings dirs:
-		// https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
-		if err := os.MkdirAll(fdir, 0700); err != nil {
-			return err
-		}
+	// XDG specifies permissions 0700 when creating settings dirs:
+	// https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+	if err := os.MkdirAll(filepath.Dir(fname), 0700); err != nil {
+		return err
 	}
 
 	if err := ioutil.WriteFile(fname, data, 0644); err != nil {
