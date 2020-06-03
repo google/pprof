@@ -1,6 +1,7 @@
 name: ci
 on: 
   push:
+    master
   pull_request:
 jobs:
   test-linux-and-mac:
