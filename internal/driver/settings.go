@@ -61,7 +61,7 @@ func writeSettings(fname string, settings *settings) error {
 	// XDG specifies permissions 0700 when creating settings dirs:
 	// https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 	if err := os.MkdirAll(filepath.Dir(fname), 0700); err != nil {
-		return err
+		return fmt.Errorf("failed to create settings directory: %w", err)
 	}
 
 	if err := ioutil.WriteFile(fname, data, 0644); err != nil {
