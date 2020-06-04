@@ -7,10 +7,12 @@ on:
 jobs:
   test-linux-and-mac:
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     strategy:
       matrix:
         go: ['1.13', '1.14']
-        os: ['ubuntu-latest', 'macos-latest']
+        os: ['ubuntu-20.04', 'ubuntu-18.04', 'macos-latest']
+        xcode-version: ['latest', '10.3']
     env:
       GOPATH: ${{ github.workspace }}
       WORKING_DIR: ./src/github.com/${{ github.repository }}
@@ -36,6 +38,12 @@ jobs:
         if: ${{ matrix.os == 'macos-latest' }}
         run: brew install graphviz
 
+      - name: Set up Xcode for macOS
+        if: ${{ matrix.os == 'macos-latest' }}
+        uses: maxim-lobanov/setup-xcode@1.0
+        with:
+          xcode-version: ${{ matrix.xcode-version }}
+
       - name: Fetch common dependencies
         # Do not let tools interfere with the main module's go.mod.
         env: 
@@ -50,8 +58,8 @@ jobs:
           ./test.sh
 
       - name: Check to make sure that tests also work in GOPATH mode
-        env: 
-          GO111MODULE: off
+        # env: 
+        #   GO111MODULE: off
         run: |
           go get -d .
           go test -v ./...
