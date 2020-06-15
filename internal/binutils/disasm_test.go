@@ -110,11 +110,7 @@ func TestFunctionAssembly(t *testing.T) {
 	testcases := []testcase{
 		{
 			plugin.Sym{Name: []string{"symbol1"}, Start: 0x1000, End: 0x1FFF},
-			`  1000: instruction one
-  1001: instruction two
-  1002: instruction three
-  1003: instruction four
-`,
+			"  1000: instruction one\n  1001: instruction two\n  1002: instruction three\n  1003: instruction four",
 			[]plugin.Inst{
 				{Addr: 0x1000, Text: "instruction one"},
 				{Addr: 0x1001, Text: "instruction two"},
@@ -124,12 +120,24 @@ func TestFunctionAssembly(t *testing.T) {
 		},
 		{
 			plugin.Sym{Name: []string{"symbol2"}, Start: 0x2000, End: 0x2FFF},
-			`  2000: instruction one
-  2001: instruction two
-`,
+			"  2000: instruction one\n  2001: instruction two",
 			[]plugin.Inst{
 				{Addr: 0x2000, Text: "instruction one"},
 				{Addr: 0x2001, Text: "instruction two"},
+			},
+		},
+		{
+			plugin.Sym{Name: []string{"_main"}, Start: 0x30000, End: 0x3FFF},
+			"_main:\n; /tmp/hello.c:3\n30001:	push   %rbp",
+			[]plugin.Inst{
+				{Addr: 0x30001, Text: "push   %rbp", Function: "_main", File: "/tmp/hello.c", Line: 3},
+			},
+		},
+		{
+			plugin.Sym{Name: []string{"main"}, Start: 0x4000, End: 0x4FFF},
+			"000000000040052d <main>:\nmain():\n/tmp/hello.c:3\n40001:	push   %rbp",
+			[]plugin.Inst{
+				{Addr: 0x40001, Text: "push   %rbp", Function: "main", File: "/tmp/hello.c", Line: 3},
 			},
 		},
 	}
