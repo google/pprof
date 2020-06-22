@@ -99,8 +99,8 @@ jobs:
           ./test.sh
 
       - name: Check to make sure that tests also work in GOPATH mode
-        # env: 
-        #   GO111MODULE: off
+        env: 
+          GO111MODULE: off
         run: |
           go get -d .
           go test -v ./...
