@@ -19,6 +19,7 @@ import (
 	"debug/elf"
 	"debug/macho"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -26,6 +27,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -39,6 +41,8 @@ type Binutils struct {
 	rep *binrep
 }
 
+var objdumpLLVMVerRE = regexp.MustCompile(`LLVM version (?:(\d*)\.(\d*)\.(\d*)|.*(trunk).*)`)
+
 // binrep is an immutable representation for Binutils.  It is atomically
 // replaced on every mutation to provide thread-safe access.
 type binrep struct {
@@ -51,6 +55,7 @@ type binrep struct {
 	nmFound             bool
 	objdump             string
 	objdumpFound        bool
+	isLLVMObjdump       bool
 
 	// if fast, perform symbolization using nm (symbol names only),
 	// instead of file-line detail from the slower addr2line.
@@ -140,7 +145,77 @@ func initTools(b *binrep, config string) {
 		b.addr2line, b.addr2lineFound = findExe("gaddr2line", append(paths["addr2line"], defaultPath...))
 	}
 	b.nm, b.nmFound = findExe("nm", append(paths["nm"], defaultPath...))
-	b.objdump, b.objdumpFound = findExe("objdump", append(paths["objdump"], defaultPath...))
+	b.objdump, b.objdumpFound, b.isLLVMObjdump = findObjdump(append(paths["objdump"], defaultPath...))
+}
+
+// findObjdump finds and returns path to preferred objdump binary.
+// Order of preference is: llvm-objdump, objdump.
+// On MacOS only, also looks for gobjdump with least preference.
+// Accepts a list of paths and returns:
+// a string with path to the preferred objdump binary if found,
+// or an empty string if not found;
+// a boolean if any acceptable objdump was found;
+// a boolen indicating if it is an LLVM objdump.
+func findObjdump(paths []string) (string, bool, bool) {
+	objdumpNames := []string{"llvm-objdump", "objdump"}
+	if runtime.GOOS == "darwin" {
+		objdumpNames = append(objdumpNames, "gobjdump")
+	}
+
+	for _, objdumpName := range objdumpNames {
+		if objdump, objdumpFound := findExe(objdumpName, paths); objdumpFound {
+			cmdOut, err := exec.Command(objdump, "--version").Output()
+			if err != nil {
+				continue
+			}
+			if isLLVMObjdump(string(cmdOut)) {
+				return objdump, true, true
+			}
+			if isBuObjdump(string(cmdOut)) {
+				return objdump, true, false
+			}
+		}
+	}
+	return "", false, false
+}
+
+// isLLVMObjdump accepts a string with path to an objdump binary,
+// and returns a boolean indicating if the given binary is an LLVM
+// objdump binary of an acceptable version.
+func isLLVMObjdump(output string) bool {
+	fields := objdumpLLVMVerRE.FindStringSubmatch(output)
+	if len(fields) != 5 {
+		return false
+	}
+	if fields[4] == "trunk" {
+		return true
+	}
+	verMajor, err := strconv.Atoi(fields[1])
+	if err != nil {
+		return false
+	}
+	verPatch, err := strconv.Atoi(fields[3])
+	if err != nil {
+		return false
+	}
+	if runtime.GOOS == "linux" && verMajor >= 8 {
+		// Ensure LLVM objdump is at least version 8.0 on Linux.
+		// Some flags, like --demangle, and double dashes for options are
+		// not supported by previous versions.
+		return true
+	}
+	if runtime.GOOS == "darwin" {
+		// Ensure LLVM objdump is at least version 10.0.1 on MacOS.
+		return verMajor > 10 || (verMajor == 10 && verPatch >= 1)
+	}
+	return false
+}
+
+// isBuObjdump accepts a string with path to an objdump binary,
+// and returns a boolean indicating if the given binary is a GNU
+// binutils objdump binary. No version check is performed.
+func isBuObjdump(output string) bool {
+	return strings.Contains(output, "GNU objdump") && strings.Contains(output, "Binutils")
 }
 
 // findExe looks for an executable command on a set of paths.
@@ -159,13 +234,16 @@ func findExe(cmd string, paths []string) (string, bool) {
 // of a binary.
 func (bu *Binutils) Disasm(file string, start, end uint64, intelSyntax bool) ([]plugin.Inst, error) {
 	b := bu.get()
-	args := []string{"-d", "-C", "--no-show-raw-insn", "-l",
-		fmt.Sprintf("--start-address=%#x", start),
+	if !b.objdumpFound {
+		return nil, errors.New("cannot disasm: no objdump tool available")
+	}
+	args := []string{"--disassemble-all", "--demangle", "--no-show-raw-insn",
+		"--line-numbers", fmt.Sprintf("--start-address=%#x", start),
 		fmt.Sprintf("--stop-address=%#x", end)}
 
 	if intelSyntax {
-		if runtime.GOOS == "darwin" {
-			args = append(args, "-x86-asm-syntax=intel")
+		if b.isLLVMObjdump {
+			args = append(args, "--x86-asm-syntax=intel")
 		} else {
 			args = append(args, "-M", "intel")
 		}
