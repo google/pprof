@@ -145,7 +145,6 @@ func initTools(b *binrep, config string) {
 		b.addr2line, b.addr2lineFound = findExe("gaddr2line", append(paths["addr2line"], defaultPath...))
 	}
 	b.nm, b.nmFound = findNm(append(paths["nm"], defaultPath...))
-	fmt.Println("DEBUG: nm = ", b.nm)
 	b.objdump, b.objdumpFound, b.isLLVMObjdump = findObjdump(append(paths["objdump"], defaultPath...))
 }
 
