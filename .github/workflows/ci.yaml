@@ -6,10 +6,10 @@ on:
   pull_request:
 env:
   GOPATH: ${{ github.workspace }}
-  WORKING_DIR: ./src/github.com/${{ github.repository }}
+  WORKING_DIR: ./src/github.com/google/pprof/
 jobs:
   test-mac:
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }} 
     continue-on-error: true
     defaults:
       run:
@@ -115,14 +115,16 @@ jobs:
     strategy:
       matrix:
         go: ['1.13', '1.14']
-    defaults:
-      run:
-        working-directory: ${{ env.WORKING_DIR }}
     steps:
       - name: Update go version
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
+      
+          # - name: Make sure line endings work correctly on Windows
+          #    run: |
+          #      git config --global core.eol lf
+          #      git config --global core.autocrlf input
 
       - name: Checkout the repo
         uses: actions/checkout@v2
@@ -139,3 +141,4 @@ jobs:
           go env
           go build github.com/google/pprof
           go test -v ./...
+        working-directory: ${{ env.WORKING_DIR }}
