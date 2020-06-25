@@ -144,6 +144,8 @@ func initTools(b *binrep, config string) {
 		// that if the tool is not found by its default name.
 		b.addr2line, b.addr2lineFound = findExe("gaddr2line", append(paths["addr2line"], defaultPath...))
 	}
+	// Both llvm-nm and GNU nm are interchangeable for our purposes support
+	// "-n" option.
 	b.nm, b.nmFound = findNm(append(paths["nm"], defaultPath...))
 	b.objdump, b.objdumpFound, b.isLLVMObjdump = findObjdump(append(paths["objdump"], defaultPath...))
 }
@@ -155,7 +157,7 @@ func initTools(b *binrep, config string) {
 // a string with path to the preferred objdump binary if found,
 // or an empty string if not found;
 // a boolean if any acceptable objdump was found;
-// a boolen indicating if it is a LLVM objdump.
+// a boolean indicating if it is an LLVM objdump.
 func findObjdump(paths []string) (string, bool, bool) {
 	objdumpNames := []string{"llvm-objdump", "objdump"}
 	if runtime.GOOS == "darwin" {
@@ -191,7 +193,6 @@ func findNm(paths []string) (string, bool) {
 	if runtime.GOOS == "darwin" {
 		nmNames = append(nmNames, "gnm")
 	}
-
 	for _, nmName := range nmNames {
 		if nm, nmFound := findExe(nmName, paths); nmFound {
 			return nm, true
