@@ -144,8 +144,8 @@ func initTools(b *binrep, config string) {
 		// that if the tool is not found by its default name.
 		b.addr2line, b.addr2lineFound = findExe("gaddr2line", append(paths["addr2line"], defaultPath...))
 	}
-	// Both llvm-nm and GNU nm are interchangeable for our purposes support
-	// "-n" option.
+	// The output of llvm-nm and GNU nm with "-n" option is interchangeable for
+	// our purposes, so we do not need to differrentiate them.
 	b.nm, b.nmFound = findNm(append(paths["nm"], defaultPath...))
 	b.objdump, b.objdumpFound, b.isLLVMObjdump = findObjdump(append(paths["objdump"], defaultPath...))
 }
