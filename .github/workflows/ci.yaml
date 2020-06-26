@@ -120,11 +120,6 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
-      
-          # - name: Make sure line endings work correctly on Windows
-          #    run: |
-          #      git config --global core.eol lf
-          #      git config --global core.autocrlf input
 
       - name: Checkout the repo
         uses: actions/checkout@v2
