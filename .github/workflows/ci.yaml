@@ -1,0 +1,144 @@
+name: ci
+on: 
+  push:
+    branches:
+      - master
+  pull_request:
+env:
+  GOPATH: ${{ github.workspace }}
+  WORKING_DIR: ./src/github.com/google/pprof/
+jobs:
+  test-mac:
+    runs-on: ${{ matrix.os }} 
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }}
+    strategy:
+      matrix:
+        go: ['1.13', '1.14']
+        os: ['macos-10.15']
+        xcode-version: ['11.5', '10.3']
+    steps:
+      - name: Update go version
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.WORKING_DIR }}
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@1.0
+        with:
+          xcode-version: ${{ matrix.xcode-version }}
+
+      - name: Fetch dependencies
+        # Do not let tools interfere with the main module's go.mod.
+        env: 
+          GO111MODULE: off         
+        run: |
+          brew install graphviz
+          go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
+
+      - name: Run the script 
+        run: |
+          gofmtdiff=$(gofmt -s -d .) && if [ -n "$gofmtdiff" ]; then printf 'gofmt -s found:\n%s\n' "$gofmtdiff" && exit 1; fi
+          golintlint=$(golint ./...) && if [ -n "$golintlint" ]; then printf 'golint found:\n%s\n' "$golintlint" && exit 1; fi
+          go vet -all ./...
+          ./test.sh
+
+      - name: Check to make sure that tests also work in GOPATH mode
+        env: 
+          GO111MODULE: off
+        run: |
+          go get -d .
+          go test -v ./...
+
+      - name: Code coverage
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage.txt
+
+  test-linux:
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }} 
+    strategy:
+      matrix:
+        go: ['1.13', '1.14']
+        os: ['ubuntu-20.04', 'ubuntu-18.04', 'ubuntu-16.04'] 
+    steps:
+      - name: Update go version
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.WORKING_DIR }}
+
+      - name: Fetch dependencies
+        # Do not let tools interfere with the main module's go.mod.
+        env: 
+          GO111MODULE: off         
+        run: |
+          sudo apt-get install graphviz
+          go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
+
+      - name: Run the script 
+        run: |
+          gofmtdiff=$(gofmt -s -d .) && if [ -n "$gofmtdiff" ]; then printf 'gofmt -s found:\n%s\n' "$gofmtdiff" && exit 1; fi
+          golintlint=$(golint ./...) && if [ -n "$golintlint" ]; then printf 'golint found:\n%s\n' "$golintlint" && exit 1; fi
+          go vet -all ./...
+          ./test.sh
+
+      - name: Check to make sure that tests also work in GOPATH mode
+        env: 
+          GO111MODULE: off
+        run: |
+          go get -d .
+          go test -v ./...
+
+      - name: Code coverage
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./${{ env.WORKING_DIR }}/coverage.txt
+
+  test-windows:
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        go: ['1.13', '1.14']
+    steps:
+      - name: Update go version
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+      
+          # - name: Make sure line endings work correctly on Windows
+          #    run: |
+          #      git config --global core.eol lf
+          #      git config --global core.autocrlf input
+
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.WORKING_DIR }}
+
+      - name: Fetch Windows dependency
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install graphviz
+
+      - name: Run the test
+        run: |
+          go env
+          go build github.com/google/pprof
+          go test -v ./...
+        working-directory: ${{ env.WORKING_DIR }}
