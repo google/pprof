@@ -18,7 +18,7 @@ jobs:
       matrix:
         go: ['1.13', '1.14']
         os: ['macos-10.15']
-        xcode-version: ['11.5', '10.3']
+        xcode-version: ['11.6', '11.5', '11.4.1', '11.3.1', '11.2.1', '11.1', '11.0', '10.3']
     steps:
       - name: Update go version
         uses: actions/setup-go@v2
@@ -120,11 +120,6 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
-      
-          # - name: Make sure line endings work correctly on Windows
-          #    run: |
-          #      git config --global core.eol lf
-          #      git config --global core.autocrlf input
 
       - name: Checkout the repo
         uses: actions/checkout@v2
