@@ -1,4 +1,4 @@
-![](https://github.com/google/pprof/workflows/ci/badge.svg)
+[![](https://github.com/google/pprof/workflows/ci/badge.svg)](https://github.com/google/pprof/actions)
 [![Build Status](https://travis-ci.org/google/pprof.svg?branch=master)](https://travis-ci.org/google/pprof)
 [![codecov](https://codecov.io/gh/google/pprof/graph/badge.svg)](https://codecov.io/gh/google/pprof)
 
