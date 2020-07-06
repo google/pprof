@@ -189,9 +189,9 @@ func findExeOnDifferentPlatforms(names, osxNames []string, paths []string) (stri
 	if runtime.GOOS == "darwin" {
 		names = append(names, osxNames...)
 	}
-	for _, nmName := range names {
-		if nm, nmFound := findExe(nmName, paths); nmFound {
-			return nm, true
+	for _, name := range names {
+		if binary, found := findExe(name, paths); found {
+			return binary, true
 		}
 	}
 	return "", false
