@@ -177,7 +177,7 @@ func findObjdump(paths []string) (string, bool, bool) {
 	return "", false, false
 }
 
-// findExeOnDifferentPlatforms finds and returns path to preferred binary.
+// chooseExe finds and returns path to preferred binary.
 // "names" is a list of names to search on both Linux and OSX.
 // "osxNames" is a list of names specific to OSX.
 // "names" always has a higher priority than "osxNames". The order of the name
