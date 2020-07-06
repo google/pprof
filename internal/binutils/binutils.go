@@ -177,12 +177,11 @@ func findObjdump(paths []string) (string, bool, bool) {
 	return "", false, false
 }
 
-// chooseExe finds and returns path to preferred binary.
-// "names" is a list of names to search on both Linux and OSX.
-// "osxNames" is a list of names specific to OSX.
-// "names" always has a higher priority than "osxNames". The order of the name
-// within each list decides its priority (e.g. the first name has a higher
-// priority than the second name in the list).
+// chooseExe finds and returns path to preferred binary. names is a list of
+// names to search on both Linux and OSX. osxNames is a list of names specific
+// to OSX. names always has a higher priority than osxNames. The order of
+// the name within each list decides its priority (e.g. the first name has a
+// higher priority than the second name in the list).
 // It returns a string with path to the binary if found, or an empty string if
 // not found; a boolean if any acceptable binary was found.
 func chooseExe(names, osxNames []string, paths []string) (string, bool) {
