@@ -137,12 +137,12 @@ func initTools(b *binrep, config string) {
 	}
 
 	defaultPath := paths[""]
-	b.llvmSymbolizer, b.llvmSymbolizerFound = findExeOnDifferentPlatforms([]string{"llvm-symbolizer"}, []string{}, append(paths["llvm-symbolizer"], defaultPath...))
-	b.addr2line, b.addr2lineFound = findExeOnDifferentPlatforms([]string{"addr2line"}, []string{"gaddr2line"}, append(paths["addr2line"], defaultPath...))
+	b.llvmSymbolizer, b.llvmSymbolizerFound = chooseExe([]string{"llvm-symbolizer"}, []string{}, append(paths["llvm-symbolizer"], defaultPath...))
+	b.addr2line, b.addr2lineFound = chooseExe([]string{"addr2line"}, []string{"gaddr2line"}, append(paths["addr2line"], defaultPath...))
 	// The "-n" option is supported by LLVM since 2011. The output of llvm-nm
 	// and GNU nm with "-n" option is interchangeable for our purposes, so we do
 	// not need to differrentiate them.
-	b.nm, b.nmFound = findExeOnDifferentPlatforms([]string{"llvm-nm", "nm"}, []string{"gnm"}, append(paths["nm"], defaultPath...))
+	b.nm, b.nmFound = chooseExe([]string{"llvm-nm", "nm"}, []string{"gnm"}, append(paths["nm"], defaultPath...))
 	b.objdump, b.objdumpFound, b.isLLVMObjdump = findObjdump(append(paths["objdump"], defaultPath...))
 }
 
@@ -185,7 +185,7 @@ func findObjdump(paths []string) (string, bool, bool) {
 // priority than the second name in the list).
 // It returns a string with path to the binary if found, or an empty string if
 // not found; a boolean if any acceptable binary was found.
-func findExeOnDifferentPlatforms(names, osxNames []string, paths []string) (string, bool) {
+func chooseExe(names, osxNames []string, paths []string) (string, bool) {
 	if runtime.GOOS == "darwin" {
 		names = append(names, osxNames...)
 	}
