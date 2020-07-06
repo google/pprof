@@ -137,17 +137,12 @@ func initTools(b *binrep, config string) {
 	}
 
 	defaultPath := paths[""]
-	b.llvmSymbolizer, b.llvmSymbolizerFound = findExe("llvm-symbolizer", append(paths["llvm-symbolizer"], defaultPath...))
-	b.addr2line, b.addr2lineFound = findExe("addr2line", append(paths["addr2line"], defaultPath...))
-	if !b.addr2lineFound {
-		// On MacOS, brew installs addr2line under gaddr2line name, so search for
-		// that if the tool is not found by its default name.
-		b.addr2line, b.addr2lineFound = findExe("gaddr2line", append(paths["addr2line"], defaultPath...))
-	}
-	// The "-n" option is supported by llvm since 2011. The output of llvm-nm
+	b.llvmSymbolizer, b.llvmSymbolizerFound = findExeOnDifferentPlatforms([]string{"llvm-symbolizer"}, []string{}, append(paths["llvm-symbolizer"], defaultPath...))
+	b.addr2line, b.addr2lineFound = findExeOnDifferentPlatforms([]string{"addr2line"}, []string{"gaddr2line"}, append(paths["addr2line"], defaultPath...))
+	// The "-n" option is supported by LLVM since 2011. The output of llvm-nm
 	// and GNU nm with "-n" option is interchangeable for our purposes, so we do
 	// not need to differrentiate them.
-	b.nm, b.nmFound = findNm(append(paths["nm"], defaultPath...))
+	b.nm, b.nmFound = findExeOnDifferentPlatforms([]string{"llvm-nm", "nm"}, []string{"gnm"}, append(paths["nm"], defaultPath...))
 	b.objdump, b.objdumpFound, b.isLLVMObjdump = findObjdump(append(paths["objdump"], defaultPath...))
 }
 
@@ -182,19 +177,19 @@ func findObjdump(paths []string) (string, bool, bool) {
 	return "", false, false
 }
 
-// findNm finds and returns path to preferred nm binary.
-// Order of preference is: llvm-nm, nm.
-// On MacOS only, also looks for gnm with least preference.
-// Accepts a list of paths and returns:
-// a string with path to the preferred nm binary if found,
-// or an empty string if not found;
-// a boolean if any acceptable nm was found.
-func findNm(paths []string) (string, bool) {
-	nmNames := []string{"llvm-nm", "nm"}
+// findExeOnDifferentPlatforms finds and returns path to preferred binary.
+// "names" is a list of names to search on both Linux and OSX.
+// "osxNames" is a list of names specific to OSX.
+// "names" always has a higher priotiy than "osxNames". The order of the name
+// within each list decides its priority (e.g. the first name has higher
+// priority than the second name in the list).
+// It returns a string with path to the binary if found, or an empty string if
+// not found; a boolean if any acceptable binary was found.
+func findExeOnDifferentPlatforms(names, osxNames []string, paths []string) (string, bool) {
 	if runtime.GOOS == "darwin" {
-		nmNames = append(nmNames, "gnm")
+		names = append(names, osxNames...)
 	}
-	for _, nmName := range nmNames {
+	for _, nmName := range names {
 		if nm, nmFound := findExe(nmName, paths); nmFound {
 			return nm, true
 		}
