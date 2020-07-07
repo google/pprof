@@ -137,14 +137,12 @@ func initTools(b *binrep, config string) {
 	}
 
 	defaultPath := paths[""]
-	b.llvmSymbolizer, b.llvmSymbolizerFound = findExe("llvm-symbolizer", append(paths["llvm-symbolizer"], defaultPath...))
-	b.addr2line, b.addr2lineFound = findExe("addr2line", append(paths["addr2line"], defaultPath...))
-	if !b.addr2lineFound {
-		// On MacOS, brew installs addr2line under gaddr2line name, so search for
-		// that if the tool is not found by its default name.
-		b.addr2line, b.addr2lineFound = findExe("gaddr2line", append(paths["addr2line"], defaultPath...))
-	}
-	b.nm, b.nmFound = findExe("nm", append(paths["nm"], defaultPath...))
+	b.llvmSymbolizer, b.llvmSymbolizerFound = chooseExe([]string{"llvm-symbolizer"}, []string{}, append(paths["llvm-symbolizer"], defaultPath...))
+	b.addr2line, b.addr2lineFound = chooseExe([]string{"addr2line"}, []string{"gaddr2line"}, append(paths["addr2line"], defaultPath...))
+	// The "-n" option is supported by LLVM since 2011. The output of llvm-nm
+	// and GNU nm with "-n" option is interchangeable for our purposes, so we do
+	// not need to differrentiate them.
+	b.nm, b.nmFound = chooseExe([]string{"llvm-nm", "nm"}, []string{"gnm"}, append(paths["nm"], defaultPath...))
 	b.objdump, b.objdumpFound, b.isLLVMObjdump = findObjdump(append(paths["objdump"], defaultPath...))
 }
 
@@ -155,7 +153,7 @@ func initTools(b *binrep, config string) {
 // a string with path to the preferred objdump binary if found,
 // or an empty string if not found;
 // a boolean if any acceptable objdump was found;
-// a boolen indicating if it is an LLVM objdump.
+// a boolean indicating if it is an LLVM objdump.
 func findObjdump(paths []string) (string, bool, bool) {
 	objdumpNames := []string{"llvm-objdump", "objdump"}
 	if runtime.GOOS == "darwin" {
@@ -177,6 +175,26 @@ func findObjdump(paths []string) (string, bool, bool) {
 		}
 	}
 	return "", false, false
+}
+
+// chooseExe finds and returns path to preferred binary. names is a list of
+// names to search on both Linux and OSX. osxNames is a list of names specific
+// to OSX. names always has a higher priority than osxNames. The order of
+// the name within each list decides its priority (e.g. the first name has a
+// higher priority than the second name in the list).
+//
+// It returns a string with path to the binary and a boolean indicating if any
+// acceptable binary was found.
+func chooseExe(names, osxNames []string, paths []string) (string, bool) {
+	if runtime.GOOS == "darwin" {
+		names = append(names, osxNames...)
+	}
+	for _, name := range names {
+		if binary, found := findExe(name, paths); found {
+			return binary, true
+		}
+	}
+	return "", false
 }
 
 // isLLVMObjdump accepts a string with path to an objdump binary,
