@@ -182,8 +182,9 @@ func findObjdump(paths []string) (string, bool, bool) {
 // to OSX. names always has a higher priority than osxNames. The order of
 // the name within each list decides its priority (e.g. the first name has a
 // higher priority than the second name in the list).
-// It returns a string with path to the binary if found, or an empty string if
-// not found; a boolean if any acceptable binary was found.
+//
+// It returns a string with path to the binary and a boolean indicating if any
+// acceptable binary was found.
 func chooseExe(names, osxNames []string, paths []string) (string, bool) {
 	if runtime.GOOS == "darwin" {
 		names = append(names, osxNames...)
