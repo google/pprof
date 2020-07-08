@@ -233,7 +233,7 @@ func isLLVMObjdump(output string) bool {
 // and returns a boolean indicating if the given binary is a GNU
 // binutils objdump binary. No version check is performed.
 func isBuObjdump(output string) bool {
-	return strings.Contains(output, "GNU objdump") && strings.Contains(output, "Binutils")
+	return strings.Contains(output, "GNU objdump")
 }
 
 // findExe looks for an executable command on a set of paths.

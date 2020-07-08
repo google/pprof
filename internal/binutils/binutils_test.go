@@ -494,7 +494,7 @@ func TestObjdumpVersionChecks(t *testing.T) {
 		},
 		{
 			desc: "Invalid GNU objdump version string",
-			ver:  "GNU objdump (GNU Banutils) 2.34\nCopyright (C) 2020 Free Software Foundation, Inc.",
+			ver:  "GNU nm (GNU Binutils) 2.34\nCopyright (C) 2020 Free Software Foundation, Inc.",
 			want: false,
 		},
 	} {
