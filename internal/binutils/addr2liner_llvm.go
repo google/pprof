@@ -70,7 +70,7 @@ func newLLVMSymbolizer(cmd, file string, base uint64) (*llvmSymbolizer, error) {
 	}
 
 	j := &llvmSymbolizerJob{
-		cmd: exec.Command(cmd, "-inlining", "-demangle=false"),
+		cmd: exec.Command(cmd, "--inlines", "-demangle=false"),
 	}
 
 	var err error
