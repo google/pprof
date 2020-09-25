@@ -4,6 +4,8 @@ on:
     branches:
       - master
   pull_request:
+  schedule:
+    - cron: '0 2 * * *' # Run every day, at 2AM UTC.
 env:
   GOPATH: ${{ github.workspace }}
   WORKING_DIR: ./src/github.com/google/pprof/
