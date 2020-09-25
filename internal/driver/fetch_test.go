@@ -336,27 +336,27 @@ func TestFetchWithBase(t *testing.T) {
 			true,
 			[]WantSample{
 				{
-					values: []int64{-229, -370},
+					values: []int64{-229, -369},
 					labels: map[string][]string{},
 				},
 				{
-					values: []int64{28, 0},
+					values: []int64{29, 0},
 					labels: map[string][]string{},
 				},
 				{
-					values: []int64{57, 0},
+					values: []int64{57, 1},
 					labels: map[string][]string{},
 				},
 				{
-					values: []int64{28, 80},
+					values: []int64{29, 80},
 					labels: map[string][]string{},
 				},
 				{
-					values: []int64{28, 0},
+					values: []int64{29, 0},
 					labels: map[string][]string{},
 				},
 				{
-					values: []int64{85, 287},
+					values: []int64{86, 288},
 					labels: map[string][]string{},
 				},
 			},
