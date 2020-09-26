@@ -220,9 +220,9 @@ func TestDisasm(t *testing.T) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		t.Skip("This test only works on Linux or Mac")
 	}
-	
-	if runtime.GOARCH != "amd64" {
-	        testDisasm(t, true)
+
+	if runtime.GOARCH == "amd64" {
+		testDisasm(t, true)
 	}
 	testDisasm(t, false)
 }
