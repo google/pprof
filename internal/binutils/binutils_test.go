@@ -218,13 +218,16 @@ func testDisasm(t *testing.T, intelSyntax bool) {
 
 func TestDisasm(t *testing.T) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
-		t.Skip("This test only works on Linux or Mac")
-	}
-
-	if runtime.GOARCH == "amd64" {
-		testDisasm(t, true)
+		t.Skip("This test only works on Linux or OSX")
 	}
 	testDisasm(t, false)
+}
+
+func TestDisasmIntelSyntax(t *testing.T) {
+	if (runtime.GOOS != "linux" && runtime.GOOS != "darwin") || runtime.GOARCH != "amd64" {
+		t.Skip("This test only works on x86_64 Linux or x86_64 OSX as it tests Intel asm syntax")
+	}
+	testDisasm(t, true)
 }
 
 func findSymbol(syms []*plugin.Sym, name string) *plugin.Sym {
