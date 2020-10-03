@@ -76,7 +76,7 @@ func TestComposeWithTagsAndResidualEdge(t *testing.T) {
 	}
 	g.Nodes[0].NumericTags[""] = TagMap{
 		"b": &Tag{
-			Name: "var\"tag2\"",
+			Name: "tag2",
 			Cum:  20,
 			Flat: 20,
 			Unit: "ms",
@@ -136,6 +136,22 @@ func TestComposeWithStandardGraphAndURL(t *testing.T) {
 	ComposeDot(&buf, g, a, c)
 
 	compareGraphs(t, buf.Bytes(), "compose6.dot")
+}
+
+func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
+	g := baseGraph()
+	a, c := baseAttrsAndConfig()
+
+  g.Nodes[0].Info = NodeInfo{Name: "var\"src\""};
+  g.Nodes[1].Info = NodeInfo{Name: "var\"#dest#\""};
+
+	// Set edge to be Residual.
+	g.Nodes[0].Out[g.Nodes[1]].Residual = true
+
+	var buf bytes.Buffer
+	ComposeDot(&buf, g, a, c)
+
+	compareGraphs(t, buf.Bytes(), "compose7.dot")
 }
 
 func baseGraph() *Graph {
