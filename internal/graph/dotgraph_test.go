@@ -142,8 +142,8 @@ func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 	g := baseGraph()
 	a, c := baseAttrsAndConfig()
 
-  g.Nodes[0].Info = NodeInfo{Name: "var\"src\""};
-  g.Nodes[1].Info = NodeInfo{Name: "var\"#dest#\""};
+	g.Nodes[0].Info = NodeInfo{Name: "var\"src\""}
+	g.Nodes[1].Info = NodeInfo{Name: "var\"#dest#\""}
 
 	// Set edge to be Residual.
 	g.Nodes[0].Out[g.Nodes[1]].Residual = true

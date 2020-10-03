@@ -486,5 +486,5 @@ func escapeForDot(in []string) []string {
 	return out
 }
 func escapeStringForDot(str string) string {
-		return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(str, `\`, `\\`), `"`, `\"`), "\n", `\l`)
+	return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(str, `\`, `\\`), `"`, `\"`), "\n", `\l`)
 }
