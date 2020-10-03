@@ -149,6 +149,7 @@ func (b *builder) addNode(node *Node, nodeID int, maxFlat float64) {
 	} else {
 		label = multilinePrintableName(&node.Info)
 	}
+	// label = strings.Replace(label, `"`, `\"`, -1)
 
 	flatValue := b.config.FormatValue(flat)
 	if flat != 0 {
@@ -187,7 +188,7 @@ func (b *builder) addNode(node *Node, nodeID int, maxFlat float64) {
 
 	// Create DOT attribute for node.
 	attr := fmt.Sprintf(`label="%s" id="node%d" fontsize=%d shape=%s tooltip="%s (%s)" color="%s" fillcolor="%s"`,
-		escapeForDot(label), nodeID, fontSize, shape, node.Info.PrintableName(), cumValue,
+		label, nodeID, fontSize, shape, escapeStringForDot(node.Info.PrintableName()), cumValue,
 		dotColor(float64(node.CumValue())/float64(abs64(b.config.Total)), false),
 		dotColor(float64(node.CumValue())/float64(abs64(b.config.Total)), true))
 
@@ -247,7 +248,7 @@ func (b *builder) addNodelets(node *Node, nodeID int) bool {
 			continue
 		}
 		weight := b.config.FormatValue(w)
-		nodelets += fmt.Sprintf(`N%d_%d [label = "%s" id="N%d_%d" fontsize=8 shape=box3d tooltip="%s"]`+"\n", nodeID, i, escapeForDot(t.Name), nodeID, i, weight)
+		nodelets += fmt.Sprintf(`N%d_%d [label = "%s" id="N%d_%d" fontsize=8 shape=box3d tooltip="%s"]`+"\n", nodeID, i, t.Name, nodeID, i, weight)
 		nodelets += fmt.Sprintf(`N%d -> N%d_%d [label=" %s" weight=100 tooltip="%s" labeltooltip="%s"]`+"\n", nodeID, nodeID, i, weight, weight, weight)
 		if nts := lnts[t.Name]; nts != nil {
 			nodelets += b.numericNodelets(nts, maxNodelets, flatTags, fmt.Sprintf(`N%d_%d`, nodeID, i))
@@ -305,7 +306,8 @@ func (b *builder) addEdge(edge *Edge, from, to int, hasNodelets bool) {
 		arrow = "..."
 	}
 	tooltip := fmt.Sprintf(`"%s %s %s (%s)"`,
-		edge.Src.Info.PrintableName(), arrow, edge.Dest.Info.PrintableName(), w)
+		escapeStringForDot(edge.Src.Info.PrintableName()), arrow,
+		escapeStringForDot(edge.Dest.Info.PrintableName()), w)
 	attr = fmt.Sprintf(`%s tooltip=%s labeltooltip=%s`, attr, tooltip, tooltip)
 
 	if edge.Residual {
@@ -382,7 +384,7 @@ func dotColor(score float64, isBackground bool) string {
 
 func multilinePrintableName(info *NodeInfo) string {
 	infoCopy := *info
-	infoCopy.Name = ShortenFunctionName(infoCopy.Name)
+	infoCopy.Name = escapeStringForDot(ShortenFunctionName(infoCopy.Name))
 	infoCopy.Name = strings.Replace(infoCopy.Name, "::", `\n`, -1)
 	infoCopy.Name = strings.Replace(infoCopy.Name, ".", `\n`, -1)
 	if infoCopy.File != "" {
@@ -479,7 +481,10 @@ func min64(a, b int64) int64 {
 func escapeForDot(in []string) []string {
 	var out = make([]string, len(in))
 	for i := range in {
-		out[i] = strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(in[i], `\`, `\\`), `"`, `\"`), "\n", `\l`)
+		out[i] = escapeStringForDot(in[i])
 	}
 	return out
+}
+func escapeStringForDot(str string) string {
+		return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(str, `\`, `\\`), `"`, `\"`), "\n", `\l`)
 }
