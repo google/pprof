@@ -149,7 +149,6 @@ func (b *builder) addNode(node *Node, nodeID int, maxFlat float64) {
 	} else {
 		label = multilinePrintableName(&node.Info)
 	}
-	// label = strings.Replace(label, `"`, `\"`, -1)
 
 	flatValue := b.config.FormatValue(flat)
 	if flat != 0 {
