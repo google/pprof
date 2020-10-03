@@ -76,7 +76,7 @@ func TestComposeWithTagsAndResidualEdge(t *testing.T) {
 	}
 	g.Nodes[0].NumericTags[""] = TagMap{
 		"b": &Tag{
-			Name: "tag2",
+			Name: "var\"tag2\"",
 			Cum:  20,
 			Flat: 20,
 			Unit: "ms",
