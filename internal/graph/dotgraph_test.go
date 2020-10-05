@@ -383,8 +383,27 @@ func TestEscapeForDot(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			if got := escapeAllForDot(tc.input); !reflect.DeepEqual(got, tc.want) {
+			if got := escapeAllForDot(tc.input, LeftJustify); !reflect.DeepEqual(got, tc.want) {
 				t.Errorf("escapeAllForDot(%s) = %s, want %s", tc.input, got, tc.want)
+			}
+		})
+	}
+
+	// Test the different options for justifying text newlines in Dot
+	for _, justify := range []DotJustifyType{LeftJustify, CenterJustify, RightJustify} {
+		t.Run("Dot newline justification", func(t *testing.T) {
+			input := []string{"Line 1\nLine 2"}
+			var want []string
+			switch justify {
+			case LeftJustify:
+				want = []string{`Line 1\lLine 2`}
+			case CenterJustify:
+				want = []string{`Line 1\nLine 2`}
+			case RightJustify:
+				want = []string{`Line 1\rLine 2`}
+			}
+			if got := escapeAllForDot(input, justify); !reflect.DeepEqual(got, want) {
+				t.Errorf("escapeAllForDot(%s) = %s, want %s", input, got, want)
 			}
 		})
 	}
