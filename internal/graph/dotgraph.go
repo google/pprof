@@ -127,7 +127,7 @@ func (b *builder) addLegend() {
 	}
 	title := labels[0]
 	fmt.Fprintf(b, `subgraph cluster_L { "%s" [shape=box fontsize=16`, title)
-	fmt.Fprintf(b, ` label="%s\l"`, strings.Join(escapeAllForDot(labels, LeftJustify), `\l`))
+	fmt.Fprintf(b, ` label="%s\l"`, strings.Join(escapeAllForDot(labels, leftJustify), `\l`))
 	if b.config.LegendURL != "" {
 		fmt.Fprintf(b, ` URL="%s" target="_blank"`, b.config.LegendURL)
 	}
@@ -187,7 +187,7 @@ func (b *builder) addNode(node *Node, nodeID int, maxFlat float64) {
 
 	// Create DOT attribute for node.
 	attr := fmt.Sprintf(`label="%s" id="node%d" fontsize=%d shape=%s tooltip="%s (%s)" color="%s" fillcolor="%s"`,
-		label, nodeID, fontSize, shape, escapeForDot(node.Info.PrintableName(), CenterJustify), cumValue,
+		label, nodeID, fontSize, shape, escapeForDot(node.Info.PrintableName(), centerJustify), cumValue,
 		dotColor(float64(node.CumValue())/float64(abs64(b.config.Total)), false),
 		dotColor(float64(node.CumValue())/float64(abs64(b.config.Total)), true))
 
@@ -247,7 +247,7 @@ func (b *builder) addNodelets(node *Node, nodeID int) bool {
 			continue
 		}
 		weight := b.config.FormatValue(w)
-		nodelets += fmt.Sprintf(`N%d_%d [label = "%s" id="N%d_%d" fontsize=8 shape=box3d tooltip="%s"]`+"\n", nodeID, i, escapeForDot(t.Name, CenterJustify), nodeID, i, weight)
+		nodelets += fmt.Sprintf(`N%d_%d [label = "%s" id="N%d_%d" fontsize=8 shape=box3d tooltip="%s"]`+"\n", nodeID, i, escapeForDot(t.Name, centerJustify), nodeID, i, weight)
 		nodelets += fmt.Sprintf(`N%d -> N%d_%d [label=" %s" weight=100 tooltip="%s" labeltooltip="%s"]`+"\n", nodeID, nodeID, i, weight, weight, weight)
 		if nts := lnts[t.Name]; nts != nil {
 			nodelets += b.numericNodelets(nts, maxNodelets, flatTags, fmt.Sprintf(`N%d_%d`, nodeID, i))
@@ -274,7 +274,7 @@ func (b *builder) numericNodelets(nts []*Tag, maxNumNodelets int, flatTags bool,
 		}
 		if w != 0 {
 			weight := b.config.FormatValue(w)
-			nodelets += fmt.Sprintf(`N%s_%d [label = "%s" id="N%s_%d" fontsize=8 shape=box3d tooltip="%s"]`+"\n", source, j, escapeForDot(t.Name, CenterJustify), source, j, weight)
+			nodelets += fmt.Sprintf(`N%s_%d [label = "%s" id="N%s_%d" fontsize=8 shape=box3d tooltip="%s"]`+"\n", source, j, escapeForDot(t.Name, centerJustify), source, j, weight)
 			nodelets += fmt.Sprintf(`%s -> N%s_%d [label=" %s" weight=100 tooltip="%s" labeltooltip="%s"%s]`+"\n", source, source, j, weight, weight, weight, attr)
 		}
 	}
@@ -305,8 +305,8 @@ func (b *builder) addEdge(edge *Edge, from, to int, hasNodelets bool) {
 		arrow = "..."
 	}
 	tooltip := fmt.Sprintf(`"%s %s %s (%s)"`,
-		escapeForDot(edge.Src.Info.PrintableName(), CenterJustify), arrow,
-		escapeForDot(edge.Dest.Info.PrintableName(), CenterJustify), w)
+		escapeForDot(edge.Src.Info.PrintableName(), centerJustify), arrow,
+		escapeForDot(edge.Dest.Info.PrintableName(), centerJustify), w)
 	attr = fmt.Sprintf(`%s tooltip=%s labeltooltip=%s`, attr, tooltip, tooltip)
 
 	if edge.Residual {
@@ -383,7 +383,7 @@ func dotColor(score float64, isBackground bool) string {
 
 func multilinePrintableName(info *NodeInfo) string {
 	infoCopy := *info
-	infoCopy.Name = escapeForDot(ShortenFunctionName(infoCopy.Name), CenterJustify)
+	infoCopy.Name = escapeForDot(ShortenFunctionName(infoCopy.Name), centerJustify)
 	infoCopy.Name = strings.Replace(infoCopy.Name, "::", `\n`, -1)
 	infoCopy.Name = strings.Replace(infoCopy.Name, ".", `\n`, -1)
 	if infoCopy.File != "" {
@@ -474,16 +474,16 @@ func min64(a, b int64) int64 {
 	return b
 }
 
-type DotJustifyType int64
+type dotJustifyType int64
 
 const (
-	LeftJustify   DotJustifyType = 0
-	CenterJustify DotJustifyType = 1
-	RightJustify  DotJustifyType = 2
+	leftJustify   dotJustifyType = 0
+	centerJustify dotJustifyType = 1
+	rightJustify  dotJustifyType = 2
 )
 
 // Applies escapeForDot to all strings in the given slice.
-func escapeAllForDot(in []string, justify DotJustifyType) []string {
+func escapeAllForDot(in []string, justify dotJustifyType) []string {
 	var out = make([]string, len(in))
 	for i := range in {
 		out[i] = escapeForDot(in[i], justify)
@@ -494,14 +494,14 @@ func escapeAllForDot(in []string, justify DotJustifyType) []string {
 // escapeForDot escapes double quotes and backslashes, and replaces Graphviz's
 // "center" character (\n) with a left-justified character.
 // See https://graphviz.org/doc/info/attrs.html#k:escString for more info.
-func escapeForDot(str string, justify DotJustifyType) string {
+func escapeForDot(str string, justify dotJustifyType) string {
 	var newline string
 	switch justify {
-	case LeftJustify:
+	case leftJustify:
 		newline = `\l`
-	case CenterJustify:
+	case centerJustify:
 		newline = `\n`
-	case RightJustify:
+	case rightJustify:
 		newline = `\r`
 	}
 	return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(str, `\`, `\\`), `"`, `\"`), "\n", newline)
