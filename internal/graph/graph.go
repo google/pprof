@@ -522,7 +522,7 @@ func joinLabels(s *profile.Sample) string {
 		}
 	}
 	sort.Strings(labels)
-	return strings.Join(labels, `\n`)
+	return strings.Join(labels, "\n")  // This will be escaped downstream if needed.
 }
 
 // isNegative returns true if the node is considered as "negative" for the
