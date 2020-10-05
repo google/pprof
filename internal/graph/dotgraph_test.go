@@ -142,8 +142,16 @@ func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 	g := baseGraph()
 	a, c := baseAttrsAndConfig()
 
+	// Change node names to have `"` in them, which need to be escaped for dot.
 	g.Nodes[0].Info = NodeInfo{Name: "var\"src\""}
 	g.Nodes[1].Info = NodeInfo{Name: "var\"#dest#\""}
+
+	// Add tag to Node 1 with `"` in name.
+	g.Nodes[0].LabelTags["a"] = &Tag{
+		Name: "var\"tag1\"",
+		Cum:  10,
+		Flat: 10,
+	}
 
 	// Set edge to be Residual.
 	g.Nodes[0].Out[g.Nodes[1]].Residual = true
