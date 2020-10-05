@@ -375,8 +375,8 @@ func TestEscapeForDot(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			if got := escapeForDot(tc.input); !reflect.DeepEqual(got, tc.want) {
-				t.Errorf("escapeForDot(%s) = %s, want %s", tc.input, got, tc.want)
+			if got := escapeAllForDot(tc.input); !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("escapeAllForDot(%s) = %s, want %s", tc.input, got, tc.want)
 			}
 		})
 	}
