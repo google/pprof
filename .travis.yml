@@ -12,25 +12,25 @@ matrix:
       osx_image: xcode10.3
       go: master
     - os: osx
-      osx_image: xcode11
-      go: master
+      osx_image: xcode10.3
+      go: 1.14.x
     - os: osx
-      osx_image: xcode11.1
-      go: master
-    - os: osx
-      osx_image: xcode11.2
-      go: master
+      osx_image: xcode10.3
+      go: 1.15.x
     - os: osx
       osx_image: xcode11.3
       go: master
     - os: osx
-      osx_image: xcode11.4
-      go: master
+      osx_image: xcode11.3
+      go: 1.14.x
     - os: osx
-      osx_image: xcode11.5
-      go: master
+      osx_image: xcode11.3
+      go: 1.15.x
     - os: osx
       osx_image: xcode11.6
+      go: master
+    - os: osx
+      osx_image: xcode12
       go: master
 
 addons:
