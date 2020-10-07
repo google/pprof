@@ -184,7 +184,7 @@ func skipUnlessLinuxAmd64(t *testing.T) {
 
 func skipUnlessDarwinAmd64(t *testing.T) {
 	if runtime.GOOS != "darwin" || runtime.GOARCH != "amd64" {
-		t.Skip("This test only works on x86-64 Mac")
+		t.Skip("This test only works on x86-64 macOS")
 	}
 }
 
@@ -206,7 +206,7 @@ func testDisasm(t *testing.T, intelSyntax bool) {
 	}
 	mainCount := 0
 	for _, x := range insts {
-		// Mac symbols have a leading underscore.
+		// macOS symbols have a leading underscore.
 		if x.Function == "main" || x.Function == "_main" {
 			mainCount++
 		}
@@ -218,10 +218,16 @@ func testDisasm(t *testing.T, intelSyntax bool) {
 
 func TestDisasm(t *testing.T) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
-		t.Skip("This test only works on Linux or Mac")
+		t.Skip("This test only works on Linux or macOS")
+	}
+	testDisasm(t, false)
+}
+
+func TestDisasmIntelSyntax(t *testing.T) {
+	if (runtime.GOOS != "linux" && runtime.GOOS != "darwin") || runtime.GOARCH != "amd64" {
+		t.Skip("This test only works on x86_64 Linux or macOS as it tests Intel asm syntax")
 	}
 	testDisasm(t, true)
-	testDisasm(t, false)
 }
 
 func findSymbol(syms []*plugin.Sym, name string) *plugin.Sym {
@@ -325,7 +331,7 @@ func TestMachoFiles(t *testing.T) {
 			}
 			t.Logf("binutils: %v", bu)
 			if runtime.GOOS == "darwin" && !bu.rep.addr2lineFound && !bu.rep.llvmSymbolizerFound {
-				// On OSX user needs to install gaddr2line or llvm-symbolizer with
+				// On macOS, user needs to install gaddr2line or llvm-symbolizer with
 				// Homebrew, skip the test when the environment doesn't have it
 				// installed.
 				t.Skip("couldn't find addr2line or gaddr2line")
