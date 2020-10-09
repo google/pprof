@@ -34,6 +34,8 @@ var (
 	// Removes package name and method arugments for Go function names.
 	// See tests for examples.
 	goRegExp = regexp.MustCompile(`^(?:[\w\-\.]+\/)+(.+)`)
+	// Checks for a package name that could be a module version.
+	goVerRegExp = regexp.MustCompile(`^v[2-9]+\.`)
 	// Strips C++ namespace prefix from a C++ function / method name.
 	// NOTE: Make sure to keep the template parameters in the name. Normally,
 	// template parameters are stripped from the C++ names but when
@@ -442,10 +444,31 @@ func ShortenFunctionName(f string) string {
 	f = cppAnonymousPrefixRegExp.ReplaceAllString(f, "")
 	for _, re := range []*regexp.Regexp{goRegExp, javaRegExp, cppRegExp} {
 		if matches := re.FindStringSubmatch(f); len(matches) >= 2 {
-			return strings.Join(matches[1:], "")
+			name := strings.Join(matches[1:], "")
+			if re == goRegExp {
+				return shortenGoFunc(f, name)
+			}
+			return name
 		}
 	}
 	return f
+}
+
+func shortenGoFunc(f string, name string) string {
+	if !goVerRegExp.MatchString(name) {
+		return name
+	}
+
+	// The shortened name could start with a module version (like "v2"). Go back one slash.
+	end := len(f) - len(name) - 1
+	if end >= 0 {
+		prefix := f[:end]
+		if idx := strings.LastIndex(prefix, "/"); idx >= 0 {
+			end = idx
+		}
+	}
+
+	return f[end+1:]
 }
 
 // TrimTree trims a Graph in forest form, keeping only the nodes in kept. This

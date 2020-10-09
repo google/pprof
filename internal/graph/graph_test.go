@@ -452,6 +452,18 @@ func TestShortenFunctionName(t *testing.T) {
 			"redis.v3.(*baseClient).(github.com/blah/blah/vendor/gopkg.in/redis.v3.process)-fm",
 		},
 		{
+			"github.com/jackc/pgx/v4.(*Conn).Query",
+			"pgx/v4.(*Conn).Query",
+		},
+		{
+			"github.com/jackc/pgx/v4/stdlib.connector.Connect",
+			"stdlib.connector.Connect",
+		},
+		{
+			"example.org/v2xyz.Foo",
+			"v2xyz.Foo",
+		},
+		{
 			"java.util.concurrent.ThreadPoolExecutor$Worker.run",
 			"ThreadPoolExecutor$Worker.run",
 		},
