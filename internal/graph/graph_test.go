@@ -452,12 +452,24 @@ func TestShortenFunctionName(t *testing.T) {
 			"redis.v3.(*baseClient).(github.com/blah/blah/vendor/gopkg.in/redis.v3.process)-fm",
 		},
 		{
-			"github.com/jackc/pgx/v4.(*Conn).Query",
-			"pgx/v4.(*Conn).Query",
+			"github.com/foo/bar/v4.(*Foo).Bar",
+			"bar/v4.(*Foo).Bar",
 		},
 		{
-			"github.com/jackc/pgx/v4/stdlib.connector.Connect",
-			"stdlib.connector.Connect",
+			"github.com/foo/bar/v4/baz.Foo.Bar",
+			"baz.Foo.Bar",
+		},
+		{
+			"github.com/foo/bar/v123.(*Foo).Bar",
+			"bar/v123.(*Foo).Bar",
+		},
+		{
+			"github.com/foobar/v0.(*Foo).Bar",
+			"v0.(*Foo).Bar",
+		},
+		{
+			"github.com/foobar/v1.(*Foo).Bar",
+			"v1.(*Foo).Bar",
 		},
 		{
 			"example.org/v2xyz.Foo",

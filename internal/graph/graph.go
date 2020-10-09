@@ -35,7 +35,7 @@ var (
 	// See tests for examples.
 	goRegExp = regexp.MustCompile(`^(?:[\w\-\.]+\/)+(.+)`)
 	// Checks for a package name that could be a module version.
-	goVerRegExp = regexp.MustCompile(`^v[2-9]+\.`)
+	goVerRegExp = regexp.MustCompile(`^v([2-9]|[1-9][0-9]+)\.`)
 	// Strips C++ namespace prefix from a C++ function / method name.
 	// NOTE: Make sure to keep the template parameters in the name. Normally,
 	// template parameters are stripped from the C++ names but when
@@ -467,7 +467,6 @@ func shortenGoFunc(f string, name string) string {
 			end = idx
 		}
 	}
-
 	return f[end+1:]
 }
 
