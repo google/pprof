@@ -453,7 +453,7 @@ func TestShortenFunctionName(t *testing.T) {
 		},
 		{
 			"github.com/foo/bar/v4.(*Foo).Bar",
-			"bar/v4.(*Foo).Bar",
+			"bar.(*Foo).Bar",
 		},
 		{
 			"github.com/foo/bar/v4/baz.Foo.Bar",
@@ -461,7 +461,7 @@ func TestShortenFunctionName(t *testing.T) {
 		},
 		{
 			"github.com/foo/bar/v123.(*Foo).Bar",
-			"bar/v123.(*Foo).Bar",
+			"bar.(*Foo).Bar",
 		},
 		{
 			"github.com/foobar/v0.(*Foo).Bar",
