@@ -476,6 +476,14 @@ func TestShortenFunctionName(t *testing.T) {
 			"v2xyz.Foo",
 		},
 		{
+			"github.com/foo/bar/v4/v4.(*Foo).Bar",
+			"v4.(*Foo).Bar",
+		},
+		{
+			"github.com/foo/bar/v4/foo/bar/v4.(*Foo).Bar",
+			"v4.(*Foo).Bar",
+		},
+		{
 			"java.util.concurrent.ThreadPoolExecutor$Worker.run",
 			"ThreadPoolExecutor$Worker.run",
 		},
