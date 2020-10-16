@@ -459,7 +459,8 @@ func shortenGoFunc(f string, name string) string {
 		return name
 	}
 
-	// The shortened name could start with a module version (like "v2"). Go back one slash.
+	// The shortened name could start with a module version (like "v2"). Go
+	// back one slash.
 	end := len(f) - len(name) - 1
 	if end >= 0 {
 		prefix := f[:end]
