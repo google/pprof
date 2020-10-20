@@ -143,8 +143,6 @@ func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 	a, c := baseAttrsAndConfig()
 	g.Nodes[0].Info = NodeInfo{Name: `var"src"`}
 	g.Nodes[1].Info = NodeInfo{Name: `var"#dest#"`}
-	// Set edge to be Residual.
-	g.Nodes[0].Out[g.Nodes[1]].Residual = true
 
 	var buf bytes.Buffer
 	ComposeDot(&buf, g, a, c)
