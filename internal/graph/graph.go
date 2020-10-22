@@ -319,6 +319,8 @@ func New(prof *profile.Profile, o *Options) *Graph {
 // nodes.
 func newGraph(prof *profile.Profile, o *Options) (*Graph, map[uint64]Nodes) {
 	nodes, locationMap := CreateNodes(prof, o)
+	seenNode := make(map[*Node]bool)
+	seenEdge := make(map[nodePair]bool)
 	for _, sample := range prof.Sample {
 		var w, dw int64
 		w = o.SampleValue(sample.Value)
@@ -328,8 +330,12 @@ func newGraph(prof *profile.Profile, o *Options) (*Graph, map[uint64]Nodes) {
 		if dw == 0 && w == 0 {
 			continue
 		}
-		seenNode := make(map[*Node]bool, len(sample.Location))
-		seenEdge := make(map[nodePair]bool, len(sample.Location))
+		for k := range seenNode {
+			delete(seenNode, k)
+		}
+		for k := range seenEdge {
+			delete(seenEdge, k)
+		}
 		var parent *Node
 		// A residual edge goes over one or more nodes that were not kept.
 		residual := false
