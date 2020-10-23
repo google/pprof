@@ -28,10 +28,10 @@ import (
 )
 
 var (
-	// Removes package name and method arugments for Java method names.
+	// Removes package name and method arguments for Java method names.
 	// See tests for examples.
 	javaRegExp = regexp.MustCompile(`^(?:[a-z]\w*\.)*([A-Z][\w\$]*\.(?:<init>|[a-z][\w\$]*(?:\$\d+)?))(?:(?:\()|$)`)
-	// Removes package name and method arugments for Go function names.
+	// Removes package name and method arguments for Go function names.
 	// See tests for examples.
 	goRegExp = regexp.MustCompile(`^(?:[\w\-\.]+\/)+(.+)`)
 	// Removes potential module versions in a package path.
