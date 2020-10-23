@@ -126,11 +126,11 @@ func (n *Node) AddToEdge(to *Node, v int64, residual, inline bool) {
 // AddToEdgeDiv increases the weight of an edge between two nodes. If
 // there isn't such an edge one is created.
 func (n *Node) AddToEdgeDiv(to *Node, dv, v int64, residual, inline bool) {
-	if n.Out[to] != to.In[n] {
+	e := n.Out[to]
+	if e != to.In[n] {
 		panic(fmt.Errorf("asymmetric edges %v %v", *n, *to))
 	}
-
-	if e := n.Out[to]; e != nil {
+	if e != nil {
 		e.WeightDiv += dv
 		e.Weight += v
 		if residual {
@@ -319,8 +319,8 @@ func New(prof *profile.Profile, o *Options) *Graph {
 // nodes.
 func newGraph(prof *profile.Profile, o *Options) (*Graph, map[uint64]Nodes) {
 	nodes, locationMap := CreateNodes(prof, o)
-	seenNode := make(map[*Node]bool)
-	seenEdge := make(map[nodePair]bool)
+	seenNode := make(map[*Node]struct{})
+	seenEdge := make(map[nodePair]struct{})
 	for _, sample := range prof.Sample {
 		var w, dw int64
 		w = o.SampleValue(sample.Value)
@@ -352,14 +352,16 @@ func newGraph(prof *profile.Profile, o *Options) (*Graph, map[uint64]Nodes) {
 					continue
 				}
 				// Add cum weight to all nodes in stack, avoiding double counting.
-				if _, ok := seenNode[n]; !ok {
-					seenNode[n] = true
+				seenNodeLen := len(seenNode)
+				if seenNode[n] = struct{}{}; seenNodeLen != len(seenNode) {
 					n.addSample(dw, w, labels, sample.NumLabel, sample.NumUnit, o.FormatTag, false)
 				}
 				// Update edge weights for all edges in stack, avoiding double counting.
-				if _, ok := seenEdge[nodePair{n, parent}]; !ok && parent != nil && n != parent {
-					seenEdge[nodePair{n, parent}] = true
-					parent.AddToEdgeDiv(n, dw, w, residual, ni != len(locNodes)-1)
+				if parent != nil && n != parent {
+					seenEdgeLen := len(seenEdge)
+					if seenEdge[nodePair{n, parent}] = struct{}{}; seenEdgeLen != len(seenEdge) {
+						parent.AddToEdgeDiv(n, dw, w, residual, ni != len(locNodes)-1)
+					}
 				}
 				parent = n
 				residual = false
