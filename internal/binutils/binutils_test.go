@@ -217,8 +217,8 @@ func testDisasm(t *testing.T, intelSyntax bool) {
 }
 
 func TestDisasm(t *testing.T) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
-		t.Skip("This test only works on Linux or macOS")
+	if (runtime.GOOS != "linux" && runtime.GOOS != "darwin") || runtime.GOARCH != "amd64" {
+		t.Skip("This test only works on x86-64 Linux or macOS")
 	}
 	testDisasm(t, false)
 }
