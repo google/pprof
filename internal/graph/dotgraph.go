@@ -474,7 +474,7 @@ func min64(a, b int64) int64 {
 	return b
 }
 
-// Applies escapeForDot to all strings in the given slice.
+// escapeAllForDot applies escapeForDot to all strings in the given slice.
 func escapeAllForDot(in []string) []string {
 	var out = make([]string, len(in))
 	for i := range in {
