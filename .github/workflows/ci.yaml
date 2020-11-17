@@ -33,7 +33,7 @@ jobs:
           path: ${{ env.WORKING_DIR }}
 
       - name: Set up Xcode
-        uses: maxim-lobanov/setup-xcode@1.0
+        uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: ${{ matrix.xcode-version }}
 
