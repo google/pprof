@@ -109,7 +109,7 @@ message Sample {
   // entry in Profile.sample_type. All samples must have the same
   // number of values, the same as the length of Profile.sample_type.
   // When aggregating multiple samples into a single sample, the
-  // result has a list of values that is the elemntwise sum of the
+  // result has a list of values that is the element-wise sum of the
   // lists of the originals.
   repeated int64 value = 2;
   // label includes additional context for this sample. It can include
