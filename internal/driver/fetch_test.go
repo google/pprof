@@ -35,6 +35,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/pprof/flagset"
 	"github.com/google/pprof/internal/binutils"
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/internal/proftest"
@@ -216,8 +217,8 @@ func TestFetchWithBase(t *testing.T) {
 	type testcase struct {
 		desc         string
 		sources      []string
-		bases        []string
-		diffBases    []string
+		bases        flagset.StringList
+		diffBases    flagset.StringList
 		normalize    bool
 		wantSamples  []WantSample
 		wantErrorMsg string
@@ -435,7 +436,7 @@ func TestFetchWithBase(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			setCurrentConfig(baseConfig)
 			f := testFlags{
-				stringLists: map[string][]string{
+				stringLists: map[string]flagset.StringList{
 					"base":      tc.bases,
 					"diff_base": tc.diffBases,
 				},

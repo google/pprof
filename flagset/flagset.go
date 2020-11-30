@@ -46,8 +46,3 @@ type FlagSet interface {
 	// Parse should call usage and return nil.
 	Parse(usage func()) []string
 }
-
-type StringList interface {
-	String() string
-	Set(string) error
-}
