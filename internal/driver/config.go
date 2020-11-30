@@ -17,18 +17,20 @@ type config struct {
 	Output string `json:"-"`
 
 	// Display options.
-	CallTree            bool    `json:"call_tree,omitempty"`
-	RelativePercentages bool    `json:"relative_percentages,omitempty"`
-	Unit                string  `json:"unit,omitempty"`
-	CompactLabels       bool    `json:"compact_labels,omitempty"`
-	SourcePath          string  `json:"-"`
-	TrimPath            string  `json:"-"`
-	IntelSyntax         bool    `json:"intel_syntax,omitempty"`
-	Mean                bool    `json:"mean,omitempty"`
-	SampleIndex         string  `json:"-"`
-	DivideBy            float64 `json:"-"`
-	Normalize           bool    `json:"normalize,omitempty"`
-	Sort                string  `json:"sort,omitempty"`
+	CallTree            bool      `json:"call_tree,omitempty"`
+	RelativePercentages bool      `json:"relative_percentages,omitempty"`
+	Unit                string    `json:"unit,omitempty"`
+	CompactLabels       bool      `json:"compact_labels,omitempty"`
+	SourcePath          string    `json:"-"`
+	TrimPath            string    `json:"-"`
+	IntelSyntax         bool      `json:"intel_syntax,omitempty"`
+	Mean                bool      `json:"mean,omitempty"`
+	SampleIndex         string    `json:"-"`
+	DivideBy            float64   `json:"-"`
+	Normalize           bool      `json:"normalize,omitempty"`
+	Sort                string    `json:"sort,omitempty"`
+	TagLeaf             []*string `json:"tagleaf,omitempty"`
+	TagRoot             []*string `json:"tagroot,omitempty"`
 
 	// Filtering options
 	DropNegative bool    `json:"drop_negative,omitempty"`
@@ -145,6 +147,8 @@ func init() {
 		"show_from":            "sf",
 		"tagfocus":             "tf",
 		"tagignore":            "ti",
+		"tagleaf":              "tl",
+		"tagroot":              "tr",
 		"tagshow":              "ts",
 		"taghide":              "th",
 		"mean":                 "mean",
@@ -209,6 +213,8 @@ func (cfg *config) get(f configField) string {
 	case *float64:
 		return fmt.Sprint(*ptr)
 	case *bool:
+		return fmt.Sprint(*ptr)
+	case *[]*string:
 		return fmt.Sprint(*ptr)
 	}
 	panic(fmt.Sprintf("unsupported config field type %v", f.field.Type))

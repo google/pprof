@@ -199,6 +199,14 @@ var configHelp = map[string]string{
 		"Use name=value syntax to limit the matching to a specific tag.",
 		"Numeric tag filter examples: 1kb, 1kb:10kb, memory=32mb:",
 		"String tag filter examples: foo, foo.*bar, mytag=foo.*bar"),
+	"tagleaf": helpText(
+		"Adds a pseudo leaf node for samples with tags matched by regexp",
+		"Use name=value1,value2 syntax to specify the tag and the values",
+		"for which nodes would be added.  Example: latency=1s,2s,3s."),
+	"tagroot": helpText(
+		"Adds a pseudo root node for samples with tags matched by regexp",
+		"Use name=value1,value2 syntax to specify the tag and the values",
+		"for which nodes would be added.  Example: latency=1s,2s,3s."),
 	"tagshow": helpText(
 		"Only consider tags matching this regexp",
 		"Discard tags that do not match this regexp"),
