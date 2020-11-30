@@ -23,6 +23,7 @@ import (
 
 	internaldriver "github.com/google/pprof/internal/driver"
 	"github.com/google/pprof/internal/plugin"
+	"github.com/google/pprof/internal/stringlist"
 	"github.com/google/pprof/profile"
 )
 
@@ -94,7 +95,7 @@ type FlagSet interface {
 
 	// StringList is similar to String but allows multiple values for a
 	// single flag
-	StringList(name string, def string, usage string) *[]*string
+	StringList(name string, def string, usage string) *stringlist.StringList
 
 	// ExtraUsage returns any additional text that should be printed after the
 	// standard usage message. The extra usage message returned includes all text

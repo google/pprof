@@ -38,6 +38,7 @@ import (
 	"github.com/google/pprof/internal/binutils"
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/internal/proftest"
+	"github.com/google/pprof/internal/stringlist"
 	"github.com/google/pprof/internal/symbolizer"
 	"github.com/google/pprof/internal/transport"
 	"github.com/google/pprof/profile"
@@ -435,7 +436,7 @@ func TestFetchWithBase(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			setCurrentConfig(baseConfig)
 			f := testFlags{
-				stringLists: map[string][]string{
+				stringLists: map[string]stringlist.StringList{
 					"base":      tc.bases,
 					"diff_base": tc.diffBases,
 				},

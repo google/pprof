@@ -172,7 +172,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 // addBaseProfiles adds the list of base profiles or diff base profiles to
 // the source. This function will return an error if both base and diff base
 // profiles are specified.
-func (source *source) addBaseProfiles(flagBase, flagDiffBase []*string) error {
+func (source *source) addBaseProfiles(flagBase, flagDiffBase []string) error {
 	base, diffBase := dropEmpty(flagBase), dropEmpty(flagDiffBase)
 	if len(base) > 0 && len(diffBase) > 0 {
 		return errors.New("-base and -diff_base flags cannot both be specified")
@@ -187,11 +187,11 @@ func (source *source) addBaseProfiles(flagBase, flagDiffBase []*string) error {
 
 // dropEmpty list takes a slice of string pointers, and outputs a slice of
 // non-empty strings associated with the flag.
-func dropEmpty(list []*string) []string {
+func dropEmpty(list []string) []string {
 	var l []string
 	for _, s := range list {
-		if *s != "" {
-			l = append(l, *s)
+		if s != "" {
+			l = append(l, s)
 		}
 	}
 	return l
