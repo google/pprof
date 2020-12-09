@@ -176,22 +176,22 @@ func Percentage(value, total int64) string {
 	}
 }
 
-// unit includes a list of names representing a specific unit and a factor
+// unit includes a list of aliases representing a specific unit and a factor
 // which one can multiple a value in the specified unit by to get the value
 // in terms of the base unit.
 type unit struct {
-	preferredName string
-	names         []string
+	canonicalName string
+	aliases       []string
 	factor        float64
 }
 
 var memoryUnits = []unit{
 	{"B", []string{"b", "byte"}, 1},
-	{"kB", []string{"kb", "kbyte", "kilobyte"}, 1024},
-	{"MB", []string{"mb", "mbyte", "megabyte"}, 1024 * 1024},
-	{"GB", []string{"gb", "gbyte", "gigabyte"}, 1024 * 1024 * 1024},
-	{"TB", []string{"tb", "tbyte", "terabyte"}, 1024 * 1024 * 1024 * 1024},
-	{"PB", []string{"pb", "pbyte", "petabyte"}, 1024 * 1024 * 1024 * 1024 * 1024},
+	{"kB", []string{"kb", "kbyte", "kilobyte"}, float64(1 << 10)},
+	{"MB", []string{"mb", "mbyte", "megabyte"}, float64(1 << 20)},
+	{"GB", []string{"gb", "gbyte", "gigabyte"}, float64(1 << 30)},
+	{"TB", []string{"tb", "tbyte", "terabyte"}, float64(1 << 40)},
+	{"PB", []string{"pb", "pbyte", "petabyte"}, float64(1 << 50)},
 }
 
 // isMemoryUnit returns whether a name is recognized as a memory size
@@ -204,27 +204,21 @@ func isMemoryUnit(unit string) bool {
 func memoryLabel(value int64, fromUnit, toUnit string) (v float64, u string, ok bool) {
 	fromUnit = strings.TrimSuffix(strings.ToLower(fromUnit), "s")
 	toUnit = strings.TrimSuffix(strings.ToLower(toUnit), "s")
-
 	uf := func(unit string) (string, float64, bool) {
 		return unitFactor(unit, memoryUnits)
 	}
-
 	as := func(value float64) (float64, string, bool) {
-		return autoscale(value, memoryUnits)
+		return autoScale(value, memoryUnits)
 	}
-
 	return convertUnit(value, fromUnit, toUnit, unit{"B", []string{}, 1.0}, uf, as)
 }
 
 var timeUnits = []unit{
 	{"ns", []string{"ns", "nanosecond"}, float64(time.Nanosecond)},
-	{"μs", []string{"μs", "us", "microsecond"}, float64(time.Microsecond)},
+	{"us", []string{"μs", "us", "microsecond"}, float64(time.Microsecond)},
 	{"ms", []string{"ms", "millisecond"}, float64(time.Millisecond)},
 	{"s", []string{"s", "sec", "second"}, float64(time.Second)},
 	{"hrs", []string{"hour", "hr"}, float64(time.Hour)},
-	{"days", []string{"day"}, 24 * float64(time.Hour)},
-	{"wks", []string{"wk", "week"}, 7 * 24 * float64(time.Hour)},
-	{"yrs", []string{"yr", "year"}, 365 * 24 * float64(time.Hour)},
 }
 
 // isTimeUnit returns whether a name is recognized as a time unit.
@@ -233,7 +227,6 @@ func isTimeUnit(unit string) bool {
 	if len(unit) > 2 {
 		unit = strings.TrimSuffix(unit, "s")
 	}
-
 	_, _, timeUnit := unitFactor(unit, timeUnits)
 	return timeUnit || unit == "cycle"
 }
@@ -257,66 +250,46 @@ func timeLabel(value int64, fromUnit, toUnit string) (v float64, u string, ok bo
 		return unitFactor(unit, timeUnits)
 	}
 	as := func(value float64) (float64, string, bool) {
-		return autoscale(value, timeUnits)
+		return autoScale(value, timeUnits)
 	}
 	return convertUnit(value, fromUnit, toUnit, unit{"s", []string{}, float64(time.Second)}, uf, as)
 }
 
-var caseInsensitiveGCUUnits = []unit{
-	{"n·GCU", []string{"nanogcu"}, 1e-9},
-	{"μ·GCU", []string{"microgcu"}, 1e-6},
-	{"m·GCU", []string{"milligcu"}, 1e-3},
+var gcuUnits = []unit{
+	{"n*GCU", []string{"nanogcu"}, 1e-9},
+	{"u*GCU", []string{"microgcu"}, 1e-6},
+	{"m*GCU", []string{"milligcu"}, 1e-3},
 	{"GCU", []string{"gcu"}, 1},
-	{"k·GCU", []string{"kilogcu"}, 1e3},
-	{"M·GCU", []string{"megagcu"}, 1e6},
-	{"G·GCU", []string{"gigagcu"}, 1e9},
-	{"T·GCU", []string{"teragcu"}, 1e12},
-	{"P·GCU", []string{"petagcu"}, 1e15},
-}
-
-var caseSensitiveGCUUnits = []unit{
-	{"n·GCU", []string{"n·GCU", "n*GCU"}, 1e-9},
-	{"μ·GCU", []string{"μ·GCU", "μ*GCU", "u·GCU", "u*GCU"}, 1e-6},
-	{"m·GCU", []string{"m·GCU", "m*GCU"}, 1e-3},
-	{"k·GCU", []string{"k·GCU", "k*GCU"}, 1e3},
-	{"M·GCU", []string{"M·GCU", "M*GCU"}, 1e6},
-	{"G·GCU", []string{"G·GCU", "G*GCU"}, 1e9},
-	{"T·GCU", []string{"T·GCU", "T*GCU"}, 1e12},
-	{"P·GCU", []string{"P·GCU", "P*GCU"}, 1e15},
+	{"k*GCU", []string{"kilogcu"}, 1e3},
+	{"M*GCU", []string{"megagcu"}, 1e6},
+	{"G*GCU", []string{"gigagcu"}, 1e9},
+	{"T*GCU", []string{"teragcu"}, 1e12},
+	{"P*GCU", []string{"petagcu"}, 1e15},
 }
 
 // isGCUUnit returns whether a name is recognized as a GCU unit.
 func isGCUUnit(unit string) bool {
-	_, _, gcuUnit := gcuUnitFactor(unit)
+	_, _, gcuUnit := unitFactor(strings.TrimSuffix(strings.ToLower(unit), "s"), gcuUnits)
 	return gcuUnit
 }
 
-func gcuUnitFactor(unit string) (string, float64, bool) {
-	unit = strings.TrimSuffix(strings.TrimSuffix(unit, "s"), "S")
-	if u, f, ok := unitFactor(unit, caseSensitiveGCUUnits); ok {
-		return u, f, true
-	}
-	unit = strings.ToLower(unit)
-	if u, f, ok := unitFactor(unit, caseInsensitiveGCUUnits); ok {
-		return u, f, true
-	}
-	return "", 0, false
-}
-
 func gcuLabel(value int64, fromUnit, toUnit string) (v float64, u string, ok bool) {
-	as := func(value float64) (float64, string, bool) {
-		// use caseInsentiveGCUUnits for autoscaling, since only this list of
-		// GCU units includes the unprefixed gcu unit.
-		return autoscale(value, caseInsensitiveGCUUnits)
+	fromUnit = strings.TrimSuffix(strings.ToLower(fromUnit), "s")
+	toUnit = strings.TrimSuffix(strings.ToLower(toUnit), "s")
+	uf := func(unit string) (string, float64, bool) {
+		return unitFactor(unit, gcuUnits)
 	}
-	return convertUnit(value, fromUnit, toUnit, unit{"s", []string{}, float64(time.Second)}, gcuUnitFactor, as)
+	as := func(value float64) (float64, string, bool) {
+		return autoScale(value, gcuUnits)
+	}
+	return convertUnit(value, fromUnit, toUnit, unit{"GCU", []string{}, 1.0}, uf, as)
 }
 
 // convertUnit converts a value from the fromUnit to the toUnit, autoscaling
 // the value if the toUnit is "minimum" or "auto". If the fromUnit is not
 // included in units, then a false boolean will be returned. If the toUnit
 // is not in units, the value will be returned in terms of the default unit.
-func convertUnit(value int64, fromUnit, toUnit string, defaultUnit unit, unitFactor func(string) (string, float64, bool), autoscale func(float64) (float64, string, bool)) (v float64, u string, ok bool) {
+func convertUnit(value int64, fromUnit, toUnit string, defaultUnit unit, unitFactor func(string) (string, float64, bool), autoScale func(float64) (float64, string, bool)) (v float64, u string, ok bool) {
 	_, fromUnitFactor, ok := unitFactor(fromUnit)
 	if !ok {
 		return 0, "", false
@@ -325,45 +298,44 @@ func convertUnit(value int64, fromUnit, toUnit string, defaultUnit unit, unitFac
 	v = float64(value) * fromUnitFactor
 
 	if toUnit == "minimum" || toUnit == "auto" {
-		if v, u, ok := autoscale(v); ok {
+		if v, u, ok := autoScale(v); ok {
 			return v, u, true
 		}
-		return v / defaultUnit.factor, defaultUnit.preferredName, true
+		return v / defaultUnit.factor, defaultUnit.canonicalName, true
 	}
 
 	toUnit, toUnitFactor, ok := unitFactor(toUnit)
 	if !ok {
-		return v / defaultUnit.factor, defaultUnit.preferredName, true
+		return v / defaultUnit.factor, defaultUnit.canonicalName, true
 	}
 	return v / toUnitFactor, toUnit, true
 }
 
-// unitFactor returns the preferred version of the unit name for display, the
-// factor by which one must multiply a value specified in terms of unit in
-// order to get the value specified in terms of the base unit, and a boolean
-// to indicated if a unit factor was identified for the specified unit within
-// the slice units.
+// unitFactor returns the canonical name for the unit, the factor by which one
+// must multiply a value specified in terms of unit in order to get the value
+// specified in terms of the base unit, and a boolean to indicated if a unit
+// was identified for the specified unit within the slice units.
 func unitFactor(unit string, units []unit) (string, float64, bool) {
 	for _, u := range units {
-		for _, n := range u.names {
-			if unit == n {
-				return u.preferredName, u.factor, true
+		for _, a := range u.aliases {
+			if unit == a {
+				return u.canonicalName, u.factor, true
 			}
 		}
 	}
 	return unit, 0, false
 }
 
-// autoscale takes in the value with units of base unit and returns
+// autoScale takes in the value with units of base unit and returns
 // that value scaled to a reasonable unit if a reasonable unit is
 // found.
-func autoscale(value float64, units []unit) (float64, string, bool) {
+func autoScale(value float64, units []unit) (float64, string, bool) {
 	var f float64
 	var unit string
 	for _, u := range units {
 		if u.factor >= f && (value/u.factor) >= 1.0 {
 			f = u.factor
-			unit = u.preferredName
+			unit = u.canonicalName
 		}
 	}
 	if f == 0 {
