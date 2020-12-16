@@ -1,0 +1,7 @@
+digraph "testtitle" {
+node [style=filled fillcolor="#f8f8f8"]
+subgraph cluster_L { "label1" [shape=box fontsize=16 label="label1\llabel2\llabel3: \"foo\"\l" tooltip="testtitle"] }
+N1 [label="var\"src\"\n10 (10.00%)\nof 25 (25.00%)" id="node1" fontsize=22 shape=box tooltip="var\"src\" (25)" color="#b23c00" fillcolor="#edddd5"]
+N2 [label="var\"#dest#\"\n15 (15.00%)\nof 25 (25.00%)" id="node2" fontsize=24 shape=box tooltip="var\"#dest#\" (25)" color="#b23c00" fillcolor="#edddd5"]
+N1 -> N2 [label=" 10" weight=11 color="#b28559" tooltip="var\"src\" -> var\"#dest#\" (10)" labeltooltip="var\"src\" -> var\"#dest#\" (10)"]
+}

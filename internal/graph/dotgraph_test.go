@@ -138,6 +138,18 @@ func TestComposeWithStandardGraphAndURL(t *testing.T) {
 	compareGraphs(t, buf.Bytes(), "compose6.dot")
 }
 
+func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
+	g := baseGraph()
+	a, c := baseAttrsAndConfig()
+	g.Nodes[0].Info = NodeInfo{Name: `var"src"`}
+	g.Nodes[1].Info = NodeInfo{Name: `var"#dest#"`}
+
+	var buf bytes.Buffer
+	ComposeDot(&buf, g, a, c)
+
+	compareGraphs(t, buf.Bytes(), "compose7.dot")
+}
+
 func baseGraph() *Graph {
 	src := &Node{
 		Info:        NodeInfo{Name: "src"},
@@ -359,8 +371,8 @@ func TestEscapeForDot(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			if got := escapeForDot(tc.input); !reflect.DeepEqual(got, tc.want) {
-				t.Errorf("escapeForDot(%s) = %s, want %s", tc.input, got, tc.want)
+			if got := escapeAllForDot(tc.input); !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("escapeAllForDot(%s) = %s, want %s", tc.input, got, tc.want)
 			}
 		})
 	}

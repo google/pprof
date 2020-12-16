@@ -80,7 +80,12 @@ func TestSource(t *testing.T) {
 			t.Fatalf("%s: %v", tc.want, err)
 		}
 		if runtime.GOOS == "windows" {
-			gold = bytes.Replace(gold, []byte("testdata/"), []byte("testdata\\"), -1)
+			if tc.rpt.options.OutputFormat == Dot {
+				// The .dot test has the paths inside strings, so \ must be escaped.
+				gold = bytes.Replace(gold, []byte("testdata/"), []byte(`testdata\\`), -1)
+			} else {
+				gold = bytes.Replace(gold, []byte("testdata/"), []byte(`testdata\`), -1)
+			}
 		}
 		if string(b.String()) != string(gold) {
 			d, err := proftest.Diff(gold, b.Bytes())
