@@ -135,6 +135,11 @@ jobs:
 
       - name: Run the test
         run: |
+          # This is a workaround to make graphviz installed through choco work.
+          # It generates a config file to tell dot what layout engine and 
+          # format types are available. See
+          # https://github.com/google/pprof/issues/585 for more details.
+          dot -c
           go env
           go build github.com/google/pprof
           go test -v ./...
