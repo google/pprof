@@ -109,10 +109,11 @@ type Mapping struct {
 
 // Location corresponds to Profile.Location
 type Location struct {
-	ID      uint64
-	Mapping *Mapping
-	Address uint64
-	Line    []Line
+	ID       uint64
+	Mapping  *Mapping
+	Address  uint64
+	Line     []Line
+	IsFolded bool
 
 	mappingIDX uint64
 }
@@ -163,7 +164,7 @@ func ParseData(data []byte) (*Profile, error) {
 			return nil, fmt.Errorf("decompressing profile: %v", err)
 		}
 	}
-	if p, err = ParseUncompressed(data); err != nil && err != errNoData {
+	if p, err = ParseUncompressed(data); err != nil && err != errNoData && err != errConcatProfile {
 		p, err = parseLegacy(data)
 	}
 
@@ -180,6 +181,7 @@ func ParseData(data []byte) (*Profile, error) {
 var errUnrecognized = fmt.Errorf("unrecognized profile format")
 var errMalformed = fmt.Errorf("malformed profile format")
 var errNoData = fmt.Errorf("empty input file")
+var errConcatProfile = fmt.Errorf("concatenated profiles detected")
 
 func parseLegacy(data []byte) (*Profile, error) {
 	parsers := []func([]byte) (*Profile, error){
@@ -396,10 +398,12 @@ func (p *Profile) CheckValid() error {
 			}
 		}
 		for _, ln := range l.Line {
-			if f := ln.Function; f != nil {
-				if f.ID == 0 || functions[f.ID] != f {
-					return fmt.Errorf("inconsistent function %p: %d", f, f.ID)
-				}
+			f := ln.Function
+			if f == nil {
+				return fmt.Errorf("location id: %d has a line with nil function", l.ID)
+			}
+			if f.ID == 0 || functions[f.ID] != f {
+				return fmt.Errorf("inconsistent function %p: %d", f, f.ID)
 			}
 		}
 	}
@@ -591,6 +595,9 @@ func (l *Location) string() string {
 	if m := l.Mapping; m != nil {
 		locStr = locStr + fmt.Sprintf("M=%d ", m.ID)
 	}
+	if l.IsFolded {
+		locStr = locStr + "[F] "
+	}
 	if len(l.Line) == 0 {
 		ss = append(ss, locStr)
 	}
@@ -647,7 +654,7 @@ func labelsToString(labels map[string][]string) string {
 	return strings.Join(ls, " ")
 }
 
-// numLablesToString returns a string representation of a map
+// numLabelsToString returns a string representation of a map
 // representing numeric labels.
 func numLabelsToString(numLabels map[string][]int64, numUnits map[string][]string) string {
 	ls := []string{}
@@ -667,6 +674,42 @@ func numLabelsToString(numLabels map[string][]int64, numUnits map[string][]strin
 	}
 	sort.Strings(ls)
 	return strings.Join(ls, " ")
+}
+
+// SetLabel sets the specified key to the specified value for all samples in the
+// profile.
+func (p *Profile) SetLabel(key string, value []string) {
+	for _, sample := range p.Sample {
+		if sample.Label == nil {
+			sample.Label = map[string][]string{key: value}
+		} else {
+			sample.Label[key] = value
+		}
+	}
+}
+
+// RemoveLabel removes all labels associated with the specified key for all
+// samples in the profile.
+func (p *Profile) RemoveLabel(key string) {
+	for _, sample := range p.Sample {
+		delete(sample.Label, key)
+	}
+}
+
+// HasLabel returns true if a sample has a label with indicated key and value.
+func (s *Sample) HasLabel(key, value string) bool {
+	for _, v := range s.Label[key] {
+		if v == value {
+			return true
+		}
+	}
+	return false
+}
+
+// DiffBaseSample returns true if a sample belongs to the diff base and false
+// otherwise.
+func (s *Sample) DiffBaseSample() bool {
+	return s.HasLabel("pprof::base", "true")
 }
 
 // Scale multiplies all sample values in a profile by a constant.

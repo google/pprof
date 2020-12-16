@@ -16,13 +16,14 @@ package driver
 
 import (
 	"fmt"
-	"io"
 	"math/rand"
 	"strings"
 	"testing"
 
 	"github.com/google/pprof/internal/plugin"
+	"github.com/google/pprof/internal/proftest"
 	"github.com/google/pprof/internal/report"
+	"github.com/google/pprof/internal/transport"
 	"github.com/google/pprof/profile"
 )
 
@@ -36,85 +37,72 @@ func TestShell(t *testing.T) {
 	savedCommands, pprofCommands = pprofCommands, testCommands
 	defer func() { pprofCommands = savedCommands }()
 
-	savedVariables := pprofVariables
-	defer func() { pprofVariables = savedVariables }()
+	savedConfig := currentConfig()
+	defer setCurrentConfig(savedConfig)
 
-	// Random interleave of independent scripts
-	pprofVariables = testVariables(savedVariables)
-	o := setDefaults(nil)
-	o.UI = newUI(t, interleave(script, 0))
-	if err := interactive(p, o); err != nil {
-		t.Error("first attempt:", err)
-	}
-	// Random interleave of independent scripts
-	pprofVariables = testVariables(savedVariables)
-	o.UI = newUI(t, interleave(script, 1))
-	if err := interactive(p, o); err != nil {
-		t.Error("second attempt:", err)
-	}
+	shortcuts1, scScript1 := makeShortcuts(interleave(script, 2), 1)
+	shortcuts2, scScript2 := makeShortcuts(interleave(script, 1), 2)
 
-	// Random interleave of independent scripts with shortcuts
-	pprofVariables = testVariables(savedVariables)
-	var scScript []string
-	pprofShortcuts, scScript = makeShortcuts(interleave(script, 2), 1)
-	o.UI = newUI(t, scScript)
-	if err := interactive(p, o); err != nil {
-		t.Error("first shortcut attempt:", err)
-	}
-
-	// Random interleave of independent scripts with shortcuts
-	pprofVariables = testVariables(savedVariables)
-	pprofShortcuts, scScript = makeShortcuts(interleave(script, 1), 2)
-	o.UI = newUI(t, scScript)
-	if err := interactive(p, o); err != nil {
-		t.Error("second shortcut attempt:", err)
+	var testcases = []struct {
+		name              string
+		input             []string
+		shortcuts         shortcuts
+		allowRx           string
+		numAllowRxMatches int
+		propagateError    bool
+	}{
+		{"Random interleave of independent scripts 1", interleave(script, 0), pprofShortcuts, "", 0, false},
+		{"Random interleave of independent scripts 2", interleave(script, 1), pprofShortcuts, "", 0, false},
+		{"Random interleave of independent scripts with shortcuts 1", scScript1, shortcuts1, "", 0, false},
+		{"Random interleave of independent scripts with shortcuts 2", scScript2, shortcuts2, "", 0, false},
+		{"Group with invalid value", []string{"sort=this"}, pprofShortcuts, `invalid "sort" value`, 1, false},
+		{"No special value provided for the option", []string{"sample_index"}, pprofShortcuts, `please specify a value, e.g. sample_index=<val>`, 1, false},
+		{"No string value provided for the option", []string{"focus"}, pprofShortcuts, `please specify a value, e.g. focus=<val>`, 1, false},
+		{"No float value provided for the option", []string{"divide_by"}, pprofShortcuts, `please specify a value, e.g. divide_by=<val>`, 1, false},
+		{"Helpful input format reminder", []string{"sample_index 0"}, pprofShortcuts, `did you mean: sample_index=0`, 1, false},
+		{"Verify propagation of IO errors", []string{"**error**"}, pprofShortcuts, "", 0, true},
 	}
 
-	// Verify propagation of IO errors
-	pprofVariables = testVariables(savedVariables)
-	o.UI = newUI(t, []string{"**error**"})
-	if err := interactive(p, o); err == nil {
-		t.Error("expected IO error, got nil")
-	}
+	o := setDefaults(&plugin.Options{HTTPTransport: transport.New(nil)})
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			setCurrentConfig(savedConfig)
+			pprofShortcuts = tc.shortcuts
+			ui := &proftest.TestUI{
+				T:       t,
+				Input:   tc.input,
+				AllowRx: tc.allowRx,
+			}
+			o.UI = ui
 
+			err := interactive(p, o)
+			if (tc.propagateError && err == nil) || (!tc.propagateError && err != nil) {
+				t.Errorf("%s: %v", tc.name, err)
+			}
+
+			// Confirm error message written out once.
+			if tc.numAllowRxMatches != ui.NumAllowRxMatches {
+				t.Errorf("want error message to be printed %d time(s), got %d",
+					tc.numAllowRxMatches, ui.NumAllowRxMatches)
+			}
+		})
+	}
 }
 
 var testCommands = commands{
 	"check": &command{report.Raw, nil, nil, true, "", ""},
 }
 
-func testVariables(base variables) variables {
-	v := base.makeCopy()
-
-	v["b"] = &variable{boolKind, "f", "", ""}
-	v["bb"] = &variable{boolKind, "f", "", ""}
-	v["i"] = &variable{intKind, "0", "", ""}
-	v["ii"] = &variable{intKind, "0", "", ""}
-	v["f"] = &variable{floatKind, "0", "", ""}
-	v["ff"] = &variable{floatKind, "0", "", ""}
-	v["s"] = &variable{stringKind, "", "", ""}
-	v["ss"] = &variable{stringKind, "", "", ""}
-
-	v["ta"] = &variable{boolKind, "f", "radio", ""}
-	v["tb"] = &variable{boolKind, "f", "radio", ""}
-	v["tc"] = &variable{boolKind, "t", "radio", ""}
-
-	return v
-}
-
 // script contains sequences of commands to be executed for testing. Commands
 // are split by semicolon and interleaved randomly, so they must be
 // independent from each other.
 var script = []string{
-	"bb=true;bb=false;check bb=false;bb=yes;check bb=true",
-	"b=1;check b=true;b=n;check b=false",
-	"i=-1;i=-2;check i=-2;i=999999;check i=999999",
-	"check ii=0;ii=-1;check ii=-1;ii=100;check ii=100",
-	"f=-1;f=-2.5;check f=-2.5;f=0.0001;check f=0.0001",
-	"check ff=0;ff=-1.01;check ff=-1.01;ff=100;check ff=100",
-	"s=one;s=two;check s=two",
-	"ss=tree;check ss=tree;ss=;check ss;ss=forest;check ss=forest",
-	"ta=true;check ta=true;check tb=false;check tc=false;tb=1;check tb=true;check ta=false;check tc=false;tc=yes;check tb=false;check ta=false;check tc=true",
+	"call_tree=true;call_tree=false;check call_tree=false;call_tree=yes;check call_tree=true",
+	"mean=1;check mean=true;mean=n;check mean=false",
+	"nodecount=-1;nodecount=-2;check nodecount=-2;nodecount=999999;check nodecount=999999",
+	"nodefraction=-1;nodefraction=-2.5;check nodefraction=-2.5;nodefraction=0.0001;check nodefraction=0.0001",
+	"focus=one;focus=two;check focus=two",
+	"flat=true;check sort=flat;cum=1;check sort=cum",
 }
 
 func makeShortcuts(input []string, seed int) (shortcuts, []string) {
@@ -143,49 +131,7 @@ func makeShortcuts(input []string, seed int) (shortcuts, []string) {
 	return s, output
 }
 
-func newUI(t *testing.T, input []string) plugin.UI {
-	return &testUI{
-		t:     t,
-		input: input,
-	}
-}
-
-type testUI struct {
-	t     *testing.T
-	input []string
-	index int
-}
-
-func (ui *testUI) ReadLine(_ string) (string, error) {
-	if ui.index >= len(ui.input) {
-		return "", io.EOF
-	}
-	input := ui.input[ui.index]
-	if input == "**error**" {
-		return "", fmt.Errorf("Error: %s", input)
-	}
-	ui.index++
-	return input, nil
-}
-
-func (ui *testUI) Print(args ...interface{}) {
-}
-
-func (ui *testUI) PrintErr(args ...interface{}) {
-	output := fmt.Sprint(args)
-	if output != "" {
-		ui.t.Error(output)
-	}
-}
-
-func (ui *testUI) IsTerminal() bool {
-	return false
-}
-
-func (ui *testUI) SetAutoComplete(func(string) string) {
-}
-
-func checkValue(p *profile.Profile, cmd []string, vars variables, o *plugin.Options) error {
+func checkValue(p *profile.Profile, cmd []string, cfg config, o *plugin.Options) error {
 	if len(cmd) != 2 {
 		return fmt.Errorf("expected len(cmd)==2, got %v", cmd)
 	}
@@ -200,12 +146,12 @@ func checkValue(p *profile.Profile, cmd []string, vars variables, o *plugin.Opti
 		value = args[1]
 	}
 
-	gotv := vars[name]
-	if gotv == nil {
+	f, ok := configFieldMap[name]
+	if !ok {
 		return fmt.Errorf("Could not find variable named %s", name)
 	}
 
-	if got := gotv.stringValue(); got != value {
+	if got := cfg.get(f); got != value {
 		return fmt.Errorf("Variable %s, want %s, got %s", name, value, got)
 	}
 	return nil
@@ -240,62 +186,59 @@ func TestInteractiveCommands(t *testing.T) {
 		{
 			"top 10 --cum focus1 -ignore focus2",
 			map[string]string{
-				"functions": "true",
-				"nodecount": "10",
-				"cum":       "true",
-				"focus":     "focus1|focus2",
-				"ignore":    "ignore",
+				"granularity": "functions",
+				"nodecount":   "10",
+				"sort":        "cum",
+				"focus":       "focus1|focus2",
+				"ignore":      "ignore",
 			},
 		},
 		{
 			"top10 --cum focus1 -ignore focus2",
 			map[string]string{
-				"functions": "true",
-				"nodecount": "10",
-				"cum":       "true",
-				"focus":     "focus1|focus2",
-				"ignore":    "ignore",
+				"granularity": "functions",
+				"nodecount":   "10",
+				"sort":        "cum",
+				"focus":       "focus1|focus2",
+				"ignore":      "ignore",
 			},
 		},
 		{
 			"dot",
 			map[string]string{
-				"functions": "true",
-				"nodecount": "80",
-				"cum":       "false",
+				"granularity": "functions",
+				"nodecount":   "80",
+				"sort":        "flat",
 			},
 		},
 		{
 			"tags   -ignore1 -ignore2 focus1 >out",
 			map[string]string{
-				"functions": "true",
-				"nodecount": "80",
-				"cum":       "false",
-				"output":    "out",
-				"tagfocus":  "focus1",
-				"tagignore": "ignore1|ignore2",
+				"granularity": "functions",
+				"nodecount":   "80",
+				"sort":        "flat",
+				"output":      "out",
+				"tagfocus":    "focus1",
+				"tagignore":   "ignore1|ignore2",
 			},
 		},
 		{
 			"weblist  find -test",
 			map[string]string{
-				"functions":        "false",
-				"addressnoinlines": "true",
-				"nodecount":        "0",
-				"cum":              "false",
-				"flat":             "true",
-				"ignore":           "test",
+				"granularity": "addresses",
+				"noinlines":   "true",
+				"nodecount":   "0",
+				"sort":        "flat",
+				"ignore":      "test",
 			},
 		},
 		{
 			"callgrind   fun -ignore  >out",
 			map[string]string{
-				"functions": "false",
-				"addresses": "true",
-				"nodecount": "0",
-				"cum":       "false",
-				"flat":      "true",
-				"output":    "out",
+				"granularity": "addresses",
+				"nodecount":   "0",
+				"sort":        "flat",
+				"output":      "out",
 			},
 		},
 		{
@@ -305,7 +248,7 @@ func TestInteractiveCommands(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		cmd, vars, err := parseCommandLine(strings.Fields(tc.input))
+		cmd, cfg, err := parseCommandLine(strings.Fields(tc.input))
 		if tc.want == nil && err != nil {
 			// Error expected
 			continue
@@ -314,10 +257,16 @@ func TestInteractiveCommands(t *testing.T) {
 			t.Errorf("failed on %q: %v", tc.input, err)
 			continue
 		}
-		vars = applyCommandOverrides(cmd, vars)
+
+		// Get report output format
+		c := pprofCommands[cmd[0]]
+		if c == nil {
+			t.Fatalf("unexpected nil command")
+		}
+		cfg = applyCommandOverrides(cmd[0], c.format, cfg)
 
 		for n, want := range tc.want {
-			if got := vars[n].stringValue(); got != want {
+			if got := cfg.get(configFieldMap[n]); got != want {
 				t.Errorf("failed on %q, cmd=%q, %s got %s, want %s", tc.input, cmd, n, got, want)
 			}
 		}

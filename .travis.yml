@@ -1,3 +1,5 @@
+# Once https://github.com/actions/setup-go/pull/34 is finished, we can remove
+# travis.ci altogether and move everything to Github Action.
 language: go
 
 go_import_path: github.com/google/pprof
@@ -5,57 +7,53 @@ go_import_path: github.com/google/pprof
 matrix:
   include:
     - os: linux
-      go: 1.7.x
-    - os: linux
-      go: 1.8.x
-    - os: linux
-      go: 1.9.x
-    - os: linux
       go: master
     - os: osx
-      osx_image: xcode6.4
-      go: 1.8.x
-    - os: osx
-      osx_image: xcode6.4
-      go: 1.9.x
-    - os: osx
-      osx_image: xcode6.4
+      osx_image: xcode10.3
       go: master
     - os: osx
-      osx_image: xcode7.3
-      go: 1.8.x
+      osx_image: xcode10.3
+      go: 1.14.x
     - os: osx
-      osx_image: xcode7.3
-      go: 1.9.x
+      osx_image: xcode10.3
+      go: 1.15.x
     - os: osx
-      osx_image: xcode7.3
+      osx_image: xcode11.3
       go: master
     - os: osx
-      osx_image: xcode8.3
-      go: 1.8.x
+      osx_image: xcode11.3
+      go: 1.14.x
     - os: osx
-      osx_image: xcode8.3
-      go: 1.9.x
+      osx_image: xcode11.3
+      go: 1.15.x
     - os: osx
-      osx_image: xcode8.3
+      osx_image: xcode11.6
+      go: master
+    - os: osx
+      osx_image: xcode12
       go: master
 
 addons:
   apt:
     packages:
       - graphviz
-      
+  homebrew:
+    packages:
+      - graphviz
+    update: true
+ 
 before_install:
-  - go get -u github.com/golang/lint/golint honnef.co/go/tools/cmd/...   
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install graphviz; fi
+  # Do not let tools interfere with the main module's go.mod
+  - env GO111MODULE=off go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
 
 script:
   - gofmtdiff=$(gofmt -s -d .) && if [ -n "$gofmtdiff" ]; then printf 'gofmt -s found:\n%s\n' "$gofmtdiff" && exit 1; fi
   - golintlint=$(golint ./...) && if [ -n "$golintlint" ]; then printf 'golint found:\n%s\n' "$golintlint" && exit 1; fi
-  - go tool vet -all .
-  - gosimple ./...
+  - go vet -all ./...
   - ./test.sh
+
+  # Check still works in GOPATH mode.
+  - env GO111MODULE=off go get -d . && go test -v ./...
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

@@ -14,15 +14,16 @@
 
 package driver
 
-import "html/template"
-import "github.com/google/pprof/third_party/d3"
-import "github.com/google/pprof/third_party/d3tip"
-import "github.com/google/pprof/third_party/d3flamegraph"
+import (
+	"html/template"
+
+	"github.com/google/pprof/third_party/d3"
+	"github.com/google/pprof/third_party/d3flamegraph"
+)
 
 // addTemplates adds a set of template definitions to templates.
 func addTemplates(templates *template.Template) {
 	template.Must(templates.Parse(`{{define "d3script"}}` + d3.JSSource + `{{end}}`))
-	template.Must(templates.Parse(`{{define "d3tipscript"}}` + d3tip.JSSource + `{{end}}`))
 	template.Must(templates.Parse(`{{define "d3flamegraphscript"}}` + d3flamegraph.JSSource + `{{end}}`))
 	template.Must(templates.Parse(`{{define "d3flamegraphcss"}}` + d3flamegraph.CSSSource + `{{end}}`))
 	template.Must(templates.Parse(`
@@ -61,6 +62,7 @@ a {
 .header .title h1 {
   font-size: 1.75em;
   margin-right: 1rem;
+  margin-bottom: 4px;
 }
 .header .title a {
   color: #212121;
@@ -92,7 +94,7 @@ a {
   text-align: left;
 }
 .header input {
-  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' style='pointer-events:none;display:block;width:100%25;height:100%25;fill:#757575'%3E%3Cpath d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61.0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E") no-repeat 4px center/20px 20px;
+  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' style='pointer-events:none;display:block;width:100%25;height:100%25;fill:%23757575'%3E%3Cpath d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61.0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E") no-repeat 4px center/20px 20px;
   border: 1px solid #d1d2d3;
   border-radius: 2px 0 0 2px;
   padding: 0.25em;
@@ -117,20 +119,11 @@ a {
   font-family: 'Roboto Medium', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
   position: relative;
 }
-.menu-item.disabled {
-  opacity: 0.5;
-}
 .menu-item .menu-name:hover {
   opacity: 0.75;
 }
 .menu-item .menu-name:hover .downArrow {
   border-top-color: #666;
-}
-.menu-item.disabled .menu-name:hover {
-  opacity: 1;
-}
-.menu-item.disabled .menu-name:hover .downArrow {
-  border-top-color: #ccc;
 }
 .menu-name {
   height: 100%;
@@ -174,6 +167,73 @@ a {
   color: gray;
   pointer-events: none;
 }
+.menu-check-mark {
+  position: absolute;
+  left: 2px;
+}
+.menu-delete-btn {
+  position: absolute;
+  right: 2px;
+}
+
+{{/* Used to disable events when a modal dialog is displayed */}}
+#dialog-overlay {
+  display: none;
+  position: fixed;
+  left: 0px;
+  top: 0px;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(1,1,1,0.1);
+}
+
+.dialog {
+  {{/* Displayed centered horizontally near the top */}}
+  display: none;
+  position: fixed;
+  margin: 0px;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  z-index: 3;
+  font-size: 125%;
+  background-color: #ffffff;
+  box-shadow: 0 1px 5px rgba(0,0,0,.3);
+}
+.dialog-header {
+  font-size: 120%;
+  border-bottom: 1px solid #CCCCCC;
+  width: 100%;
+  text-align: center;
+  background: #EEEEEE;
+  user-select: none;
+}
+.dialog-footer {
+  border-top: 1px solid #CCCCCC;
+  width: 100%;
+  text-align: right;
+  padding: 10px;
+}
+.dialog-error {
+  margin: 10px;
+  color: red;
+}
+.dialog input {
+  margin: 10px;
+  font-size: inherit;
+}
+.dialog button {
+  margin-left: 10px;
+  font-size: inherit;
+}
+#save-dialog, #delete-dialog {
+  width: 50%;
+  max-width: 20em;
+}
+#delete-prompt {
+  padding: 10px;
+}
 
 #content {
   overflow-y: scroll;
@@ -208,6 +268,8 @@ table thead {
   font-family: 'Roboto Medium', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
 }
 table tr th {
+  position: sticky;
+  top: 0;
   background-color: #ddd;
   text-align: right;
   padding: .3em .5em;
@@ -232,7 +294,7 @@ table tr td {
   cursor: ns-resize;
 }
 .hilite {
-  background-color: #ebf5fb; 
+  background-color: #ebf5fb;
   font-weight: bold;
 }
 </style>
@@ -241,7 +303,7 @@ table tr td {
 {{define "header"}}
 <div class="header">
   <div class="title">
-    <h1><a href="/">pprof</a></h1>
+    <h1><a href="./">pprof</a></h1>
   </div>
 
   <div id="view" class="menu-item">
@@ -250,27 +312,61 @@ table tr td {
       <i class="downArrow"></i>
     </div>
     <div class="submenu">
-      <a title="{{.Help.top}}"  href="/top" id="topbtn">Top</a>
-      <a title="{{.Help.graph}}" href="/" id="graphbtn">Graph</a>
-      <a title="{{.Help.flamegraph}}" href="/flamegraph" id="flamegraph">Flame Graph</a>
-      <a title="{{.Help.peek}}" href="/peek" id="peek">Peek</a>
-      <a title="{{.Help.list}}" href="/source" id="list">Source</a>
-      <a title="{{.Help.disasm}}" href="/disasm" id="disasm">Disassemble</a>
+      <a title="{{.Help.top}}"  href="./top" id="topbtn">Top</a>
+      <a title="{{.Help.graph}}" href="./" id="graphbtn">Graph</a>
+      <a title="{{.Help.flamegraph}}" href="./flamegraph" id="flamegraph">Flame Graph</a>
+      <a title="{{.Help.peek}}" href="./peek" id="peek">Peek</a>
+      <a title="{{.Help.list}}" href="./source" id="list">Source</a>
+      <a title="{{.Help.disasm}}" href="./disasm" id="disasm">Disassemble</a>
     </div>
   </div>
 
-  <div id="refine" class="menu-item disabled">
+  {{$sampleLen := len .SampleTypes}}
+  {{if gt $sampleLen 1}}
+  <div id="sample" class="menu-item">
+    <div class="menu-name">
+      Sample
+      <i class="downArrow"></i>
+    </div>
+    <div class="submenu">
+      {{range .SampleTypes}}
+      <a href="?si={{.}}" id="{{.}}">{{.}}</a>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
+
+  <div id="refine" class="menu-item">
     <div class="menu-name">
       Refine
       <i class="downArrow"></i>
     </div>
     <div class="submenu">
-      <a title="{{.Help.focus}}" href="{{.BaseURL}}" id="focus">Focus</a>
-      <a title="{{.Help.ignore}}" href="{{.BaseURL}}" id="ignore">Ignore</a>
-      <a title="{{.Help.hide}}" href="{{.BaseURL}}" id="hide">Hide</a>
-      <a title="{{.Help.show}}" href="{{.BaseURL}}" id="show">Show</a>
+      <a title="{{.Help.focus}}" href="?" id="focus">Focus</a>
+      <a title="{{.Help.ignore}}" href="?" id="ignore">Ignore</a>
+      <a title="{{.Help.hide}}" href="?" id="hide">Hide</a>
+      <a title="{{.Help.show}}" href="?" id="show">Show</a>
+      <a title="{{.Help.show_from}}" href="?" id="show-from">Show from</a>
       <hr>
-      <a title="{{.Help.reset}}" href="{{.BaseURL}}">Reset</a>
+      <a title="{{.Help.reset}}" href="?">Reset</a>
+    </div>
+  </div>
+
+  <div id="config" class="menu-item">
+    <div class="menu-name">
+      Config
+      <i class="downArrow"></i>
+    </div>
+    <div class="submenu">
+      <a title="{{.Help.save_config}}" id="save-config">Save as ...</a>
+      <hr>
+      {{range .Configs}}
+        <a href="{{.URL}}">
+          {{if .Current}}<span class="menu-check-mark">✓</span>{{end}}
+          {{.Name}}
+          {{if .UserConfig}}<span class="menu-delete-btn" data-config={{.Name}}>🗙</span>{{end}}
+        </a>
+      {{end}}
     </div>
   </div>
 
@@ -283,6 +379,31 @@ table tr td {
     <div id="detailsbox">
       {{range .Legend}}<div>{{.}}</div>{{end}}
     </div>
+  </div>
+</div>
+
+<div id="dialog-overlay"></div>
+
+<div class="dialog" id="save-dialog">
+  <div class="dialog-header">Save options as</div>
+  <datalist id="config-list">
+    {{range .Configs}}{{if .UserConfig}}<option value="{{.Name}}" />{{end}}{{end}}
+  </datalist>
+  <input id="save-name" type="text" list="config-list" placeholder="New config" />
+  <div class="dialog-footer">
+    <span class="dialog-error" id="save-error"></span>
+    <button id="save-cancel">Cancel</button>
+    <button id="save-confirm">Save</button>
+  </div>
+</div>
+
+<div class="dialog" id="delete-dialog">
+  <div class="dialog-header" id="delete-dialog-title">Delete config</div>
+  <div id="delete-prompt"></div>
+  <div class="dialog-footer">
+    <span class="dialog-error" id="delete-error"></span>
+    <button id="delete-cancel">Cancel</button>
+    <button id="delete-confirm">Delete</button>
   </div>
 </div>
 
@@ -303,7 +424,7 @@ table tr td {
     {{.HTMLBody}}
   </div>
   {{template "script" .}}
-  <script>viewer({{.BaseURL}}, {{.Nodes}});</script>
+  <script>viewer(new URL(window.location.href), {{.Nodes}});</script>
 </body>
 </html>
 {{end}}
@@ -575,6 +696,131 @@ function initMenus() {
   }, { passive: true, capture: true });
 }
 
+function sendURL(method, url, done) {
+  fetch(url.toString(), {method: method})
+      .then((response) => { done(response.ok); })
+      .catch((error) => { done(false); });
+}
+
+// Initialize handlers for saving/loading configurations.
+function initConfigManager() {
+  'use strict';
+
+  // Initialize various elements.
+  function elem(id) {
+    const result = document.getElementById(id);
+    if (!result) console.warn('element ' + id + ' not found');
+    return result;
+  }
+  const overlay = elem('dialog-overlay');
+  const saveDialog = elem('save-dialog');
+  const saveInput = elem('save-name');
+  const saveError = elem('save-error');
+  const delDialog = elem('delete-dialog');
+  const delPrompt = elem('delete-prompt');
+  const delError = elem('delete-error');
+
+  let currentDialog = null;
+  let currentDeleteTarget = null;
+
+  function showDialog(dialog) {
+    if (currentDialog != null) {
+      overlay.style.display = 'none';
+      currentDialog.style.display = 'none';
+    }
+    currentDialog = dialog;
+    if (dialog != null) {
+      overlay.style.display = 'block';
+      dialog.style.display = 'block';
+    }
+  }
+
+  function cancelDialog(e) {
+    showDialog(null);
+  }
+
+  // Show dialog for saving the current config.
+  function showSaveDialog(e) {
+    saveError.innerText = '';
+    showDialog(saveDialog);
+    saveInput.focus();
+  }
+
+  // Commit save config.
+  function commitSave(e) {
+    const name = saveInput.value;
+    const url = new URL(document.URL);
+    // Set path relative to existing path.
+    url.pathname = new URL('./saveconfig', document.URL).pathname;
+    url.searchParams.set('config', name);
+    saveError.innerText = '';
+    sendURL('POST', url, (ok) => {
+      if (!ok) {
+        saveError.innerText = 'Save failed';
+      } else {
+        showDialog(null);
+        location.reload();  // Reload to show updated config menu
+      }
+    });
+  }
+
+  function handleSaveInputKey(e) {
+    if (e.key === 'Enter') commitSave(e);
+  }
+
+  function deleteConfig(e, elem) {
+    e.preventDefault();
+    const config = elem.dataset.config;
+    delPrompt.innerText = 'Delete ' + config + '?';
+    currentDeleteTarget = elem;
+    showDialog(delDialog);
+  }
+
+  function commitDelete(e, elem) {
+    if (!currentDeleteTarget) return;
+    const config = currentDeleteTarget.dataset.config;
+    const url = new URL('./deleteconfig', document.URL);
+    url.searchParams.set('config', config);
+    delError.innerText = '';
+    sendURL('DELETE', url, (ok) => {
+      if (!ok) {
+        delError.innerText = 'Delete failed';
+        return;
+      }
+      showDialog(null);
+      // Remove menu entry for this config.
+      if (currentDeleteTarget && currentDeleteTarget.parentElement) {
+        currentDeleteTarget.parentElement.remove();
+      }
+    });
+  }
+
+  // Bind event on elem to fn.
+  function bind(event, elem, fn) {
+    if (elem == null) return;
+    elem.addEventListener(event, fn);
+    if (event == 'click') {
+      // Also enable via touch.
+      elem.addEventListener('touchstart', fn);
+    }
+  }
+
+  bind('click', elem('save-config'), showSaveDialog);
+  bind('click', elem('save-cancel'), cancelDialog);
+  bind('click', elem('save-confirm'), commitSave);
+  bind('keydown', saveInput, handleSaveInputKey);
+
+  bind('click', elem('delete-cancel'), cancelDialog);
+  bind('click', elem('delete-confirm'), commitDelete);
+
+  // Activate deletion button for all config entries in menu.
+  for (const del of Array.from(document.getElementsByClassName('menu-delete-btn'))) {
+    bind('click', del, (e) => {
+      deleteConfig(e, del);
+    });
+  }
+}
+
 function viewer(baseUrl, nodes) {
   'use strict';
 
@@ -604,8 +850,9 @@ function viewer(baseUrl, nodes) {
 
   function handleKey(e) {
     if (e.keyCode != 13) return;
-    window.location.href =
-        updateUrl(new URL({{.BaseURL}}, window.location.href), 'f');
+    setHrefParams(window.location, function (params) {
+      params.set('f', search.value);
+    });
     e.preventDefault();
   }
 
@@ -644,9 +891,11 @@ function viewer(baseUrl, nodes) {
     })
 
     // add matching items that are not currently selected.
-    for (let n = 0; n < nodes.length; n++) {
-      if (!selected.has(n) && match(nodes[n])) {
-        select(n, document.getElementById('node' + n));
+    if (nodes) {
+      for (let n = 0; n < nodes.length; n++) {
+        if (!selected.has(n) && match(nodes[n])) {
+          select(n, document.getElementById('node' + n));
+        }
       }
     }
 
@@ -728,9 +977,18 @@ function viewer(baseUrl, nodes) {
     return str.replace(/([\\\.?+*\[\](){}|^$])/g, '\\$1');
   }
 
+  function setSampleIndexLink(id) {
+    const elem = document.getElementById(id);
+    if (elem != null) {
+      setHrefParams(elem, function (params) {
+        params.set("si", id);
+      });
+    }
+  }
+
   // Update id's href to reflect current selection whenever it is
   // liable to be followed.
-  function makeLinkDynamic(id) {
+  function makeSearchLinkDynamic(id) {
     const elem = document.getElementById(id);
     if (elem == null) return;
 
@@ -740,25 +998,39 @@ function viewer(baseUrl, nodes) {
     if (id == 'ignore') param = 'i';
     if (id == 'hide') param = 'h';
     if (id == 'show') param = 's';
+    if (id == 'show-from') param = 'sf';
 
     // We update on mouseenter so middle-click/right-click work properly.
     elem.addEventListener('mouseenter', updater);
     elem.addEventListener('touchstart', updater);
 
     function updater() {
-      elem.href = updateUrl(new URL(elem.href), param);
+      // The selection can be in one of two modes: regexp-based or
+      // list-based.  Construct regular expression depending on mode.
+      let re = regexpActive
+        ? search.value
+        : Array.from(selected.keys()).map(key => quotemeta(nodes[key])).join('|');
+
+      setHrefParams(elem, function (params) {
+        if (re != '') {
+          // For focus/show/show-from, forget old parameter. For others, add to re.
+          if (param != 'f' && param != 's' && param != 'sf' && params.has(param)) {
+            const old = params.get(param);
+            if (old != '') {
+              re += '|' + old;
+            }
+          }
+          params.set(param, re);
+        } else {
+          params.delete(param);
+        }
+      });
     }
   }
 
-  // Update URL to reflect current selection.
-  function updateUrl(url, param) {
+  function setHrefParams(elem, paramSetter) {
+    let url = new URL(elem.href);
     url.hash = '';
-
-    // The selection can be in one of two modes: regexp-based or
-    // list-based.  Construct regular expression depending on mode.
-    let re = regexpActive
-      ? search.value
-      : Array.from(selected.keys()).map(key => quotemeta(nodes[key])).join('|');
 
     // Copy params from this page's URL.
     const params = url.searchParams;
@@ -766,20 +1038,10 @@ function viewer(baseUrl, nodes) {
       params.set(p[0], p[1]);
     }
 
-    if (re != '') {
-      // For focus/show, forget old parameter.  For others, add to re.
-      if (param != 'f' && param != 's' && params.has(param)) {
-        const old = params.get(param);
-         if (old != '') {
-          re += '|' + old;
-        }
-      }
-      params.set(param, re);
-    } else {
-      params.delete(param);
-    }
+    // Give the params to the setter to modify.
+    paramSetter(params);
 
-    return url.toString();
+    elem.href = url.toString();
   }
 
   function handleTopClick(e) {
@@ -813,14 +1075,11 @@ function viewer(baseUrl, nodes) {
     const enable = (search.value != '' || selected.size != 0);
     if (buttonsEnabled == enable) return;
     buttonsEnabled = enable;
-    for (const id of ['focus', 'ignore', 'hide', 'show']) {
+    for (const id of ['focus', 'ignore', 'hide', 'show', 'show-from']) {
       const link = document.getElementById(id);
       if (link != null) {
         link.classList.toggle('disabled', !enable);
       }
-    }
-    if (document.getElementById('graph') !== null) {
-      document.getElementById('refine').classList.remove('disabled');
     }
   }
 
@@ -837,9 +1096,12 @@ function viewer(baseUrl, nodes) {
     toptable.addEventListener('touchstart', handleTopClick);
   }
 
-  const ids = ['topbtn', 'graphbtn', 'peek', 'list', 'disasm',
-               'focus', 'ignore', 'hide', 'show'];
-  ids.forEach(makeLinkDynamic);
+  const ids = ['topbtn', 'graphbtn', 'flamegraph', 'peek', 'list', 'disasm',
+               'focus', 'ignore', 'hide', 'show', 'show-from'];
+  ids.forEach(makeSearchLinkDynamic);
+
+  const sampleIDs = [{{range .SampleTypes}}'{{.}}', {{end}}];
+  sampleIDs.forEach(setSampleIndexLink);
 
   // Bind action to button with specified id.
   function addAction(id, action) {
@@ -851,6 +1113,7 @@ function viewer(baseUrl, nodes) {
   }
 
   addAction('details', handleDetails);
+  initConfigManager();
 
   search.addEventListener('input', handleSearch);
   search.addEventListener('keydown', handleKey);
@@ -974,7 +1237,7 @@ function viewer(baseUrl, nodes) {
       bindSort('namehdr', 'Name');
     }
 
-    viewer({{.BaseURL}}, {{.Nodes}});
+    viewer(new URL(window.location.href), {{.Nodes}});
     makeTopTable({{.Total}}, {{.Top}});
   </script>
 </body>
@@ -997,7 +1260,7 @@ function viewer(baseUrl, nodes) {
     {{.HTMLBody}}
   </div>
   {{template "script" .}}
-  <script>viewer({{.BaseURL}}, null);</script>
+  <script>viewer(new URL(window.location.href), null);</script>
 </body>
 </html>
 {{end}}
@@ -1018,7 +1281,7 @@ function viewer(baseUrl, nodes) {
     </pre>
   </div>
   {{template "script" .}}
-  <script>viewer({{.BaseURL}}, null);</script>
+  <script>viewer(new URL(window.location.href), null);</script>
 </body>
 </html>
 {{end}}
@@ -1042,49 +1305,52 @@ function viewer(baseUrl, nodes) {
       width: 90%;
       min-width: 90%;
       margin-left: 5%;
-      padding-bottom: 41px;
+      padding: 15px 0 35px;
     }
   </style>
 </head>
 <body>
   {{template "header" .}}
   <div id="bodycontainer">
+    <div id="flamegraphdetails" class="flamegraph-details"></div>
     <div class="flamegraph-content">
       <div id="chart"></div>
     </div>
-    <div id="flamegraphdetails" class="flamegraph-details"></div>
   </div>
   {{template "script" .}}
-  <script>viewer({{.BaseURL}}, {{.Nodes}});</script>
+  <script>viewer(new URL(window.location.href), {{.Nodes}});</script>
   <script>{{template "d3script" .}}</script>
-  <script>{{template "d3tipscript" .}}</script>
   <script>{{template "d3flamegraphscript" .}}</script>
-  <script type="text/javascript">
+  <script>
     var data = {{.FlameGraph}};
-    var label = function(d) {
-      return d.data.n + ' (' + d.data.p + ', ' + d.data.l + ')';
-    };
 
     var width = document.getElementById('chart').clientWidth;
 
-    var flameGraph = d3.flameGraph()
+    var flameGraph = d3.flamegraph()
       .width(width)
       .cellHeight(18)
       .minFrameSize(1)
       .transitionDuration(750)
       .transitionEase(d3.easeCubic)
+      .inverted(true)
       .sort(true)
       .title('')
-      .label(label)
+      .tooltip(false)
       .details(document.getElementById('flamegraphdetails'));
 
-    var tip = d3.tip()
-      .direction('s')
-      .offset([8, 0])
-      .attr('class', 'd3-flame-graph-tip')
-      .html(function(d) { return 'name: ' + d.data.n + ', value: ' + d.data.l; });
+    // <full name> (percentage, value)
+    flameGraph.label((d) => d.data.f + ' (' + d.data.p + ', ' + d.data.l + ')');
 
-    flameGraph.tooltip(tip);
+    (function(flameGraph) {
+      var oldColorMapper = flameGraph.color();
+      function colorMapper(d) {
+        // Hack to force default color mapper to use 'warm' color scheme by not passing libtype
+        const { data, highlight } = d;
+        return oldColorMapper({ data: { n: data.n }, highlight });
+      }
+
+      flameGraph.color(colorMapper);
+    }(flameGraph));
 
     d3.select('#chart')
       .datum(data)
@@ -1108,14 +1374,14 @@ function viewer(baseUrl, nodes) {
       flameGraph.resetZoom();
     }, true);
 
-    var searchbox = document.getElementById('searchbox');
+    var search = document.getElementById('search');
     var searchAlarm = null;
 
     function selectMatching() {
       searchAlarm = null;
 
-      if (searchbox.value != '') {
-        flameGraph.search(searchbox.value);
+      if (search.value != '') {
+        flameGraph.search(search.value);
       } else {
         flameGraph.clear();
       }
@@ -1129,7 +1395,7 @@ function viewer(baseUrl, nodes) {
       searchAlarm = setTimeout(selectMatching, 300);
     }
 
-    searchbox.addEventListener('input', handleSearch);
+    search.addEventListener('input', handleSearch);
   </script>
 </body>
 </html>

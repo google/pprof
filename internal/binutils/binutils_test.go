@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/google/pprof/internal/plugin"
@@ -177,20 +178,36 @@ func TestSetFastSymbolization(t *testing.T) {
 
 func skipUnlessLinuxAmd64(t *testing.T) {
 	if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
-		t.Skip("Disasm only tested on x86-64 linux")
+		t.Skip("This test only works on x86-64 Linux")
 	}
 }
 
-func TestDisasm(t *testing.T) {
-	skipUnlessLinuxAmd64(t)
+func skipUnlessDarwinAmd64(t *testing.T) {
+	if runtime.GOOS != "darwin" || runtime.GOARCH != "amd64" {
+		t.Skip("This test only works on x86-64 macOS")
+	}
+}
+
+func testDisasm(t *testing.T, intelSyntax bool) {
+	_, llvmObjdump, buObjdump := findObjdump([]string{""})
+	if !(llvmObjdump || buObjdump) {
+		t.Skip("cannot disasm: no objdump tool available")
+	}
+
 	bu := &Binutils{}
-	insts, err := bu.Disasm(filepath.Join("testdata", "hello"), 0, math.MaxUint64)
+	testexe := "exe_linux_64"
+	if runtime.GOOS == "darwin" {
+		testexe = "exe_mac_64"
+	}
+
+	insts, err := bu.Disasm(filepath.Join("testdata", testexe), 0, math.MaxUint64, intelSyntax)
 	if err != nil {
 		t.Fatalf("Disasm: unexpected error %v", err)
 	}
 	mainCount := 0
 	for _, x := range insts {
-		if x.Function == "main" {
+		// macOS symbols have a leading underscore.
+		if x.Function == "main" || x.Function == "_main" {
 			mainCount++
 		}
 	}
@@ -199,42 +216,144 @@ func TestDisasm(t *testing.T) {
 	}
 }
 
-func TestObjFile(t *testing.T) {
-	skipUnlessLinuxAmd64(t)
-	bu := &Binutils{}
-	f, err := bu.Open(filepath.Join("testdata", "hello"), 0, math.MaxUint64, 0)
-	if err != nil {
-		t.Fatalf("Open: unexpected error %v", err)
+func TestDisasm(t *testing.T) {
+	if (runtime.GOOS != "linux" && runtime.GOOS != "darwin") || runtime.GOARCH != "amd64" {
+		t.Skip("This test only works on x86-64 Linux or macOS")
 	}
-	defer f.Close()
-	syms, err := f.Symbols(regexp.MustCompile("main"), 0)
-	if err != nil {
-		t.Fatalf("Symbols: unexpected error %v", err)
-	}
+	testDisasm(t, false)
+}
 
-	find := func(name string) *plugin.Sym {
-		for _, s := range syms {
-			for _, n := range s.Name {
-				if n == name {
-					return s
-				}
+func TestDisasmIntelSyntax(t *testing.T) {
+	if (runtime.GOOS != "linux" && runtime.GOOS != "darwin") || runtime.GOARCH != "amd64" {
+		t.Skip("This test only works on x86_64 Linux or macOS as it tests Intel asm syntax")
+	}
+	testDisasm(t, true)
+}
+
+func findSymbol(syms []*plugin.Sym, name string) *plugin.Sym {
+	for _, s := range syms {
+		for _, n := range s.Name {
+			if n == name {
+				return s
 			}
 		}
-		return nil
 	}
-	m := find("main")
-	if m == nil {
-		t.Fatalf("Symbols: did not find main")
+	return nil
+}
+
+func TestObjFile(t *testing.T) {
+	// If this test fails, check the address for main function in testdata/exe_linux_64
+	// using the command 'nm -n '. Update the hardcoded addresses below to match
+	// the addresses from the output.
+	skipUnlessLinuxAmd64(t)
+	for _, tc := range []struct {
+		desc                 string
+		start, limit, offset uint64
+		addr                 uint64
+	}{
+		{"fake mapping", 0, math.MaxUint64, 0, 0x40052d},
+		{"fixed load address", 0x400000, 0x4006fc, 0, 0x40052d},
+		// True user-mode ASLR binaries are ET_DYN rather than ET_EXEC so this case
+		// is a bit artificial except that it approximates the
+		// vmlinux-with-kernel-ASLR case where the binary *is* ET_EXEC.
+		{"simulated ASLR address", 0x500000, 0x5006fc, 0, 0x50052d},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			bu := &Binutils{}
+			f, err := bu.Open(filepath.Join("testdata", "exe_linux_64"), tc.start, tc.limit, tc.offset)
+			if err != nil {
+				t.Fatalf("Open: unexpected error %v", err)
+			}
+			defer f.Close()
+			syms, err := f.Symbols(regexp.MustCompile("main"), 0)
+			if err != nil {
+				t.Fatalf("Symbols: unexpected error %v", err)
+			}
+
+			m := findSymbol(syms, "main")
+			if m == nil {
+				t.Fatalf("Symbols: did not find main")
+			}
+			for _, addr := range []uint64{m.Start + f.Base(), tc.addr} {
+				gotFrames, err := f.SourceLine(addr)
+				if err != nil {
+					t.Fatalf("SourceLine: unexpected error %v", err)
+				}
+				wantFrames := []plugin.Frame{
+					{Func: "main", File: "/tmp/hello.c", Line: 3},
+				}
+				if !reflect.DeepEqual(gotFrames, wantFrames) {
+					t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, wantFrames)
+				}
+			}
+		})
 	}
-	frames, err := f.SourceLine(m.Start)
-	if err != nil {
-		t.Fatalf("SourceLine: unexpected error %v", err)
-	}
-	expect := []plugin.Frame{
-		{Func: "main", File: "/tmp/hello.c", Line: 3},
-	}
-	if !reflect.DeepEqual(frames, expect) {
-		t.Fatalf("SourceLine for main: expect %v; got %v\n", expect, frames)
+}
+
+func TestMachoFiles(t *testing.T) {
+	// If this test fails, check the address for main function in testdata/exe_mac_64
+	// and testdata/lib_mac_64 using addr2line or gaddr2line. Update the
+	// hardcoded addresses below to match the addresses from the output.
+	skipUnlessDarwinAmd64(t)
+
+	// Load `file`, pretending it was mapped at `start`. Then get the symbol
+	// table. Check that it contains the symbol `sym` and that the address
+	// `addr` gives the `expected` stack trace.
+	for _, tc := range []struct {
+		desc                 string
+		file                 string
+		start, limit, offset uint64
+		addr                 uint64
+		sym                  string
+		expected             []plugin.Frame
+	}{
+		{"normal mapping", "exe_mac_64", 0x100000000, math.MaxUint64, 0,
+			0x100000f50, "_main",
+			[]plugin.Frame{
+				{Func: "main", File: "/tmp/hello.c", Line: 3},
+			}},
+		{"other mapping", "exe_mac_64", 0x200000000, math.MaxUint64, 0,
+			0x200000f50, "_main",
+			[]plugin.Frame{
+				{Func: "main", File: "/tmp/hello.c", Line: 3},
+			}},
+		{"lib normal mapping", "lib_mac_64", 0, math.MaxUint64, 0,
+			0xfa0, "_bar",
+			[]plugin.Frame{
+				{Func: "bar", File: "/tmp/lib.c", Line: 5},
+			}},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			bu := &Binutils{}
+			f, err := bu.Open(filepath.Join("testdata", tc.file), tc.start, tc.limit, tc.offset)
+			if err != nil {
+				t.Fatalf("Open: unexpected error %v", err)
+			}
+			t.Logf("binutils: %v", bu)
+			if runtime.GOOS == "darwin" && !bu.rep.addr2lineFound && !bu.rep.llvmSymbolizerFound {
+				// On macOS, user needs to install gaddr2line or llvm-symbolizer with
+				// Homebrew, skip the test when the environment doesn't have it
+				// installed.
+				t.Skip("couldn't find addr2line or gaddr2line")
+			}
+			defer f.Close()
+			syms, err := f.Symbols(nil, 0)
+			if err != nil {
+				t.Fatalf("Symbols: unexpected error %v", err)
+			}
+
+			m := findSymbol(syms, tc.sym)
+			if m == nil {
+				t.Fatalf("Symbols: could not find symbol %v", tc.sym)
+			}
+			gotFrames, err := f.SourceLine(tc.addr)
+			if err != nil {
+				t.Fatalf("SourceLine: unexpected error %v", err)
+			}
+			if !reflect.DeepEqual(gotFrames, tc.expected) {
+				t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, tc.expected)
+			}
+		})
 	}
 }
 
@@ -270,6 +389,123 @@ func TestLLVMSymbolizer(t *testing.T) {
 		}
 		if !reflect.DeepEqual(frames, c.frames) {
 			t.Errorf("LLVM: expect %v; got %v\n", c.frames, frames)
+		}
+	}
+}
+
+func TestOpenMalformedELF(t *testing.T) {
+	// Test that opening a malformed ELF file will report an error containing
+	// the word "ELF".
+	bu := &Binutils{}
+	_, err := bu.Open(filepath.Join("testdata", "malformed_elf"), 0, 0, 0)
+	if err == nil {
+		t.Fatalf("Open: unexpected success")
+	}
+
+	if !strings.Contains(err.Error(), "ELF") {
+		t.Errorf("Open: got %v, want error containing 'ELF'", err)
+	}
+}
+
+func TestOpenMalformedMachO(t *testing.T) {
+	// Test that opening a malformed Mach-O file will report an error containing
+	// the word "Mach-O".
+	bu := &Binutils{}
+	_, err := bu.Open(filepath.Join("testdata", "malformed_macho"), 0, 0, 0)
+	if err == nil {
+		t.Fatalf("Open: unexpected success")
+	}
+
+	if !strings.Contains(err.Error(), "Mach-O") {
+		t.Errorf("Open: got %v, want error containing 'Mach-O'", err)
+	}
+}
+
+func TestObjdumpVersionChecks(t *testing.T) {
+	// Test that the objdump version strings are parsed properly.
+	type testcase struct {
+		desc string
+		os   string
+		ver  string
+		want bool
+	}
+
+	for _, tc := range []testcase{
+		{
+			desc: "Valid Apple LLVM version string with usable version",
+			os:   "darwin",
+			ver:  "Apple LLVM version 11.0.3 (clang-1103.0.32.62)\nOptimized build.",
+			want: true,
+		},
+		{
+			desc: "Valid Apple LLVM version string with unusable version",
+			os:   "darwin",
+			ver:  "Apple LLVM version 10.0.0 (clang-1000.11.45.5)\nOptimized build.",
+			want: false,
+		},
+		{
+			desc: "Invalid Apple LLVM version string with usable version",
+			os:   "darwin",
+			ver:  "Apple LLVM versions 11.0.3 (clang-1103.0.32.62)\nOptimized build.",
+			want: false,
+		},
+		{
+			desc: "Valid LLVM version string with usable version",
+			os:   "linux",
+			ver:  "LLVM (http://llvm.org/):\nLLVM version 9.0.1\n\nOptimized build.",
+			want: true,
+		},
+		{
+			desc: "Valid LLVM version string with unusable version",
+			os:   "linux",
+			ver:  "LLVM (http://llvm.org/):\nLLVM version 6.0.1\n\nOptimized build.",
+			want: false,
+		},
+		{
+			desc: "Invalid LLVM version string with usable version",
+			os:   "linux",
+			ver:  "LLVM (http://llvm.org/):\nLLVM versions 9.0.1\n\nOptimized build.",
+			want: false,
+		},
+		{
+			desc: "Valid LLVM objdump version string with trunk",
+			os:   runtime.GOOS,
+			ver:  "LLVM (http://llvm.org/):\nLLVM version custom-trunk 124ffeb592a00bfe\nOptimized build.",
+			want: true,
+		},
+		{
+			desc: "Invalid LLVM objdump version string with trunk",
+			os:   runtime.GOOS,
+			ver:  "LLVM (http://llvm.org/):\nLLVM version custom-trank 124ffeb592a00bfe\nOptimized build.",
+			want: false,
+		},
+		{
+			desc: "Invalid LLVM objdump version string with trunk",
+			os:   runtime.GOOS,
+			ver:  "LLVM (http://llvm.org/):\nllvm version custom-trunk 124ffeb592a00bfe\nOptimized build.",
+			want: false,
+		},
+	} {
+		if runtime.GOOS == tc.os {
+			if got := isLLVMObjdump(tc.ver); got != tc.want {
+				t.Errorf("%v: got %v, want %v", tc.desc, got, tc.want)
+			}
+		}
+	}
+	for _, tc := range []testcase{
+		{
+			desc: "Valid GNU objdump version string",
+			ver:  "GNU objdump (GNU Binutils) 2.34\nCopyright (C) 2020 Free Software Foundation, Inc.",
+			want: true,
+		},
+		{
+			desc: "Invalid GNU objdump version string",
+			ver:  "GNU nm (GNU Binutils) 2.34\nCopyright (C) 2020 Free Software Foundation, Inc.",
+			want: false,
+		},
+	} {
+		if got := isBuObjdump(tc.ver); got != tc.want {
+			t.Errorf("%v: got %v, want %v", tc.desc, got, tc.want)
 		}
 	}
 }

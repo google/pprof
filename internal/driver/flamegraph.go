@@ -27,6 +27,7 @@ import (
 
 type treeNode struct {
 	Name      string      `json:"n"`
+	FullName  string      `json:"f"`
 	Cum       int64       `json:"v"`
 	CumFormat string      `json:"l"`
 	Percent   string      `json:"p"`
@@ -37,7 +38,10 @@ type treeNode struct {
 func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 	// Force the call tree so that the graph is a tree.
 	// Also do not trim the tree so that the flame graph contains all functions.
-	rpt, errList := ui.makeReport(w, req, []string{"svg"}, "call_tree", "true", "trim", "false")
+	rpt, errList := ui.makeReport(w, req, []string{"svg"}, func(cfg *config) {
+		cfg.CallTree = true
+		cfg.Trim = false
+	})
 	if rpt == nil {
 		return // error already reported
 	}
@@ -52,8 +56,10 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 	// Make all nodes and the map, collect the roots.
 	for _, n := range g.Nodes {
 		v := n.CumValue()
+		fullName := n.Info.PrintableName()
 		node := &treeNode{
-			Name:      n.Info.PrintableName(),
+			Name:      graph.ShortenFunctionName(fullName),
+			FullName:  fullName,
 			Cum:       v,
 			CumFormat: config.FormatValue(v),
 			Percent:   strings.TrimSpace(measurement.Percentage(v, config.Total)),
@@ -78,6 +84,7 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 
 	rootNode := &treeNode{
 		Name:      "root",
+		FullName:  "root",
 		Cum:       rootValue,
 		CumFormat: config.FormatValue(rootValue),
 		Percent:   strings.TrimSpace(measurement.Percentage(rootValue, config.Total)),
@@ -92,7 +99,7 @@ func (ui *webInterface) flamegraph(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ui.render(w, "/flamegraph", "flamegraph", rpt, errList, config.Labels, webArgs{
+	ui.render(w, req, "flamegraph", rpt, errList, config.Labels, webArgs{
 		FlameGraph: template.JS(b),
 		Nodes:      nodeArr,
 	})

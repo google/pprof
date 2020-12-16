@@ -24,8 +24,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
+	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -39,6 +39,7 @@ import (
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/internal/proftest"
 	"github.com/google/pprof/internal/symbolizer"
+	"github.com/google/pprof/internal/transport"
 	"github.com/google/pprof/profile"
 )
 
@@ -160,7 +161,9 @@ func (o testObj) Open(file string, start, limit, offset uint64) (plugin.ObjFile,
 func (testObj) Demangler(_ string) func(names []string) (map[string]string, error) {
 	return func(names []string) (map[string]string, error) { return nil, nil }
 }
-func (testObj) Disasm(file string, start, end uint64) ([]plugin.Inst, error) { return nil, nil }
+func (testObj) Disasm(file string, start, end uint64, intelSyntax bool) ([]plugin.Inst, error) {
+	return nil, nil
+}
 
 type testFile struct{ name, buildID string }
 
@@ -173,12 +176,6 @@ func (testFile) Close() error                                                 { 
 
 func TestFetch(t *testing.T) {
 	const path = "testdata/"
-
-	// Intercept http.Get calls from HTTPFetcher.
-	savedHTTPGet := httpGet
-	defer func() { httpGet = savedHTTPGet }()
-	httpGet = stubHTTPGet
-
 	type testcase struct {
 		source, execName string
 	}
@@ -188,7 +185,7 @@ func TestFetch(t *testing.T) {
 		{path + "go.nomappings.crash", "/bin/gotest.exe"},
 		{"http://localhost/profile?file=cppbench.cpu", ""},
 	} {
-		p, _, _, err := grabProfile(&source{ExecName: tc.execName}, tc.source, nil, testObj{}, &proftest.TestUI{T: t})
+		p, _, _, err := grabProfile(&source{ExecName: tc.execName}, tc.source, nil, testObj{}, &proftest.TestUI{T: t}, &httpTransport{})
 		if err != nil {
 			t.Fatalf("%s: %s", tc.source, err)
 		}
@@ -207,16 +204,23 @@ func TestFetch(t *testing.T) {
 }
 
 func TestFetchWithBase(t *testing.T) {
-	baseVars := pprofVariables
-	defer func() { pprofVariables = baseVars }()
+	baseConfig := currentConfig()
+	defer setCurrentConfig(baseConfig)
+
+	type WantSample struct {
+		values []int64
+		labels map[string][]string
+	}
 
 	const path = "testdata/"
 	type testcase struct {
-		desc            string
-		sources         []string
-		bases           []string
-		normalize       bool
-		expectedSamples [][]int64
+		desc         string
+		sources      []string
+		bases        []string
+		diffBases    []string
+		normalize    bool
+		wantSamples  []WantSample
+		wantErrorMsg string
 	}
 
 	testcases := []testcase{
@@ -224,58 +228,216 @@ func TestFetchWithBase(t *testing.T) {
 			"not normalized base is same as source",
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.contention"},
+			nil,
 			false,
-			[][]int64{},
+			nil,
+			"",
+		},
+		{
+			"not normalized base is same as source",
+			[]string{path + "cppbench.contention"},
+			[]string{path + "cppbench.contention"},
+			nil,
+			false,
+			nil,
+			"",
 		},
 		{
 			"not normalized single source, multiple base (all profiles same)",
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.contention", path + "cppbench.contention"},
+			nil,
 			false,
-			[][]int64{{-2700, -608881724}, {-100, -23992}, {-200, -179943}, {-100, -17778444}, {-100, -75976}, {-300, -63568134}},
+			[]WantSample{
+				{
+					values: []int64{-2700, -608881724},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{-100, -23992},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{-200, -179943},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{-100, -17778444},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{-100, -75976},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{-300, -63568134},
+					labels: map[string][]string{},
+				},
+			},
+			"",
 		},
 		{
 			"not normalized, different base and source",
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.small.contention"},
+			nil,
 			false,
-			[][]int64{{1700, 608878600}, {100, 23992}, {200, 179943}, {100, 17778444}, {100, 75976}, {300, 63568134}},
+			[]WantSample{
+				{
+					values: []int64{1700, 608878600},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{100, 23992},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{200, 179943},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{100, 17778444},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{100, 75976},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{300, 63568134},
+					labels: map[string][]string{},
+				},
+			},
+			"",
 		},
 		{
 			"normalized base is same as source",
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.contention"},
+			nil,
 			true,
-			[][]int64{},
+			nil,
+			"",
 		},
 		{
 			"normalized single source, multiple base (all profiles same)",
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.contention", path + "cppbench.contention"},
+			nil,
 			true,
-			[][]int64{},
+			nil,
+			"",
 		},
 		{
 			"normalized different base and source",
 			[]string{path + "cppbench.contention"},
 			[]string{path + "cppbench.small.contention"},
+			nil,
 			true,
-			[][]int64{{-229, -370}, {28, 0}, {57, 0}, {28, 80}, {28, 0}, {85, 287}},
+			[]WantSample{
+				{
+					values: []int64{-229, -370},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{28, 0},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{57, 0},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{28, 80},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{28, 0},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{85, 287},
+					labels: map[string][]string{},
+				},
+			},
+			"",
+		},
+		{
+			"not normalized diff base is same as source",
+			[]string{path + "cppbench.contention"},
+			nil,
+			[]string{path + "cppbench.contention"},
+			false,
+			[]WantSample{
+				{
+					values: []int64{2700, 608881724},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{100, 23992},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{200, 179943},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{100, 17778444},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{100, 75976},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{300, 63568134},
+					labels: map[string][]string{},
+				},
+				{
+					values: []int64{-2700, -608881724},
+					labels: map[string][]string{"pprof::base": {"true"}},
+				},
+				{
+					values: []int64{-100, -23992},
+					labels: map[string][]string{"pprof::base": {"true"}},
+				},
+				{
+					values: []int64{-200, -179943},
+					labels: map[string][]string{"pprof::base": {"true"}},
+				},
+				{
+					values: []int64{-100, -17778444},
+					labels: map[string][]string{"pprof::base": {"true"}},
+				},
+				{
+					values: []int64{-100, -75976},
+					labels: map[string][]string{"pprof::base": {"true"}},
+				},
+				{
+					values: []int64{-300, -63568134},
+					labels: map[string][]string{"pprof::base": {"true"}},
+				},
+			},
+			"",
+		},
+		{
+			"diff_base and base both specified",
+			[]string{path + "cppbench.contention"},
+			[]string{path + "cppbench.contention"},
+			[]string{path + "cppbench.contention"},
+			false,
+			nil,
+			"-base and -diff_base flags cannot both be specified",
 		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			pprofVariables = baseVars.makeCopy()
-
-			base := make([]*string, len(tc.bases))
-			for i, s := range tc.bases {
-				base[i] = &s
-			}
-
+			setCurrentConfig(baseConfig)
 			f := testFlags{
-				stringLists: map[string][]*string{
-					"base": base,
+				stringLists: map[string][]string{
+					"base":      tc.bases,
+					"diff_base": tc.diffBases,
 				},
 				bools: map[string]bool{
 					"normalize": tc.normalize,
@@ -283,34 +445,44 @@ func TestFetchWithBase(t *testing.T) {
 			}
 			f.args = tc.sources
 
-			o := setDefaults(nil)
-			o.Flagset = f
+			o := setDefaults(&plugin.Options{
+				UI:            &proftest.TestUI{T: t, AllowRx: "Local symbolization failed|Some binary filenames not available"},
+				Flagset:       f,
+				HTTPTransport: transport.New(nil),
+			})
 			src, _, err := parseFlags(o)
 
+			if tc.wantErrorMsg != "" {
+				if err == nil {
+					t.Fatalf("got nil, want error %q", tc.wantErrorMsg)
+				}
+
+				if gotErrMsg := err.Error(); gotErrMsg != tc.wantErrorMsg {
+					t.Fatalf("got error %q, want error %q", gotErrMsg, tc.wantErrorMsg)
+				}
+				return
+			}
+
 			if err != nil {
-				t.Fatalf("%s: %v", tc.desc, err)
+				t.Fatalf("got error %q, want no error", err)
 			}
 
 			p, err := fetchProfiles(src, o)
-			pprofVariables = baseVars
+
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("got error %q, want no error", err)
 			}
 
-			if want, got := len(tc.expectedSamples), len(p.Sample); want != got {
-				t.Fatalf("want %d samples got %d", want, got)
+			if got, want := len(p.Sample), len(tc.wantSamples); got != want {
+				t.Fatalf("got %d samples want %d", got, want)
 			}
 
-			if len(p.Sample) > 0 {
-				for i, sample := range p.Sample {
-					if want, got := len(tc.expectedSamples[i]), len(sample.Value); want != got {
-						t.Errorf("want %d values for sample %d, got %d", want, i, got)
-					}
-					for j, value := range sample.Value {
-						if want, got := tc.expectedSamples[i][j], value; want != got {
-							t.Errorf("want value of %d for value %d of sample %d, got %d", want, j, i, got)
-						}
-					}
+			for i, sample := range p.Sample {
+				if !reflect.DeepEqual(tc.wantSamples[i].values, sample.Value) {
+					t.Errorf("for sample %d got values %v, want %v", i, sample.Value, tc.wantSamples[i])
+				}
+				if !reflect.DeepEqual(tc.wantSamples[i].labels, sample.Label) {
+					t.Errorf("for sample %d got labels %v, want %v", i, sample.Label, tc.wantSamples[i].labels)
 				}
 			}
 		})
@@ -329,19 +501,14 @@ func mappingSources(key, source string, start uint64) plugin.MappingSources {
 	}
 }
 
-// stubHTTPGet intercepts a call to http.Get and rewrites it to use
-// "file://" to get the profile directly from a file.
-func stubHTTPGet(source string, _ time.Duration) (*http.Response, error) {
-	url, err := url.Parse(source)
-	if err != nil {
-		return nil, err
-	}
+type httpTransport struct{}
 
-	values := url.Query()
+func (tr *httpTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	values := req.URL.Query()
 	file := values.Get("file")
 
 	if file == "" {
-		return nil, fmt.Errorf("want .../file?profile, got %s", source)
+		return nil, fmt.Errorf("want .../file?profile, got %s", req.URL.String())
 	}
 
 	t := &http.Transport{}
@@ -358,16 +525,28 @@ func closedError() string {
 	return "use of closed"
 }
 
-func TestHttpsInsecure(t *testing.T) {
-	if runtime.GOOS == "nacl" {
+func TestHTTPSInsecure(t *testing.T) {
+	if runtime.GOOS == "nacl" || runtime.GOOS == "js" {
 		t.Skip("test assumes tcp available")
 	}
+	saveHome := os.Getenv(homeEnv())
+	tempdir, err := ioutil.TempDir("", "home")
+	if err != nil {
+		t.Fatal("creating temp dir: ", err)
+	}
+	defer os.RemoveAll(tempdir)
 
-	baseVars := pprofVariables
-	pprofVariables = baseVars.makeCopy()
-	defer func() { pprofVariables = baseVars }()
+	// pprof writes to $HOME/pprof by default which is not necessarily
+	// writeable (e.g. on a Debian buildd) so set $HOME to something we
+	// know we can write to for the duration of the test.
+	os.Setenv(homeEnv(), tempdir)
+	defer os.Setenv(homeEnv(), saveHome)
 
-	tlsConfig := &tls.Config{Certificates: []tls.Certificate{selfSignedCert(t)}}
+	baseConfig := currentConfig()
+	defer setCurrentConfig(baseConfig)
+
+	tlsCert, _, _ := selfSignedCert(t, "")
+	tlsConfig := &tls.Config{Certificates: []tls.Certificate{tlsCert}}
 
 	l, err := tls.Listen("tcp", "localhost:0", tlsConfig)
 	if err != nil {
@@ -385,18 +564,6 @@ func TestHttpsInsecure(t *testing.T) {
 	}()
 	defer l.Close()
 
-	go func() {
-		deadline := time.Now().Add(5 * time.Second)
-		for time.Now().Before(deadline) {
-			// Simulate a hotspot function. Spin in the inner loop for 100M iterations
-			// to ensure we get most of the samples landed here rather than in the
-			// library calls. We assume Go compiler won't elide the empty loop.
-			for i := 0; i < 1e8; i++ {
-			}
-			runtime.Gosched()
-		}
-	}()
-
 	outputTempFile, err := ioutil.TempFile("", "profile_output")
 	if err != nil {
 		t.Fatalf("Failed to create tempfile: %v", err)
@@ -404,21 +571,16 @@ func TestHttpsInsecure(t *testing.T) {
 	defer os.Remove(outputTempFile.Name())
 	defer outputTempFile.Close()
 
-	address := "https+insecure://" + l.Addr().String() + "/debug/pprof/profile"
+	address := "https+insecure://" + l.Addr().String() + "/debug/pprof/goroutine"
 	s := &source{
 		Sources:   []string{address},
-		Seconds:   10,
 		Timeout:   10,
 		Symbolize: "remote",
 	}
-	rx := "Saved profile in"
-	if runtime.GOOS == "darwin" && (runtime.GOARCH == "arm" || runtime.GOARCH == "arm64") {
-		// On iOS, $HOME points to the app root directory and is not writable.
-		rx += "|Could not use temp dir"
-	}
 	o := &plugin.Options{
-		Obj: &binutils.Binutils{},
-		UI:  &proftest.TestUI{T: t, AllowRx: rx},
+		Obj:           &binutils.Binutils{},
+		UI:            &proftest.TestUI{T: t, AllowRx: "Saved profile in"},
+		HTTPTransport: transport.New(nil),
 	}
 	o.Sym = &symbolizer.Symbolizer{Obj: o.Obj, UI: o.UI}
 	p, err := fetchProfiles(s, o)
@@ -428,29 +590,125 @@ func TestHttpsInsecure(t *testing.T) {
 	if len(p.SampleType) == 0 {
 		t.Fatalf("fetchProfiles(%s) got empty profile: len(p.SampleType)==0", address)
 	}
-	switch runtime.GOOS {
-	case "plan9":
-		// CPU profiling is not supported on Plan9; see golang.org/issues/22564.
-		return
-	case "darwin":
-		if runtime.GOARCH == "arm" || runtime.GOARCH == "arm64" {
-			// CPU profiling on iOS os not symbolized; see golang.org/issues/22612.
-			return
-		}
-	}
 	if len(p.Function) == 0 {
 		t.Fatalf("fetchProfiles(%s) got non-symbolized profile: len(p.Function)==0", address)
 	}
-	if err := checkProfileHasFunction(p, "TestHttpsInsecure"); !badSigprofOS[runtime.GOOS] && err != nil {
+	if err := checkProfileHasFunction(p, "TestHTTPSInsecure"); err != nil {
 		t.Fatalf("fetchProfiles(%s) %v", address, err)
 	}
 }
 
-// Some operating systems don't trigger the profiling signal right.
-// See https://github.com/golang/go/issues/13841.
-var badSigprofOS = map[string]bool{
-	"darwin": true,
-	"netbsd": true,
+func TestHTTPSWithServerCertFetch(t *testing.T) {
+	if runtime.GOOS == "nacl" || runtime.GOOS == "js" {
+		t.Skip("test assumes tcp available")
+	}
+	saveHome := os.Getenv(homeEnv())
+	tempdir, err := ioutil.TempDir("", "home")
+	if err != nil {
+		t.Fatal("creating temp dir: ", err)
+	}
+	defer os.RemoveAll(tempdir)
+
+	// pprof writes to $HOME/pprof by default which is not necessarily
+	// writeable (e.g. on a Debian buildd) so set $HOME to something we
+	// know we can write to for the duration of the test.
+	os.Setenv(homeEnv(), tempdir)
+	defer os.Setenv(homeEnv(), saveHome)
+
+	baseConfig := currentConfig()
+	defer setCurrentConfig(baseConfig)
+
+	cert, certBytes, keyBytes := selfSignedCert(t, "localhost")
+	cas := x509.NewCertPool()
+	cas.AppendCertsFromPEM(certBytes)
+
+	tlsConfig := &tls.Config{
+		RootCAs:      cas,
+		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    cas,
+	}
+
+	l, err := tls.Listen("tcp", "localhost:0", tlsConfig)
+	if err != nil {
+		t.Fatalf("net.Listen: got error %v, want no error", err)
+	}
+
+	donec := make(chan error, 1)
+	go func(donec chan<- error) {
+		donec <- http.Serve(l, nil)
+	}(donec)
+	defer func() {
+		if got, want := <-donec, closedError(); !strings.Contains(got.Error(), want) {
+			t.Fatalf("Serve got error %v, want %q", got, want)
+		}
+	}()
+	defer l.Close()
+
+	outputTempFile, err := ioutil.TempFile("", "profile_output")
+	if err != nil {
+		t.Fatalf("Failed to create tempfile: %v", err)
+	}
+	defer os.Remove(outputTempFile.Name())
+	defer outputTempFile.Close()
+
+	// Get port from the address, so request to the server can be made using
+	// the host name specified in certificates.
+	_, portStr, err := net.SplitHostPort(l.Addr().String())
+	if err != nil {
+		t.Fatalf("cannot get port from URL: %v", err)
+	}
+	address := "https://" + "localhost:" + portStr + "/debug/pprof/goroutine"
+	s := &source{
+		Sources:   []string{address},
+		Timeout:   10,
+		Symbolize: "remote",
+	}
+
+	certTempFile, err := ioutil.TempFile("", "cert_output")
+	if err != nil {
+		t.Errorf("cannot create cert tempfile: %v", err)
+	}
+	defer os.Remove(certTempFile.Name())
+	defer certTempFile.Close()
+	certTempFile.Write(certBytes)
+
+	keyTempFile, err := ioutil.TempFile("", "key_output")
+	if err != nil {
+		t.Errorf("cannot create key tempfile: %v", err)
+	}
+	defer os.Remove(keyTempFile.Name())
+	defer keyTempFile.Close()
+	keyTempFile.Write(keyBytes)
+
+	f := &testFlags{
+		strings: map[string]string{
+			"tls_cert": certTempFile.Name(),
+			"tls_key":  keyTempFile.Name(),
+			"tls_ca":   certTempFile.Name(),
+		},
+	}
+	o := &plugin.Options{
+		Obj:           &binutils.Binutils{},
+		UI:            &proftest.TestUI{T: t, AllowRx: "Saved profile in"},
+		Flagset:       f,
+		HTTPTransport: transport.New(f),
+	}
+
+	o.Sym = &symbolizer.Symbolizer{Obj: o.Obj, UI: o.UI, Transport: o.HTTPTransport}
+	p, err := fetchProfiles(s, o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(p.SampleType) == 0 {
+		t.Fatalf("fetchProfiles(%s) got empty profile: len(p.SampleType)==0", address)
+	}
+	if len(p.Function) == 0 {
+		t.Fatalf("fetchProfiles(%s) got non-symbolized profile: len(p.Function)==0", address)
+	}
+	if err := checkProfileHasFunction(p, "TestHTTPSWithServerCertFetch"); err != nil {
+		t.Fatalf("fetchProfiles(%s) %v", address, err)
+	}
 }
 
 func checkProfileHasFunction(p *profile.Profile, fname string) error {
@@ -462,7 +720,10 @@ func checkProfileHasFunction(p *profile.Profile, fname string) error {
 	return fmt.Errorf("got %s, want function %q", p.String(), fname)
 }
 
-func selfSignedCert(t *testing.T) tls.Certificate {
+// selfSignedCert generates a self-signed certificate, and returns the
+// generated certificate, and byte arrays containing the certificate and
+// key associated with the certificate.
+func selfSignedCert(t *testing.T, host string) (tls.Certificate, []byte, []byte) {
 	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		t.Fatalf("failed to generate private key: %v", err)
@@ -477,6 +738,8 @@ func selfSignedCert(t *testing.T) tls.Certificate {
 		SerialNumber: big.NewInt(1),
 		NotBefore:    time.Now(),
 		NotAfter:     time.Now().Add(10 * time.Minute),
+		IsCA:         true,
+		DNSNames:     []string{host},
 	}
 
 	b, err = x509.CreateCertificate(rand.Reader, &tmpl, &tmpl, privKey.Public(), privKey)
@@ -489,5 +752,5 @@ func selfSignedCert(t *testing.T) tls.Certificate {
 	if err != nil {
 		t.Fatalf("failed to create TLS key pair: %v", err)
 	}
-	return cert
+	return cert, bc, bk
 }

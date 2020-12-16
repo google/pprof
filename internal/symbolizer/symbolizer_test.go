@@ -114,8 +114,8 @@ func TestSymbolization(t *testing.T) {
 	}
 
 	s := Symbolizer{
-		mockObjTool{},
-		&proftest.TestUI{T: t},
+		Obj: mockObjTool{},
+		UI:  &proftest.TestUI{T: t},
 	}
 	for i, tc := range []testcase{
 		{
@@ -267,7 +267,7 @@ func (mockObjTool) Open(file string, start, limit, offset uint64) (plugin.ObjFil
 	return mockObjFile{frames: mockAddresses}, nil
 }
 
-func (mockObjTool) Disasm(file string, start, end uint64) ([]plugin.Inst, error) {
+func (mockObjTool) Disasm(file string, start, end uint64, intelSyntax bool) ([]plugin.Inst, error) {
 	return nil, fmt.Errorf("disassembly not supported")
 }
 
