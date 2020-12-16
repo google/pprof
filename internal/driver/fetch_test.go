@@ -204,8 +204,8 @@ func TestFetch(t *testing.T) {
 }
 
 func TestFetchWithBase(t *testing.T) {
-	baseVars := pprofVariables
-	defer func() { pprofVariables = baseVars }()
+	baseConfig := currentConfig()
+	defer setCurrentConfig(baseConfig)
 
 	type WantSample struct {
 		values []int64
@@ -433,7 +433,7 @@ func TestFetchWithBase(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			pprofVariables = baseVars.makeCopy()
+			setCurrentConfig(baseConfig)
 			f := testFlags{
 				stringLists: map[string][]string{
 					"base":      tc.bases,
@@ -542,9 +542,8 @@ func TestHTTPSInsecure(t *testing.T) {
 	os.Setenv(homeEnv(), tempdir)
 	defer os.Setenv(homeEnv(), saveHome)
 
-	baseVars := pprofVariables
-	pprofVariables = baseVars.makeCopy()
-	defer func() { pprofVariables = baseVars }()
+	baseConfig := currentConfig()
+	defer setCurrentConfig(baseConfig)
 
 	tlsCert, _, _ := selfSignedCert(t, "")
 	tlsConfig := &tls.Config{Certificates: []tls.Certificate{tlsCert}}
@@ -616,9 +615,8 @@ func TestHTTPSWithServerCertFetch(t *testing.T) {
 	os.Setenv(homeEnv(), tempdir)
 	defer os.Setenv(homeEnv(), saveHome)
 
-	baseVars := pprofVariables
-	pprofVariables = baseVars.makeCopy()
-	defer func() { pprofVariables = baseVars }()
+	baseConfig := currentConfig()
+	defer setCurrentConfig(baseConfig)
 
 	cert, certBytes, keyBytes := selfSignedCert(t, "localhost")
 	cas := x509.NewCertPool()

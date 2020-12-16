@@ -1,0 +1,146 @@
+name: ci
+on: 
+  push:
+    branches:
+      - master
+  pull_request:
+  schedule:
+    - cron: '0 2 * * *' # Run every day, at 2AM UTC.
+env:
+  GOPATH: ${{ github.workspace }}
+  WORKING_DIR: ./src/github.com/google/pprof/
+jobs:
+  test-mac:
+    runs-on: ${{ matrix.os }} 
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }}
+    strategy:
+      matrix:
+        go: ['1.14', '1.15']
+        os: ['macos-10.15']
+        xcode-version: ['12.2', '12.1', '12.0', '11.7', '11.6', '11.5', '11.4.1', '11.3.1', '11.2.1']
+    steps:
+      - name: Update go version
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.WORKING_DIR }}
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ matrix.xcode-version }}
+
+      - name: Fetch dependencies
+        # Do not let tools interfere with the main module's go.mod.
+        env: 
+          GO111MODULE: off         
+        run: |
+          brew install graphviz
+          go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
+
+      - name: Run the script 
+        run: |
+          gofmtdiff=$(gofmt -s -d .) && if [ -n "$gofmtdiff" ]; then printf 'gofmt -s found:\n%s\n' "$gofmtdiff" && exit 1; fi
+          golintlint=$(golint ./...) && if [ -n "$golintlint" ]; then printf 'golint found:\n%s\n' "$golintlint" && exit 1; fi
+          go vet -all ./...
+          ./test.sh
+
+      - name: Check to make sure that tests also work in GOPATH mode
+        env: 
+          GO111MODULE: off
+        run: |
+          go get -d .
+          go test -v ./...
+
+      - name: Code coverage
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage.txt
+
+  test-linux:
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }} 
+    strategy:
+      matrix:
+        go: ['1.14', '1.15']
+        os: ['ubuntu-20.04', 'ubuntu-18.04', 'ubuntu-16.04'] 
+    steps:
+      - name: Update go version
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.WORKING_DIR }}
+
+      - name: Fetch dependencies
+        # Do not let tools interfere with the main module's go.mod.
+        env: 
+          GO111MODULE: off         
+        run: |
+          sudo apt-get install graphviz
+          go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
+
+      - name: Run the script 
+        run: |
+          gofmtdiff=$(gofmt -s -d .) && if [ -n "$gofmtdiff" ]; then printf 'gofmt -s found:\n%s\n' "$gofmtdiff" && exit 1; fi
+          golintlint=$(golint ./...) && if [ -n "$golintlint" ]; then printf 'golint found:\n%s\n' "$golintlint" && exit 1; fi
+          go vet -all ./...
+          ./test.sh
+
+      - name: Check to make sure that tests also work in GOPATH mode
+        env: 
+          GO111MODULE: off
+        run: |
+          go get -d .
+          go test -v ./...
+
+      - name: Code coverage
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./${{ env.WORKING_DIR }}/coverage.txt
+
+  test-windows:
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        go: ['1.14', '1.15']
+    steps:
+      - name: Update go version
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.WORKING_DIR }}
+
+      - name: Fetch Windows dependency
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install graphviz
+
+      - name: Run the test
+        run: |
+          # This is a workaround to make graphviz installed through choco work.
+          # It generates a config file to tell dot what layout engine and 
+          # format types are available. See
+          # https://github.com/google/pprof/issues/585 for more details.
+          dot -c
+          go env
+          go build github.com/google/pprof
+          go test -v ./...
+        working-directory: ${{ env.WORKING_DIR }}

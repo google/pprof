@@ -184,19 +184,30 @@ func skipUnlessLinuxAmd64(t *testing.T) {
 
 func skipUnlessDarwinAmd64(t *testing.T) {
 	if runtime.GOOS != "darwin" || runtime.GOARCH != "amd64" {
-		t.Skip("This test only works on x86-64 Mac")
+		t.Skip("This test only works on x86-64 macOS")
 	}
 }
 
 func testDisasm(t *testing.T, intelSyntax bool) {
+	_, llvmObjdump, buObjdump := findObjdump([]string{""})
+	if !(llvmObjdump || buObjdump) {
+		t.Skip("cannot disasm: no objdump tool available")
+	}
+
 	bu := &Binutils{}
-	insts, err := bu.Disasm(filepath.Join("testdata", "exe_linux_64"), 0, math.MaxUint64, intelSyntax)
+	testexe := "exe_linux_64"
+	if runtime.GOOS == "darwin" {
+		testexe = "exe_mac_64"
+	}
+
+	insts, err := bu.Disasm(filepath.Join("testdata", testexe), 0, math.MaxUint64, intelSyntax)
 	if err != nil {
 		t.Fatalf("Disasm: unexpected error %v", err)
 	}
 	mainCount := 0
 	for _, x := range insts {
-		if x.Function == "main" {
+		// macOS symbols have a leading underscore.
+		if x.Function == "main" || x.Function == "_main" {
 			mainCount++
 		}
 	}
@@ -206,9 +217,17 @@ func testDisasm(t *testing.T, intelSyntax bool) {
 }
 
 func TestDisasm(t *testing.T) {
-	skipUnlessLinuxAmd64(t)
-	testDisasm(t, true)
+	if (runtime.GOOS != "linux" && runtime.GOOS != "darwin") || runtime.GOARCH != "amd64" {
+		t.Skip("This test only works on x86-64 Linux or macOS")
+	}
 	testDisasm(t, false)
+}
+
+func TestDisasmIntelSyntax(t *testing.T) {
+	if (runtime.GOOS != "linux" && runtime.GOOS != "darwin") || runtime.GOARCH != "amd64" {
+		t.Skip("This test only works on x86_64 Linux or macOS as it tests Intel asm syntax")
+	}
+	testDisasm(t, true)
 }
 
 func findSymbol(syms []*plugin.Sym, name string) *plugin.Sym {
@@ -312,7 +331,7 @@ func TestMachoFiles(t *testing.T) {
 			}
 			t.Logf("binutils: %v", bu)
 			if runtime.GOOS == "darwin" && !bu.rep.addr2lineFound && !bu.rep.llvmSymbolizerFound {
-				// On OSX user needs to install gaddr2line or llvm-symbolizer with
+				// On macOS, user needs to install gaddr2line or llvm-symbolizer with
 				// Homebrew, skip the test when the environment doesn't have it
 				// installed.
 				t.Skip("couldn't find addr2line or gaddr2line")
@@ -399,5 +418,94 @@ func TestOpenMalformedMachO(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "Mach-O") {
 		t.Errorf("Open: got %v, want error containing 'Mach-O'", err)
+	}
+}
+
+func TestObjdumpVersionChecks(t *testing.T) {
+	// Test that the objdump version strings are parsed properly.
+	type testcase struct {
+		desc string
+		os   string
+		ver  string
+		want bool
+	}
+
+	for _, tc := range []testcase{
+		{
+			desc: "Valid Apple LLVM version string with usable version",
+			os:   "darwin",
+			ver:  "Apple LLVM version 11.0.3 (clang-1103.0.32.62)\nOptimized build.",
+			want: true,
+		},
+		{
+			desc: "Valid Apple LLVM version string with unusable version",
+			os:   "darwin",
+			ver:  "Apple LLVM version 10.0.0 (clang-1000.11.45.5)\nOptimized build.",
+			want: false,
+		},
+		{
+			desc: "Invalid Apple LLVM version string with usable version",
+			os:   "darwin",
+			ver:  "Apple LLVM versions 11.0.3 (clang-1103.0.32.62)\nOptimized build.",
+			want: false,
+		},
+		{
+			desc: "Valid LLVM version string with usable version",
+			os:   "linux",
+			ver:  "LLVM (http://llvm.org/):\nLLVM version 9.0.1\n\nOptimized build.",
+			want: true,
+		},
+		{
+			desc: "Valid LLVM version string with unusable version",
+			os:   "linux",
+			ver:  "LLVM (http://llvm.org/):\nLLVM version 6.0.1\n\nOptimized build.",
+			want: false,
+		},
+		{
+			desc: "Invalid LLVM version string with usable version",
+			os:   "linux",
+			ver:  "LLVM (http://llvm.org/):\nLLVM versions 9.0.1\n\nOptimized build.",
+			want: false,
+		},
+		{
+			desc: "Valid LLVM objdump version string with trunk",
+			os:   runtime.GOOS,
+			ver:  "LLVM (http://llvm.org/):\nLLVM version custom-trunk 124ffeb592a00bfe\nOptimized build.",
+			want: true,
+		},
+		{
+			desc: "Invalid LLVM objdump version string with trunk",
+			os:   runtime.GOOS,
+			ver:  "LLVM (http://llvm.org/):\nLLVM version custom-trank 124ffeb592a00bfe\nOptimized build.",
+			want: false,
+		},
+		{
+			desc: "Invalid LLVM objdump version string with trunk",
+			os:   runtime.GOOS,
+			ver:  "LLVM (http://llvm.org/):\nllvm version custom-trunk 124ffeb592a00bfe\nOptimized build.",
+			want: false,
+		},
+	} {
+		if runtime.GOOS == tc.os {
+			if got := isLLVMObjdump(tc.ver); got != tc.want {
+				t.Errorf("%v: got %v, want %v", tc.desc, got, tc.want)
+			}
+		}
+	}
+	for _, tc := range []testcase{
+		{
+			desc: "Valid GNU objdump version string",
+			ver:  "GNU objdump (GNU Binutils) 2.34\nCopyright (C) 2020 Free Software Foundation, Inc.",
+			want: true,
+		},
+		{
+			desc: "Invalid GNU objdump version string",
+			ver:  "GNU nm (GNU Binutils) 2.34\nCopyright (C) 2020 Free Software Foundation, Inc.",
+			want: false,
+		},
+	} {
+		if got := isBuObjdump(tc.ver); got != tc.want {
+			t.Errorf("%v: got %v, want %v", tc.desc, got, tc.want)
+		}
 	}
 }

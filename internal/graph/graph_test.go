@@ -452,6 +452,38 @@ func TestShortenFunctionName(t *testing.T) {
 			"redis.v3.(*baseClient).(github.com/blah/blah/vendor/gopkg.in/redis.v3.process)-fm",
 		},
 		{
+			"github.com/foo/bar/v4.(*Foo).Bar",
+			"bar.(*Foo).Bar",
+		},
+		{
+			"github.com/foo/bar/v4/baz.Foo.Bar",
+			"baz.Foo.Bar",
+		},
+		{
+			"github.com/foo/bar/v123.(*Foo).Bar",
+			"bar.(*Foo).Bar",
+		},
+		{
+			"github.com/foobar/v0.(*Foo).Bar",
+			"v0.(*Foo).Bar",
+		},
+		{
+			"github.com/foobar/v1.(*Foo).Bar",
+			"v1.(*Foo).Bar",
+		},
+		{
+			"example.org/v2xyz.Foo",
+			"v2xyz.Foo",
+		},
+		{
+			"github.com/foo/bar/v4/v4.(*Foo).Bar",
+			"v4.(*Foo).Bar",
+		},
+		{
+			"github.com/foo/bar/v4/foo/bar/v4.(*Foo).Bar",
+			"v4.(*Foo).Bar",
+		},
+		{
 			"java.util.concurrent.ThreadPoolExecutor$Worker.run",
 			"ThreadPoolExecutor$Worker.run",
 		},

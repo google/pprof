@@ -1,3 +1,5 @@
+# Once https://github.com/actions/setup-go/pull/34 is finished, we can remove
+# travis.ci altogether and move everything to Github Action.
 language: go
 
 go_import_path: github.com/google/pprof
@@ -5,37 +7,30 @@ go_import_path: github.com/google/pprof
 matrix:
   include:
     - os: linux
-      go: 1.13.x
-    - os: linux
-      go: 1.14.x
-    - os: linux
       go: master
     - os: osx
-      osx_image: xcode8.3
-      go: 1.13.x
-    - os: osx
-      osx_image: xcode8.3
-      go: 1.14.x
-    - os: osx
-      osx_image: xcode8.3
+      osx_image: xcode10.3
       go: master
     - os: osx
-      osx_image: xcode9.4
-      go: 1.13.x
-    - os: osx
-      osx_image: xcode9.4
+      osx_image: xcode10.3
       go: 1.14.x
     - os: osx
-      osx_image: xcode9.4
+      osx_image: xcode10.3
+      go: 1.15.x
+    - os: osx
+      osx_image: xcode11.3
       go: master
     - os: osx
-      osx_image: xcode10.1
-      go: 1.13.x
-    - os: osx
-      osx_image: xcode10.1
+      osx_image: xcode11.3
       go: 1.14.x
     - os: osx
-      osx_image: xcode10.1
+      osx_image: xcode11.3
+      go: 1.15.x
+    - os: osx
+      osx_image: xcode11.6
+      go: master
+    - os: osx
+      osx_image: xcode12
       go: master
 
 addons:

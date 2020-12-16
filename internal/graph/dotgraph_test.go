@@ -138,6 +138,18 @@ func TestComposeWithStandardGraphAndURL(t *testing.T) {
 	compareGraphs(t, buf.Bytes(), "compose6.dot")
 }
 
+func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
+	g := baseGraph()
+	a, c := baseAttrsAndConfig()
+	g.Nodes[0].Info = NodeInfo{Name: `var"src"`}
+	g.Nodes[1].Info = NodeInfo{Name: `var"#dest#"`}
+
+	var buf bytes.Buffer
+	ComposeDot(&buf, g, a, c)
+
+	compareGraphs(t, buf.Bytes(), "compose7.dot")
+}
+
 func baseGraph() *Graph {
 	src := &Node{
 		Info:        NodeInfo{Name: "src"},
@@ -178,7 +190,7 @@ func baseAttrsAndConfig() (*DotAttributes, *DotConfig) {
 	}
 	c := &DotConfig{
 		Title:  "testtitle",
-		Labels: []string{"label1", "label2"},
+		Labels: []string{"label1", "label2", `label3: "foo"`},
 		Total:  100,
 		FormatValue: func(v int64) string {
 			return strconv.FormatInt(v, 10)
@@ -323,6 +335,46 @@ func TestTagCollapse(t *testing.T) {
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("collapse to %d, got:\n%v\nwant:\n%v", len(tc), tagString(got), tagString(want))
 		}
+	}
+}
+
+func TestEscapeForDot(t *testing.T) {
+	for _, tc := range []struct {
+		desc  string
+		input []string
+		want  []string
+	}{
+		{
+			desc:  "with multiple doubles quotes",
+			input: []string{`label: "foo" and "bar"`},
+			want:  []string{`label: \"foo\" and \"bar\"`},
+		},
+		{
+			desc:  "with graphviz center line character",
+			input: []string{"label: foo \n bar"},
+			want:  []string{`label: foo \l bar`},
+		},
+		{
+			desc:  "with two backslashes",
+			input: []string{`label: \\`},
+			want:  []string{`label: \\\\`},
+		},
+		{
+			desc:  "with two double quotes together",
+			input: []string{`label: ""`},
+			want:  []string{`label: \"\"`},
+		},
+		{
+			desc:  "with multiple labels",
+			input: []string{`label1: "foo"`, `label2: "bar"`},
+			want:  []string{`label1: \"foo\"`, `label2: \"bar\"`},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			if got := escapeAllForDot(tc.input); !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("escapeAllForDot(%s) = %s, want %s", tc.input, got, tc.want)
+			}
+		})
 	}
 }
 
