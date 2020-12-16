@@ -714,7 +714,7 @@ func (s *Sample) DiffBaseSample() bool {
 }
 
 // Scale multiplies all sample values in a profile by a constant and keeps
-// samples that have at least one non-zero value.
+// only samples that have at least one non-zero value.
 func (p *Profile) Scale(ratio float64) {
 	if ratio == 1 {
 		return
