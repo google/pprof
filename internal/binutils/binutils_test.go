@@ -119,39 +119,111 @@ func (a *mockAddr2liner) close() {
 }
 
 func TestAddr2LinerLookup(t *testing.T) {
-	const oddSizedData = `
-00001000 T 0x1000
-00002000 T 0x2000
-00003000 T 0x3000
-`
-	const evenSizedData = `
-0000000000001000 T 0x1000
-0000000000002000 T 0x2000
-0000000000003000 T 0x3000
-0000000000004000 T 0x4000
-`
-	for _, d := range []string{oddSizedData, evenSizedData} {
-		a, err := parseAddr2LinerNM(0, bytes.NewBufferString(d))
-		if err != nil {
-			t.Errorf("nm parse error: %v", err)
-			continue
-		}
-		for address, want := range map[uint64]string{
-			0x1000: "0x1000",
-			0x1001: "0x1000",
-			0x1FFF: "0x1000",
-			0x2000: "0x2000",
-			0x2001: "0x2000",
-		} {
-			if got, _ := a.addrInfo(address); !checkAddress(got, address, want) {
-				t.Errorf("%x: got %v, want %s", address, got, want)
+	for _, tc := range []struct {
+		desc             string
+		nmOutput         string
+		wantSymbolized   map[uint64]string
+		wantUnsymbolized []uint64
+	}{
+		{
+			desc: "odd symbol count",
+			nmOutput: `
+0x1000 T 1000 100
+0x2000 T 2000 120
+0x3000 T 3000 130
+`,
+			wantSymbolized: map[uint64]string{
+				0x1000: "0x1000",
+				0x1001: "0x1000",
+				0x1FFF: "0x1000",
+				0x2000: "0x2000",
+				0x2001: "0x2000",
+				0x3000: "0x3000",
+				0x312f: "0x3000",
+			},
+			wantUnsymbolized: []uint64{0x0fff, 0x3130},
+		},
+		{
+			desc: "even symbol count",
+			nmOutput: `
+0x1000 T 1000 100
+0x2000 T 2000 120
+0x3000 T 3000 130
+0x4000 T 4000 140
+`,
+			wantSymbolized: map[uint64]string{
+				0x1000: "0x1000",
+				0x1001: "0x1000",
+				0x1FFF: "0x1000",
+				0x2000: "0x2000",
+				0x2fff: "0x2000",
+				0x3000: "0x3000",
+				0x3fff: "0x3000",
+				0x4000: "0x4000",
+				0x413f: "0x4000",
+			},
+			wantUnsymbolized: []uint64{0x0fff, 0x4140},
+		},
+		{
+			desc: "different symbol types",
+			nmOutput: `
+absolute_0x100 a 100
+absolute_0x200 A 200
+text_0x1000 t 1000 100
+bss_0x2000 b 2000 120
+data_0x3000 d 3000 130
+rodata_0x4000 r 4000 140
+weak_0x5000 v 5000 150
+text_0x6000 T 6000 160
+bss_0x7000 B 7000 170
+data_0x8000 D 8000 180
+rodata_0x9000 R 9000 190
+weak_0xa000 V a000 1a0
+weak_0xb000 W b000 1b0
+`,
+			wantSymbolized: map[uint64]string{
+				0x1000: "text_0x1000",
+				0x1FFF: "text_0x1000",
+				0x2000: "bss_0x2000",
+				0x211f: "bss_0x2000",
+				0x3000: "data_0x3000",
+				0x312f: "data_0x3000",
+				0x4000: "rodata_0x4000",
+				0x413f: "rodata_0x4000",
+				0x5000: "weak_0x5000",
+				0x514f: "weak_0x5000",
+				0x6000: "text_0x6000",
+				0x6fff: "text_0x6000",
+				0x7000: "bss_0x7000",
+				0x716f: "bss_0x7000",
+				0x8000: "data_0x8000",
+				0x817f: "data_0x8000",
+				0x9000: "rodata_0x9000",
+				0x918f: "rodata_0x9000",
+				0xa000: "weak_0xa000",
+				0xa19f: "weak_0xa000",
+				0xb000: "weak_0xb000",
+				0xb1af: "weak_0xb000",
+			},
+			wantUnsymbolized: []uint64{0x100, 0x200, 0x0fff, 0x2120, 0x3130, 0x4140, 0x5150, 0x7170, 0x8180, 0x9190, 0xa1a0, 0xb1b0},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			a, err := parseAddr2LinerNM(0, bytes.NewBufferString(tc.nmOutput))
+			if err != nil {
+				t.Fatalf("nm parse error: %v", err)
 			}
-		}
-		for _, unknown := range []uint64{0x0fff, 0x4001} {
-			if got, _ := a.addrInfo(unknown); got != nil {
-				t.Errorf("%x: got %v, want nil", unknown, got)
+			for address, want := range tc.wantSymbolized {
+				if got, _ := a.addrInfo(address); !checkAddress(got, address, want) {
+					t.Errorf("%x: got %v, want %s", address, got, want)
+				}
 			}
-		}
+			for _, unknown := range tc.wantUnsymbolized {
+				if got, _ := a.addrInfo(unknown); got != nil {
+					t.Errorf("%x: got %v, want nil", unknown, got)
+				}
+			}
+		})
 	}
 }
 
