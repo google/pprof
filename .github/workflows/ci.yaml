@@ -131,7 +131,7 @@ jobs:
       - name: Fetch Windows dependency
         uses: crazy-max/ghaction-chocolatey@v1
         with:
-          args: install graphviz
+          args: install graphviz llvm
 
       - name: Run the test
         run: |

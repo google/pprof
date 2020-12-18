@@ -18,7 +18,7 @@
 // set was created.
 
 // When a new executable is generated, hardcoded addresses in the
-// functions TestObjFile, TestMachoFiles in binutils_test.go must be updated.
+// functions TestObjFile, TestMachoFiles, TestPEFile in binutils_test.go must be updated.
 package main
 
 import (

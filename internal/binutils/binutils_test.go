@@ -260,6 +260,12 @@ func skipUnlessDarwinAmd64(t *testing.T) {
 	}
 }
 
+func skipUnlessWindowsAmd64(t *testing.T) {
+	if runtime.GOOS != "windows" || runtime.GOARCH != "amd64" {
+		t.Skip("This test only works on x86-64 Windows")
+	}
+}
+
 func testDisasm(t *testing.T, intelSyntax bool) {
 	_, llvmObjdump, buObjdump := findObjdump([]string{""})
 	if !(llvmObjdump || buObjdump) {
@@ -267,9 +273,16 @@ func testDisasm(t *testing.T, intelSyntax bool) {
 	}
 
 	bu := &Binutils{}
-	testexe := "exe_linux_64"
-	if runtime.GOOS == "darwin" {
+	var testexe string
+	switch runtime.GOOS {
+	case "linux":
+		testexe = "exe_linux_64"
+	case "darwin":
 		testexe = "exe_mac_64"
+	case "windows":
+		testexe = "exe_windows_64.exe"
+	default:
+		t.Skipf("unsupported OS %q", runtime.GOOS)
 	}
 
 	insts, err := bu.Disasm(filepath.Join("testdata", testexe), 0, math.MaxUint64, intelSyntax)
@@ -289,15 +302,15 @@ func testDisasm(t *testing.T, intelSyntax bool) {
 }
 
 func TestDisasm(t *testing.T) {
-	if (runtime.GOOS != "linux" && runtime.GOOS != "darwin") || runtime.GOARCH != "amd64" {
-		t.Skip("This test only works on x86-64 Linux or macOS")
+	if (runtime.GOOS != "linux" && runtime.GOOS != "darwin" && runtime.GOOS != "windows") || runtime.GOARCH != "amd64" {
+		t.Skip("This test only works on x86-64 Linux, macOS or Windows")
 	}
 	testDisasm(t, false)
 }
 
 func TestDisasmIntelSyntax(t *testing.T) {
-	if (runtime.GOOS != "linux" && runtime.GOOS != "darwin") || runtime.GOARCH != "amd64" {
-		t.Skip("This test only works on x86_64 Linux or macOS as it tests Intel asm syntax")
+	if (runtime.GOOS != "linux" && runtime.GOOS != "darwin" && runtime.GOOS != "windows") || runtime.GOARCH != "amd64" {
+		t.Skip("This test only works on x86_64 Linux, macOS or Windows as it tests Intel asm syntax")
 	}
 	testDisasm(t, true)
 }
@@ -462,6 +475,53 @@ func TestLLVMSymbolizer(t *testing.T) {
 		if !reflect.DeepEqual(frames, c.frames) {
 			t.Errorf("LLVM: expect %v; got %v\n", c.frames, frames)
 		}
+	}
+}
+
+func TestPEFile(t *testing.T) {
+	// If this test fails, check the address for main function in testdata/exe_windows_64.exe
+	// using the command 'nm -n '. Update the hardcoded addresses below to match
+	// the addresses from the output.
+	skipUnlessWindowsAmd64(t)
+	for _, tc := range []struct {
+		desc                 string
+		start, limit, offset uint64
+		addr                 uint64
+	}{
+		{"fake mapping", 0, math.MaxUint64, 0, 0x401560},
+		{"fixed load address", 0x400000, 0x402000, 0, 0x401560},
+		{"simulated ASLR address", 0x500000, 0x502000, 0, 0x501560},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			bu := &Binutils{}
+			f, err := bu.Open(filepath.Join("testdata", "exe_windows_64.exe"), tc.start, tc.limit, tc.offset)
+			if err != nil {
+				t.Fatalf("Open: unexpected error %v", err)
+			}
+			defer f.Close()
+			syms, err := f.Symbols(regexp.MustCompile("main"), 0)
+			if err != nil {
+				t.Fatalf("Symbols: unexpected error %v", err)
+			}
+
+			m := findSymbol(syms, "main")
+			if m == nil {
+				t.Fatalf("Symbols: did not find main")
+			}
+
+			for _, addr := range []uint64{m.Start + f.Base(), tc.addr} {
+				gotFrames, err := f.SourceLine(addr)
+				if err != nil {
+					t.Fatalf("SourceLine: unexpected error %v", err)
+				}
+				wantFrames := []plugin.Frame{
+					{Func: "main", File: "hello.c", Line: 3},
+				}
+				if !reflect.DeepEqual(gotFrames, wantFrames) {
+					t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, wantFrames)
+				}
+			}
+		})
 	}
 }
 
