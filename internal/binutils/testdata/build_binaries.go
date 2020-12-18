@@ -46,6 +46,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
 	case "darwin":
 		if err := removeGlob("exe_mac_64*", "lib_mac_64"); err != nil {
 			log.Fatal(err)
@@ -58,6 +59,13 @@ func main() {
 		}
 
 		out, err = exec.Command("clang", "-g", "-ffile-prefix-map="+wd+"="+"/tmp", "-o", "lib_mac_64", "-dynamiclib", "lib.c").CombinedOutput()
+		log.Println(string(out))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	case "windows":
+		out, err := exec.Command("gcc", "-g", "-ffile-prefix-map="+wd+"=", "-o", "exe_windows_64.exe", "hello.c").CombinedOutput()
 		log.Println(string(out))
 		if err != nil {
 			log.Fatal(err)
