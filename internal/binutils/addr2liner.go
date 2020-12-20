@@ -70,7 +70,11 @@ func (a *addr2LinerJob) write(s string) error {
 }
 
 func (a *addr2LinerJob) readLine() (string, error) {
-	return a.out.ReadString('\n')
+	s, err := a.out.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(s), nil
 }
 
 // close releases any resources used by the addr2liner object.
@@ -116,11 +120,7 @@ func newAddr2Liner(cmd, file string, base uint64) (*addr2Liner, error) {
 }
 
 func (d *addr2Liner) readString() (string, error) {
-	s, err := d.rw.readLine()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(s), nil
+	return d.rw.readLine()
 }
 
 // readFrame parses the addr2line output for a single address. It
