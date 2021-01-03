@@ -21,13 +21,14 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/google/pprof/flagset"
 	"github.com/google/pprof/profile"
 )
 
 // Options groups all the optional plugins into pprof.
 type Options struct {
 	Writer  Writer
-	Flagset FlagSet
+	Flagset flagset.FlagSet
 	Fetch   Fetcher
 	Sym     Symbolizer
 	Obj     ObjTool
@@ -49,37 +50,6 @@ type Options struct {
 // typically a filename.
 type Writer interface {
 	Open(name string) (io.WriteCloser, error)
-}
-
-// A FlagSet creates and parses command-line flags.
-// It is similar to the standard flag.FlagSet.
-type FlagSet interface {
-	// Bool, Int, Float64, and String define new flags,
-	// like the functions of the same name in package flag.
-	Bool(name string, def bool, usage string) *bool
-	Int(name string, def int, usage string) *int
-	Float64(name string, def float64, usage string) *float64
-	String(name string, def string, usage string) *string
-
-	// StringList is similar to String but allows multiple values for a
-	// single flag
-	StringList(name string, def string, usage string) *[]*string
-
-	// ExtraUsage returns any additional text that should be printed after the
-	// standard usage message. The extra usage message returned includes all text
-	// added with AddExtraUsage().
-	// The typical use of ExtraUsage is to show any custom flags defined by the
-	// specific pprof plugins being used.
-	ExtraUsage() string
-
-	// AddExtraUsage appends additional text to the end of the extra usage message.
-	AddExtraUsage(eu string)
-
-	// Parse initializes the flags with their values for this run
-	// and returns the non-flag command line arguments.
-	// If an unknown flag is encountered or there are no arguments,
-	// Parse should call usage and return nil.
-	Parse(usage func()) []string
 }
 
 // A Fetcher reads and returns the profile named by src. src can be a
