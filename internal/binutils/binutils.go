@@ -256,7 +256,7 @@ func (bu *Binutils) Disasm(file string, start, end uint64, intelSyntax bool) ([]
 	if !b.objdumpFound {
 		return nil, errors.New("cannot disasm: no objdump tool available")
 	}
-	args := []string{"--disassemble-all", "--demangle", "--no-show-raw-insn",
+	args := []string{"--disassemble", "--demangle", "--no-show-raw-insn",
 		"--line-numbers", fmt.Sprintf("--start-address=%#x", start),
 		fmt.Sprintf("--stop-address=%#x", end)}
 
