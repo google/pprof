@@ -51,7 +51,11 @@ func (a *llvmSymbolizerJob) write(s string) error {
 }
 
 func (a *llvmSymbolizerJob) readLine() (string, error) {
-	return a.out.ReadString('\n')
+	s, err := a.out.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(s), nil
 }
 
 // close releases any resources used by the llvmSymbolizer object.
@@ -98,11 +102,7 @@ func newLLVMSymbolizer(cmd, file string, base uint64) (*llvmSymbolizer, error) {
 }
 
 func (d *llvmSymbolizer) readString() (string, error) {
-	s, err := d.rw.readLine()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(s), nil
+	return d.rw.readLine()
 }
 
 // readFrame parses the llvm-symbolizer output for a single address. It

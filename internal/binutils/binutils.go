@@ -18,6 +18,7 @@ package binutils
 import (
 	"debug/elf"
 	"debug/macho"
+	"debug/pe"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -337,6 +338,15 @@ func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFi
 		return f, nil
 	}
 
+	peMagic := string(header[:2])
+	if peMagic == "MZ" {
+		f, err := b.openPE(name, start, limit, offset)
+		if err != nil {
+			return nil, fmt.Errorf("error reading PE file %s: %v", name, err)
+		}
+		return f, nil
+	}
+
 	return nil, fmt.Errorf("unrecognized binary format: %s", name)
 }
 
@@ -455,6 +465,33 @@ func (b *binrep) openELF(name string, start, limit, offset uint64) (plugin.ObjFi
 		return &fileNM{file: file{b, name, base, buildID}}, nil
 	}
 	return &fileAddr2Line{file: file{b, name, base, buildID}}, nil
+}
+
+func (b *binrep) openPE(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
+	pf, err := pe.Open(name)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing %s: %v", name, err)
+	}
+	defer pf.Close()
+
+	var imageBase uint64
+	switch h := pf.OptionalHeader.(type) {
+	case *pe.OptionalHeader32:
+		imageBase = uint64(h.ImageBase)
+	case *pe.OptionalHeader64:
+		imageBase = uint64(h.ImageBase)
+	default:
+		return nil, fmt.Errorf("unknown OptionalHeader %T", pf.OptionalHeader)
+	}
+
+	var base uint64
+	if start > 0 {
+		base = start - imageBase
+	}
+	if b.fast || (!b.addr2lineFound && !b.llvmSymbolizerFound) {
+		return &fileNM{file: file{b: b, name: name, base: base}}, nil
+	}
+	return &fileAddr2Line{file: file{b: b, name: name, base: base}}, nil
 }
 
 // file implements the binutils.ObjFile interface.
