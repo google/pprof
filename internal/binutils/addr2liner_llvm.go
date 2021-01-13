@@ -101,15 +101,11 @@ func newLLVMSymbolizer(cmd, file string, base uint64) (*llvmSymbolizer, error) {
 	return a, nil
 }
 
-func (d *llvmSymbolizer) readString() (string, error) {
-	return d.rw.readLine()
-}
-
 // readFrame parses the llvm-symbolizer output for a single address. It
 // returns a populated plugin.Frame and whether it has reached the end of the
 // data.
 func (d *llvmSymbolizer) readFrame() (plugin.Frame, bool) {
-	funcname, err := d.readString()
+	funcname, err := d.rw.readLine()
 	if err != nil {
 		return plugin.Frame{}, true
 	}
@@ -121,7 +117,7 @@ func (d *llvmSymbolizer) readFrame() (plugin.Frame, bool) {
 		funcname = ""
 	}
 
-	fileline, err := d.readString()
+	fileline, err := d.rw.readLine()
 	if err != nil {
 		return plugin.Frame{Func: funcname}, true
 	}
