@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -747,9 +746,17 @@ func (p *Profile) ScaleN(ratios []float64) error {
 		keepSample := false
 		for i, v := range s.Value {
 			if ratios[i] != 1 {
-				val := int64(math.Round(float64(v) * ratios[i]))
-				s.Value[i] = val
-				keepSample = keepSample || val != 0
+				val := float64(v) * ratios[i]
+
+				// Add 0.5 to the magnitude of val. This makes the trunctation
+				// which occurs when converting to an integer equavalent to
+				// rounding.
+				sign := 1.0
+				if val <= 0 {
+					sign = -1.0
+				}
+				s.Value[i] = int64(val + sign*.5)
+				keepSample = keepSample || s.Value[i] != 0
 			}
 		}
 		if keepSample {
