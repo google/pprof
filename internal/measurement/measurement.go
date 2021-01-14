@@ -111,9 +111,9 @@ func compatibleValueTypes(v1, v2 *profile.ValueType) bool {
 	}
 
 	return v1.Unit == v2.Unit ||
-		(isTimeUnit(v1.Unit) && isTimeUnit(v2.Unit)) ||
-		(isMemoryUnit(v1.Unit) && isMemoryUnit(v2.Unit)) ||
-		(isGCUUnit(v1.Unit) && isGCUUnit(v2.Unit))
+		(timeUnits.sniffUnit(v1.Unit) != nil && timeUnits.sniffUnit(v2.Unit) != nil) ||
+		(memoryUnits.sniffUnit(v1.Unit) != nil && memoryUnits.sniffUnit(v2.Unit) != nil) ||
+		(gcuUnits.sniffUnit(v1.Unit) != nil && gcuUnits.sniffUnit(v2.Unit) != nil)
 }
 
 // Scale a measurement from an unit to a different unit and returns
@@ -125,13 +125,13 @@ func Scale(value int64, fromUnit, toUnit string) (float64, string) {
 		v, u := Scale(-value, fromUnit, toUnit)
 		return -v, u
 	}
-	if m, u, ok := memoryLabel(value, fromUnit, toUnit); ok {
+	if m, u, ok := memoryUnits.convertUnit(value, fromUnit, toUnit); ok {
 		return m, u
 	}
-	if t, u, ok := timeLabel(value, fromUnit, toUnit); ok {
+	if t, u, ok := timeUnits.convertUnit(value, fromUnit, toUnit); ok {
 		return t, u
 	}
-	if g, u, ok := gcuLabel(value, fromUnit, toUnit); ok {
+	if g, u, ok := gcuUnits.convertUnit(value, fromUnit, toUnit); ok {
 		return g, u
 	}
 	// Skip non-interesting units.
@@ -185,154 +185,43 @@ type unit struct {
 	factor        float64
 }
 
-var memoryUnits = []unit{
-	{"B", []string{"b", "byte"}, 1},
-	{"kB", []string{"kb", "kbyte", "kilobyte"}, float64(1 << 10)},
-	{"MB", []string{"mb", "mbyte", "megabyte"}, float64(1 << 20)},
-	{"GB", []string{"gb", "gbyte", "gigabyte"}, float64(1 << 30)},
-	{"TB", []string{"tb", "tbyte", "terabyte"}, float64(1 << 40)},
-	{"PB", []string{"pb", "pbyte", "petabyte"}, float64(1 << 50)},
+// unitType includes a list of units that are within the same category (i.e.
+// memory or time units) and a default unit to use for this type of unit.
+type unitType struct {
+	defaultUnit unit
+	units       []unit
 }
 
-// isMemoryUnit returns whether a name is recognized as a memory size
-// unit.
-func isMemoryUnit(unit string) bool {
-	_, _, memoryUnit := unitFactor(strings.TrimSuffix(strings.ToLower(unit), "s"), memoryUnits)
-	return memoryUnit
-}
-
-func memoryLabel(value int64, fromUnit, toUnit string) (v float64, u string, ok bool) {
-	fromUnit = strings.TrimSuffix(strings.ToLower(fromUnit), "s")
-	toUnit = strings.TrimSuffix(strings.ToLower(toUnit), "s")
-	uf := func(unit string) (string, float64, bool) {
-		return unitFactor(unit, memoryUnits)
+// findByAlias returns the unit associated with the specified alias. It returns
+// nil if the unit with such alias is not found.
+func (ut unitType) findByAlias(alias string) *unit {
+	for _, u := range ut.units {
+		for _, a := range u.aliases {
+			if alias == a {
+				return &u
+			}
+		}
 	}
-	as := func(value float64) (float64, string, bool) {
-		return autoScale(value, memoryUnits)
-	}
-	return convertUnit(value, fromUnit, toUnit, unit{"B", []string{}, 1.0}, uf, as)
+	return nil
 }
 
-var timeUnits = []unit{
-	{"ns", []string{"ns", "nanosecond"}, float64(time.Nanosecond)},
-	{"us", []string{"μs", "us", "microsecond"}, float64(time.Microsecond)},
-	{"ms", []string{"ms", "millisecond"}, float64(time.Millisecond)},
-	{"s", []string{"s", "sec", "second"}, float64(time.Second)},
-	{"hrs", []string{"hour", "hr"}, float64(time.Hour)},
-}
-
-// isTimeUnit returns whether a name is recognized as a time unit.
-func isTimeUnit(unit string) bool {
+// sniffUnit simpifies the input alias and returns the unit associated with the
+// specified alias. It returns nil if the unit with such alias is not found.
+func (ut unitType) sniffUnit(unit string) *unit {
 	unit = strings.ToLower(unit)
 	if len(unit) > 2 {
 		unit = strings.TrimSuffix(unit, "s")
 	}
-	_, _, timeUnit := unitFactor(unit, timeUnits)
-	return timeUnit || unit == "cycle"
+	return ut.findByAlias(unit)
 }
 
-func timeLabel(value int64, fromUnit, toUnit string) (v float64, u string, ok bool) {
-	fromUnit = strings.ToLower(fromUnit)
-	if len(fromUnit) > 2 {
-		fromUnit = strings.TrimSuffix(fromUnit, "s")
-	}
-
-	toUnit = strings.ToLower(toUnit)
-	if len(toUnit) > 2 {
-		toUnit = strings.TrimSuffix(toUnit, "s")
-	}
-
-	if fromUnit == "cycle" {
-		return float64(value), "", true
-	}
-
-	uf := func(unit string) (string, float64, bool) {
-		return unitFactor(unit, timeUnits)
-	}
-	as := func(value float64) (float64, string, bool) {
-		return autoScale(value, timeUnits)
-	}
-	return convertUnit(value, fromUnit, toUnit, unit{"s", []string{}, float64(time.Second)}, uf, as)
-}
-
-var gcuUnits = []unit{
-	{"n*GCU", []string{"nanogcu"}, 1e-9},
-	{"u*GCU", []string{"microgcu"}, 1e-6},
-	{"m*GCU", []string{"milligcu"}, 1e-3},
-	{"GCU", []string{"gcu"}, 1},
-	{"k*GCU", []string{"kilogcu"}, 1e3},
-	{"M*GCU", []string{"megagcu"}, 1e6},
-	{"G*GCU", []string{"gigagcu"}, 1e9},
-	{"T*GCU", []string{"teragcu"}, 1e12},
-	{"P*GCU", []string{"petagcu"}, 1e15},
-}
-
-// isGCUUnit returns whether a name is recognized as a GCU unit.
-func isGCUUnit(unit string) bool {
-	_, _, gcuUnit := unitFactor(strings.TrimSuffix(strings.ToLower(unit), "s"), gcuUnits)
-	return gcuUnit
-}
-
-func gcuLabel(value int64, fromUnit, toUnit string) (v float64, u string, ok bool) {
-	fromUnit = strings.TrimSuffix(strings.ToLower(fromUnit), "s")
-	toUnit = strings.TrimSuffix(strings.ToLower(toUnit), "s")
-	uf := func(unit string) (string, float64, bool) {
-		return unitFactor(unit, gcuUnits)
-	}
-	as := func(value float64) (float64, string, bool) {
-		return autoScale(value, gcuUnits)
-	}
-	return convertUnit(value, fromUnit, toUnit, unit{"GCU", []string{}, 1.0}, uf, as)
-}
-
-// convertUnit converts a value from the fromUnit to the toUnit, autoscaling
-// the value if the toUnit is "minimum" or "auto". If the fromUnit is not
-// included in units, then a false boolean will be returned. If the toUnit
-// is not in units, the value will be returned in terms of the default unit.
-func convertUnit(value int64, fromUnit, toUnit string, defaultUnit unit, unitFactor func(string) (string, float64, bool), autoScale func(float64) (float64, string, bool)) (v float64, u string, ok bool) {
-	_, fromUnitFactor, ok := unitFactor(fromUnit)
-	if !ok {
-		return 0, "", false
-	}
-
-	v = float64(value) * fromUnitFactor
-
-	if toUnit == "minimum" || toUnit == "auto" {
-		if v, u, ok := autoScale(v); ok {
-			return v, u, true
-		}
-		return v / defaultUnit.factor, defaultUnit.canonicalName, true
-	}
-
-	toUnit, toUnitFactor, ok := unitFactor(toUnit)
-	if !ok {
-		return v / defaultUnit.factor, defaultUnit.canonicalName, true
-	}
-	return v / toUnitFactor, toUnit, true
-}
-
-// unitFactor returns the canonical name for the unit, the factor by which one
-// must multiply a value specified in terms of unit in order to get the value
-// specified in terms of the base unit, and a boolean to indicated if a unit
-// was identified for the specified unit within the slice units.
-func unitFactor(unit string, units []unit) (string, float64, bool) {
-	for _, u := range units {
-		for _, a := range u.aliases {
-			if unit == a {
-				return u.canonicalName, u.factor, true
-			}
-		}
-	}
-	return unit, 0, false
-}
-
-// autoScale takes in the value with units of base unit and returns
+// autoScale takes in the value with units of the base unit and returns
 // that value scaled to a reasonable unit if a reasonable unit is
 // found.
-func autoScale(value float64, units []unit) (float64, string, bool) {
+func (ut unitType) autoScale(value float64) (float64, string, bool) {
 	var f float64
 	var unit string
-	for _, u := range units {
+	for _, u := range ut.units {
 		if u.factor >= f && (value/u.factor) >= 1.0 {
 			f = u.factor
 			unit = u.canonicalName
@@ -342,4 +231,66 @@ func autoScale(value float64, units []unit) (float64, string, bool) {
 		return 0, "", false
 	}
 	return value / f, unit, true
+}
+
+// convertUnit converts a value from the fromUnit to the toUnit, autoscaling
+// the value if the toUnit is "minimum" or "auto". If the fromUnit is not
+// included in the unitType, then a false boolean will be returned. If the
+// toUnit is not in the unitType, the value will be returned in terms of the
+// default unitType.
+func (ut unitType) convertUnit(value int64, fromUnitStr, toUnitStr string) (float64, string, bool) {
+	fromUnit := ut.sniffUnit(fromUnitStr)
+	if fromUnit == nil {
+		return 0, "", false
+	}
+	v := float64(value) * fromUnit.factor
+	if toUnitStr == "minimum" || toUnitStr == "auto" {
+		if v, u, ok := ut.autoScale(v); ok {
+			return v, u, true
+		}
+		return v / ut.defaultUnit.factor, ut.defaultUnit.canonicalName, true
+	}
+	toUnit := ut.sniffUnit(toUnitStr)
+	if toUnit == nil {
+		return v / ut.defaultUnit.factor, ut.defaultUnit.canonicalName, true
+	}
+	return v / toUnit.factor, toUnit.canonicalName, true
+}
+
+var memoryUnits = unitType{
+	units: []unit{
+		{"B", []string{"b", "byte"}, 1},
+		{"kB", []string{"kb", "kbyte", "kilobyte"}, float64(1 << 10)},
+		{"MB", []string{"mb", "mbyte", "megabyte"}, float64(1 << 20)},
+		{"GB", []string{"gb", "gbyte", "gigabyte"}, float64(1 << 30)},
+		{"TB", []string{"tb", "tbyte", "terabyte"}, float64(1 << 40)},
+		{"PB", []string{"pb", "pbyte", "petabyte"}, float64(1 << 50)},
+	},
+	defaultUnit: unit{"B", []string{"b", "byte"}, 1},
+}
+
+var timeUnits = unitType{
+	units: []unit{
+		{"ns", []string{"ns", "nanosecond"}, float64(time.Nanosecond)},
+		{"us", []string{"μs", "us", "microsecond"}, float64(time.Microsecond)},
+		{"ms", []string{"ms", "millisecond"}, float64(time.Millisecond)},
+		{"s", []string{"s", "sec", "second"}, float64(time.Second)},
+		{"hrs", []string{"hour", "hr"}, float64(time.Hour)},
+	},
+	defaultUnit: unit{"s", []string{}, float64(time.Second)},
+}
+
+var gcuUnits = unitType{
+	units: []unit{
+		{"n*GCU", []string{"nanogcu"}, 1e-9},
+		{"u*GCU", []string{"microgcu"}, 1e-6},
+		{"m*GCU", []string{"milligcu"}, 1e-3},
+		{"GCU", []string{"gcu"}, 1},
+		{"k*GCU", []string{"kilogcu"}, 1e3},
+		{"M*GCU", []string{"megagcu"}, 1e6},
+		{"G*GCU", []string{"gigagcu"}, 1e9},
+		{"T*GCU", []string{"teragcu"}, 1e12},
+		{"P*GCU", []string{"petagcu"}, 1e15},
+	},
+	defaultUnit: unit{"GCU", []string{}, 1.0},
 }
