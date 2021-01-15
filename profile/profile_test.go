@@ -641,6 +641,74 @@ func checkAggregation(prof *Profile, a *aggTest) error {
 	return nil
 }
 
+// TestScale tests that Scale() rounds values and drops samples
+// as expected.
+func TestScale(t *testing.T) {
+	for _, tc := range []struct {
+		desc        string
+		ratio       float64
+		p           *Profile
+		wantSamples [][]int64
+	}{
+		{
+			desc:  "scale by 1",
+			ratio: 1.0,
+			p:     testProfile1.Copy(),
+			wantSamples: [][]int64{
+				{1000, 1000},
+				{100, 100},
+				{10, 10},
+				{10000, 10000},
+				{1, 1},
+			},
+		},
+		{
+			desc:  "sample values will be rounded up",
+			ratio: .66666,
+			p:     testProfile1.Copy(),
+			wantSamples: [][]int64{
+				{667, 667},
+				{67, 67},
+				{7, 7},
+				{6667, 6667},
+				{1, 1},
+			},
+		},
+		{
+			desc:  "sample values will be rounded down",
+			ratio: .33333,
+			p:     testProfile1.Copy(),
+			wantSamples: [][]int64{
+				{333, 333},
+				{33, 33},
+				{3, 3},
+				{3333, 3333},
+			},
+		},
+		{
+			desc:        "all sample values will be dropped",
+			ratio:       0.00001,
+			p:           testProfile1.Copy(),
+			wantSamples: [][]int64{},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			tc.p.Scale(tc.ratio)
+			if got, want := len(tc.p.Sample), len(tc.wantSamples); got != want {
+				t.Fatalf("got %d samples, want %d", got, want)
+			}
+			for i, s := range tc.p.Sample {
+				for j, got := range s.Value {
+					want := tc.wantSamples[i][j]
+					if want != got {
+						t.Errorf("For value %d of sample %d, got %d want %d", j, i, got, want)
+					}
+				}
+			}
+		})
+	}
+}
+
 // TestMergeMain tests merge leaves the main binary in place.
 func TestMergeMain(t *testing.T) {
 	prof := testProfile1.Copy()
@@ -864,10 +932,9 @@ func TestNormalizeByDifferentProfile(t *testing.T) {
 	}
 
 	expectedSampleValues := [][]int64{
-		{19, 1000},
-		{1, 100},
-		{0, 10},
-		{198, 10000},
+		{20, 1000},
+		{2, 100},
+		{199, 10000},
 		{0, 1},
 	}
 

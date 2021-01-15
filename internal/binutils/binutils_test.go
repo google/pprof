@@ -119,39 +119,111 @@ func (a *mockAddr2liner) close() {
 }
 
 func TestAddr2LinerLookup(t *testing.T) {
-	const oddSizedData = `
-00001000 T 0x1000
-00002000 T 0x2000
-00003000 T 0x3000
-`
-	const evenSizedData = `
-0000000000001000 T 0x1000
-0000000000002000 T 0x2000
-0000000000003000 T 0x3000
-0000000000004000 T 0x4000
-`
-	for _, d := range []string{oddSizedData, evenSizedData} {
-		a, err := parseAddr2LinerNM(0, bytes.NewBufferString(d))
-		if err != nil {
-			t.Errorf("nm parse error: %v", err)
-			continue
-		}
-		for address, want := range map[uint64]string{
-			0x1000: "0x1000",
-			0x1001: "0x1000",
-			0x1FFF: "0x1000",
-			0x2000: "0x2000",
-			0x2001: "0x2000",
-		} {
-			if got, _ := a.addrInfo(address); !checkAddress(got, address, want) {
-				t.Errorf("%x: got %v, want %s", address, got, want)
+	for _, tc := range []struct {
+		desc             string
+		nmOutput         string
+		wantSymbolized   map[uint64]string
+		wantUnsymbolized []uint64
+	}{
+		{
+			desc: "odd symbol count",
+			nmOutput: `
+0x1000 T 1000 100
+0x2000 T 2000 120
+0x3000 T 3000 130
+`,
+			wantSymbolized: map[uint64]string{
+				0x1000: "0x1000",
+				0x1001: "0x1000",
+				0x1FFF: "0x1000",
+				0x2000: "0x2000",
+				0x2001: "0x2000",
+				0x3000: "0x3000",
+				0x312f: "0x3000",
+			},
+			wantUnsymbolized: []uint64{0x0fff, 0x3130},
+		},
+		{
+			desc: "even symbol count",
+			nmOutput: `
+0x1000 T 1000 100
+0x2000 T 2000 120
+0x3000 T 3000 130
+0x4000 T 4000 140
+`,
+			wantSymbolized: map[uint64]string{
+				0x1000: "0x1000",
+				0x1001: "0x1000",
+				0x1FFF: "0x1000",
+				0x2000: "0x2000",
+				0x2fff: "0x2000",
+				0x3000: "0x3000",
+				0x3fff: "0x3000",
+				0x4000: "0x4000",
+				0x413f: "0x4000",
+			},
+			wantUnsymbolized: []uint64{0x0fff, 0x4140},
+		},
+		{
+			desc: "different symbol types",
+			nmOutput: `
+absolute_0x100 a 100
+absolute_0x200 A 200
+text_0x1000 t 1000 100
+bss_0x2000 b 2000 120
+data_0x3000 d 3000 130
+rodata_0x4000 r 4000 140
+weak_0x5000 v 5000 150
+text_0x6000 T 6000 160
+bss_0x7000 B 7000 170
+data_0x8000 D 8000 180
+rodata_0x9000 R 9000 190
+weak_0xa000 V a000 1a0
+weak_0xb000 W b000 1b0
+`,
+			wantSymbolized: map[uint64]string{
+				0x1000: "text_0x1000",
+				0x1FFF: "text_0x1000",
+				0x2000: "bss_0x2000",
+				0x211f: "bss_0x2000",
+				0x3000: "data_0x3000",
+				0x312f: "data_0x3000",
+				0x4000: "rodata_0x4000",
+				0x413f: "rodata_0x4000",
+				0x5000: "weak_0x5000",
+				0x514f: "weak_0x5000",
+				0x6000: "text_0x6000",
+				0x6fff: "text_0x6000",
+				0x7000: "bss_0x7000",
+				0x716f: "bss_0x7000",
+				0x8000: "data_0x8000",
+				0x817f: "data_0x8000",
+				0x9000: "rodata_0x9000",
+				0x918f: "rodata_0x9000",
+				0xa000: "weak_0xa000",
+				0xa19f: "weak_0xa000",
+				0xb000: "weak_0xb000",
+				0xb1af: "weak_0xb000",
+			},
+			wantUnsymbolized: []uint64{0x100, 0x200, 0x0fff, 0x2120, 0x3130, 0x4140, 0x5150, 0x7170, 0x8180, 0x9190, 0xa1a0, 0xb1b0},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			a, err := parseAddr2LinerNM(0, bytes.NewBufferString(tc.nmOutput))
+			if err != nil {
+				t.Fatalf("nm parse error: %v", err)
 			}
-		}
-		for _, unknown := range []uint64{0x0fff, 0x4001} {
-			if got, _ := a.addrInfo(unknown); got != nil {
-				t.Errorf("%x: got %v, want nil", unknown, got)
+			for address, want := range tc.wantSymbolized {
+				if got, _ := a.addrInfo(address); !checkAddress(got, address, want) {
+					t.Errorf("%x: got %v, want %s", address, got, want)
+				}
 			}
-		}
+			for _, unknown := range tc.wantUnsymbolized {
+				if got, _ := a.addrInfo(unknown); got != nil {
+					t.Errorf("%x: got %v, want nil", unknown, got)
+				}
+			}
+		})
 	}
 }
 
@@ -188,6 +260,12 @@ func skipUnlessDarwinAmd64(t *testing.T) {
 	}
 }
 
+func skipUnlessWindowsAmd64(t *testing.T) {
+	if runtime.GOOS != "windows" || runtime.GOARCH != "amd64" {
+		t.Skip("This test only works on x86-64 Windows")
+	}
+}
+
 func testDisasm(t *testing.T, intelSyntax bool) {
 	_, llvmObjdump, buObjdump := findObjdump([]string{""})
 	if !(llvmObjdump || buObjdump) {
@@ -195,9 +273,16 @@ func testDisasm(t *testing.T, intelSyntax bool) {
 	}
 
 	bu := &Binutils{}
-	testexe := "exe_linux_64"
-	if runtime.GOOS == "darwin" {
+	var testexe string
+	switch runtime.GOOS {
+	case "linux":
+		testexe = "exe_linux_64"
+	case "darwin":
 		testexe = "exe_mac_64"
+	case "windows":
+		testexe = "exe_windows_64.exe"
+	default:
+		t.Skipf("unsupported OS %q", runtime.GOOS)
 	}
 
 	insts, err := bu.Disasm(filepath.Join("testdata", testexe), 0, math.MaxUint64, intelSyntax)
@@ -217,15 +302,15 @@ func testDisasm(t *testing.T, intelSyntax bool) {
 }
 
 func TestDisasm(t *testing.T) {
-	if (runtime.GOOS != "linux" && runtime.GOOS != "darwin") || runtime.GOARCH != "amd64" {
-		t.Skip("This test only works on x86-64 Linux or macOS")
+	if (runtime.GOOS != "linux" && runtime.GOOS != "darwin" && runtime.GOOS != "windows") || runtime.GOARCH != "amd64" {
+		t.Skip("This test only works on x86-64 Linux, macOS or Windows")
 	}
 	testDisasm(t, false)
 }
 
 func TestDisasmIntelSyntax(t *testing.T) {
-	if (runtime.GOOS != "linux" && runtime.GOOS != "darwin") || runtime.GOARCH != "amd64" {
-		t.Skip("This test only works on x86_64 Linux or macOS as it tests Intel asm syntax")
+	if (runtime.GOOS != "linux" && runtime.GOOS != "darwin" && runtime.GOOS != "windows") || runtime.GOARCH != "amd64" {
+		t.Skip("This test only works on x86_64 Linux, macOS or Windows as it tests Intel asm syntax")
 	}
 	testDisasm(t, true)
 }
@@ -390,6 +475,53 @@ func TestLLVMSymbolizer(t *testing.T) {
 		if !reflect.DeepEqual(frames, c.frames) {
 			t.Errorf("LLVM: expect %v; got %v\n", c.frames, frames)
 		}
+	}
+}
+
+func TestPEFile(t *testing.T) {
+	// If this test fails, check the address for main function in testdata/exe_windows_64.exe
+	// using the command 'nm -n '. Update the hardcoded addresses below to match
+	// the addresses from the output.
+	skipUnlessWindowsAmd64(t)
+	for _, tc := range []struct {
+		desc                 string
+		start, limit, offset uint64
+		addr                 uint64
+	}{
+		{"fake mapping", 0, math.MaxUint64, 0, 0x401560},
+		{"fixed load address", 0x400000, 0x402000, 0, 0x401560},
+		{"simulated ASLR address", 0x500000, 0x502000, 0, 0x501560},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			bu := &Binutils{}
+			f, err := bu.Open(filepath.Join("testdata", "exe_windows_64.exe"), tc.start, tc.limit, tc.offset)
+			if err != nil {
+				t.Fatalf("Open: unexpected error %v", err)
+			}
+			defer f.Close()
+			syms, err := f.Symbols(regexp.MustCompile("main"), 0)
+			if err != nil {
+				t.Fatalf("Symbols: unexpected error %v", err)
+			}
+
+			m := findSymbol(syms, "main")
+			if m == nil {
+				t.Fatalf("Symbols: did not find main")
+			}
+
+			for _, addr := range []uint64{m.Start + f.Base(), tc.addr} {
+				gotFrames, err := f.SourceLine(addr)
+				if err != nil {
+					t.Fatalf("SourceLine: unexpected error %v", err)
+				}
+				wantFrames := []plugin.Frame{
+					{Func: "main", File: "hello.c", Line: 3},
+				}
+				if !reflect.DeepEqual(gotFrames, wantFrames) {
+					t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, wantFrames)
+				}
+			}
+		})
 	}
 }
 
