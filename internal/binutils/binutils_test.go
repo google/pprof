@@ -447,33 +447,38 @@ func TestLLVMSymbolizer(t *testing.T) {
 	}
 
 	cmd := filepath.Join("testdata", "fake-llvm-symbolizer")
-	symbolizer, err := newLLVMSymbolizer(cmd, "foo", 0)
-	if err != nil {
-		t.Fatalf("newLLVMSymbolizer: unexpected error %v", err)
-	}
-	defer symbolizer.rw.close()
-
 	for _, c := range []struct {
 		addr   uint64
+		isData bool
 		frames []plugin.Frame
 	}{
-		{0x10, []plugin.Frame{
+		{0x10, false, []plugin.Frame{
 			{Func: "Inlined_0x10", File: "foo.h", Line: 0},
 			{Func: "Func_0x10", File: "foo.c", Line: 2},
 		}},
-		{0x20, []plugin.Frame{
-			{Func: "Inlined_0x20", File: "foo.h", Line: 0},
-			{Func: "Func_0x20", File: "foo.c", Line: 2},
+		{0x20, true, []plugin.Frame{
+			{Func: "foo_0x20", File: "0x20 8"},
 		}},
 	} {
-		frames, err := symbolizer.addrInfo(c.addr)
-		if err != nil {
-			t.Errorf("LLVM: unexpected error %v", err)
-			continue
+		desc := fmt.Sprintf("Code %x", c.addr)
+		if c.isData {
+			desc = fmt.Sprintf("Data %x", c.addr)
 		}
-		if !reflect.DeepEqual(frames, c.frames) {
-			t.Errorf("LLVM: expect %v; got %v\n", c.frames, frames)
-		}
+		t.Run(desc, func(t *testing.T) {
+			symbolizer, err := newLLVMSymbolizer(cmd, "foo", 0, c.isData)
+			if err != nil {
+				t.Fatalf("newLLVMSymbolizer: unexpected error %v", err)
+			}
+			defer symbolizer.rw.close()
+
+			frames, err := symbolizer.addrInfo(c.addr)
+			if err != nil {
+				t.Fatalf("LLVM: unexpected error %v", err)
+			}
+			if !reflect.DeepEqual(frames, c.frames) {
+				t.Errorf("LLVM: expect %v; got %v\n", c.frames, frames)
+			}
+		})
 	}
 }
 

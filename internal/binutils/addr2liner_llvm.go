@@ -43,10 +43,12 @@ type llvmSymbolizerJob struct {
 	cmd *exec.Cmd
 	in  io.WriteCloser
 	out *bufio.Reader
+	// llvm-symbolizer requires the symbol type, CODE or DATA, for symbolization.
+	symType string
 }
 
 func (a *llvmSymbolizerJob) write(s string) error {
-	_, err := fmt.Fprint(a.in, s+"\n")
+	_, err := fmt.Fprintln(a.in, a.symType, s)
 	return err
 }
 
@@ -68,13 +70,17 @@ func (a *llvmSymbolizerJob) close() {
 // information about the given executable file. If file is a shared
 // library, base should be the address at which it was mapped in the
 // program under consideration.
-func newLLVMSymbolizer(cmd, file string, base uint64) (*llvmSymbolizer, error) {
+func newLLVMSymbolizer(cmd, file string, base uint64, isData bool) (*llvmSymbolizer, error) {
 	if cmd == "" {
 		cmd = defaultLLVMSymbolizer
 	}
 
 	j := &llvmSymbolizerJob{
-		cmd: exec.Command(cmd, "-inlining", "-demangle=false"),
+		cmd:     exec.Command(cmd, "-inlining", "-demangle=false"),
+		symType: "CODE",
+	}
+	if isData {
+		j.symType = "DATA"
 	}
 
 	var err error
@@ -123,7 +129,11 @@ func (d *llvmSymbolizer) readFrame() (plugin.Frame, bool) {
 	}
 
 	linenumber := 0
-	if fileline == "??:0" {
+	// The llvm-symbolizer outputs the <file_name>:<line_number>:<column_number>.
+	// When it cannot identify the source code location, it outputs "??:0:0".
+	// Older versions output just the filename and line number, so we check for
+	// both conditions here.
+	if fileline == "??:0" || fileline == "??:0:0" {
 		fileline = ""
 	} else {
 		switch split := strings.Split(fileline, ":"); len(split) {
