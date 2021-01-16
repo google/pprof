@@ -450,7 +450,23 @@ func (b *binrep) openELF(name string, start, limit, offset uint64) (plugin.ObjFi
 		}
 	}
 
-	base, err := elfexec.GetBase(&ef.FileHeader, elfexec.FindTextProgHeader(ef), stextOffset, start, limit, offset)
+	var ph *elf.ProgHeader
+	// For user space executables, find the actual program segment that is
+	// associated with the given mapping. Skip this search if limit <= start.
+	// We cannot use just a check on the start address of the mapping to tell if
+	// it's a kernel / .ko module mapping, because with quipper address remapping
+	// enabled, the address would be in the lower half of the address space.
+	if stextOffset == nil && start < limit && limit < (uint64(1)<<63) {
+		ph, err = elfexec.FindProgHeaderForMapping(ef, offset, limit-start)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find program header for file %q, mapping pgoff %x, memsz=%x: %v", name, offset, limit-start, err)
+		}
+	} else {
+		// For the kernel, find the program segment that includes the .text section.
+		ph = elfexec.FindTextProgHeader(ef)
+	}
+
+	base, err := elfexec.GetBase(&ef.FileHeader, ph, stextOffset, start, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("could not identify base for %s: %v", name, err)
 	}
