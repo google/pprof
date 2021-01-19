@@ -1636,43 +1636,46 @@ func (m *mockFile) BuildID() string {
 func (*mockFile) SourceLine(addr uint64) ([]plugin.Frame, error) {
 	// Return enough data to support the SourceLine() calls needed for
 	// weblist on cpuProfile() contents.
+	frame := func(fn, file string, line int) plugin.Frame {
+		return plugin.Frame{Func: fn, File: file, Line: line}
+	}
 	switch addr {
 	case 0x1000:
 		return []plugin.Frame{
-			{"mangled1000", "testdata/file1000.src", 1},
+			frame("mangled1000", "testdata/file1000.src", 1),
 		}, nil
 	case 0x1001:
 		return []plugin.Frame{
-			{"mangled1000", "testdata/file1000.src", 1},
+			frame("mangled1000", "testdata/file1000.src", 1),
 		}, nil
 	case 0x1002:
 		return []plugin.Frame{
-			{"mangled1000", "testdata/file1000.src", 2},
+			frame("mangled1000", "testdata/file1000.src", 2),
 		}, nil
 	case 0x1003:
 		return []plugin.Frame{
-			{"mangled1000", "testdata/file1000.src", 1},
+			frame("mangled1000", "testdata/file1000.src", 1),
 		}, nil
 	case 0x2000:
 		return []plugin.Frame{
-			{"mangled2001", "testdata/file2000.src", 9},
-			{"mangled2000", "testdata/file2000.src", 4},
+			frame("mangled2001", "testdata/file2000.src", 9),
+			frame("mangled2000", "testdata/file2000.src", 4),
 		}, nil
 	case 0x3000:
 		return []plugin.Frame{
-			{"mangled3002", "testdata/file3000.src", 2},
-			{"mangled3001", "testdata/file3000.src", 5},
-			{"mangled3000", "testdata/file3000.src", 6},
+			frame("mangled3002", "testdata/file3000.src", 2),
+			frame("mangled3001", "testdata/file3000.src", 5),
+			frame("mangled3000", "testdata/file3000.src", 6),
 		}, nil
 	case 0x3001:
 		return []plugin.Frame{
-			{"mangled3001", "testdata/file3000.src", 8},
-			{"mangled3000", "testdata/file3000.src", 9},
+			frame("mangled3001", "testdata/file3000.src", 8),
+			frame("mangled3000", "testdata/file3000.src", 9),
 		}, nil
 	case 0x3002:
 		return []plugin.Frame{
-			{"mangled3002", "testdata/file3000.src", 5},
-			{"mangled3000", "testdata/file3000.src", 9},
+			frame("mangled3002", "testdata/file3000.src", 5),
+			frame("mangled3000", "testdata/file3000.src", 9),
 		}, nil
 	}
 
