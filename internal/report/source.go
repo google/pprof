@@ -992,5 +992,5 @@ func rightPad(s string, n int) string {
 func canonicalizeFileName(fname string) string {
 	fname = strings.TrimPrefix(fname, "/proc/self/cwd/")
 	fname = strings.TrimPrefix(fname, "./")
-	return fname
+	return filepath.Clean(fname)
 }
