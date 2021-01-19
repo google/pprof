@@ -46,8 +46,8 @@ func TestWebList(t *testing.T) {
 	}
 	output := buf.String()
 
-	for _, expect := range []string{"func busyLoop", "callq", "math.Abs"} {
-		if !strings.Contains(output, expect) {
+	for _, expect := range []string{"func busyLoop", "callq.*mapassign"} {
+		if match, _ := regexp.MatchString(expect, output); !match {
 			t.Errorf("weblist output does not contain '%s':\n%s", expect, output)
 		}
 	}
@@ -164,6 +164,28 @@ func TestIndentation(t *testing.T) {
 	} {
 		if n := indentation(c.str); n != c.wantIndent {
 			t.Errorf("indentation(%v): got %d, want %d", c.str, n, c.wantIndent)
+		}
+	}
+}
+
+func TestRightPad(t *testing.T) {
+	for _, c := range []struct {
+		pad    int
+		in     string
+		expect string
+	}{
+		{0, "", ""},
+		{4, "", "    "},
+		{4, "x", "x   "},
+		{4, "abcd", "abcd"},   // No padding because of overflow
+		{4, "abcde", "abcde"}, // No padding because of overflow
+		{10, "\tx", "        x "},
+		{10, "w\txy\tz", "w       xy      z"},
+		{20, "w\txy\tz", "w       xy      z   "},
+	} {
+		out := rightPad(c.in, c.pad)
+		if out != c.expect {
+			t.Errorf("rightPad(%q, %d): got %q, want %q", c.in, c.pad, out, c.expect)
 		}
 	}
 }

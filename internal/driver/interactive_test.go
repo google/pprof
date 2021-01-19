@@ -226,7 +226,7 @@ func TestInteractiveCommands(t *testing.T) {
 			"weblist  find -test",
 			map[string]string{
 				"granularity": "addresses",
-				"noinlines":   "true",
+				"noinlines":   "false",
 				"nodecount":   "0",
 				"sort":        "flat",
 				"ignore":      "test",
