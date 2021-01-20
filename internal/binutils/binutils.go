@@ -450,7 +450,23 @@ func (b *binrep) openELF(name string, start, limit, offset uint64) (plugin.ObjFi
 		}
 	}
 
-	base, err := elfexec.GetBase(&ef.FileHeader, elfexec.FindTextProgHeader(ef), stextOffset, start, limit, offset)
+	var ph *elf.ProgHeader
+	// For user space executables, find the actual program segment that is
+	// associated with the given mapping. Skip this search if limit <= start.
+	// We cannot use just a check on the start address of the mapping to tell if
+	// it's a kernel / .ko module mapping, because with quipper address remapping
+	// enabled, the address would be in the lower half of the address space.
+	if stextOffset == nil && start < limit && limit < (uint64(1)<<63) {
+		ph, err = elfexec.FindProgHeaderForMapping(ef, offset, limit-start)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find program header for file %q, mapping pgoff %x, memsz=%x: %v", name, offset, limit-start, err)
+		}
+	} else {
+		// For the kernel, find the program segment that includes the .text section.
+		ph = elfexec.FindTextProgHeader(ef)
+	}
+
+	base, err := elfexec.GetBase(&ef.FileHeader, ph, stextOffset, start, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("could not identify base for %s: %v", name, err)
 	}
@@ -461,10 +477,11 @@ func (b *binrep) openELF(name string, start, limit, offset uint64) (plugin.ObjFi
 			buildID = fmt.Sprintf("%x", id)
 		}
 	}
+	isData := ph != nil && ph.Flags&elf.PF_X == 0
 	if b.fast || (!b.addr2lineFound && !b.llvmSymbolizerFound) {
-		return &fileNM{file: file{b, name, base, buildID}}, nil
+		return &fileNM{file: file{b, name, base, buildID, isData}}, nil
 	}
-	return &fileAddr2Line{file: file{b, name, base, buildID}}, nil
+	return &fileAddr2Line{file: file{b, name, base, buildID, isData}}, nil
 }
 
 func (b *binrep) openPE(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
@@ -500,6 +517,7 @@ type file struct {
 	name    string
 	base    uint64
 	buildID string
+	isData  bool
 }
 
 func (f *file) Name() string {
@@ -575,7 +593,7 @@ func (f *fileAddr2Line) SourceLine(addr uint64) ([]plugin.Frame, error) {
 }
 
 func (f *fileAddr2Line) init() {
-	if llvmSymbolizer, err := newLLVMSymbolizer(f.b.llvmSymbolizer, f.name, f.base); err == nil {
+	if llvmSymbolizer, err := newLLVMSymbolizer(f.b.llvmSymbolizer, f.name, f.base, f.isData); err == nil {
 		f.llvmSymbolizer = llvmSymbolizer
 		return
 	}
