@@ -336,7 +336,6 @@ func TestObjFile(t *testing.T) {
 		start, limit, offset uint64
 		addr                 uint64
 	}{
-		{"fake mapping", 0, math.MaxUint64, 0, 0x40052d},
 		{"fixed load address", 0x400000, 0x4006fc, 0, 0x40052d},
 		// True user-mode ASLR binaries are ET_DYN rather than ET_EXEC so this case
 		// is a bit artificial except that it approximates the
@@ -448,33 +447,38 @@ func TestLLVMSymbolizer(t *testing.T) {
 	}
 
 	cmd := filepath.Join("testdata", "fake-llvm-symbolizer")
-	symbolizer, err := newLLVMSymbolizer(cmd, "foo", 0)
-	if err != nil {
-		t.Fatalf("newLLVMSymbolizer: unexpected error %v", err)
-	}
-	defer symbolizer.rw.close()
-
 	for _, c := range []struct {
 		addr   uint64
+		isData bool
 		frames []plugin.Frame
 	}{
-		{0x10, []plugin.Frame{
+		{0x10, false, []plugin.Frame{
 			{Func: "Inlined_0x10", File: "foo.h", Line: 0},
 			{Func: "Func_0x10", File: "foo.c", Line: 2},
 		}},
-		{0x20, []plugin.Frame{
-			{Func: "Inlined_0x20", File: "foo.h", Line: 0},
-			{Func: "Func_0x20", File: "foo.c", Line: 2},
+		{0x20, true, []plugin.Frame{
+			{Func: "foo_0x20", File: "0x20 8"},
 		}},
 	} {
-		frames, err := symbolizer.addrInfo(c.addr)
-		if err != nil {
-			t.Errorf("LLVM: unexpected error %v", err)
-			continue
+		desc := fmt.Sprintf("Code %x", c.addr)
+		if c.isData {
+			desc = fmt.Sprintf("Data %x", c.addr)
 		}
-		if !reflect.DeepEqual(frames, c.frames) {
-			t.Errorf("LLVM: expect %v; got %v\n", c.frames, frames)
-		}
+		t.Run(desc, func(t *testing.T) {
+			symbolizer, err := newLLVMSymbolizer(cmd, "foo", 0, c.isData)
+			if err != nil {
+				t.Fatalf("newLLVMSymbolizer: unexpected error %v", err)
+			}
+			defer symbolizer.rw.close()
+
+			frames, err := symbolizer.addrInfo(c.addr)
+			if err != nil {
+				t.Fatalf("LLVM: unexpected error %v", err)
+			}
+			if !reflect.DeepEqual(frames, c.frames) {
+				t.Errorf("LLVM: expect %v; got %v\n", c.frames, frames)
+			}
+		})
 	}
 }
 
@@ -639,5 +643,41 @@ func TestObjdumpVersionChecks(t *testing.T) {
 		if got := isBuObjdump(tc.ver); got != tc.want {
 			t.Errorf("%v: got %v, want %v", tc.desc, got, tc.want)
 		}
+	}
+}
+
+func TestOpenELF(t *testing.T) {
+	// The exe_linux_64 has two loadable program headers:
+	//  LOAD           0x0000000000000000 0x0000000000400000 0x0000000000400000
+	//                 0x00000000000006fc 0x00000000000006fc  R E    0x200000
+	//  LOAD           0x0000000000000e10 0x0000000000600e10 0x0000000000600e10
+	//                 0x0000000000000230 0x0000000000000238  RW     0x200000
+	name := filepath.Join("testdata", "exe_linux_64")
+
+	for _, tc := range []struct {
+		desc                 string
+		start, limit, offset uint64
+		wantError            bool
+		wantBase             uint64
+	}{
+		{"exec mapping", 0x5400000, 0x5401000, 0, false, 0x5000000},
+		{"short data mapping", 0x5600e00, 0x5602000, 0xe00, false, 0x5000000},
+		{"page aligned data mapping", 0x5600000, 0x5602000, 0, false, 0x5000000},
+		{"no matching segment", 0x5600000, 0x5602000, 0x2000, true, 0},
+		{"multiple matching segments, wrong size", 0x5600000, 0x5603000, 0, true, 0},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			b := binrep{}
+			o, err := b.openELF(name, tc.start, tc.limit, tc.offset)
+			if (err != nil) != tc.wantError {
+				t.Errorf("got error %v, want any error=%v", err, tc.wantError)
+			}
+			if err != nil {
+				return
+			}
+			if got := o.Base(); got != tc.wantBase {
+				t.Errorf("got base %x; want %x\n", got, tc.wantBase)
+			}
+		})
 	}
 }
