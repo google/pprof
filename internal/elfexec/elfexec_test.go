@@ -16,6 +16,7 @@ package elfexec
 
 import (
 	"debug/elf"
+	"reflect"
 	"testing"
 )
 
@@ -99,4 +100,111 @@ func TestGetBase(t *testing.T) {
 
 func uint64p(n uint64) *uint64 {
 	return &n
+}
+
+func TestFindProgHeaderForMapping(t *testing.T) {
+	smallELFFile := elf.File{
+		Progs: []*elf.Prog{
+			{ProgHeader: elf.ProgHeader{Type: elf.PT_PHDR, Flags: elf.PF_R | elf.PF_X, Off: 0x40, Vaddr: 0x400040, Paddr: 0x400040, Filesz: 0x1f8, Memsz: 0x1f8, Align: 8}},
+			{ProgHeader: elf.ProgHeader{Type: elf.PT_INTERP, Flags: elf.PF_R, Off: 0x238, Vaddr: 0x400238, Paddr: 0x400238, Filesz: 0x1c, Memsz: 0x1c, Align: 1}},
+			{ProgHeader: elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0x400000, Paddr: 0x400000, Filesz: 0x6fc, Memsz: 0x6fc, Align: 0x200000}},
+			{ProgHeader: elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe10, Vaddr: 0x600e10, Paddr: 0x600e10, Filesz: 0x230, Memsz: 0x238, Align: 0x200000}},
+			{ProgHeader: elf.ProgHeader{Type: elf.PT_DYNAMIC, Flags: elf.PF_R | elf.PF_W, Off: 0xe28, Vaddr: 0x600e28, Paddr: 0x600e28, Filesz: 0x1d0, Memsz: 0x1d0, Align: 8}},
+		},
+	}
+	largeELFFile := elf.File{
+		Progs: []*elf.Prog{
+			{ProgHeader: elf.ProgHeader{Type: elf.PT_PHDR, Flags: elf.PF_R, Off: 0x40, Vaddr: 0x40, Paddr: 0x40, Filesz: 0x268, Memsz: 0x268, Align: 8}},
+			{ProgHeader: elf.ProgHeader{Type: elf.PT_INTERP, Flags: elf.PF_R, Off: 0x2a8, Vaddr: 0x2a8, Paddr: 0x2a8, Filesz: 0x28, Memsz: 0x28, Align: 1}},
+			{ProgHeader: elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0x2ec5d2c0, Memsz: 0x2ec5d2c0, Align: 0x200000}},
+			{ProgHeader: elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x2ec5d2c0, Vaddr: 0x2ee5d2c0, Paddr: 0x2ee5d2c0, Filesz: 0x1361118, Memsz: 0x1361150, Align: 0x200000}},
+			{ProgHeader: elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x2ffbe440, Vaddr: 0x303be440, Paddr: 0x303be440, Filesz: 0x4637c0, Memsz: 0xc91610, Align: 0x200000}},
+			{ProgHeader: elf.ProgHeader{Type: elf.PT_TLS, Flags: elf.PF_R, Off: 0x2ec5d2c0, Vaddr: 0x2ee5d2c0, Paddr: 0x2ee5d2c0, Filesz: 0x120, Memsz: 0x103f8, Align: 0x40}},
+			{ProgHeader: elf.ProgHeader{Type: elf.PT_DYNAMIC, Flags: elf.PF_R | elf.PF_W, Off: 0x2ffbc9e0, Vaddr: 0x301bc9e0, Paddr: 0x301bc9e0, Filesz: 0x1f0, Memsz: 0x1f0, Align: 8}},
+		},
+	}
+	for _, tc := range []struct {
+		desc         string
+		file         *elf.File
+		pgoff, memsz uint64
+		wantError    bool
+		want         *elf.ProgHeader
+	}{
+		{
+			desc:  "no prog headers ELF file",
+			file:  &elf.File{},
+			pgoff: 0,
+			memsz: 0x1000,
+			want:  nil,
+		},
+		{
+			desc:  "small ELF file / executable mapping",
+			file:  &smallELFFile,
+			pgoff: 0,
+			memsz: 0x1000,
+			want:  &elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0x400000, Paddr: 0x400000, Filesz: 0x6fc, Memsz: 0x6fc, Align: 0x200000},
+		},
+		{
+			desc:  "small ELF file / page aligned data mapping disambiguation",
+			file:  &smallELFFile,
+			pgoff: 0,
+			memsz: 0x2000,
+			want:  &elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe10, Vaddr: 0x600e10, Paddr: 0x600e10, Filesz: 0x230, Memsz: 0x238, Align: 0x200000},
+		},
+		{
+			desc:      "small ELF file / no matching segment",
+			file:      &smallELFFile,
+			pgoff:     0x1000,
+			memsz:     0x1000,
+			wantError: true,
+		},
+		{
+			desc:      "small ELF file / multiple matching segments, but incorrect size ",
+			file:      &smallELFFile,
+			pgoff:     0,
+			memsz:     0x3000,
+			wantError: true,
+		},
+		{
+			desc:  "large ELF file / executable mapping",
+			file:  &largeELFFile,
+			pgoff: 0,
+			memsz: 0x2ec5e000,
+			want:  &elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0x2ec5d2c0, Memsz: 0x2ec5d2c0, Align: 0x200000},
+		},
+		{
+			desc:  "large ELF file / first data mapping",
+			file:  &largeELFFile,
+			pgoff: 0x2ec5d000,
+			memsz: 0x1362000,
+			want:  &elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x2ec5d2c0, Vaddr: 0x2ee5d2c0, Paddr: 0x2ee5d2c0, Filesz: 0x1361118, Memsz: 0x1361150, Align: 0x200000},
+		},
+		{
+			desc:      "large ELF file / split mapping doesn't match",
+			file:      &largeELFFile,
+			pgoff:     0x2ffbe000,
+			memsz:     0xb11000,
+			wantError: true,
+		},
+		{
+			desc:  "large ELF file / combined mapping matches second data mapping",
+			file:  &largeELFFile,
+			pgoff: 0x2ffbe000,
+			memsz: 0xb11000 + 0x181000,
+			want:  &elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x2ffbe440, Vaddr: 0x303be440, Paddr: 0x303be440, Filesz: 0x4637c0, Memsz: 0xc91610, Align: 0x200000},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			got, err := FindProgHeaderForMapping(tc.file, tc.pgoff, tc.memsz)
+			if (err != nil) != tc.wantError {
+				t.Errorf("got error %v, want any error=%v", err, tc.wantError)
+			}
+			if err != nil {
+				return
+			}
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("got program header %#v; want %#v", got, tc.want)
+			}
+		})
+	}
 }

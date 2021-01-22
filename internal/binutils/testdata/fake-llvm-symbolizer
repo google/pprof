@@ -23,12 +23,21 @@ while read line; do
   # line has form:
   #    filename 0xaddr
   # Emit dummy output that matches llvm-symbolizer output format.
-  set -- $line
-  fname=$1
-  addr=$2
-  echo "Inlined_$addr"
-  echo "$fname.h"
-  echo "Func_$addr"
-  echo "$fname.c:2"
-  echo
+  set -- ${line}
+  kind=$1
+  fname=$2
+  addr=$3
+  case ${kind} in
+  CODE)
+    echo "Inlined_${addr}"
+    echo "${fname}.h"
+    echo "Func_${addr}"
+    echo "${fname}.c:2:1"
+    echo;;
+  DATA)
+    echo "${fname}_${addr}"
+    echo "${addr} 8"
+    echo;;
+  *) echo ${kind} ${fname} ${addr};;
+  esac
 done
