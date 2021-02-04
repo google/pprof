@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package flagset
+package driver
 
 import (
 	"testing"
@@ -23,12 +23,12 @@ func TestString(t *testing.T) {
 	s2a := "test2a"
 	s2b := "test2b"
 	for _, tc := range []struct {
-		sl   StringList
+		sl   stringList
 		want string
 	}{
-		{StringList([]string{}), "[]"},
-		{StringList([]string{s1}), "[test1]"},
-		{StringList([]string{s2a, s2b}), "[test2a test2b]"},
+		{stringList([]*string{}), "[]"},
+		{stringList([]*string{&s1}), "[test1]"},
+		{stringList([]*string{&s2a, &s2b}), "[test2a test2b]"},
 	} {
 		got := tc.sl.String()
 		if got != tc.want {
@@ -42,12 +42,12 @@ func TestSet(t *testing.T) {
 	s2a := "test2a"
 	s2b := "test2b"
 	for _, tc := range []struct {
-		in   StringList
+		in   stringList
 		want []string
 		add  string
 	}{
-		{StringList([]string{}), []string{s1}, s1},
-		{StringList([]string{s2a}), []string{s2a, s2b}, s2b},
+		{stringList([]*string{}), []string{s1}, s1},
+		{stringList([]*string{&s2a}), []string{s2a, s2b}, s2b},
 	} {
 		ok := tc.in.Set(tc.add)
 		if ok != nil {
@@ -57,8 +57,8 @@ func TestSet(t *testing.T) {
 			t.Errorf("want len %d, got len %d", len(tc.want), len(tc.in))
 		}
 		for i, s := range tc.in {
-			if s != tc.want[i] {
-				t.Errorf("want %s, got %s", tc.want[i], s)
+			if *s != tc.want[i] {
+				t.Errorf("want %s, got %s", tc.want[i], *s)
 			}
 		}
 	}

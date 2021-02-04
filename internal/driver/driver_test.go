@@ -30,7 +30,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/pprof/flagset"
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/internal/proftest"
 	"github.com/google/pprof/internal/symbolz"
@@ -303,7 +302,7 @@ type testFlags struct {
 	floats      map[string]float64
 	strings     map[string]string
 	args        []string
-	stringLists map[string]flagset.StringList
+	stringLists map[string][]string
 }
 
 func (testFlags) ExtraUsage() string { return "" }
@@ -338,11 +337,16 @@ func (f testFlags) String(s, d, c string) *string {
 	return &d
 }
 
-func (f testFlags) StringList(s, d, c string) *flagset.StringList {
+func (f testFlags) StringList(s, d, c string) *[]*string {
 	if t, ok := f.stringLists[s]; ok {
-		return &t
+		// convert slice of strings to slice of string pointers before returning.
+		tp := make([]*string, len(t))
+		for i, v := range t {
+			tp[i] = &v
+		}
+		return &tp
 	}
-	return &flagset.StringList{}
+	return &[]*string{}
 }
 
 func (f testFlags) Parse(func()) []string {

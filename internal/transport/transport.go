@@ -24,7 +24,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/google/pprof/flagset"
+	"github.com/google/pprof/internal/plugin"
 )
 
 type transport struct {
@@ -46,7 +46,7 @@ const extraUsage = `    -tls_cert             TLS client certificate file for fe
 // added to the flagset to allow a user to specify the cert, key, and ca. If
 // the flagset is nil, no flags will be added, and users will not be able to
 // use these flags.
-func New(flagset flagset.FlagSet) http.RoundTripper {
+func New(flagset plugin.FlagSet) http.RoundTripper {
 	if flagset == nil {
 		return &transport{}
 	}

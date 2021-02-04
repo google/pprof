@@ -20,7 +20,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/pprof/flagset"
 	"github.com/google/pprof/internal/binutils"
 	"github.com/google/pprof/internal/plugin"
 )
@@ -173,7 +172,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 // addBaseProfiles adds the list of base profiles or diff base profiles to
 // the source. This function will return an error if both base and diff base
 // profiles are specified.
-func (source *source) addBaseProfiles(flagBase, flagDiffBase []string) error {
+func (source *source) addBaseProfiles(flagBase, flagDiffBase []*string) error {
 	base, diffBase := dropEmpty(flagBase), dropEmpty(flagDiffBase)
 	if len(base) > 0 && len(diffBase) > 0 {
 		return errors.New("-base and -diff_base flags cannot both be specified")
@@ -188,11 +187,11 @@ func (source *source) addBaseProfiles(flagBase, flagDiffBase []string) error {
 
 // dropEmpty list takes a slice of string pointers, and outputs a slice of
 // non-empty strings associated with the flag.
-func dropEmpty(list []string) []string {
+func dropEmpty(list []*string) []string {
 	var l []string
 	for _, s := range list {
-		if s != "" {
-			l = append(l, s)
+		if *s != "" {
+			l = append(l, *s)
 		}
 	}
 	return l
@@ -202,7 +201,7 @@ func dropEmpty(list []string) []string {
 // fields and returns a function which can be called after flags have
 // been parsed to copy any flags specified on the command line to
 // *cfg.
-func installConfigFlags(flag flagset.FlagSet, cfg *config) func() error {
+func installConfigFlags(flag plugin.FlagSet, cfg *config) func() error {
 	// List of functions for setting the different parts of a config.
 	var setters []func()
 	var err error // Holds any errors encountered while running setters.

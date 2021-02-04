@@ -16,9 +16,8 @@ package driver
 
 import (
 	"flag"
+	"fmt"
 	"strings"
-
-	"github.com/google/pprof/flagset"
 )
 
 // GoFlags implements the plugin.FlagSet interface.
@@ -46,11 +45,33 @@ func (*GoFlags) String(o, d, c string) *string {
 	return flag.String(o, d, c)
 }
 
+type stringList []*string
+
+func (sl *stringList) Set(v string) error {
+	*sl = append(*sl, &v)
+	return nil
+}
+
+func (sl *stringList) Get() interface{} {
+	return sl
+}
+
+func (sl *stringList) String() string {
+	var cl []string
+	for _, s := range *sl {
+		cl = append(cl, *s)
+	}
+	return fmt.Sprint(cl)
+}
+
 // StringList implements the plugin.FlagSet interface.
-func (*GoFlags) StringList(o, d, c string) *flagset.StringList {
-	v := flagset.StringList([]string{d})
-	flag.Var(&v, o, c)
-	return &v
+func (*GoFlags) StringList(o, d, c string) *[]*string {
+	sl := &stringList{}
+	if len(d) > 0 {
+		sl.Set(d)
+	}
+	flag.Var(sl, o, c)
+	return (*[]*string)(sl)
 }
 
 // ExtraUsage implements the plugin.FlagSet interface.
