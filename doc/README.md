@@ -239,7 +239,7 @@ Let's consider the following example graph:
   * the edge between `read` and `(*rngSource).Int63`:
     * Since it is a solid edge, there are no nodes between those two (i.e. it
       was a direct call).
-    * Since it is thin and grey, fewer resrouces were used in call stacks
+    * Since it is thin and grey, fewer resources were used in call stacks
       between those two nodes.
   
 ## Annotated code
