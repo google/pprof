@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -214,12 +215,64 @@ func PrintWebList(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFiles int) er
 		}
 
 		printFunctionHeader(w, ff.functionName, path, n.Flat, n.Cum, rpt)
+		ptiles := calculatePtiles(fnodes)
 		for _, fn := range fnodes {
-			printFunctionSourceLine(w, fn, asm[fn.Info.Lineno], reader, rpt)
+			printFunctionSourceLine(w, fn, asm[fn.Info.Lineno], reader, getPtileCSSClassName(fn.Cum, ptiles), rpt)
 		}
 		printFunctionClosing(w)
 	}
 	return nil
+}
+
+func getPtileCSSClassName(cumSum int64, ptiles map[int64]int64) string {
+	if cumSum == 0 {
+		return ""
+	}
+	for key, value := range ptiles {
+		if cumSum > value {
+			return " ptile_" + strconv.FormatInt(key, 10)
+		}
+	}
+	return ""
+}
+
+// calculatePtile expects cumSums to be sorted and
+// to contain unique elements. It also expects the ptile to be between 0 and 99.
+func calculatePtile(ptile int64, cumSums []int64) int64 {
+	rank := float64(ptile) / 100 * float64(len(cumSums))
+	return cumSums[int64(rank)]
+}
+
+func getArrayOfCumValues(fnodes graph.Nodes) []int64 {
+	arrayOfCumValues := make([]int64, 0, len(fnodes))
+
+	for _, fn := range fnodes {
+		arrayOfCumValues = append(arrayOfCumValues, fn.Cum)
+	}
+
+	return arrayOfCumValues
+}
+
+type int64Slice []int64
+
+func (a int64Slice) Len() int           { return len(a) }
+func (a int64Slice) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a int64Slice) Less(i, j int) bool { return a[i] < a[j] }
+
+// calculatePtiles returns nil when the fnodes length is 0
+// because its result will never be used in such a case.
+func calculatePtiles(fnodes graph.Nodes) map[int64]int64 {
+	if len(fnodes) == 0 {
+		return nil
+	}
+	arrayOfCumValues := getArrayOfCumValues(fnodes)
+	ptiles := map[int64]int64{95: 0, 80: 0}
+	sort.Sort(int64Slice(arrayOfCumValues))
+	for key := range ptiles {
+		ptiles[key] = calculatePtile(key, arrayOfCumValues)
+	}
+
+	return ptiles
 }
 
 // sourceCoordinates returns the lowest and highest line numbers from
@@ -348,19 +401,21 @@ func printFunctionHeader(w io.Writer, name, path string, flatSum, cumSum int64, 
 }
 
 // printFunctionSourceLine prints a source line and the corresponding assembly.
-func printFunctionSourceLine(w io.Writer, fn *graph.Node, assembly []assemblyInstruction, reader *sourceReader, rpt *Report) {
+func printFunctionSourceLine(w io.Writer, fn *graph.Node, assembly []assemblyInstruction, reader *sourceReader, ptileCSSClassName string, rpt *Report) {
 	if len(assembly) == 0 {
 		fmt.Fprintf(w,
-			"<span class=line> %6d</span> <span class=nop>  %10s %10s %8s  %s </span>\n",
+			"<span class=line> %6d</span> <span class=\"nop%s\">  %10s %10s %8s  %s </span>\n",
 			fn.Info.Lineno,
+			ptileCSSClassName,
 			valueOrDot(fn.Flat, rpt), valueOrDot(fn.Cum, rpt),
 			"", template.HTMLEscapeString(fn.Info.Name))
 		return
 	}
 
 	fmt.Fprintf(w,
-		"<span class=line> %6d</span> <span class=deadsrc>  %10s %10s %8s  %s </span>",
+		"<span class=line> %6d</span> <span class=\"deadsrc%s\">  %10s %10s %8s  %s </span>",
 		fn.Info.Lineno,
+		ptileCSSClassName,
 		valueOrDot(fn.Flat, rpt), valueOrDot(fn.Cum, rpt),
 		"", template.HTMLEscapeString(fn.Info.Name))
 	srcIndent := indentation(fn.Info.Name)

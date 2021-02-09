@@ -57,6 +57,12 @@ background-color: #eeeeee;
 color: #008800;
 display: none;
 }
+.ptile_95 {
+background-color: #fe5252
+}
+.ptile_80 {
+background-color: #ffb6c1
+}
 </style>`
 
 const weblistPageScript = `<script type="text/javascript">
