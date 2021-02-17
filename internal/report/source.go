@@ -299,7 +299,9 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 
 func (sp *sourcePrinter) close() {
 	for _, objFile := range sp.objects {
-		objFile.Close()
+		if objFile != nil {
+			objFile.Close()
+		}
 	}
 }
 
