@@ -86,14 +86,14 @@ Duration: 10s, Total samples = 1.12s (11.20%)<br>Total: 1.12s</div><h2>line1000<
 <span class=line>      5</span> <span class=nop>           .          .           line5 </span>
 <span class=line>      6</span> <span class=deadsrc>        10ms      1.01s           line6 </span><span class=asm>                                          <span class=inlinesrc>    line5                                                                       </span> <span class=unimportant>file3000.src:5</span>
                                           <span class=inlinesrc>        line2                                                                   </span> <span class=unimportant>file3000.src:2</span>
-                10ms      1.01s     3000:             instruction one                                                      <span class=unimportant>file3000.src:6</span>
+                10ms      1.01s     3000:             instruction one                                                      <span class=unimportant>file3000.src:2</span>
 </span>
 <span class=line>      7</span> <span class=nop>           .          .           line7 </span>
 <span class=line>      8</span> <span class=nop>           .          .           line8 </span>
 <span class=line>      9</span> <span class=deadsrc>           .      110ms           line9 </span><span class=asm>                                          <span class=inlinesrc>    line8                                                                       </span> <span class=unimportant>file3000.src:8</span>
-                   .      100ms     3001:         instruction two                                                          <span class=unimportant>file3000.src:9</span>
+                   .      100ms     3001:         instruction two                                                          <span class=unimportant>file3000.src:8</span>
                                           <span class=inlinesrc>    line5                                                                       </span> <span class=unimportant>file3000.src:5</span>
-                   .       10ms     3002:         instruction three                                                        <span class=unimportant>file3000.src:9</span>
+                   .       10ms     3002:         instruction three                                                        <span class=unimportant>file3000.src:5</span>
                    .          .     3003:         instruction four                                                         <span class=unimportant></span>
                    .          .     3004:         instruction five                                                         <span class=unimportant></span>
 </span>

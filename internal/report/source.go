@@ -184,6 +184,7 @@ type addressRange struct {
 	begin, end uint64
 	obj        plugin.ObjFile
 	mapping    *profile.Mapping
+	score      int64 // Used to order ranges for processing
 }
 
 // PrintWebList prints annotated source listing of rpt to w.
@@ -292,7 +293,7 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 		}
 	}
 
-	sp.expandAddresses(rpt, addrs)
+	sp.expandAddresses(rpt, addrs, flat)
 	sp.initSamples(flat, cum)
 	return sp
 }
@@ -305,10 +306,20 @@ func (sp *sourcePrinter) close() {
 	}
 }
 
-func (sp *sourcePrinter) expandAddresses(rpt *Report, addrs map[uint64]bool) {
+func (sp *sourcePrinter) expandAddresses(rpt *Report, addrs map[uint64]bool, flat map[uint64]int64) {
 	// We found interesting addresses (ones with non-zero samples) above.
 	// Get covering address ranges and disassemble the ranges.
-	ranges := sp.splitIntoRanges(rpt.prof, addrs)
+	ranges := sp.splitIntoRanges(rpt.prof, addrs, flat)
+
+	// Trim ranges if there are too many.
+	const maxRanges = 25
+	sort.Slice(ranges, func(i, j int) bool {
+		return ranges[i].score > ranges[j].score
+	})
+	if len(ranges) > maxRanges {
+		ranges = ranges[:maxRanges]
+	}
+
 	for _, r := range ranges {
 		base := r.obj.Base()
 		insts, err := sp.objectTool.Disasm(r.mapping.File, r.begin-base, r.end-base,
@@ -344,11 +355,22 @@ func (sp *sourcePrinter) expandAddresses(rpt *Report, addrs map[uint64]bool) {
 
 			x := instructionInfo{objAddr: inst.Addr, length: length, disasm: inst.Text}
 			if len(frames) > 0 {
-				// Record the outer-most caller's source location.
-				// E.g., if we have inlined calls F calls G calls H, use F.
-				top := frames[len(frames)-1]
-				x.file = top.File
-				x.line = top.Line
+				// We could consider using the outer-most caller's source
+				// location so we give the some hint as to where the
+				// inlining happened that led to this instruction. So for
+				// example, suppose we have the following (inlined) call
+				// chains for this instruction:
+				//   F1->G->H
+				//   F2->G->H
+				// We could tag the instructions from the first call with
+				// F1 and instructions from the second call with G2. But
+				// that leads to a somewhat confusing display. So for now,
+				// we stick with just the inner-most location (i.e., H).
+				// In the future we will consider changing the display to
+				// make caller info more visible.
+				index := 0 // Inner-most frame
+				x.file = frames[index].File
+				x.line = frames[index].Line
 			}
 			sp.insts[addr] = x
 
@@ -402,7 +424,7 @@ func (sp *sourcePrinter) expandAddresses(rpt *Report, addrs map[uint64]bool) {
 
 // splitIntoRanges converts the set of addresses we are interested in into a set of address
 // ranges to disassemble.
-func (sp *sourcePrinter) splitIntoRanges(prof *profile.Profile, set map[uint64]bool) []addressRange {
+func (sp *sourcePrinter) splitIntoRanges(prof *profile.Profile, set map[uint64]bool, flat map[uint64]int64) []addressRange {
 	// List of mappings so we can stop expanding address ranges at mapping boundaries.
 	mappings := append([]*profile.Mapping{}, prof.Mapping...)
 	sort.Slice(mappings, func(i, j int) bool { return mappings[i].Start < mappings[j].Start })
@@ -418,6 +440,7 @@ func (sp *sourcePrinter) splitIntoRanges(prof *profile.Profile, set map[uint64]b
 	const expand = 500 // How much to expand range to pick up nearby addresses.
 	for i, n := 0, len(addrs); i < n; {
 		begin, end := addrs[i], addrs[i]
+		sum := flat[begin]
 		i++
 
 		// Advance to mapping containing addrs[i]
@@ -440,6 +463,7 @@ func (sp *sourcePrinter) splitIntoRanges(prof *profile.Profile, set map[uint64]b
 			// When we expand ranges by "expand" on either side, the ranges
 			// for addrs[i] and addrs[i-1] will merge.
 			end = addrs[i]
+			sum += flat[end]
 			i++
 		}
 		if m.Start-begin >= expand {
@@ -453,7 +477,7 @@ func (sp *sourcePrinter) splitIntoRanges(prof *profile.Profile, set map[uint64]b
 			end = m.Limit
 		}
 
-		result = append(result, addressRange{begin, end, obj, m})
+		result = append(result, addressRange{begin, end, obj, m, sum})
 	}
 	return result
 }
