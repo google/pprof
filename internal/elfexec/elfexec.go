@@ -286,7 +286,8 @@ func FindTextProgHeader(f *elf.File) *elf.ProgHeader {
 
 // FindProgHeaderForMapping returns the loadable program segment header that is
 // fully contained in the runtime mapping with file offset pgoff and memory size
-// memsz, or an error if the segment cannot be determined.
+// memsz, or an error if the segment cannot be determined. The function returns
+// a nil program header and no error if the ELF binary has no loadable segments.
 func FindProgHeaderForMapping(f *elf.File, pgoff, memsz uint64) (*elf.ProgHeader, error) {
 	var headers []*elf.ProgHeader
 	loadables := 0
