@@ -363,7 +363,7 @@ func (sp *sourcePrinter) expandAddresses(rpt *Report, addrs map[uint64]bool, fla
 				//   F1->G->H
 				//   F2->G->H
 				// We could tag the instructions from the first call with
-				// F1 and instructions from the second call with G2. But
+				// F1 and instructions from the second call with F2. But
 				// that leads to a somewhat confusing display. So for now,
 				// we stick with just the inner-most location (i.e., H).
 				// In the future we will consider changing the display to
