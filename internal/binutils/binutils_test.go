@@ -492,9 +492,9 @@ func TestPEFile(t *testing.T) {
 		start, limit, offset uint64
 		addr                 uint64
 	}{
-		{"fake mapping", 0, math.MaxUint64, 0, 0x401560},
-		{"fixed load address", 0x400000, 0x402000, 0, 0x401560},
-		{"simulated ASLR address", 0x500000, 0x502000, 0, 0x501560},
+		{"fake mapping", 0, math.MaxUint64, 0, 0x140001594},
+		{"fixed load address", 0x140000000, 0x140002000, 0, 0x140001594},
+		{"simulated ASLR address", 0x150000000, 0x150002000, 0, 0x150001594},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			bu := &Binutils{}
