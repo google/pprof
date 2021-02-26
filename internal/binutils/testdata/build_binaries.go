@@ -65,11 +65,16 @@ func main() {
 		}
 
 	case "windows":
+		// Many gcc enviroments may create binaries that trigger false-positives
+		// in antiviruses. MSYS2 with gcc 10.2.0 is a working environment for
+		// compiling. To setup the environment follow the guide at
+		// https://www.msys2.org/ and install gcc with `pacman -S gcc`.
 		out, err := exec.Command("gcc", "-g", "-ffile-prefix-map="+wd+"=", "-o", "exe_windows_64.exe", "hello.c").CombinedOutput()
 		log.Println(string(out))
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Println("Please verify that exe_windows_64.exe does not trigger any antivirus on `virustotal.com`.")
 	default:
 		log.Fatalf("Unsupported OS %q", runtime.GOOS)
 	}
