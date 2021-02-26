@@ -75,8 +75,12 @@ func TestWebInterface(t *testing.T) {
 	testcases := []testCase{
 		{"/", []string{"F1", "F2", "F3", "testbin", "cpu"}, true},
 		{"/top", []string{`"Name":"F2","InlineLabel":"","Flat":200,"Cum":300,"FlatFormat":"200ms","CumFormat":"300ms"}`}, false},
-		{"/source?f=" + url.QueryEscape("F[12]"),
-			[]string{"F1", "F2", "300ms +line1"}, false},
+		{"/source?f=" + url.QueryEscape("F[12]"), []string{
+			"F1",
+			"F2",
+			`\. +300ms .*f1:asm`,    // Cumulative count for F1
+			"200ms +300ms .*f2:asm", // Flat + cumulative count for F2
+		}, false},
 		{"/peek?f=" + url.QueryEscape("F[12]"),
 			[]string{"300ms.*F1", "200ms.*300ms.*F2"}, false},
 		{"/disasm?f=" + url.QueryEscape("F[12]"),
@@ -174,9 +178,9 @@ func (obj fakeObjTool) Open(file string, start, limit, offset uint64) (plugin.Ob
 
 func (obj fakeObjTool) Disasm(file string, start, end uint64, intelSyntax bool) ([]plugin.Inst, error) {
 	return []plugin.Inst{
-		{Addr: addrBase + 0, Text: "f1:asm", Function: "F1"},
-		{Addr: addrBase + 10, Text: "f2:asm", Function: "F2"},
-		{Addr: addrBase + 20, Text: "d3:asm", Function: "F3"},
+		{Addr: addrBase + 10, Text: "f1:asm", Function: "F1", Line: 3},
+		{Addr: addrBase + 20, Text: "f2:asm", Function: "F2", Line: 11},
+		{Addr: addrBase + 30, Text: "d3:asm", Function: "F3", Line: 22},
 	}, nil
 }
 
@@ -196,7 +200,7 @@ func makeFakeProfile() *profile.Profile {
 		{
 			ID:             1,
 			Start:          addrBase,
-			Limit:          addrBase + 10,
+			Limit:          addrBase + 100,
 			Offset:         0,
 			File:           "testbin",
 			HasFunctions:   true,

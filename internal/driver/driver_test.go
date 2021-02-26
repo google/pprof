@@ -95,7 +95,7 @@ func TestParse(t *testing.T) {
 		{"dot,inuse_space,flat,tagfocus=30kb:,tagignore=1mb:2mb", "heap"},
 		{"disasm=line[13],addresses,flat", "cpu"},
 		{"peek=line.*01", "cpu"},
-		{"weblist=line[13],addresses,flat", "cpu"},
+		{"weblist=line(1000|3000)$,addresses,flat", "cpu"},
 		{"tags,tagfocus=400kb:", "heap_request"},
 		{"tags,tagfocus=+400kb:", "heap_request"},
 		{"dot", "long_name_funcs"},
@@ -1585,24 +1585,28 @@ func (*mockObjTool) Open(file string, start, limit, offset uint64) (plugin.ObjFi
 }
 
 func (m *mockObjTool) Disasm(file string, start, end uint64, intelSyntax bool) ([]plugin.Inst, error) {
-	switch start {
-	case 0x1000:
-		return []plugin.Inst{
-			{Addr: 0x1000, Text: "instruction one", File: "file1000.src", Line: 1},
-			{Addr: 0x1001, Text: "instruction two", File: "file1000.src", Line: 1},
-			{Addr: 0x1002, Text: "instruction three", File: "file1000.src", Line: 2},
-			{Addr: 0x1003, Text: "instruction four", File: "file1000.src", Line: 1},
-		}, nil
-	case 0x3000:
-		return []plugin.Inst{
-			{Addr: 0x3000, Text: "instruction one"},
-			{Addr: 0x3001, Text: "instruction two"},
-			{Addr: 0x3002, Text: "instruction three"},
-			{Addr: 0x3003, Text: "instruction four"},
-			{Addr: 0x3004, Text: "instruction five"},
-		}, nil
+	const fn1 = "line1000"
+	const fn3 = "line3000"
+	const file1 = "testdata/file1000.src"
+	const file3 = "testdata/file3000.src"
+	data := []plugin.Inst{
+		{Addr: 0x1000, Text: "instruction one", Function: fn1, File: file1, Line: 1},
+		{Addr: 0x1001, Text: "instruction two", Function: fn1, File: file1, Line: 1},
+		{Addr: 0x1002, Text: "instruction three", Function: fn1, File: file1, Line: 2},
+		{Addr: 0x1003, Text: "instruction four", Function: fn1, File: file1, Line: 1},
+		{Addr: 0x3000, Text: "instruction one", Function: fn3, File: file3},
+		{Addr: 0x3001, Text: "instruction two", Function: fn3, File: file3},
+		{Addr: 0x3002, Text: "instruction three", Function: fn3, File: file3},
+		{Addr: 0x3003, Text: "instruction four", Function: fn3, File: file3},
+		{Addr: 0x3004, Text: "instruction five", Function: fn3, File: file3},
 	}
-	return nil, fmt.Errorf("unimplemented")
+	var result []plugin.Inst
+	for _, inst := range data {
+		if inst.Addr >= start && inst.Addr <= end {
+			result = append(result, inst)
+		}
+	}
+	return result, nil
 }
 
 type mockFile struct {
@@ -1630,7 +1634,52 @@ func (m *mockFile) BuildID() string {
 // is in general a list of positions representing a call stack,
 // with the leaf function first.
 func (*mockFile) SourceLine(addr uint64) ([]plugin.Frame, error) {
-	return nil, fmt.Errorf("unimplemented")
+	// Return enough data to support the SourceLine() calls needed for
+	// weblist on cpuProfile() contents.
+	frame := func(fn, file string, line int) plugin.Frame {
+		return plugin.Frame{Func: fn, File: file, Line: line}
+	}
+	switch addr {
+	case 0x1000:
+		return []plugin.Frame{
+			frame("mangled1000", "testdata/file1000.src", 1),
+		}, nil
+	case 0x1001:
+		return []plugin.Frame{
+			frame("mangled1000", "testdata/file1000.src", 1),
+		}, nil
+	case 0x1002:
+		return []plugin.Frame{
+			frame("mangled1000", "testdata/file1000.src", 2),
+		}, nil
+	case 0x1003:
+		return []plugin.Frame{
+			frame("mangled1000", "testdata/file1000.src", 1),
+		}, nil
+	case 0x2000:
+		return []plugin.Frame{
+			frame("mangled2001", "testdata/file2000.src", 9),
+			frame("mangled2000", "testdata/file2000.src", 4),
+		}, nil
+	case 0x3000:
+		return []plugin.Frame{
+			frame("mangled3002", "testdata/file3000.src", 2),
+			frame("mangled3001", "testdata/file3000.src", 5),
+			frame("mangled3000", "testdata/file3000.src", 6),
+		}, nil
+	case 0x3001:
+		return []plugin.Frame{
+			frame("mangled3001", "testdata/file3000.src", 8),
+			frame("mangled3000", "testdata/file3000.src", 9),
+		}, nil
+	case 0x3002:
+		return []plugin.Frame{
+			frame("mangled3002", "testdata/file3000.src", 5),
+			frame("mangled3000", "testdata/file3000.src", 9),
+		}, nil
+	}
+
+	return nil, nil
 }
 
 // Symbols returns a list of symbols in the object file.
