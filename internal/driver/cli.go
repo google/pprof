@@ -208,6 +208,7 @@ func installConfigFlags(flag plugin.FlagSet, cfg *config) func() error {
 
 	for _, field := range configFields {
 		n := field.name
+		fmt.Println(n)
 		help := configHelp[n]
 		var setter func()
 		switch ptr := cfg.fieldPtr(field).(type) {
@@ -249,6 +250,15 @@ func installConfigFlags(flag plugin.FlagSet, cfg *config) func() error {
 					}
 				}
 			}
+		case *[]*string:
+			f := flag.StringList(n, "", help)
+			setter = func() {
+				fmt.Println(ptr)
+				fmt.Println(f)
+				*ptr = *f
+			}
+		default:
+			panic(fmt.Sprintf("%v %T", ptr, ptr))
 		}
 		setters = append(setters, setter)
 	}
