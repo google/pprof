@@ -289,11 +289,41 @@ func FindTextProgHeader(f *elf.File) *elf.ProgHeader {
 // memsz, or an error if the segment cannot be determined. The function returns
 // a nil program header and no error if the ELF binary has no loadable segments.
 func FindProgHeaderForMapping(f *elf.File, pgoff, memsz uint64) (*elf.ProgHeader, error) {
+	// We traverse all program headers and match loadable segments whose file
+	// offsets and memory sizes are fully enclosed within the given mapping.
+	//
+	// In some cases, the loader maps the entire program address space in a single
+	// runtime mapping that starts from the file offset of the first segment but
+	// encompasses additional segments. Such mappings may be split later when
+	// samples are detected in the following segments. However, a perf.data file
+	// still includes the large initial mapping, which should be associated with
+	// the first segment both before and after an eventual split. For each
+	// segment, we compute the aligned file offset of its mapping assuming 4k page
+	// alignment, and we filter out program segments that have aligned file
+	// offsets greater than the given mapping file offset.
+	const (
+		// pageSize defines the virtual memory page size used by the loader. This
+		// value is dependent on the memory management unit of the CPU. The page
+		// size is 4KB virtually on all the architectures that we care about, so we
+		// define this metric as a constant. If we encounter architectures where
+		// page sie is not 4KB, we must try to guess the page size on the system
+		// where the profile was collected, possibly using the architecture
+		// specified in the ELF file header.
+		pageSize       = 4096
+		pageOffsetMask = pageSize - 1
+		pageMask       = ^uint64(pageOffsetMask)
+	)
 	var headers []*elf.ProgHeader
 	loadables := 0
 	for _, p := range f.Progs {
 		if p.Type == elf.PT_LOAD && pgoff <= p.Off && p.Off+p.Memsz <= pgoff+memsz {
-			headers = append(headers, &p.ProgHeader)
+			alignedOffset := uint64(0)
+			if p.Off > (p.Vaddr & pageOffsetMask) {
+				alignedOffset = p.Off - (p.Vaddr & pageOffsetMask)
+			}
+			if alignedOffset <= pgoff {
+				headers = append(headers, &p.ProgHeader)
+			}
 		}
 		if p.Type == elf.PT_LOAD {
 			loadables++
@@ -338,7 +368,6 @@ func FindProgHeaderForMapping(f *elf.File, pgoff, memsz uint64) (*elf.ProgHeader
 	// We use a heuristic to compute the minimum mapping size required for a
 	// segment, assuming mappings are 4k page aligned, and return the segment that
 	// matches the given mapping size.
-	const pageSize = 4096
 
 	// The memory size based heuristic makes sense only if the mapping size is a
 	// multiple of 4k page size.
@@ -348,7 +377,6 @@ func FindProgHeaderForMapping(f *elf.File, pgoff, memsz uint64) (*elf.ProgHeader
 
 	// Return an error if no segment, or multiple segments match the size, so we can debug.
 	var ph *elf.ProgHeader
-	pageMask := ^uint64(pageSize - 1)
 	for _, h := range headers {
 		wantSize := (h.Vaddr+h.Memsz+pageSize-1)&pageMask - (h.Vaddr & pageMask)
 		if wantSize != memsz {
