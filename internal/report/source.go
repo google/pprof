@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -917,8 +918,19 @@ func openSourceFile(path, searchPath, trim string) (*os.File, error) {
 		f, err := os.Open(path)
 		return f, err
 	}
+	possibleBases := filepath.SplitList(searchPath)
+	if gopath := os.Getenv("GOPATH"); gopath != "" {
+		// We can also look through:
+		// * $GOPATH/pkg/mod
+		// * runtime.GOROOT()/src
+		// in case the file originates from Go modules.
+		// See https://github.com/google/pprof/issues/611.
+		possibleBases = append(possibleBases,
+			filepath.Join(gopath, "pkg", "mod"),
+			filepath.Join(runtime.GOROOT(), "src"))
+	}
 	// Scan each component of the path.
-	for _, dir := range filepath.SplitList(searchPath) {
+	for _, dir := range possibleBases {
 		// Search up for every parent of each possible path.
 		for {
 			filename := filepath.Join(dir, path)
