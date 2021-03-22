@@ -477,11 +477,11 @@ func (b *binrep) openELF(name string, start, limit, offset uint64) (plugin.ObjFi
 			buildID = fmt.Sprintf("%x", id)
 		}
 	}
-	isData := ph != nil && ph.Flags&elf.PF_X == 0
 	if b.fast || (!b.addr2lineFound && !b.llvmSymbolizerFound) {
-		return &fileNM{file: file{b, name, base, buildID, isData}}, nil
+		return &fileNM{file: file{b, name, base, buildID}}, nil
 	}
-	return &fileAddr2Line{file: file{b, name, base, buildID, isData}}, nil
+	isData := ph != nil && ph.Flags&elf.PF_X == 0
+	return &fileAddr2Line{file: file{b, name, base, buildID}, isData: isData}, nil
 }
 
 func (b *binrep) openPE(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
@@ -517,7 +517,6 @@ type file struct {
 	name    string
 	base    uint64
 	buildID string
-	isData  bool
 }
 
 func (f *file) Name() string {
@@ -579,6 +578,7 @@ type fileAddr2Line struct {
 	file
 	addr2liner     *addr2Liner
 	llvmSymbolizer *llvmSymbolizer
+	isData         bool
 }
 
 func (f *fileAddr2Line) SourceLine(addr uint64) ([]plugin.Frame, error) {
