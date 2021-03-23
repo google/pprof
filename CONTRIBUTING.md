@@ -11,6 +11,31 @@ through the issue tracker with your idea so that we can help out and possibly
 guide you. Coordinating up front makes it much easier to avoid frustration later
 on.
 
+# What to expect
+
+All submissions (including by project members) are done via GitHub pull requests
+and require a code review by a project member.
+
+We expect contributions to be good, clean code following style and practices for
+the language the contribution is in. The pprof source code is in Go with a bit
+of JavaScript, CSS and HTML. If you are new to Go, read [Effective
+Go](https://golang.org/doc/effective_go.html) and the [summary on typical
+comments during Go code
+reviews](https://github.com/golang/go/wiki/CodeReviewComments).
+
+All contributions should include automated tests for the change. We are
+continuously improving pprof automated testing and we can't accept changes that
+are not helping that direction. Code coverage numbers are automatically
+published in each pull request - we expect that number to go up.  Note that
+adding a good test often requires more time than the fix itself - this is
+expected and you should be prepared for that time investment.
+
+Contributions that do not meet the above guidelines will get less attention and
+will be slow to get accepted or won't be accepted at all. We will also likely
+refuse to accept changes that have fairly limited audience but will require us
+to commit to maintain them for foreseeable future. This includes support for
+specific platforms, making internal pprof APIs public, etc.
+
 # Development
 
 Make sure `GOPATH` is set in your current shell. The common way is to have
@@ -49,26 +74,6 @@ git push aalexand
 
 where `aalexand` is your GitHub user ID. Then proceed to the GitHub UI to send a
 code review.
-
-# Code reviews
-
-All submissions, including submissions by project members, require review.
-We use GitHub pull requests for this purpose.
-
-The pprof source code is in Go with a bit of JavaScript, CSS and HTML. If you
-are new to Go, read [Effective Go](https://golang.org/doc/effective_go.html) and
-the [summary on typical comments during Go code
-reviews](https://github.com/golang/go/wiki/CodeReviewComments).
-
-Cover all new functionality with tests. Enable Travis on your forked repo,
-enable builds of branches and make sure Travis is happily green for the branch
-with your changes.
-
-The code coverage is measured for each pull request. The code coverage is
-expected to go up with every change.
-
-Pull requests not meeting the above guidelines will get less attention than good
-ones, so make sure your submissions are high quality.
 
 # The small print
 
