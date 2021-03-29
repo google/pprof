@@ -370,6 +370,12 @@ table tr td {
     </div>
   </div>
 
+  <div id="download" class="menu-item">
+    <div class="menu-name">
+      <a href="./download">Download</a>
+    </div>	
+  </div>
+
   <div>
     <input id="search" type="text" placeholder="Search regexp" autocomplete="off" autocapitalize="none" size=40>
   </div>
