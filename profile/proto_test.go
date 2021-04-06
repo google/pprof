@@ -142,6 +142,16 @@ var all = &Profile{
 				"alignment": {"kilobytes", "kilobytes"},
 			},
 		},
+		{
+			Location: []*Location{testL[1], testL[2], testL[0], testL[1]},
+			Value:    []int64{30, 40},
+			NumLabel: map[string][]int64{
+				"size": {0},
+			},
+			NumUnit: map[string][]string{
+				"size": {"bytes"},
+			},
+		},
 	},
 	Function: testF,
 	Mapping:  testM,
