@@ -18,14 +18,29 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }}
     strategy:
       matrix:
-        go: ['1.14', '1.15']
+        go: ['1.15', '1.16', 'tip']
+        # Supported macOS versions can be found in
+        # https://github.com/actions/virtual-environments#available-environments.
         os: ['macos-10.15']
-        xcode-version: ['12.2', '12.1', '12.0', '11.7', '11.6', '11.5', '11.4.1', '11.3.1', '11.2.1']
+        # Supported Xcode versions can be found in 
+        # https://github.com/actions/virtual-environments/blob/main/images/macos/macos-10.15-Readme.md#xcode.
+        xcode-version: ['12.4', '12.3', '12.2', '12.1.1', '12.0.1', '11.7']
     steps:
-      - name: Update go version
+      - name: Update Go version using setup-go
         uses: actions/setup-go@v2
+        if: matrix.go != 'tip'
         with:
           go-version: ${{ matrix.go }}
+      
+      - name: Update Go version manually
+        if: matrix.go == 'tip'
+        working-directory: ${{ github.workspace }}
+        run: |
+          git clone https://go.googlesource.com/go $HOME/gotip
+          cd $HOME/gotip/src
+          ./make.bash
+          echo "GOROOT=$HOME/gotip" >> $GITHUB_ENV
+          echo "$HOME/gotip/bin:$PATH" >> $GITHUB_PATH
 
       - name: Checkout the repo
         uses: actions/checkout@v2
@@ -38,15 +53,16 @@ jobs:
           xcode-version: ${{ matrix.xcode-version }}
 
       - name: Fetch dependencies
-        # Do not let tools interfere with the main module's go.mod.
-        env: 
-          GO111MODULE: off         
         run: |
           brew install graphviz
-          go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
+          # Do not let tools interfere with the main module's go.mod.
+          cd && go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
+          # Add PATH for installed tools.
+          echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
 
       - name: Run the script 
         run: |
+          go version
           gofmtdiff=$(gofmt -s -d .) && if [ -n "$gofmtdiff" ]; then printf 'gofmt -s found:\n%s\n' "$gofmtdiff" && exit 1; fi
           golintlint=$(golint ./...) && if [ -n "$golintlint" ]; then printf 'golint found:\n%s\n' "$golintlint" && exit 1; fi
           go vet -all ./...
@@ -72,13 +88,24 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }} 
     strategy:
       matrix:
-        go: ['1.14', '1.15']
+        go: ['1.15', '1.16', 'tip']
         os: ['ubuntu-20.04', 'ubuntu-18.04', 'ubuntu-16.04'] 
     steps:
-      - name: Update go version
+      - name: Update Go version using setup-go
         uses: actions/setup-go@v2
+        if: matrix.go != 'tip'
         with:
           go-version: ${{ matrix.go }}
+
+      - name: Update Go version manually
+        if: matrix.go == 'tip'
+        working-directory: ${{ github.workspace }}
+        run: |
+          git clone https://go.googlesource.com/go $HOME/gotip
+          cd $HOME/gotip/src
+          ./make.bash
+          echo "GOROOT=$HOME/gotip" >> $GITHUB_ENV
+          echo "$HOME/gotip/bin" >> $GITHUB_PATH
 
       - name: Checkout the repo
         uses: actions/checkout@v2
@@ -86,15 +113,16 @@ jobs:
           path: ${{ env.WORKING_DIR }}
 
       - name: Fetch dependencies
-        # Do not let tools interfere with the main module's go.mod.
-        env: 
-          GO111MODULE: off         
         run: |
           sudo apt-get install graphviz
-          go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
+          # Do not let tools interfere with the main module's go.mod.
+          cd && go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
+          # Add PATH for installed tools.
+          echo "PATH=$GOPATH/bin:$PATH" >> $GITHUB_ENV
 
       - name: Run the script 
         run: |
+          go version
           gofmtdiff=$(gofmt -s -d .) && if [ -n "$gofmtdiff" ]; then printf 'gofmt -s found:\n%s\n' "$gofmtdiff" && exit 1; fi
           golintlint=$(golint ./...) && if [ -n "$golintlint" ]; then printf 'golint found:\n%s\n' "$golintlint" && exit 1; fi
           go vet -all ./...
@@ -116,9 +144,9 @@ jobs:
     runs-on: windows-2019
     strategy:
       matrix:
-        go: ['1.14', '1.15']
+        go: ['1.15', '1.16']
     steps:
-      - name: Update go version
+      - name: Update Go version using setup-go
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
@@ -135,6 +163,7 @@ jobs:
 
       - name: Run the test
         run: |
+          go version
           # This is a workaround to make graphviz installed through choco work.
           # It generates a config file to tell dot what layout engine and 
           # format types are available. See
