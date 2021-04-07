@@ -661,10 +661,6 @@ func TestOpenELF(t *testing.T) {
 		wantBase             uint64
 	}{
 		{"exec mapping", 0x5400000, 0x5401000, 0, false, 0x5000000},
-		{"short data mapping", 0x5600e00, 0x5602000, 0xe00, false, 0x5000000},
-		{"page aligned data mapping", 0x5600000, 0x5602000, 0, false, 0x5000000},
-		{"no matching segment", 0x5600000, 0x5602000, 0x2000, true, 0},
-		{"multiple matching segments, wrong size", 0x5600000, 0x5603000, 0, true, 0},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			b := binrep{}
