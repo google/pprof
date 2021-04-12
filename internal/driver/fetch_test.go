@@ -168,7 +168,7 @@ func (testObj) Disasm(file string, start, end uint64, intelSyntax bool) ([]plugi
 type testFile struct{ name, buildID string }
 
 func (f testFile) Name() string                                               { return f.name }
-func (testFile) Base() uint64                                                 { return 0 }
+func (testFile) ObjAddr(addr uint64) (uint64, error)                          { return addr, nil }
 func (f testFile) BuildID() string                                            { return f.buildID }
 func (testFile) SourceLine(addr uint64) ([]plugin.Frame, error)               { return nil, nil }
 func (testFile) Symbols(r *regexp.Regexp, addr uint64) ([]*plugin.Sym, error) { return nil, nil }
