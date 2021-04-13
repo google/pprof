@@ -132,6 +132,8 @@ func printWebSource(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 // sourcePrinter holds state needed for generating source+asm HTML listing.
 type sourcePrinter struct {
 	reader     *sourceReader
+	mappings   mappingList
+	synth      synthCode
 	objectTool plugin.ObjTool
 	objects    map[string]plugin.ObjFile  // Opened object files
 	sym        *regexp.Regexp             // May be nil
@@ -205,8 +207,11 @@ func PrintWebList(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFiles int) er
 }
 
 func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourcePrinter {
+	mappings := makeMappingList(rpt.prof.Mapping)
 	sp := &sourcePrinter{
 		reader:      newSourceReader(sourcePath, rpt.options.TrimPath),
+		mappings:    mappings,
+		synth:       synthCode{mappings: mappings},
 		objectTool:  obj,
 		objects:     map[string]plugin.ObjFile{},
 		sym:         rpt.options.Symbol,
@@ -270,15 +275,21 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 				sp.prettyNames[line.Function.SystemName] = line.Function.Name
 			}
 
-			cum[loc.Address] += value
-			if i == 0 {
-				flat[loc.Address] += value
+			addr := loc.Address
+			if sp.mappings.find(addr) == nil {
+				// Some profiles are missing mapping info, or have bogus addresses.
+				addr = sp.synth.address(loc)
 			}
 
-			if sp.sym == nil || (address != nil && loc.Address == *address) {
+			cum[addr] += value
+			if i == 0 {
+				flat[addr] += value
+			}
+
+			if sp.sym == nil || (address != nil && addr == *address) {
 				// Interested in top-level entry of stack.
 				if len(loc.Line) > 0 {
-					markInterest(loc.Address, loc.Line, len(loc.Line)-1)
+					markInterest(addr, loc.Line, len(loc.Line)-1)
 				}
 				continue
 			}
@@ -287,7 +298,7 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 			matchFile := (loc.Mapping != nil && sp.sym.MatchString(loc.Mapping.File))
 			for j, line := range loc.Line {
 				if (j == 0 && matchFile) || matches(line) {
-					markInterest(loc.Address, loc.Line, j)
+					markInterest(addr, loc.Line, j)
 				}
 			}
 		}
@@ -309,7 +320,8 @@ func (sp *sourcePrinter) close() {
 func (sp *sourcePrinter) expandAddresses(rpt *Report, addrs map[uint64]bool, flat map[uint64]int64) {
 	// We found interesting addresses (ones with non-zero samples) above.
 	// Get covering address ranges and disassemble the ranges.
-	ranges := sp.splitIntoRanges(rpt.prof, addrs, flat)
+	ranges, synth := sp.splitIntoRanges(rpt.prof, addrs, flat)
+	sp.handleSynthetic(synth)
 
 	// Trim ranges if there are too many.
 	const maxRanges = 25
@@ -394,73 +406,94 @@ func (sp *sourcePrinter) expandAddresses(rpt *Report, addrs map[uint64]bool, fla
 				frames = lastFrames
 			}
 
-			// See if the stack contains a function we are interested in.
-			for i, f := range frames {
-				if !sp.interest[f.Func] {
-					continue
-				}
-
-				// Record sub-stack under frame's file/line.
-				fname := canonicalizeFileName(f.File)
-				file := sp.files[fname]
-				if file == nil {
-					file = &sourceFile{
-						fname:    fname,
-						lines:    map[int][]sourceInst{},
-						funcName: map[int]string{},
-					}
-					sp.files[fname] = file
-				}
-				callees := frames[:i]
-				stack := make([]callID, 0, len(callees))
-				for j := len(callees) - 1; j >= 0; j-- { // Reverse so caller is first
-					stack = append(stack, callID{
-						file: callees[j].File,
-						line: callees[j].Line,
-					})
-				}
-				file.lines[f.Line] = append(file.lines[f.Line], sourceInst{addr, stack})
-
-				// Remember the first function name encountered per source line
-				// and assume that that line belongs to that function.
-				if _, ok := file.funcName[f.Line]; !ok {
-					file.funcName[f.Line] = f.Func
-				}
-			}
+			sp.addStack(addr, frames)
 		}
 	}
 }
 
-// splitIntoRanges converts the set of addresses we are interested in into a set of address
-// ranges to disassemble.
-func (sp *sourcePrinter) splitIntoRanges(prof *profile.Profile, set map[uint64]bool, flat map[uint64]int64) []addressRange {
-	// List of mappings so we can stop expanding address ranges at mapping boundaries.
-	mappings := append([]*profile.Mapping{}, prof.Mapping...)
-	sort.Slice(mappings, func(i, j int) bool { return mappings[i].Start < mappings[j].Start })
+func (sp *sourcePrinter) addStack(addr uint64, frames []plugin.Frame) {
+	// See if the stack contains a function we are interested in.
+	for i, f := range frames {
+		if !sp.interest[f.Func] {
+			continue
+		}
 
+		// Record sub-stack under frame's file/line.
+		fname := canonicalizeFileName(f.File)
+		file := sp.files[fname]
+		if file == nil {
+			file = &sourceFile{
+				fname:    fname,
+				lines:    map[int][]sourceInst{},
+				funcName: map[int]string{},
+			}
+			sp.files[fname] = file
+		}
+		callees := frames[:i]
+		stack := make([]callID, 0, len(callees))
+		for j := len(callees) - 1; j >= 0; j-- { // Reverse so caller is first
+			stack = append(stack, callID{
+				file: callees[j].File,
+				line: callees[j].Line,
+			})
+		}
+		file.lines[f.Line] = append(file.lines[f.Line], sourceInst{addr, stack})
+
+		// Remember the first function name encountered per source line
+		// and assume that that line belongs to that function.
+		if _, ok := file.funcName[f.Line]; !ok {
+			file.funcName[f.Line] = f.Func
+		}
+	}
+}
+
+// handleSynthetic processes synthetic addresses that we created when reading the profile
+// for the addresses that did not belong to a mapping.
+func (sp *sourcePrinter) handleSynthetic(addrs []uint64) {
+	for _, addr := range addrs {
+		frames := sp.synth.frames(addr)
+		x := instructionInfo{
+			objAddr: addr,
+			length:  1,
+			disasm:  synthAsm,
+		}
+		if len(frames) > 0 {
+			x.file = frames[0].File
+			x.line = frames[0].Line
+		}
+		sp.insts[addr] = x
+
+		sp.addStack(addr, frames)
+	}
+}
+
+// splitIntoRanges converts the set of addresses we are interested in into a set of address
+// ranges to disassemble. It also returns the set of synthetic addresses found without adding
+// them to an address range.
+func (sp *sourcePrinter) splitIntoRanges(prof *profile.Profile, set map[uint64]bool, flat map[uint64]int64) ([]addressRange, []uint64) {
 	var result []addressRange
+	var synth []uint64
 	addrs := make([]uint64, 0, len(set))
 	for addr := range set {
-		addrs = append(addrs, addr)
+		if sp.synth.contains(addr) {
+			synth = append(synth, addr)
+		} else {
+			addrs = append(addrs, addr)
+		}
 	}
 	sort.Slice(addrs, func(i, j int) bool { return addrs[i] < addrs[j] })
 
-	mappingIndex := 0
 	const expand = 500 // How much to expand range to pick up nearby addresses.
 	for i, n := 0, len(addrs); i < n; {
 		begin, end := addrs[i], addrs[i]
 		sum := flat[begin]
 		i++
 
-		// Advance to mapping containing addrs[i]
-		for mappingIndex < len(mappings) && mappings[mappingIndex].Limit <= begin {
-			mappingIndex++
-		}
-		if mappingIndex >= len(mappings) {
+		m := sp.mappings.find(begin)
+		if m == nil {
 			// TODO(sanjay): Report missed address and its samples.
-			break
+			continue
 		}
-		m := mappings[mappingIndex]
 		obj := sp.objectFile(m)
 		if obj == nil {
 			// TODO(sanjay): Report missed address and its samples.
@@ -488,7 +521,7 @@ func (sp *sourcePrinter) splitIntoRanges(prof *profile.Profile, set map[uint64]b
 
 		result = append(result, addressRange{begin, end, obj, m, sum})
 	}
-	return result
+	return result, synth
 }
 
 func (sp *sourcePrinter) initSamples(flat, cum map[uint64]int64) {
@@ -734,12 +767,28 @@ func printFunctionSourceLine(w io.Writer, lineNo int, flat, cum int64, lineConte
 		return
 	}
 
+	nestedInfo := false
+	cl := "deadsrc"
+	for _, an := range assembly {
+		if len(an.inlineCalls) > 0 || an.instruction != synthAsm {
+			nestedInfo = true
+			cl = "livesrc"
+		}
+	}
+
 	fmt.Fprintf(w,
-		"<span class=line> %6d</span> <span class=deadsrc>  %10s %10s %8s  %s </span>",
-		lineNo,
+		"<span class=line> %6d</span> <span class=%s>  %10s %10s %8s  %s </span>",
+		lineNo, cl,
 		valueOrDot(flat, rpt), valueOrDot(cum, rpt),
 		"", template.HTMLEscapeString(lineContents))
-	srcIndent := indentation(lineContents)
+	if nestedInfo {
+		srcIndent := indentation(lineContents)
+		printNested(w, srcIndent, assembly, reader, rpt)
+	}
+	fmt.Fprintln(w)
+}
+
+func printNested(w io.Writer, srcIndent int, assembly []assemblyInstruction, reader *sourceReader, rpt *Report) {
 	fmt.Fprint(w, "<span class=asm>")
 	var curCalls []callID
 	for i, an := range assembly {
@@ -772,6 +821,9 @@ func printFunctionSourceLine(w io.Writer, lineNo int, flat, cum int64, lineConte
 				template.HTMLEscapeString(filepath.Base(c.file)), c.line)
 		}
 		curCalls = an.inlineCalls
+		if an.instruction == synthAsm {
+			continue
+		}
 		text := strings.Repeat(" ", srcIndent+4+4*len(curCalls)) + an.instruction
 		fmt.Fprintf(w, " %8s %10s %10s %8x: %s <span class=unimportant>%s</span>\n",
 			"", valueOrDot(flat, rpt), valueOrDot(cum, rpt), an.address,
@@ -781,7 +833,7 @@ func printFunctionSourceLine(w io.Writer, lineNo int, flat, cum int64, lineConte
 			// would cause double-escaping of file name.
 			fileline)
 	}
-	fmt.Fprintln(w, "</span>")
+	fmt.Fprint(w, "</span>")
 }
 
 // printFunctionClosing prints the end of a function in a weblist report.
@@ -1028,4 +1080,23 @@ func canonicalizeFileName(fname string) string {
 	fname = strings.TrimPrefix(fname, "/proc/self/cwd/")
 	fname = strings.TrimPrefix(fname, "./")
 	return filepath.Clean(fname)
+}
+
+// mappingList is a sorted list of mappings.
+type mappingList []*profile.Mapping
+
+func makeMappingList(src []*profile.Mapping) mappingList {
+	mappings := append([]*profile.Mapping{}, src...)
+	sort.Slice(mappings, func(i, j int) bool { return mappings[i].Start < mappings[j].Start })
+	return mappingList(mappings)
+}
+
+// find returns the mapping in m that contains addr, or nil if no such mapping exists.
+func (m mappingList) find(addr uint64) *profile.Mapping {
+	// Find first mapping that ends after addr.
+	i := sort.Search(len(m), func(i int) bool { return m[i].Limit > addr })
+	if i < len(m) && m[i].Start <= addr {
+		return m[i]
+	}
+	return nil
 }

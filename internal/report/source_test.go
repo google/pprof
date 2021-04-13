@@ -16,6 +16,7 @@ package report
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -50,6 +51,57 @@ func TestWebList(t *testing.T) {
 		if match, _ := regexp.MatchString(expect, output); !match {
 			t.Errorf("weblist output does not contain '%s':\n%s", expect, output)
 		}
+	}
+}
+
+func TestSyntheticSource(t *testing.T) {
+	makeLoc := func(name, fname string, line int64) *profile.Location {
+		return &profile.Location{
+			Line: []profile.Line{
+				profile.Line{
+					Function: &profile.Function{Name: name, Filename: fname},
+					Line:     line,
+				},
+			},
+		}
+	}
+
+	// Create profile that will need synthetic addresses since it has no mappings.
+	foo100 := makeLoc("foo", "foo.go", 100)
+	bar50 := makeLoc("bar", "bar.go", 50)
+	prof := &profile.Profile{
+		Sample: []*profile.Sample{
+			&profile.Sample{
+				Value:    []int64{9},
+				Location: []*profile.Location{foo100, bar50},
+			},
+			&profile.Sample{
+				Value:    []int64{17},
+				Location: []*profile.Location{bar50},
+			},
+		},
+	}
+	rpt := &Report{
+		prof: prof,
+		options: &Options{
+			Symbol:      regexp.MustCompile("foo|bar"),
+			SampleValue: func(s []int64) int64 { return s[0] },
+		},
+		formatValue: func(v int64) string { return fmt.Sprint(v) },
+	}
+
+	var out bytes.Buffer
+	err := PrintWebList(&out, rpt, nil, -1)
+	if err != nil {
+		t.Fatalf("PrintWebList returned unexpected error: %v", err)
+	}
+	got := out.String()
+	expect := regexp.MustCompile(
+		`(?s)` + // Allow "." to match newline
+			`bar\.go.* 50\b.* 17 +26 .*` +
+			`foo\.go.* 100\b.* 9 +9 `)
+	if !expect.MatchString(got) {
+		t.Errorf("expected regular expression %v does not match  output:\n%s\n", expect, got)
 	}
 }
 
@@ -187,6 +239,37 @@ func TestRightPad(t *testing.T) {
 		if out != c.expect {
 			t.Errorf("rightPad(%q, %d): got %q, want %q", c.in, c.pad, out, c.expect)
 		}
+	}
+}
+
+func TestMappingList(t *testing.T) {
+	m1 := &profile.Mapping{Start: 100, Limit: 200}
+	m2 := &profile.Mapping{Start: 200, Limit: 300}
+	m3 := &profile.Mapping{Start: 500, Limit: 500}
+	m4 := &profile.Mapping{Start: 500, Limit: 600}
+	all := makeMappingList([]*profile.Mapping{m1, m2, m3, m4})
+
+	type testCase struct {
+		name     string
+		mappings mappingList
+		addr     uint64
+		expect   *profile.Mapping
+	}
+	for _, c := range []testCase{
+		{"empty", nil, 100, nil},
+		{"before", all, 99, nil},
+		{"after", all, 600, nil},
+		{"inside", all, 250, m2},
+		{"at_start1", all, 100, m1},
+		{"at_start2", all, 200, m2},
+		{"at_end", all, 299, m2},
+		{"after_empty", all, 500, m4},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			if m := c.mappings.find(c.addr); m != c.expect {
+				t.Errorf("mappings(%d) = %v; expecting %v", c.addr, m, c.expect)
+			}
+		})
 	}
 }
 
