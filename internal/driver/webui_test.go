@@ -146,10 +146,10 @@ const fakeSource = "testdata/file1000.src"
 
 type fakeObj struct{}
 
-func (f fakeObj) Close() error    { return nil }
-func (f fakeObj) Name() string    { return "testbin" }
-func (f fakeObj) Base() uint64    { return 0 }
-func (f fakeObj) BuildID() string { return "" }
+func (f fakeObj) Close() error                        { return nil }
+func (f fakeObj) Name() string                        { return "testbin" }
+func (f fakeObj) ObjAddr(addr uint64) (uint64, error) { return addr, nil }
+func (f fakeObj) BuildID() string                     { return "" }
 func (f fakeObj) SourceLine(addr uint64) ([]plugin.Frame, error) {
 	return nil, fmt.Errorf("SourceLine unimplemented")
 }

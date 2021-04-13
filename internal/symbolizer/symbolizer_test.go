@@ -279,8 +279,8 @@ func (mockObjFile) Name() string {
 	return ""
 }
 
-func (mockObjFile) Base() uint64 {
-	return 0
+func (mockObjFile) ObjAddr(addr uint64) (uint64, error) {
+	return addr, nil
 }
 
 func (mockObjFile) BuildID() string {

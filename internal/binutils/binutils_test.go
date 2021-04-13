@@ -358,17 +358,22 @@ func TestObjFile(t *testing.T) {
 			if m == nil {
 				t.Fatalf("Symbols: did not find main")
 			}
-			for _, addr := range []uint64{m.Start + f.Base(), tc.addr} {
-				gotFrames, err := f.SourceLine(addr)
-				if err != nil {
-					t.Fatalf("SourceLine: unexpected error %v", err)
-				}
-				wantFrames := []plugin.Frame{
-					{Func: "main", File: "/tmp/hello.c", Line: 3},
-				}
-				if !reflect.DeepEqual(gotFrames, wantFrames) {
-					t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, wantFrames)
-				}
+			addr, err := f.ObjAddr(tc.addr)
+			if err != nil {
+				t.Fatalf("ObjAddr(%x) failed: %v", tc.addr, err)
+			}
+			if addr != m.Start {
+				t.Errorf("ObjAddr(%x) got %x, want %x", tc.addr, addr, m.Start)
+			}
+			gotFrames, err := f.SourceLine(tc.addr)
+			if err != nil {
+				t.Fatalf("SourceLine: unexpected error %v", err)
+			}
+			wantFrames := []plugin.Frame{
+				{Func: "main", File: "/tmp/hello.c", Line: 3},
+			}
+			if !reflect.DeepEqual(gotFrames, wantFrames) {
+				t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, wantFrames)
 			}
 		})
 	}
@@ -512,18 +517,22 @@ func TestPEFile(t *testing.T) {
 			if m == nil {
 				t.Fatalf("Symbols: did not find main")
 			}
-
-			for _, addr := range []uint64{m.Start + f.Base(), tc.addr} {
-				gotFrames, err := f.SourceLine(addr)
-				if err != nil {
-					t.Fatalf("SourceLine: unexpected error %v", err)
-				}
-				wantFrames := []plugin.Frame{
-					{Func: "main", File: "hello.c", Line: 3},
-				}
-				if !reflect.DeepEqual(gotFrames, wantFrames) {
-					t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, wantFrames)
-				}
+			addr, err := f.ObjAddr(tc.addr)
+			if err != nil {
+				t.Fatalf("ObjAddr(%x) failed: %v", tc.addr, err)
+			}
+			if addr != m.Start {
+				t.Errorf("ObjAddr(%x) got %x, want %x", tc.addr, addr, m.Start)
+			}
+			gotFrames, err := f.SourceLine(tc.addr)
+			if err != nil {
+				t.Fatalf("SourceLine: unexpected error %v", err)
+			}
+			wantFrames := []plugin.Frame{
+				{Func: "main", File: "hello.c", Line: 3},
+			}
+			if !reflect.DeepEqual(gotFrames, wantFrames) {
+				t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, wantFrames)
 			}
 		})
 	}
@@ -657,22 +666,23 @@ func TestOpenELF(t *testing.T) {
 	for _, tc := range []struct {
 		desc                 string
 		start, limit, offset uint64
-		wantError            bool
-		wantBase             uint64
+		addr                 uint64
+		wantObjAddr          uint64
 	}{
-		{"exec mapping", 0x5400000, 0x5401000, 0, false, 0x5000000},
+		{"exec mapping", 0x5400000, 0x5401000, 0, 0x5400400, 0x400400},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			b := binrep{}
 			o, err := b.openELF(name, tc.start, tc.limit, tc.offset)
-			if (err != nil) != tc.wantError {
-				t.Errorf("got error %v, want any error=%v", err, tc.wantError)
-			}
 			if err != nil {
-				return
+				t.Fatalf("openELF got unexpected error: %v", err)
 			}
-			if got := o.Base(); got != tc.wantBase {
-				t.Errorf("got base %x; want %x\n", got, tc.wantBase)
+			got, err := o.ObjAddr(tc.addr)
+			if err != nil {
+				t.Fatalf("ObjAddr got unexpected error: %v", err)
+			}
+			if got != tc.wantObjAddr {
+				t.Errorf("got ObjAddr %x; want %x\n", got, tc.wantObjAddr)
 			}
 		})
 	}
