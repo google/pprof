@@ -58,7 +58,7 @@ func TestSyntheticSource(t *testing.T) {
 	makeLoc := func(name, fname string, line int64) *profile.Location {
 		return &profile.Location{
 			Line: []profile.Line{
-				profile.Line{
+				{
 					Function: &profile.Function{Name: name, Filename: fname},
 					Line:     line,
 				},
@@ -71,11 +71,11 @@ func TestSyntheticSource(t *testing.T) {
 	bar50 := makeLoc("bar", "bar.go", 50)
 	prof := &profile.Profile{
 		Sample: []*profile.Sample{
-			&profile.Sample{
+			{
 				Value:    []int64{9},
 				Location: []*profile.Location{foo100, bar50},
 			},
-			&profile.Sample{
+			{
 				Value:    []int64{17},
 				Location: []*profile.Location{bar50},
 			},

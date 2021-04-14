@@ -32,8 +32,8 @@ func TestSynthAddresses(t *testing.T) {
 
 func TestSynthAvoidsMapping(t *testing.T) {
 	s := &synthCode{mappings: []*profile.Mapping{
-		&profile.Mapping{Start: 100, Limit: 200},
-		&profile.Mapping{Start: 300, Limit: 400},
+		{Start: 100, Limit: 200},
+		{Start: 300, Limit: 400},
 	}}
 	loc := &profile.Location{}
 	addr := s.address(loc)
@@ -46,11 +46,11 @@ func TestSynthFrames(t *testing.T) {
 	s := &synthCode{}
 	loc := &profile.Location{
 		Line: []profile.Line{
-			profile.Line{
+			{
 				Function: &profile.Function{Name: "foo", Filename: "foo.cc"},
 				Line:     100,
 			},
-			profile.Line{
+			{
 				Function: &profile.Function{Name: "bar", Filename: "bar.cc"},
 				Line:     200,
 			},
