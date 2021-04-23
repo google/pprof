@@ -16,6 +16,8 @@ package binutils
 
 import (
 	"bytes"
+	"debug/elf"
+	"errors"
 	"fmt"
 	"math"
 	"path/filepath"
@@ -25,6 +27,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/pprof/internal/elfexec/testelf"
 	"github.com/google/pprof/internal/plugin"
 )
 
@@ -655,7 +658,230 @@ func TestObjdumpVersionChecks(t *testing.T) {
 	}
 }
 
-func TestOpenELF(t *testing.T) {
+func TestMatchUniqueHeader(t *testing.T) {
+	for _, tc := range []struct {
+		desc       string
+		headers    []*elf.ProgHeader
+		fileOffset uint64
+		wantError  bool
+		want       *elf.ProgHeader
+	}{
+		{
+			desc:      "no headers, want error",
+			headers:   nil,
+			wantError: true,
+		},
+		{
+			desc:       "one header, file offset is irrelevant",
+			headers:    []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0xc80, Memsz: 0xc80, Align: 0x200000}},
+			fileOffset: 0xdeadbeef,
+			want:       &elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0xc80, Memsz: 0xc80, Align: 0x200000},
+		},
+		{
+			desc: "three headers, BSS in last segment, file offset selects first header",
+			headers: []*elf.ProgHeader{
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0xc80, Memsz: 0xc80, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xc80, Vaddr: 0x200c80, Paddr: 0x200c80, Filesz: 0x1f0, Memsz: 0x1f0, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe70, Vaddr: 0x400e70, Paddr: 0x400e70, Filesz: 0x90, Memsz: 0x100, Align: 0x200000},
+			},
+			fileOffset: 0xc79,
+			want:       &elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0xc80, Memsz: 0xc80, Align: 0x200000},
+		},
+		{
+			desc: "three headers, BSS in last segment, file offset selects second header",
+			headers: []*elf.ProgHeader{
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0xc80, Memsz: 0xc80, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xc80, Vaddr: 0x200c80, Paddr: 0x200c80, Filesz: 0x1f0, Memsz: 0x1f0, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe70, Vaddr: 0x400e70, Paddr: 0x400e70, Filesz: 0x90, Memsz: 0x100, Align: 0x200000},
+			},
+			fileOffset: 0xc80,
+			want:       &elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xc80, Vaddr: 0x200c80, Paddr: 0x200c80, Filesz: 0x1f0, Memsz: 0x1f0, Align: 0x200000},
+		},
+		{
+			desc: "three headers, BSS in last segment, file offset selects third header",
+			headers: []*elf.ProgHeader{
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0xc80, Memsz: 0xc80, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xc80, Vaddr: 0x200c80, Paddr: 0x200c80, Filesz: 0x1f0, Memsz: 0x1f0, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe70, Vaddr: 0x400e70, Paddr: 0x400e70, Filesz: 0x90, Memsz: 0x100, Align: 0x200000},
+			},
+			fileOffset: 0xef0,
+			want:       &elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe70, Vaddr: 0x400e70, Paddr: 0x400e70, Filesz: 0x90, Memsz: 0x100, Align: 0x200000},
+		},
+		{
+			desc: "three headers, BSS in last segment, file offset in uninitialized section selects third header",
+			headers: []*elf.ProgHeader{
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0xc80, Memsz: 0xc80, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xc80, Vaddr: 0x200c80, Paddr: 0x200c80, Filesz: 0x1f0, Memsz: 0x1f0, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe70, Vaddr: 0x400e70, Paddr: 0x400e70, Filesz: 0x90, Memsz: 0x100, Align: 0x200000},
+			},
+			fileOffset: 0xf40,
+			want:       &elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe70, Vaddr: 0x400e70, Paddr: 0x400e70, Filesz: 0x90, Memsz: 0x100, Align: 0x200000},
+		},
+		{
+			desc: "three headers, BSS in last segment, file offset past any segment gives error",
+			headers: []*elf.ProgHeader{
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0xc80, Memsz: 0xc80, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xc80, Vaddr: 0x200c80, Paddr: 0x200c80, Filesz: 0x1f0, Memsz: 0x1f0, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe70, Vaddr: 0x400e70, Paddr: 0x400e70, Filesz: 0x90, Memsz: 0x100, Align: 0x200000},
+			},
+			fileOffset: 0xf70,
+			wantError:  true,
+		},
+		{
+			desc: "three headers, BSS in second segment, file offset in mapped section selects second header",
+			headers: []*elf.ProgHeader{
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0xc80, Memsz: 0xc80, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xc80, Vaddr: 0x200c80, Paddr: 0x200c80, Filesz: 0x100, Memsz: 0x1f0, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xd80, Vaddr: 0x400d80, Paddr: 0x400d80, Filesz: 0x100, Memsz: 0x100, Align: 0x200000},
+			},
+			fileOffset: 0xd79,
+			want:       &elf.ProgHeader{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xc80, Vaddr: 0x200c80, Paddr: 0x200c80, Filesz: 0x100, Memsz: 0x1f0, Align: 0x200000},
+		},
+		{
+			desc: "three headers, BSS in second segment, file offset in unmapped section gives error",
+			headers: []*elf.ProgHeader{
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0xc80, Memsz: 0xc80, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xc80, Vaddr: 0x200c80, Paddr: 0x200c80, Filesz: 0x100, Memsz: 0x1f0, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xd80, Vaddr: 0x400d80, Paddr: 0x400d80, Filesz: 0x100, Memsz: 0x100, Align: 0x200000},
+			},
+			fileOffset: 0xd80,
+			wantError:  true,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			got, err := matchUniqueHeader(tc.headers, tc.fileOffset)
+			if (err != nil) != tc.wantError {
+				t.Errorf("got error %v, want any error=%v", err, tc.wantError)
+			}
+			if err != nil {
+				return
+			}
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("got program header %#v, want %#v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestComputeBase(t *testing.T) {
+	realELFOpen := elfOpen
+	defer func() {
+		elfOpen = realELFOpen
+	}()
+	addHeaderTypeToELFFile := func(f *elf.File, ht elf.Type) *elf.File {
+		f.FileHeader = elf.FileHeader{Type: ht}
+		return f
+	}
+
+	for _, tc := range []struct {
+		desc       string
+		file       *elf.File
+		openErr    error
+		mapping    *elfMapping
+		addr       uint64
+		wantError  bool
+		wantBase   uint64
+		wantIsData bool
+	}{
+		{
+			desc:       "no elf mapping, no error",
+			mapping:    nil,
+			addr:       0x1000,
+			wantBase:   0,
+			wantIsData: false,
+		},
+		{
+			desc:      "address outside mapping bounds means error",
+			file:      &elf.File{},
+			mapping:   &elfMapping{start: 0x2000, limit: 0x5000, offset: 0x1000},
+			addr:      0x1000,
+			wantError: true,
+		},
+		{
+			desc:      "elf.Open failing means error",
+			file:      &elf.File{FileHeader: elf.FileHeader{Type: elf.ET_EXEC}},
+			openErr:   errors.New("elf.Open failed"),
+			mapping:   &elfMapping{start: 0x2000, limit: 0x5000, offset: 0x1000},
+			addr:      0x4000,
+			wantError: true,
+		},
+		{
+			desc:       "no loadable segments, no error",
+			file:       &elf.File{FileHeader: elf.FileHeader{Type: elf.ET_EXEC}},
+			mapping:    &elfMapping{start: 0x2000, limit: 0x5000, offset: 0x1000},
+			addr:       0x4000,
+			wantBase:   0,
+			wantIsData: false,
+		},
+		{
+			desc:      "unsupported executable type, Get Base returns error",
+			file:      &elf.File{FileHeader: elf.FileHeader{Type: elf.ET_NONE}},
+			mapping:   &elfMapping{start: 0x2000, limit: 0x5000, offset: 0x1000},
+			addr:      0x4000,
+			wantError: true,
+		},
+		{
+			desc:       "tiny file select executable segment by offset",
+			file:       addHeaderTypeToELFFile(&testelf.TinyFile, elf.ET_EXEC),
+			mapping:    &elfMapping{start: 0x5000000, limit: 0x5001000, offset: 0x0},
+			addr:       0x5000c00,
+			wantBase:   0x5000000,
+			wantIsData: false,
+		},
+		{
+			desc:       "tiny file select data segment by offset",
+			file:       addHeaderTypeToELFFile(&testelf.TinyFile, elf.ET_EXEC),
+			mapping:    &elfMapping{start: 0x5200000, limit: 0x5201000, offset: 0x0},
+			addr:       0x5200c80,
+			wantBase:   0x5000000,
+			wantIsData: true,
+		},
+		{
+			desc:      "tiny file offset outside any segment means error",
+			file:      addHeaderTypeToELFFile(&testelf.TinyFile, elf.ET_EXEC),
+			mapping:   &elfMapping{start: 0x5200000, limit: 0x5201000, offset: 0x0},
+			addr:      0x5200e70,
+			wantError: true,
+		},
+		{
+			desc:       "tiny file with bad BSS segment selects data segment by offset in initialized section",
+			file:       addHeaderTypeToELFFile(&testelf.TinyBadBSSFile, elf.ET_EXEC),
+			mapping:    &elfMapping{start: 0x5200000, limit: 0x5201000, offset: 0x0},
+			addr:       0x5200d79,
+			wantBase:   0x5000000,
+			wantIsData: true,
+		},
+		{
+			desc:      "tiny file with bad BSS segment with offset in uninitialized section means error",
+			file:      addHeaderTypeToELFFile(&testelf.TinyBadBSSFile, elf.ET_EXEC),
+			mapping:   &elfMapping{start: 0x5200000, limit: 0x5201000, offset: 0x0},
+			addr:      0x5200d80,
+			wantError: true,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			elfOpen = func(_ string) (*elf.File, error) {
+				return tc.file, tc.openErr
+			}
+			f := file{m: tc.mapping}
+			err := f.computeBase(tc.addr)
+			if (err != nil) != tc.wantError {
+				t.Errorf("got error %v, want any error=%v", err, tc.wantError)
+			}
+			if err != nil {
+				return
+			}
+			if f.base != tc.wantBase {
+				t.Errorf("got base %x, want %x", f.base, tc.wantBase)
+			}
+			if f.isData != tc.wantIsData {
+				t.Errorf("got isData %v, want %v", f.isData, tc.wantIsData)
+			}
+		})
+	}
+}
+
+func TestELFObjAddr(t *testing.T) {
 	// The exe_linux_64 has two loadable program headers:
 	//  LOAD           0x0000000000000000 0x0000000000400000 0x0000000000400000
 	//                 0x00000000000006fc 0x00000000000006fc  R E    0x200000
@@ -666,20 +892,35 @@ func TestOpenELF(t *testing.T) {
 	for _, tc := range []struct {
 		desc                 string
 		start, limit, offset uint64
+		wantOpenError        bool
 		addr                 uint64
 		wantObjAddr          uint64
+		wantAddrError        bool
 	}{
-		{"exec mapping", 0x5400000, 0x5401000, 0, 0x5400400, 0x400400},
+		{"exec mapping, good address", 0x5400000, 0x5401000, 0, false, 0x5400400, 0x400400, false},
+		{"exec mapping, address outside segment", 0x5400000, 0x5401000, 0, false, 0x5400800, 0x400800, false},
+		{"short data mapping, good address", 0x5600e00, 0x5602000, 0xe00, false, 0x5600e10, 0x600e10, false},
+		{"short data mapping, address outside segment", 0x5600e00, 0x5602000, 0xe00, false, 0x5600e00, 0x600e00, false},
+		{"page aligned data mapping, good address", 0x5600000, 0x5602000, 0, false, 0x5601000, 0x601000, false},
+		{"page aligned data mapping, address outside segment", 0x5600000, 0x5602000, 0, false, 0x5601048, 0x601048, false},
+		{"bad file offset, no matching segment", 0x5600000, 0x5602000, 0x2000, false, 0x5600e10, 0, true},
+		{"large mapping size, match by sample offset", 0x5600000, 0x5603000, 0, false, 0x5600e10, 0x600e10, false},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			b := binrep{}
 			o, err := b.openELF(name, tc.start, tc.limit, tc.offset)
+			if (err != nil) != tc.wantOpenError {
+				t.Errorf("openELF got error %v, want any error=%v", err, tc.wantOpenError)
+			}
 			if err != nil {
-				t.Fatalf("openELF got unexpected error: %v", err)
+				return
 			}
 			got, err := o.ObjAddr(tc.addr)
+			if (err != nil) != tc.wantAddrError {
+				t.Errorf("ObjAddr got error %v, want any error=%v", err, tc.wantAddrError)
+			}
 			if err != nil {
-				t.Fatalf("ObjAddr got unexpected error: %v", err)
+				return
 			}
 			if got != tc.wantObjAddr {
 				t.Errorf("got ObjAddr %x; want %x\n", got, tc.wantObjAddr)
