@@ -54,9 +54,26 @@ func TestWebList(t *testing.T) {
 	}
 }
 
-func TestSyntheticSource(t *testing.T) {
+func TestSourceSyntheticAddress(t *testing.T) {
+	testSourceMapping(t, true)
+}
+
+func TestSourceMissingMapping(t *testing.T) {
+	testSourceMapping(t, false)
+}
+
+// testSourceMapping checks that source info is found even when no applicable
+// Mapping/objectFile exists. The locations used in the test are either zero
+// (if zeroAddress is true), or non-zero (otherwise).
+func testSourceMapping(t *testing.T, zeroAddress bool) {
+	nextAddr := uint64(0)
+
 	makeLoc := func(name, fname string, line int64) *profile.Location {
+		if !zeroAddress {
+			nextAddr++
+		}
 		return &profile.Location{
+			Address: nextAddr,
 			Line: []profile.Line{
 				{
 					Function: &profile.Function{Name: name, Filename: fname},

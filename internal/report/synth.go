@@ -13,7 +13,7 @@ const synthAsm = ""
 type synthCode struct {
 	mappings mappingList
 	next     uint64                       // Counter used to generate synthesized addresses.
-	loc      map[uint64]*profile.Location // Location for each synthesized address
+	loc      map[uint64]*profile.Location // Location for registered addresses.
 	addr     map[*profile.Location]uint64 // Synthesized address assigned to a location
 }
 
@@ -22,9 +22,7 @@ func (s *synthCode) address(loc *profile.Location) uint64 {
 	if addr, ok := s.addr[loc]; ok {
 		return addr
 	}
-
-	if s.loc == nil {
-		s.loc = map[uint64]*profile.Location{}
+	if s.addr == nil {
 		s.addr = map[*profile.Location]uint64{}
 
 		// Initialize counter for assigning synthetic addresses.
@@ -35,16 +33,25 @@ func (s *synthCode) address(loc *profile.Location) uint64 {
 			s.next = 1
 		}
 	}
-
 	addr := s.next
 	s.next++
-	s.loc[addr] = loc
 	s.addr[loc] = addr
 	return addr
 }
 
-// contains returns true if addr is a synthesized address.
-func (s *synthCode) contains(addr uint64) bool {
+// registerAddress records the location for addr.
+func (s *synthCode) registerAddress(addr uint64, loc *profile.Location) {
+	if _, ok := s.loc[addr]; ok {
+		return
+	}
+	if s.loc == nil {
+		s.loc = map[uint64]*profile.Location{}
+	}
+	s.loc[addr] = loc
+}
+
+// hasLoc returns true if a location is registered for adr.
+func (s *synthCode) hasLoc(addr uint64) bool {
 	_, ok := s.loc[addr]
 	return ok
 }

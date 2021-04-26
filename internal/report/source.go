@@ -139,6 +139,7 @@ type sourcePrinter struct {
 	sym        *regexp.Regexp             // May be nil
 	files      map[string]*sourceFile     // Set of files to print.
 	insts      map[uint64]instructionInfo // Instructions of interest (keyed by address).
+	addr2obj   map[uint64]plugin.ObjFile
 
 	// Set of function names that we are interested in (because they had
 	// a sample and match sym).
@@ -214,6 +215,7 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 		synth:       synthCode{mappings: mappings},
 		objectTool:  obj,
 		objects:     map[string]plugin.ObjFile{},
+		addr2obj:    map[uint64]plugin.ObjFile{},
 		sym:         rpt.options.Symbol,
 		files:       map[string]*sourceFile{},
 		insts:       map[uint64]instructionInfo{},
@@ -235,14 +237,14 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 	cum := map[uint64]int64{}
 
 	// Record an interest in the function corresponding to lines[index].
-	markInterest := func(addr uint64, lines []profile.Line, index int) {
-		fn := lines[index]
+	markInterest := func(addr uint64, loc *profile.Location, index int) {
+		fn := loc.Line[index]
 		if fn.Function == nil {
 			return
 		}
 		sp.interest[fn.Function.Name] = true
 		sp.interest[fn.Function.SystemName] = true
-		addrs[addr] = true
+		sp.registerAddress(addrs, addr, loc)
 	}
 
 	// See if sp.sym matches line.
@@ -276,8 +278,8 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 			}
 
 			addr := loc.Address
-			if sp.mappings.find(addr) == nil {
-				// Some profiles are missing mapping info, or have bogus addresses.
+			if addr == 0 {
+				// Some profiles are missing valid addresses.
 				addr = sp.synth.address(loc)
 			}
 
@@ -289,7 +291,7 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 			if sp.sym == nil || (address != nil && addr == *address) {
 				// Interested in top-level entry of stack.
 				if len(loc.Line) > 0 {
-					markInterest(addr, loc.Line, len(loc.Line)-1)
+					markInterest(addr, loc, len(loc.Line)-1)
 				}
 				continue
 			}
@@ -298,7 +300,7 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 			matchFile := (loc.Mapping != nil && sp.sym.MatchString(loc.Mapping.File))
 			for j, line := range loc.Line {
 				if (j == 0 && matchFile) || matches(line) {
-					markInterest(addr, loc.Line, j)
+					markInterest(addr, loc, j)
 				}
 			}
 		}
@@ -315,6 +317,27 @@ func (sp *sourcePrinter) close() {
 			objFile.Close()
 		}
 	}
+}
+
+// registerAddress marks addr as an address we are interested in.
+func (sp *sourcePrinter) registerAddress(addrs map[uint64]bool, addr uint64, loc *profile.Location) {
+	if addrs[addr] {
+		return // Already seen
+	}
+
+	addrs[addr] = true
+	m := loc.Mapping
+	if m == nil {
+		m = sp.mappings.find(addr)
+	}
+	if m != nil {
+		obj := sp.objectFile(m)
+		if obj != nil {
+			sp.addr2obj[addr] = obj
+			return
+		}
+	}
+	sp.synth.registerAddress(addr, loc)
 }
 
 func (sp *sourcePrinter) expandAddresses(rpt *Report, addrs map[uint64]bool, flat map[uint64]int64) {
@@ -475,7 +498,7 @@ func (sp *sourcePrinter) splitIntoRanges(prof *profile.Profile, set map[uint64]b
 	var synth []uint64
 	addrs := make([]uint64, 0, len(set))
 	for addr := range set {
-		if sp.synth.contains(addr) {
+		if sp.synth.hasLoc(addr) {
 			synth = append(synth, addr)
 		} else {
 			addrs = append(addrs, addr)
@@ -491,12 +514,10 @@ func (sp *sourcePrinter) splitIntoRanges(prof *profile.Profile, set map[uint64]b
 
 		m := sp.mappings.find(begin)
 		if m == nil {
-			// TODO(sanjay): Report missed address and its samples.
 			continue
 		}
-		obj := sp.objectFile(m)
+		obj := sp.addr2obj[begin]
 		if obj == nil {
-			// TODO(sanjay): Report missed address and its samples.
 			continue
 		}
 

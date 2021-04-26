@@ -15,12 +15,6 @@ func TestSynthAddresses(t *testing.T) {
 	if s.address(l1) != addr1 {
 		t.Errorf("different calls with same location returned different addresses")
 	}
-	if !s.contains(addr1) {
-		t.Errorf("does not contain known synthetic address")
-	}
-	if s.contains(addr1 + 1) {
-		t.Errorf("contains unknown synthetic address")
-	}
 
 	l2 := &profile.Location{}
 	addr2 := s.address(l2)
@@ -56,7 +50,15 @@ func TestSynthFrames(t *testing.T) {
 			},
 		},
 	}
-	frames := s.frames(s.address(loc))
+	addr := s.address(loc)
+	s.registerAddress(addr, loc)
+	if !s.hasLoc(addr) {
+		t.Errorf("does not contain known synthetic address")
+	}
+	if s.hasLoc(addr + 1) {
+		t.Errorf("contains unknown synthetic address")
+	}
+	frames := s.frames(addr)
 	expect := []plugin.Frame{
 		{Func: "foo", File: "foo.cc", Line: 100},
 		{Func: "bar", File: "bar.cc", Line: 200},
