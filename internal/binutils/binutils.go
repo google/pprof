@@ -147,7 +147,7 @@ func initTools(b *binrep, config string) {
 	b.addr2line, b.addr2lineFound = chooseExe([]string{"addr2line"}, []string{"gaddr2line"}, append(paths["addr2line"], defaultPath...))
 	// The "-n" option is supported by LLVM since 2011. The output of llvm-nm
 	// and GNU nm with "-n" option is interchangeable for our purposes, so we do
-	// not need to differrentiate them.
+	// not need to differentiate them.
 	b.nm, b.nmFound = chooseExe([]string{"llvm-nm", "nm"}, []string{"gnm"}, append(paths["nm"], defaultPath...))
 	b.objdump, b.objdumpFound, b.isLLVMObjdump = findObjdump(append(paths["objdump"], defaultPath...))
 }
