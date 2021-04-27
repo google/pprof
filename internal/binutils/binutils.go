@@ -711,6 +711,8 @@ func (f *fileAddr2Line) init() {
 		// When addr2line encounters some gcc compiled binaries, it
 		// drops interesting parts of names in anonymous namespaces.
 		// Fallback to NM for better function names.
+		// This seems to have been fixed in binutils 2.26 though, see
+		// https://sourceware.org/bugzilla/show_bug.cgi?id=17541
 		if nm, err := newAddr2LinerNM(f.b.nm, f.name, f.base); err == nil {
 			f.addr2liner.nm = nm
 		}
