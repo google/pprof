@@ -2,7 +2,7 @@ name: ci
 on: 
   push:
     branches:
-      - master
+      - ga_fail
   pull_request:
   schedule:
     - cron: '0 2 * * *' # Run every day, at 2AM UTC.
@@ -12,11 +12,11 @@ env:
 jobs:
   test-mac:
     runs-on: ${{ matrix.os }} 
-    continue-on-error: true
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIR }}
     strategy:
+      fail-fast: false
       matrix:
         go: ['1.15', '1.16', 'tip']
         # Supported macOS versions can be found in
@@ -53,6 +53,7 @@ jobs:
           xcode-version: ${{ matrix.xcode-version }}
 
       - name: Fetch dependencies
+        if: matrix.go != 'tip'
         run: |
           brew install graphviz
           # Do not let tools interfere with the main module's go.mod.
@@ -82,11 +83,11 @@ jobs:
 
   test-linux:
     runs-on: ${{ matrix.os }}
-    continue-on-error: true
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIR }} 
     strategy:
+      fail-fast: false
       matrix:
         go: ['1.15', '1.16', 'tip']
         os: ['ubuntu-20.04', 'ubuntu-18.04', 'ubuntu-16.04'] 
@@ -143,6 +144,7 @@ jobs:
   test-windows:
     runs-on: windows-2019
     strategy:
+      fail-fast: false
       matrix:
         go: ['1.15', '1.16']
     steps:
