@@ -2,7 +2,7 @@ name: ci
 on: 
   push:
     branches:
-      - ga_fail
+      - master
   pull_request:
   schedule:
     - cron: '0 2 * * *' # Run every day, at 2AM UTC.
@@ -53,7 +53,6 @@ jobs:
           xcode-version: ${{ matrix.xcode-version }}
 
       - name: Fetch dependencies
-        if: matrix.go != 'tip'
         run: |
           brew install graphviz
           # Do not let tools interfere with the main module's go.mod.
