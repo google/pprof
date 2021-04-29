@@ -321,9 +321,18 @@ func (sp *sourcePrinter) expandAddresses(rpt *Report, addrs map[uint64]bool, fla
 	}
 
 	for _, r := range ranges {
-		base := r.obj.Base()
-		insts, err := sp.objectTool.Disasm(r.mapping.File, r.begin-base, r.end-base,
-			rpt.options.IntelSyntax)
+		objBegin, err := r.obj.ObjAddr(r.begin)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to compute objdump address for range start %x: %v\n", r.begin, err)
+			continue
+		}
+		objEnd, err := r.obj.ObjAddr(r.end)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to compute objdump address for range end %x: %v\n", r.end, err)
+			continue
+		}
+		base := r.begin - objBegin
+		insts, err := sp.objectTool.Disasm(r.mapping.File, objBegin, objEnd, rpt.options.IntelSyntax)
 		if err != nil {
 			// TODO(sanjay): Report that the covered addresses are missing.
 			continue

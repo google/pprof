@@ -1619,9 +1619,9 @@ func (m *mockFile) Name() string {
 	return m.name
 }
 
-// Base returns the base address to use when looking up symbols in the file.
-func (m *mockFile) Base() uint64 {
-	return m.base
+// ObjAddr returns the objdump address corresponding to a runtime address.
+func (m *mockFile) ObjAddr(addr uint64) (uint64, error) {
+	return addr - m.base, nil
 }
 
 // BuildID returns the GNU build ID of the file, or an empty string.
