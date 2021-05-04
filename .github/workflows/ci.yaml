@@ -12,11 +12,11 @@ env:
 jobs:
   test-mac:
     runs-on: ${{ matrix.os }} 
-    continue-on-error: true
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIR }}
     strategy:
+      fail-fast: false
       matrix:
         go: ['1.15', '1.16', 'tip']
         # Supported macOS versions can be found in
@@ -82,11 +82,11 @@ jobs:
 
   test-linux:
     runs-on: ${{ matrix.os }}
-    continue-on-error: true
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIR }} 
     strategy:
+      fail-fast: false
       matrix:
         go: ['1.15', '1.16', 'tip']
         os: ['ubuntu-20.04', 'ubuntu-18.04', 'ubuntu-16.04'] 
@@ -143,6 +143,7 @@ jobs:
   test-windows:
     runs-on: windows-2019
     strategy:
+      fail-fast: false
       matrix:
         go: ['1.15', '1.16']
     steps:
