@@ -23,6 +23,9 @@ func newSynthCode(mappings []*profile.Mapping) *synthCode {
 
 // address returns the synthetic address for loc, creating one if needed.
 func (s *synthCode) address(loc *profile.Location) uint64 {
+	if loc.Address != 0 {
+		panic("can only synthesize addresses for locations without an address")
+	}
 	if addr, ok := s.addr[loc]; ok {
 		return addr
 	}
