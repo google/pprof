@@ -62,9 +62,12 @@ type binrep struct {
 	objdump             string
 	objdumpFound        bool
 	isLLVMObjdump       bool
+	llvmGsymUtil        string
+	llvmGsymUtilFound   bool
 
 	// if fast, perform symbolization using nm (symbol names only),
 	// instead of file-line detail from the slower addr2line.
+	// TODO update the comment and handling depending on whether llvm-gsymutil is as fast as nm
 	fast bool
 }
 
@@ -98,7 +101,7 @@ func (bu *Binutils) update(fn func(r *binrep)) {
 // String returns string representation of the binutils state for debug logging.
 func (bu *Binutils) String() string {
 	r := bu.get()
-	var llvmSymbolizer, addr2line, nm, objdump string
+	var llvmSymbolizer, addr2line, nm, objdump, llvmGsymUtil string
 	if r.llvmSymbolizerFound {
 		llvmSymbolizer = r.llvmSymbolizer
 	}
@@ -111,13 +114,17 @@ func (bu *Binutils) String() string {
 	if r.objdumpFound {
 		objdump = r.objdump
 	}
-	return fmt.Sprintf("llvm-symbolizer=%q addr2line=%q nm=%q objdump=%q fast=%t",
-		llvmSymbolizer, addr2line, nm, objdump, r.fast)
+	if r.llvmGsymUtilFound {
+		llvmGsymUtil = r.llvmGsymUtil
+	}
+	return fmt.Sprintf("llvm-symbolizer=%q addr2line=%q nm=%q objdump=%q llvmGsymUtil=%q fast=%t",
+		llvmSymbolizer, addr2line, nm, objdump, llvmGsymUtil, r.fast)
 }
 
 // SetFastSymbolization sets a toggle that makes binutils use fast
 // symbolization (using nm), which is much faster than addr2line but
 // provides only symbol name information (no file/line).
+// TODO update the comment and handling depending on whether llvm-gsymutil is as fast as nm
 func (bu *Binutils) SetFastSymbolization(fast bool) {
 	bu.update(func(r *binrep) { r.fast = fast })
 }
@@ -150,6 +157,13 @@ func initTools(b *binrep, config string) {
 	// not need to differentiate them.
 	b.nm, b.nmFound = chooseExe([]string{"llvm-nm", "nm"}, []string{"gnm"}, append(paths["nm"], defaultPath...))
 	b.objdump, b.objdumpFound, b.isLLVMObjdump = findObjdump(append(paths["objdump"], defaultPath...))
+	b.llvmGsymUtil, b.llvmGsymUtilFound = chooseExe([]string{"llvm-gsymutil"}, []string{}, append(paths["llvm-gsymutil"], defaultPath...))
+
+	if !b.llvmGsymUtilFound {
+		fmt.Println("llvm-gsymutil not found")
+
+		os.Exit(3)
+	}
 }
 
 // findObjdump finds and returns path to preferred objdump binary.
@@ -681,6 +695,7 @@ type fileAddr2Line struct {
 	file
 	addr2liner     *addr2Liner
 	llvmSymbolizer *llvmSymbolizer
+	llvmGsymUtil   *llvmGsymUtil
 	isData         bool
 }
 
@@ -690,6 +705,10 @@ func (f *fileAddr2Line) SourceLine(addr uint64) ([]plugin.Frame, error) {
 		return nil, f.baseErr
 	}
 	f.once.Do(f.init)
+	// TODO only use this if we have a matching gsym file!
+	if f.llvmGsymUtil != nil {
+		return f.llvmGsymUtil.addrInfo(addr)
+	}
 	if f.llvmSymbolizer != nil {
 		return f.llvmSymbolizer.addrInfo(addr)
 	}
@@ -700,6 +719,15 @@ func (f *fileAddr2Line) SourceLine(addr uint64) ([]plugin.Frame, error) {
 }
 
 func (f *fileAddr2Line) init() {
+	if llvmGsymUtil, err := newLLVMGsymUtil(f.b.llvmGsymUtil, f.name, f.base, f.isData); err == nil {
+		f.llvmGsymUtil = llvmGsymUtil
+
+		// For testing
+		return
+	}
+
+	fmt.Println("newLLVMGsymUtil failed")
+
 	if llvmSymbolizer, err := newLLVMSymbolizer(f.b.llvmSymbolizer, f.name, f.base, f.isData); err == nil {
 		f.llvmSymbolizer = llvmSymbolizer
 		return
@@ -720,6 +748,9 @@ func (f *fileAddr2Line) init() {
 }
 
 func (f *fileAddr2Line) Close() error {
+	if f.llvmGsymUtil != nil {
+		f.llvmGsymUtil = nil
+	}
 	if f.llvmSymbolizer != nil {
 		f.llvmSymbolizer.rw.close()
 		f.llvmSymbolizer = nil
