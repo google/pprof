@@ -376,7 +376,7 @@ table tr td {
 
   <div id="download" class="menu-item">
     <div class="menu-name">
-			<a href="./download">Download</a>
+      <a href="./download">Download</a>
     </div>
   </div>
 
