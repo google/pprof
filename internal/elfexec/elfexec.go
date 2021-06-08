@@ -284,10 +284,11 @@ func FindTextProgHeader(f *elf.File) *elf.ProgHeader {
 	return nil
 }
 
-// ProgramHeadersForMapping returns the loadable program segment headers that
-// are fully contained in the runtime mapping with file offset pgoff and memory
-// size memsz, and if the binary includes any loadable segments.
-func ProgramHeadersForMapping(f *elf.File, pgoff, memsz uint64) ([]*elf.ProgHeader, bool) {
+// ProgramHeadersForMapping returns the program segment headers that are fully
+// contained in the runtime mapping with file offset pgoff and memory size
+// memsz. The function returns a slice of pointers to the headers in the input
+// slice, which are valid only while phdrs is not modified or discarded.
+func ProgramHeadersForMapping(phdrs []elf.ProgHeader, pgoff, memsz uint64) []*elf.ProgHeader {
 	const (
 		// pageSize defines the virtual memory page size used by the loader. This
 		// value is dependent on the memory management unit of the CPU. The page
@@ -301,8 +302,8 @@ func ProgramHeadersForMapping(f *elf.File, pgoff, memsz uint64) ([]*elf.ProgHead
 		pageMask       = ^uint64(pageOffsetMask)
 	)
 	var headers []*elf.ProgHeader
-	hasLoadables := false
-	for _, p := range f.Progs {
+	for i := range phdrs {
+		p := &phdrs[i]
 		// The segment must be fully included in the mapping.
 		if p.Type == elf.PT_LOAD && pgoff <= p.Off && p.Off+p.Memsz <= pgoff+memsz {
 			alignedOffset := uint64(0)
@@ -310,15 +311,12 @@ func ProgramHeadersForMapping(f *elf.File, pgoff, memsz uint64) ([]*elf.ProgHead
 				alignedOffset = p.Off - (p.Vaddr & pageOffsetMask)
 			}
 			if alignedOffset <= pgoff {
-				headers = append(headers, &p.ProgHeader)
+				headers = append(headers, p)
 			}
-		}
-		if p.Type == elf.PT_LOAD {
-			hasLoadables = true
 		}
 	}
 	if len(headers) < 2 {
-		return headers, hasLoadables
+		return headers
 	}
 
 	// If we have more than one matching segments, try a strict check on the
@@ -327,7 +325,7 @@ func ProgramHeadersForMapping(f *elf.File, pgoff, memsz uint64) ([]*elf.ProgHead
 	// The memory size based heuristic makes sense only if the mapping size is a
 	// multiple of page size.
 	if memsz%pageSize != 0 {
-		return headers, hasLoadables
+		return headers
 	}
 
 	// Return all found headers if we cannot narrow the selection to a single
@@ -341,14 +339,36 @@ func ProgramHeadersForMapping(f *elf.File, pgoff, memsz uint64) ([]*elf.ProgHead
 		if ph != nil {
 			// Found a second program header matching, so return all previously
 			// identified headers.
-			return headers, hasLoadables
+			return headers
 		}
 		ph = h
 	}
 	if ph == nil {
 		// No matching header for the strict check. Return all previously identified
 		// headers.
-		return headers, hasLoadables
+		return headers
 	}
-	return []*elf.ProgHeader{ph}, hasLoadables
+	return []*elf.ProgHeader{ph}
+}
+
+// HeaderForFileOffset attempts to identify a unique program header that
+// includes the given file offset. It returns an error if it cannot identify a
+// unique header.
+func HeaderForFileOffset(headers []*elf.ProgHeader, fileOffset uint64) (*elf.ProgHeader, error) {
+	var ph *elf.ProgHeader
+	for _, h := range headers {
+		if fileOffset >= h.Off && fileOffset < h.Off+h.Memsz {
+			if ph != nil {
+				// Assuming no other bugs, this can only happen if we have two or
+				// more small program segments that fit on the same page, and a
+				// segment other than the last one includes uninitialized data.
+				return nil, fmt.Errorf("found second program header (%#v) that matches file offset %x, first program header is %#v. Does first program segment contain uninitialized data?", *h, fileOffset, *ph)
+			}
+			ph = h
+		}
+	}
+	if ph == nil {
+		return nil, fmt.Errorf("no program header matches file offset %x", fileOffset)
+	}
+	return ph, nil
 }
