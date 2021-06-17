@@ -158,12 +158,7 @@ func initTools(b *binrep, config string) {
 	b.nm, b.nmFound = chooseExe([]string{"llvm-nm", "nm"}, []string{"gnm"}, append(paths["nm"], defaultPath...))
 	b.objdump, b.objdumpFound, b.isLLVMObjdump = findObjdump(append(paths["objdump"], defaultPath...))
 	b.llvmGsymUtil, b.llvmGsymUtilFound = chooseExe([]string{"llvm-gsymutil"}, []string{}, append(paths["llvm-gsymutil"], defaultPath...))
-
-	if !b.llvmGsymUtilFound {
-		fmt.Println("llvm-gsymutil not found")
-
-		os.Exit(3)
-	}
+	// TODO check if llvm-gsymutil is recent enough to support --addresses-from-stdin
 }
 
 // findObjdump finds and returns path to preferred objdump binary.
@@ -705,7 +700,6 @@ func (f *fileAddr2Line) SourceLine(addr uint64) ([]plugin.Frame, error) {
 		return nil, f.baseErr
 	}
 	f.once.Do(f.init)
-	// TODO only use this if we have a matching gsym file!
 	if f.llvmGsymUtil != nil {
 		return f.llvmGsymUtil.addrInfo(addr)
 	}
@@ -719,14 +713,12 @@ func (f *fileAddr2Line) SourceLine(addr uint64) ([]plugin.Frame, error) {
 }
 
 func (f *fileAddr2Line) init() {
-	if llvmGsymUtil, err := newLLVMGsymUtil(f.b.llvmGsymUtil, f.name, f.base, f.isData); err == nil {
-		f.llvmGsymUtil = llvmGsymUtil
-
-		// For testing
-		return
+	if _, err := os.Stat(f.name + ".gsym"); err == nil {
+		if llvmGsymUtil, err := newLLVMGsymUtil(f.b.llvmGsymUtil, f.name, f.base, f.isData); err == nil {
+			f.llvmGsymUtil = llvmGsymUtil
+			return
+		}
 	}
-
-	fmt.Println("newLLVMGsymUtil failed")
 
 	if llvmSymbolizer, err := newLLVMSymbolizer(f.b.llvmSymbolizer, f.name, f.base, f.isData); err == nil {
 		f.llvmSymbolizer = llvmSymbolizer

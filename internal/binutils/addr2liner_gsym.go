@@ -1,4 +1,4 @@
-// Copyright 2014 Google Inc. All Rights Reserved.
+// Copyright 2021 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,6 +30,12 @@ import (
 const (
 	defaultLLVMGsymUtil = "llvm-gsymutil"
 )
+
+var prefixRegex *regexp.Regexp = regexp.MustCompile(`^(0x[[:xdigit:]]+:\s|\s+)`)
+
+// Matches output lines like:
+// _ZNK2sf12RefCountBaseILb0EE9removeRefEv + 3 @ /home/user/repo/x/../src/foo/Bar.hpp:67 [inlined]
+var frameRegex *regexp.Regexp = regexp.MustCompile(`(\S+).* @ (.*):([[:digit:]]+)`)
 
 // llvmGsymUtil is a connection to an llvm-symbolizer command for
 // obtaining address and line number information from a binary.
@@ -111,17 +117,8 @@ func (d *llvmGsymUtil) readFrame() (plugin.Frame, bool) {
 		return plugin.Frame{}, true
 	}
 
-	print("read line: " + line + "\n")
-
-	// TODO compile regexes once
-	prefixRegex := regexp.MustCompile(`^(0x[[:xdigit:]]+:\s|\s+)`)
-	// _ZNK2sf12RefCountBaseILb0EE9removeRefEv + 3 @ /home/sgiesecke/Snowflake/trunk/ExecPlatform/build/ReleaseClangLTO/../../src/core/ptr/RefCountBase.hpp:67 [inlined]
-	frameRegex := regexp.MustCompile(`(\S+).* @ (.*):([[:digit:]]+)`)
-
 	// The first frame contains an address: prefix. We don't need that. The remaining frames start with spaces.
 	suffix := prefixRegex.ReplaceAllString(line, "")
-
-	print("suffix is: " + suffix + "\n")
 
 	if strings.HasPrefix(suffix, "error:") {
 		// Skip empty line that follows.
@@ -131,8 +128,6 @@ func (d *llvmGsymUtil) readFrame() (plugin.Frame, bool) {
 
 	frameMatch := frameRegex.FindStringSubmatch(suffix)
 	if frameMatch == nil {
-		print("frame regex didn't match\n")
-
 		return plugin.Frame{}, true
 	}
 
@@ -156,8 +151,6 @@ func (d *llvmGsymUtil) readFrame() (plugin.Frame, bool) {
 func (d *llvmGsymUtil) addrInfo(addr uint64) ([]plugin.Frame, error) {
 	d.Lock()
 	defer d.Unlock()
-
-	print("querying gsym: " + fmt.Sprintf("0x%x %s.gsym", addr-d.base, d.filename) + "\n")
 
 	if err := d.rw.write(fmt.Sprintf("0x%x %s.gsym", addr-d.base, d.filename)); err != nil {
 		return nil, err
