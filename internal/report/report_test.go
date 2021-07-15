@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"regexp"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/google/pprof/internal/binutils"
@@ -94,6 +95,54 @@ func TestSource(t *testing.T) {
 			}
 			t.Error("source" + "\n" + string(d) + "\n" + "gold:\n" + tc.want)
 		}
+	}
+}
+
+// TestFilter ensures that commands with a regexp filter argument return an
+// error if there are no results.
+func TestFilter(t *testing.T) {
+	const filter = "doesNotExist"
+
+	tests := []struct {
+		name   string
+		format int
+	}{
+		{
+			name:   "list",
+			format: List,
+		},
+		{
+			name:   "weblist",
+			format: WebList,
+		},
+		{
+			name:   "disasm",
+			format: Dis,
+		},
+		{
+			// N.B. Tree with a Symbol is "peek".
+			name:   "peek",
+			format: Tree,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rpt := New(testProfile.Copy(), &Options{
+				OutputFormat: tc.format,
+				Symbol:       regexp.MustCompile(filter),
+				SampleValue:  func(v []int64) int64 { return v[1] },
+				SampleUnit:   testProfile.SampleType[1].Unit,
+			})
+
+			var buf bytes.Buffer
+			err := Generate(&buf, rpt, &binutils.Binutils{})
+			if err == nil {
+				t.Fatalf("Generate got nil, want error; buf = %s", buf.String())
+			}
+			if !strings.Contains(err.Error(), filter) {
+				t.Errorf("Error got %v, want it to contain %q", err, filter)
+			}
+		})
 	}
 }
 
