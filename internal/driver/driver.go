@@ -99,6 +99,7 @@ func generateRawReport(p *profile.Profile, cmd []string, cfg config, o *plugin.O
 			return nil, nil, err
 		}
 	}
+	addRootLeafTagsAsLocations(p, cfg, o.UI)
 	if err := aggregate(p, cfg); err != nil {
 		return nil, nil, err
 	}
@@ -341,4 +342,10 @@ func valueExtractor(ix int) sampleValueFunc {
 	return func(v []int64) int64 {
 		return v[ix]
 	}
+}
+
+func addRootLeafTagsAsLocations(p *profile.Profile, cfg config, ui plugin.UI) {
+	tr, tl := p.AddRootLeafTagsAsLocations(cfg.TagRoot, cfg.TagLeaf)
+	warnNoMatches(len(cfg.TagRoot) == 0 || tr, "TagRoot", ui)
+	warnNoMatches(len(cfg.TagLeaf) == 0 || tl, "TagLeaf", ui)
 }

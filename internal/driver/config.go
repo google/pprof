@@ -29,6 +29,8 @@ type config struct {
 	DivideBy            float64 `json:"-"`
 	Normalize           bool    `json:"normalize,omitempty"`
 	Sort                string  `json:"sort,omitempty"`
+	TagLeaf             string  `json:"tagleaf,omitempty"`
+	TagRoot             string  `json:"tagroot,omitempty"`
 
 	// Filtering options
 	DropNegative bool    `json:"drop_negative,omitempty"`
@@ -145,6 +147,8 @@ func init() {
 		"show_from":            "sf",
 		"tagfocus":             "tf",
 		"tagignore":            "ti",
+		"tagleaf":              "tl",
+		"tagroot":              "tr",
 		"tagshow":              "ts",
 		"taghide":              "th",
 		"mean":                 "mean",
