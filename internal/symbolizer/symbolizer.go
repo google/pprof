@@ -150,6 +150,11 @@ func doLocalSymbolize(prof *profile.Profile, fast, force bool, obj plugin.ObjToo
 
 		stack, err := segment.SourceLine(l.Address)
 		if err != nil || len(stack) == 0 {
+
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+
 			// No answers from addr2line.
 			continue
 		}
