@@ -173,6 +173,19 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 		{Type: elf.PT_TLS, Flags: elf.PF_R, Off: 0x2ec5d2c0, Vaddr: 0x2ee5d2c0, Paddr: 0x2ee5d2c0, Filesz: 0x120, Memsz: 0x103f8, Align: 0x40},
 		{Type: elf.PT_DYNAMIC, Flags: elf.PF_R | elf.PF_W, Off: 0x2ffbc9e0, Vaddr: 0x301bc9e0, Paddr: 0x301bc9e0, Filesz: 0x1f0, Memsz: 0x1f0, Align: 8},
 	}
+	ffmpegHeaders := []elf.ProgHeader{
+		{Type: elf.PT_PHDR, Flags: elf.PF_R, Off: 0x40, Vaddr: 0x200040, Paddr: 0x200040, Filesz: 0x1f8, Memsz: 0x1f8, Align: 8},
+		{Type: elf.PT_INTERP, Flags: elf.PF_R, Off: 0x238, Vaddr: 0x200238, Paddr: 0x200238, Filesz: 0x28, Memsz: 0x28, Align: 1},
+		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0x200000, Paddr: 0x200000, Filesz: 0x48d8410, Memsz: 0x48d8410, Align: 0x200000},
+		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x48d8440, Vaddr: 0x4cd8440, Paddr: 0x4cd8440, Filesz: 0x18cbe0, Memsz: 0xd2fb70, Align: 0x200000},
+		{Type: elf.PT_TLS, Flags: elf.PF_R, Off: 0x48d8440, Vaddr: 0x4cd8440, Paddr: 0x4cd8440, Filesz: 0xa8, Memsz: 0x468, Align: 0x40},
+		{Type: elf.PT_DYNAMIC, Flags: elf.PF_R | elf.PF_W, Off: 0x4a63ad0, Vaddr: 0x4e63ad0, Paddr: 0x4e63ad0, Filesz: 0x200, Memsz: 0x200, Align: 8},
+	}
+	sentryHeaders := []elf.ProgHeader{
+		{Type: elf.PT_LOAD, Flags: elf.PF_X + elf.PF_R, Off: 0x0, Vaddr: 0x7f0000000000, Paddr: 0x7f0000000000, Filesz: 0xbc64d5, Memsz: 0xbc64d5, Align: 0x1000},
+		{Type: elf.PT_LOAD, Flags: elf.PF_R, Off: 0xbc7000, Vaddr: 0x7f0000bc7000, Paddr: 0x7f0000bc7000, Filesz: 0xcd6b30, Memsz: 0xcd6b30, Align: 0x1000},
+		{Type: elf.PT_LOAD, Flags: elf.PF_W + elf.PF_R, Off: 0x189e000, Vaddr: 0x7f000189e000, Paddr: 0x7f000189e000, Filesz: 0x58180, Memsz: 0x92d10, Align: 0x1000},
+	}
 
 	for _, tc := range []struct {
 		desc        string
@@ -231,11 +244,14 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 			},
 		},
 		{
-			desc:        "small file, offset 0, memsz 4KB matches executable segment",
-			phdrs:       smallHeaders,
-			pgoff:       0,
-			memsz:       0x1000,
-			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0x400000, Paddr: 0x400000, Filesz: 0x6fc, Memsz: 0x6fc, Align: 0x200000}},
+			desc:  "small file, offset 0, memsz 4KB matches both segments",
+			phdrs: smallHeaders,
+			pgoff: 0,
+			memsz: 0x1000,
+			wantHeaders: []*elf.ProgHeader{
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0x400000, Paddr: 0x400000, Filesz: 0x6fc, Memsz: 0x6fc, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe10, Vaddr: 0x600e10, Paddr: 0x600e10, Filesz: 0x230, Memsz: 0x238, Align: 0x200000},
+			},
 		},
 		{
 			desc:  "small file, offset 0, memsz 8KB matches both segments",
@@ -248,20 +264,28 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 			},
 		},
 		{
-			desc:        "small file, offset 4KB matches no segment",
+			desc:        "small file, offset 4KB matches data segment",
 			phdrs:       smallHeaders,
 			pgoff:       0x1000,
+			memsz:       0x1000,
+			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe10, Vaddr: 0x600e10, Paddr: 0x600e10, Filesz: 0x230, Memsz: 0x238, Align: 0x200000}},
+		},
+		{
+			desc:        "small file, offset 8KB matches no segment",
+			phdrs:       smallHeaders,
+			pgoff:       0x2000,
 			memsz:       0x1000,
 			wantHeaders: nil,
 		},
 		{
-			desc:  "small bad BSS file, offset 0, memsz 4KB matches two segments",
+			desc:  "small bad BSS file, offset 0, memsz 4KB matches all three segments",
 			phdrs: smallBadBSSHeaders,
 			pgoff: 0,
 			memsz: 0x1000,
 			wantHeaders: []*elf.ProgHeader{
 				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0x200000, Paddr: 0x200000, Filesz: 0x6fc, Memsz: 0x6fc, Align: 0x200000},
 				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x700, Vaddr: 0x400700, Paddr: 0x400700, Filesz: 0x500, Memsz: 0x710, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe10, Vaddr: 0x600e10, Paddr: 0x600e10, Filesz: 0x230, Memsz: 0x238, Align: 0x200000},
 			},
 		},
 		{
@@ -276,11 +300,11 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 			},
 		},
 		{
-			desc:        "small bad BSS file, offset 4KB matches no segment",
+			desc:        "small bad BSS file, offset 4KB matches second data segment",
 			phdrs:       smallBadBSSHeaders,
 			pgoff:       0x1000,
 			memsz:       0x1000,
-			wantHeaders: nil,
+			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe10, Vaddr: 0x600e10, Paddr: 0x600e10, Filesz: 0x230, Memsz: 0x238, Align: 0x200000}},
 		},
 		{
 			desc:        "medium file large mapping that includes all address space matches executable segment",
@@ -290,32 +314,39 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0x51800, Memsz: 0x51800, Align: 0x200000}},
 		},
 		{
-			desc:        "large file match executable segment",
+			desc:        "large file executable mapping matches executable segment",
 			phdrs:       largeHeaders,
 			pgoff:       0,
 			memsz:       0x2ec5e000,
 			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0x2ec5d2c0, Memsz: 0x2ec5d2c0, Align: 0x200000}},
 		},
 		{
-			desc:        "large file match first data mapping",
+			desc:        "large file first data mapping matches first data segment",
 			phdrs:       largeHeaders,
 			pgoff:       0x2ec5d000,
 			memsz:       0x1362000,
 			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x2ec5d2c0, Vaddr: 0x2ee5d2c0, Paddr: 0x2ee5d2c0, Filesz: 0x1361118, Memsz: 0x1361150, Align: 0x200000}},
 		},
 		{
-			desc:        "large file, split mapping doesn't match",
+			desc:        "large file, split second data mapping matches second data segment",
 			phdrs:       largeHeaders,
 			pgoff:       0x2ffbe000,
 			memsz:       0xb11000,
-			wantHeaders: nil,
+			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x2ffbe440, Vaddr: 0x303be440, Paddr: 0x303be440, Filesz: 0x4637c0, Memsz: 0xc91610, Align: 0x200000}},
 		},
 		{
-			desc:        "large file, combined mapping matches second data mapping",
-			phdrs:       largeHeaders,
-			pgoff:       0x2ffbe000,
-			memsz:       0xb11000 + 0x181000,
-			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x2ffbe440, Vaddr: 0x303be440, Paddr: 0x303be440, Filesz: 0x4637c0, Memsz: 0xc91610, Align: 0x200000}},
+			desc:        "sentry headers, mapping for last page of executable segment matches executable segment",
+			phdrs:       sentryHeaders,
+			pgoff:       0xbc6000,
+			memsz:       0x1000,
+			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_X + elf.PF_R, Off: 0x0, Vaddr: 0x7f0000000000, Paddr: 0x7f0000000000, Filesz: 0xbc64d5, Memsz: 0xbc64d5, Align: 0x1000}},
+		},
+		{
+			desc:        "ffmpeg headers, split mapping for executable segment matches executable segment",
+			phdrs:       ffmpegHeaders,
+			pgoff:       0,
+			memsz:       0x48d8000,
+			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0x200000, Paddr: 0x200000, Filesz: 0x48d8410, Memsz: 0x48d8410, Align: 0x200000}},
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {

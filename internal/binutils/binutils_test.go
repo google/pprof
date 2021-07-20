@@ -808,7 +808,7 @@ func TestELFObjAddr(t *testing.T) {
 		wantAddrError        bool
 	}{
 		{"exec mapping, good address", 0x5400000, 0x5401000, 0, false, 0x5400400, 0x400400, false},
-		{"exec mapping, address outside segment", 0x5400000, 0x5401000, 0, false, 0x5400800, 0x400800, false},
+		{"exec mapping, address outside segment", 0x5400000, 0x5401000, 0, false, 0x5400800, 0, true},
 		{"short data mapping, good address", 0x5600e00, 0x5602000, 0xe00, false, 0x5600e10, 0x600e10, false},
 		{"short data mapping, address outside segment", 0x5600e00, 0x5602000, 0xe00, false, 0x5600e00, 0x600e00, false},
 		{"page aligned data mapping, good address", 0x5600000, 0x5602000, 0, false, 0x5601000, 0x601000, false},
