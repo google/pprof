@@ -284,11 +284,15 @@ func FindTextProgHeader(f *elf.File) *elf.ProgHeader {
 	return nil
 }
 
-// ProgramHeadersForMapping returns the program segment headers that are fully
-// contained in the runtime mapping with file offset pgoff and memory size
-// memsz. The function returns a slice of pointers to the headers in the input
+// ProgramHeadersForMapping returns the program segment headers that overlap
+// the runtime mapping with file offset mapOff and memory size mapSz.
+// Even if overlapping, a segment is not selected if its aligned file offset is
+// greater than the mapping file offset, or if the mappings includes the last
+// page of the segment, but not the full segment, and the mapping includes
+// additional pages after the segment end.
+// The function returns a slice of pointers to the headers in the input
 // slice, which are valid only while phdrs is not modified or discarded.
-func ProgramHeadersForMapping(phdrs []elf.ProgHeader, pgoff, memsz uint64) []*elf.ProgHeader {
+func ProgramHeadersForMapping(phdrs []elf.ProgHeader, mapOff, mapSz uint64) []*elf.ProgHeader {
 	const (
 		// pageSize defines the virtual memory page size used by the loader. This
 		// value is dependent on the memory management unit of the CPU. The page
@@ -299,56 +303,33 @@ func ProgramHeadersForMapping(phdrs []elf.ProgHeader, pgoff, memsz uint64) []*el
 		// specified in the ELF file header.
 		pageSize       = 4096
 		pageOffsetMask = pageSize - 1
-		pageMask       = ^uint64(pageOffsetMask)
 	)
+	mapLimit := mapOff + mapSz
 	var headers []*elf.ProgHeader
 	for i := range phdrs {
 		p := &phdrs[i]
-		// The segment must be fully included in the mapping.
-		if p.Type == elf.PT_LOAD && pgoff <= p.Off && p.Off+p.Memsz <= pgoff+memsz {
-			alignedOffset := uint64(0)
+		segLimit := p.Off + p.Memsz
+		// The segment must overlap the mapping.
+		if p.Type == elf.PT_LOAD && mapOff < segLimit && p.Off < mapLimit {
+			// If the mapping offset is strictly less than the page aligned segment
+			// offset, then this mapping comes from a differnt segment.
+			alignedSegOffset := uint64(0)
 			if p.Off > (p.Vaddr & pageOffsetMask) {
-				alignedOffset = p.Off - (p.Vaddr & pageOffsetMask)
+				alignedSegOffset = p.Off - (p.Vaddr & pageOffsetMask)
 			}
-			if alignedOffset <= pgoff {
-				headers = append(headers, p)
+			if mapOff < alignedSegOffset {
+				continue
 			}
+			// If the mapping starts in the middle of the segment, it covers less than
+			// one page of the segment, and it extends at least one page past the
+			// segment, then this mapping comes from a different segment.
+			if mapOff > p.Off && (segLimit < mapOff+pageSize) && (mapLimit >= segLimit+pageSize) {
+				continue
+			}
+			headers = append(headers, p)
 		}
 	}
-	if len(headers) < 2 {
-		return headers
-	}
-
-	// If we have more than one matching segments, try a strict check on the
-	// segment memory size. We use a heuristic to compute the minimum mapping size
-	// required for a segment, assuming mappings are page aligned.
-	// The memory size based heuristic makes sense only if the mapping size is a
-	// multiple of page size.
-	if memsz%pageSize != 0 {
-		return headers
-	}
-
-	// Return all found headers if we cannot narrow the selection to a single
-	// program segment.
-	var ph *elf.ProgHeader
-	for _, h := range headers {
-		wantSize := (h.Vaddr+h.Memsz+pageSize-1)&pageMask - (h.Vaddr & pageMask)
-		if wantSize != memsz {
-			continue
-		}
-		if ph != nil {
-			// Found a second program header matching, so return all previously
-			// identified headers.
-			return headers
-		}
-		ph = h
-	}
-	if ph == nil {
-		// No matching header for the strict check. Return all previously identified
-		// headers.
-		return headers
-	}
-	return []*elf.ProgHeader{ph}
+	return headers
 }
 
 // HeaderForFileOffset attempts to identify a unique program header that
@@ -361,8 +342,10 @@ func HeaderForFileOffset(headers []*elf.ProgHeader, fileOffset uint64) (*elf.Pro
 			if ph != nil {
 				// Assuming no other bugs, this can only happen if we have two or
 				// more small program segments that fit on the same page, and a
-				// segment other than the last one includes uninitialized data.
-				return nil, fmt.Errorf("found second program header (%#v) that matches file offset %x, first program header is %#v. Does first program segment contain uninitialized data?", *h, fileOffset, *ph)
+				// segment other than the last one includes uninitialized data, or
+				// if the debug binary used for symbolization is stripped of some
+				// sections, so segment file sizes are smaller than memory sizes.
+				return nil, fmt.Errorf("found second program header (%#v) that matches file offset %x, first program header is %#v. Is this a stripped binary, or does the first program segment contain uninitialized data?", *h, fileOffset, *ph)
 			}
 			ph = h
 		}
