@@ -238,11 +238,14 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0x400000, Paddr: 0x400000, Filesz: 0x6fc, Memsz: 0x6fc, Align: 0x200000}},
 		},
 		{
-			desc:        "small file, offset 0, memsz 8KB matches data segment",
-			phdrs:       smallHeaders,
-			pgoff:       0,
-			memsz:       0x2000,
-			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe10, Vaddr: 0x600e10, Paddr: 0x600e10, Filesz: 0x230, Memsz: 0x238, Align: 0x200000}},
+			desc:  "small file, offset 0, memsz 8KB matches both segments",
+			phdrs: smallHeaders,
+			pgoff: 0,
+			memsz: 0x2000,
+			wantHeaders: []*elf.ProgHeader{
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0x400000, Paddr: 0x400000, Filesz: 0x6fc, Memsz: 0x6fc, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe10, Vaddr: 0x600e10, Paddr: 0x600e10, Filesz: 0x230, Memsz: 0x238, Align: 0x200000},
+			},
 		},
 		{
 			desc:        "small file, offset 4KB matches no segment",
@@ -250,16 +253,6 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 			pgoff:       0x1000,
 			memsz:       0x1000,
 			wantHeaders: nil,
-		},
-		{
-			desc:  "small file, offset 0, memsz 12KB matches both segments",
-			phdrs: smallHeaders,
-			pgoff: 0,
-			memsz: 0x3000,
-			wantHeaders: []*elf.ProgHeader{
-				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0x400000, Paddr: 0x400000, Filesz: 0x6fc, Memsz: 0x6fc, Align: 0x200000},
-				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe10, Vaddr: 0x600e10, Paddr: 0x600e10, Filesz: 0x230, Memsz: 0x238, Align: 0x200000},
-			},
 		},
 		{
 			desc:  "small bad BSS file, offset 0, memsz 4KB matches two segments",
@@ -272,11 +265,15 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 			},
 		},
 		{
-			desc:        "small bad BSS file, offset 0, memsz 8KB matches second data segment",
-			phdrs:       smallBadBSSHeaders,
-			pgoff:       0,
-			memsz:       0x2000,
-			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe10, Vaddr: 0x600e10, Paddr: 0x600e10, Filesz: 0x230, Memsz: 0x238, Align: 0x200000}},
+			desc:  "small bad BSS file, offset 0, memsz 8KB matches all three segments",
+			phdrs: smallBadBSSHeaders,
+			pgoff: 0,
+			memsz: 0x2000,
+			wantHeaders: []*elf.ProgHeader{
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0x200000, Paddr: 0x200000, Filesz: 0x6fc, Memsz: 0x6fc, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x700, Vaddr: 0x400700, Paddr: 0x400700, Filesz: 0x500, Memsz: 0x710, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe10, Vaddr: 0x600e10, Paddr: 0x600e10, Filesz: 0x230, Memsz: 0x238, Align: 0x200000},
+			},
 		},
 		{
 			desc:        "small bad BSS file, offset 4KB matches no segment",
@@ -284,17 +281,6 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 			pgoff:       0x1000,
 			memsz:       0x1000,
 			wantHeaders: nil,
-		},
-		{
-			desc:  "small bad BSS file, offset 0, memsz 12KB matches all three segments",
-			phdrs: smallBadBSSHeaders,
-			pgoff: 0,
-			memsz: 0x3000,
-			wantHeaders: []*elf.ProgHeader{
-				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0x200000, Paddr: 0x200000, Filesz: 0x6fc, Memsz: 0x6fc, Align: 0x200000},
-				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x700, Vaddr: 0x400700, Paddr: 0x400700, Filesz: 0x500, Memsz: 0x710, Align: 0x200000},
-				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe10, Vaddr: 0x600e10, Paddr: 0x600e10, Filesz: 0x230, Memsz: 0x238, Align: 0x200000},
-			},
 		},
 		{
 			desc:        "medium file large mapping that includes all address space matches executable segment",

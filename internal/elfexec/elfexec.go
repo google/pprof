@@ -299,7 +299,6 @@ func ProgramHeadersForMapping(phdrs []elf.ProgHeader, pgoff, memsz uint64) []*el
 		// specified in the ELF file header.
 		pageSize       = 4096
 		pageOffsetMask = pageSize - 1
-		pageMask       = ^uint64(pageOffsetMask)
 	)
 	var headers []*elf.ProgHeader
 	for i := range phdrs {
@@ -315,40 +314,7 @@ func ProgramHeadersForMapping(phdrs []elf.ProgHeader, pgoff, memsz uint64) []*el
 			}
 		}
 	}
-	if len(headers) < 2 {
-		return headers
-	}
-
-	// If we have more than one matching segments, try a strict check on the
-	// segment memory size. We use a heuristic to compute the minimum mapping size
-	// required for a segment, assuming mappings are page aligned.
-	// The memory size based heuristic makes sense only if the mapping size is a
-	// multiple of page size.
-	if memsz%pageSize != 0 {
-		return headers
-	}
-
-	// Return all found headers if we cannot narrow the selection to a single
-	// program segment.
-	var ph *elf.ProgHeader
-	for _, h := range headers {
-		wantSize := (h.Vaddr+h.Memsz+pageSize-1)&pageMask - (h.Vaddr & pageMask)
-		if wantSize != memsz {
-			continue
-		}
-		if ph != nil {
-			// Found a second program header matching, so return all previously
-			// identified headers.
-			return headers
-		}
-		ph = h
-	}
-	if ph == nil {
-		// No matching header for the strict check. Return all previously identified
-		// headers.
-		return headers
-	}
-	return []*elf.ProgHeader{ph}
+	return headers
 }
 
 // HeaderForFileOffset attempts to identify a unique program header that
