@@ -285,10 +285,11 @@ func FindTextProgHeader(f *elf.File) *elf.ProgHeader {
 }
 
 // ProgramHeadersForMapping returns the program segment headers that overlap
-// the runtime mapping with file offset mapOff and memory size mapSz.
+// the runtime mapping with file offset mapOff and memory size mapSz. We skip
+// over segments zero file size because their file offset values are unreliable.
 // Even if overlapping, a segment is not selected if its aligned file offset is
-// greater than the mapping file offset, or if the mappings includes the last
-// page of the segment, but not the full segment, and the mapping includes
+// greater than the mapping file offset, or if the mapping includes the last
+// page of the segment, but not the full segment and the mapping includes
 // additional pages after the segment end.
 // The function returns a slice of pointers to the headers in the input
 // slice, which are valid only while phdrs is not modified or discarded.
@@ -308,11 +309,17 @@ func ProgramHeadersForMapping(phdrs []elf.ProgHeader, mapOff, mapSz uint64) []*e
 	var headers []*elf.ProgHeader
 	for i := range phdrs {
 		p := &phdrs[i]
+		// Skip over segments with zero file size. Their file offsets can have
+		// arbitrary values, see b/195427553.
+		if p.Filesz == 0 {
+			continue
+		}
 		segLimit := p.Off + p.Memsz
 		// The segment must overlap the mapping.
 		if p.Type == elf.PT_LOAD && mapOff < segLimit && p.Off < mapLimit {
 			// If the mapping offset is strictly less than the page aligned segment
-			// offset, then this mapping comes from a different segment.
+			// offset, then this mapping comes from a differnt segment, fixes
+			// b/179920361.
 			alignedSegOffset := uint64(0)
 			if p.Off > (p.Vaddr & pageOffsetMask) {
 				alignedSegOffset = p.Off - (p.Vaddr & pageOffsetMask)
