@@ -202,7 +202,7 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 			wantHeaders: nil,
 		},
 		{
-			desc:  "tiny file, 4KB at offset 0 matches both headers",
+			desc:  "tiny file, 4KB at offset 0 matches both headers, b/178747588",
 			phdrs: tinyHeaders,
 			pgoff: 0,
 			memsz: 0x1000,
@@ -307,7 +307,7 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe10, Vaddr: 0x600e10, Paddr: 0x600e10, Filesz: 0x230, Memsz: 0x238, Align: 0x200000}},
 		},
 		{
-			desc:        "medium file large mapping that includes all address space matches executable segment",
+			desc:        "medium file large mapping that includes all address space matches executable segment, b/179920361",
 			phdrs:       mediumHeaders,
 			pgoff:       0,
 			memsz:       0xd6e000,
@@ -342,11 +342,25 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_X + elf.PF_R, Off: 0x0, Vaddr: 0x7f0000000000, Paddr: 0x7f0000000000, Filesz: 0xbc64d5, Memsz: 0xbc64d5, Align: 0x1000}},
 		},
 		{
-			desc:        "ffmpeg headers, split mapping for executable segment matches executable segment",
+			desc:        "ffmpeg headers, split mapping for executable segment matches executable segment, b/193176694",
 			phdrs:       ffmpegHeaders,
 			pgoff:       0,
 			memsz:       0x48d8000,
 			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0x200000, Paddr: 0x200000, Filesz: 0x48d8410, Memsz: 0x48d8410, Align: 0x200000}},
+		},
+		{
+			desc: "segments with no file bits (b/195427553), mapping for executable segment matches executable segment",
+			phdrs: []elf.ProgHeader{
+				{Type: elf.PT_LOAD, Flags: elf.PF_R, Off: 0x0, Vaddr: 0x0, Paddr: 0x0, Filesz: 0x115000, Memsz: 0x115000, Align: 0x1000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_X + elf.PF_R, Off: 0x115000, Vaddr: 0x115000, Paddr: 0x115000, Filesz: 0x361e15, Memsz: 0x361e15, Align: 0x1000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_W + elf.PF_R, Off: 0x0, Vaddr: 0x477000, Paddr: 0x477000, Filesz: 0x0, Memsz: 0x33c, Align: 0x1000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R, Off: 0x0, Vaddr: 0x478000, Paddr: 0x478000, Filesz: 0x0, Memsz: 0x47dc28, Align: 0x1000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R, Off: 0x477000, Vaddr: 0x8f6000, Paddr: 0x8f6000, Filesz: 0x140, Memsz: 0x140, Align: 0x1000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_W + elf.PF_R, Off: 0x478000, Vaddr: 0x8f7000, Paddr: 0x8f7000, Filesz: 0x38, Memsz: 0x38, Align: 0x1000},
+			},
+			pgoff:       0x115000,
+			memsz:       0x362000,
+			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_X + elf.PF_R, Off: 0x115000, Vaddr: 0x115000, Paddr: 0x115000, Filesz: 0x361e15, Memsz: 0x361e15, Align: 0x1000}},
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
