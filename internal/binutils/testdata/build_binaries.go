@@ -65,7 +65,7 @@ func main() {
 		}
 
 	case "windows":
-		// Many gcc enviroments may create binaries that trigger false-positives
+		// Many gcc environments may create binaries that trigger false-positives
 		// in antiviruses. MSYS2 with gcc 10.2.0 is a working environment for
 		// compiling. To setup the environment follow the guide at
 		// https://www.msys2.org/ and install gcc with `pacman -S gcc`.

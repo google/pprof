@@ -540,7 +540,8 @@ func TestShowFrom(t *testing.T) {
 
 // sampleFuncs returns a slice of strings where each string represents one
 // profile sample in the format "<fun1> <fun2> <fun3>: <value>". This allows
-// the expected values for test cases to be specifed in human-readable strings.
+// the expected values for test cases to be specified in human-readable
+// strings.
 func sampleFuncs(p *Profile) []string {
 	var ret []string
 	for _, s := range p.Sample {

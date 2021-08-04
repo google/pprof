@@ -312,7 +312,7 @@ func ProgramHeadersForMapping(phdrs []elf.ProgHeader, mapOff, mapSz uint64) []*e
 		// The segment must overlap the mapping.
 		if p.Type == elf.PT_LOAD && mapOff < segLimit && p.Off < mapLimit {
 			// If the mapping offset is strictly less than the page aligned segment
-			// offset, then this mapping comes from a differnt segment.
+			// offset, then this mapping comes from a different segment.
 			alignedSegOffset := uint64(0)
 			if p.Off > (p.Vaddr & pageOffsetMask) {
 				alignedSegOffset = p.Off - (p.Vaddr & pageOffsetMask)
