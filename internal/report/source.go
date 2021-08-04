@@ -306,7 +306,7 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 				continue
 			}
 
-			// Seach in inlined stack for a match.
+			// Search in inlined stack for a match.
 			matchFile := (loc.Mapping != nil && sp.sym.MatchString(loc.Mapping.File))
 			for j, line := range loc.Line {
 				if (j == 0 && matchFile) || matches(line) {
