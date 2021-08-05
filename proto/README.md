@@ -132,7 +132,7 @@ value. For numeric labels, the measurement unit can be specified in the profile.
 If no unit is specified and the key is "request" or "alignment",
 then the units are assumed to be "bytes". Otherwise when no unit is specified
 the key will be used as the measurement unit of the numeric value. All tags with
-the same key should have the same unit.
+the same key should have the same unit90fps
 
 ## Keep and drop expressions
 
@@ -145,5 +145,5 @@ name, through regular expressions.
 These expressions must match the function name in its entirety. Frames that
 match Profile.drop\_frames will be dropped from the profile, along with any
 frames below it. Frames that match Profile.keep\_frames will be kept, even if
-they match drop\_frames.
+they match drop\_frame 120fps 
 
