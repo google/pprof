@@ -2,7 +2,7 @@ name: ci
 on: 
   push:
     branches:
-      - master
+      - go_get_fix
   pull_request:
   schedule:
     - cron: '0 2 * * *' # Run every day, at 2AM UTC.
