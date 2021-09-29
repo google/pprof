@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.15', '1.16', 'tip']
+        go: ['1.16', '1.17', 'tip']
         # Supported macOS versions can be found in
         # https://github.com/actions/virtual-environments#available-environments.
         os: ['macos-10.15']
@@ -56,7 +56,9 @@ jobs:
         run: |
           brew install graphviz
           # Do not let tools interfere with the main module's go.mod.
-          cd && go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
+          cd && go mod init tools 
+          go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
+          go install golang.org/x/lint/golint honnef.co/go/tools/cmd/...
           # Add PATH for installed tools.
           echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
 
@@ -88,7 +90,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.15', '1.16', 'tip']
+        go: ['1.16', '1.17', 'tip']
         os: ['ubuntu-20.04', 'ubuntu-18.04', 'ubuntu-16.04'] 
     steps:
       - name: Update Go version using setup-go
@@ -116,7 +118,9 @@ jobs:
         run: |
           sudo apt-get install graphviz
           # Do not let tools interfere with the main module's go.mod.
-          cd && go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
+          cd && go mod init tools 
+          go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
+          go install golang.org/x/lint/golint honnef.co/go/tools/cmd/...
           # Add PATH for installed tools.
           echo "PATH=$GOPATH/bin:$PATH" >> $GITHUB_ENV
 
@@ -145,7 +149,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.15', '1.16']
+        go: ['1.16', '1.17']
     steps:
       - name: Update Go version using setup-go
         uses: actions/setup-go@v2
