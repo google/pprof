@@ -165,6 +165,34 @@ func GetBuildID(binary io.ReaderAt) ([]byte, error) {
 	return nil, nil
 }
 
+// nonZeroKernel computes the heuristic base address for kernels *not* remapped to the zero page.
+func nonZeroKernel(loadSegment *elf.ProgHeader, stextOffset *uint64, start, limit, offset uint64) (uint64, bool) {
+	const (
+		// PAGE_OFFSET for PowerPC64, see arch/powerpc/Kconfig in the kernel sources.
+		pageOffsetPpc64 = 0xc000000000000000
+		pageSize        = 4096
+	)
+
+	if start >= loadSegment.Vaddr && limit > start && (offset == 0 || offset == pageOffsetPpc64 || offset == start) {
+		// Some kernels look like:
+		//       VADDR=0xffffffff80200000
+		// stextOffset=0xffffffff80200198
+		//       Start=0xffffffff83200000
+		//       Limit=0xffffffff84200000
+		//      Offset=0 (0xc000000000000000 for PowerPC64) (== Start for ASLR kernel)
+		// So the base should be:
+		if stextOffset != nil && (start%pageSize) == (*stextOffset%pageSize) {
+			// perf uses the address of _stext as start. Some tools may
+			// adjust for this before calling GetBase, in which case the page
+			// alignment should be different from that of stextOffset.
+			return start - *stextOffset, true
+		}
+
+		return start - loadSegment.Vaddr, true
+	}
+	return 0, false
+}
+
 // GetBase determines the base address to subtract from virtual
 // address to get symbol table address. For an executable, the base
 // is 0. Otherwise, it's a shared library, and the base is the
@@ -174,8 +202,6 @@ func GetBuildID(binary io.ReaderAt) ([]byte, error) {
 func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint64, start, limit, offset uint64) (uint64, error) {
 	const (
 		pageSize = 4096
-		// PAGE_OFFSET for PowerPC64, see arch/powerpc/Kconfig in the kernel sources.
-		pageOffsetPpc64 = 0xc000000000000000
 	)
 
 	if start == 0 && offset == 0 && (limit == ^uint64(0) || limit == 0) {
@@ -216,22 +242,8 @@ func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint6
 			}
 			return -loadSegment.Vaddr, nil
 		}
-		if start >= loadSegment.Vaddr && limit > start && (offset == 0 || offset == pageOffsetPpc64 || offset == start) {
-			// Some kernels look like:
-			//       VADDR=0xffffffff80200000
-			// stextOffset=0xffffffff80200198
-			//       Start=0xffffffff83200000
-			//       Limit=0xffffffff84200000
-			//      Offset=0 (0xc000000000000000 for PowerPC64) (== Start for ASLR kernel)
-			// So the base should be:
-			if stextOffset != nil && (start%pageSize) == (*stextOffset%pageSize) {
-				// perf uses the address of _stext as start. Some tools may
-				// adjust for this before calling GetBase, in which case the page
-				// alignment should be different from that of stextOffset.
-				return start - *stextOffset, nil
-			}
-
-			return start - loadSegment.Vaddr, nil
+		if base, match := nonZeroKernel(loadSegment, stextOffset, start, limit, offset); match {
+			return base, nil
 		} else if start%pageSize != 0 && stextOffset != nil && *stextOffset%pageSize == start%pageSize {
 			// ChromeOS remaps its kernel to 0 + start%pageSize. Nothing
 			// else should come down this path. Empirical values:
@@ -254,6 +266,11 @@ func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint6
 		// fx = x - start + offset.
 		if loadSegment == nil {
 			return start - offset, nil
+		}
+		// Kernels compiled as PIE can be ET_DYN as well. Use heuristic, identical to
+		// the ET_EXEC case above.
+		if base, match := nonZeroKernel(loadSegment, stextOffset, start, limit, offset); match {
+			return base, nil
 		}
 		// The program header, if not nil, indicates the offset in the file where
 		// the executable segment is located (loadSegment.Off), and the base virtual
