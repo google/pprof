@@ -219,7 +219,6 @@ func kernelBase(loadSegment *elf.ProgHeader, stextOffset *uint64, start, limit, 
 // is 0. Otherwise, it's a shared library, and the base is the
 // address where the mapping starts. The kernel needs special hanldling.
 func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint64, start, limit, offset uint64) (uint64, error) {
-
 	if start == 0 && offset == 0 && (limit == ^uint64(0) || limit == 0) {
 		// Some tools may introduce a fake mapping that spans the entire
 		// address space. Assume that the address has already been
@@ -253,6 +252,25 @@ func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint6
 		// want to apply it to an ET_DYN user-mode executable.
 		if start == 0 && limit != 0 && stextOffset == nil {
 			return start - loadSegment.Vaddr, nil
+		if start == 0 && limit != 0 {
+			// ChromeOS remaps its kernel to 0. Nothing else should come
+			// down this path. Empirical values:
+			//       VADDR=0xffffffff80200000
+			// stextOffset=0xffffffff80200198
+			if stextOffset != nil {
+				return -*stextOffset, nil
+			}
+			return -loadSegment.Vaddr, nil
+		}
+		if base, match := nonZeroKernel(loadSegment, stextOffset, start, limit, offset); match {
+			return base, nil
+		} else if start%pageSize != 0 && stextOffset != nil && *stextOffset%pageSize == start%pageSize {
+			// ChromeOS remaps its kernel to 0 + start%pageSize. Nothing
+			// else should come down this path. Empirical values:
+			//       start=0x198 limit=0x2f9fffff offset=0
+			//       VADDR=0xffffffff81000000
+			// stextOffset=0xffffffff81000198
+			return start - *stextOffset, nil
 		}
 
 		return 0, fmt.Errorf("don't know how to handle EXEC segment: %v start=0x%x limit=0x%x offset=0x%x", *loadSegment, start, limit, offset)
@@ -268,6 +286,11 @@ func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint6
 		// fx = x - start + offset.
 		if loadSegment == nil {
 			return start - offset, nil
+		}
+		// Kernels compiled as PIE can be ET_DYN as well. Use heuristic, identical to
+		// the ET_EXEC case above.
+		if base, match := nonZeroKernel(loadSegment, stextOffset, start, limit, offset); match {
+			return base, nil
 		}
 		// The program header, if not nil, indicates the offset in the file where
 		// the executable segment is located (loadSegment.Off), and the base virtual
