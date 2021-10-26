@@ -200,9 +200,7 @@ func nonZeroKernel(loadSegment *elf.ProgHeader, stextOffset *uint64, start, limi
 // use the address of the _stext symbol as the mmap start. _stext
 // offset can be obtained with `nm vmlinux | grep _stext`
 func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint64, start, limit, offset uint64) (uint64, error) {
-	const (
-		pageSize = 4096
-	)
+	const pageSize = 4096
 
 	if start == 0 && offset == 0 && (limit == ^uint64(0) || limit == 0) {
 		// Some tools may introduce a fake mapping that spans the entire
