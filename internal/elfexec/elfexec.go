@@ -168,7 +168,7 @@ func GetBuildID(binary io.ReaderAt) ([]byte, error) {
 // kernelBase caluclates the base for kernel mappings, which usually require
 // special handling. For kernel mappings, tools (like perf) use the address of
 // the kernel relocation symbol (_text or _stext) as the mmap start. Additionaly,
-// for obfuscation, ChromeOS kernels can get remapped to the 0-th page.
+// for obfuscation, ChromeOS profiles have the kernel image remapped to the 0-th page.
 func kernelBase(loadSegment *elf.ProgHeader, stextOffset *uint64, start, limit, offset uint64) (uint64, bool) {
 	const (
 		// PAGE_OFFSET for PowerPC64, see arch/powerpc/Kconfig in the kernel sources.
