@@ -23,7 +23,9 @@ echo "mode: $MODE" > coverage.txt
 # All packages.
 PKG=$(go list ./...)
 
-staticcheck $PKG
+if [ "$RUN_STATICCHECK" != "false" ]; then
+  staticcheck $PKG
+fi
 
 # Packages that have any tests.
 PKG=$(go list -f '{{if .TestGoFiles}} {{.ImportPath}} {{end}}' ./...)

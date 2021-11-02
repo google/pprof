@@ -50,6 +50,8 @@ jobs:
       - name: Update Go version manually
         if: matrix.go == 'tip'
         working-directory: ${{ github.workspace }}
+        env: 
+          RUN_STATICCHECK: false
         run: |
           git clone https://go.googlesource.com/go $HOME/gotip
           cd $HOME/gotip/src
@@ -116,6 +118,8 @@ jobs:
 
       - name: Update Go version manually
         if: matrix.go == 'tip'
+        env: 
+          RUN_STATICCHECK: false
         working-directory: ${{ github.workspace }}
         run: |
           git clone https://go.googlesource.com/go $HOME/gotip
