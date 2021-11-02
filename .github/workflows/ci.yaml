@@ -55,6 +55,7 @@ jobs:
           cd $HOME/gotip/src
           ./make.bash
           echo "GOROOT=$HOME/gotip" >> $GITHUB_ENV
+          echo "RUN_STATICCHECK=false" >> $GITHUB_ENV
           echo "$HOME/gotip/bin:$PATH" >> $GITHUB_PATH
 
       - name: Checkout the repo
@@ -122,6 +123,7 @@ jobs:
           cd $HOME/gotip/src
           ./make.bash
           echo "GOROOT=$HOME/gotip" >> $GITHUB_ENV
+          echo "RUN_STATICCHECK=false" >> $GITHUB_ENV
           echo "$HOME/gotip/bin" >> $GITHUB_PATH
 
       - name: Checkout the repo
