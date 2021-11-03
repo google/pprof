@@ -219,6 +219,7 @@ func kernelBase(loadSegment *elf.ProgHeader, stextOffset *uint64, start, limit, 
 // is 0. Otherwise, it's a shared library, and the base is the
 // address where the mapping starts. The kernel needs special hanldling.
 func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint64, start, limit, offset uint64) (uint64, error) {
+
 	if start == 0 && offset == 0 && (limit == ^uint64(0) || limit == 0) {
 		// Some tools may introduce a fake mapping that spans the entire
 		// address space. Assume that the address has already been
@@ -253,6 +254,7 @@ func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint6
 		if start == 0 && limit != 0 && stextOffset == nil {
 			return start - loadSegment.Vaddr, nil
 		}
+
 		return 0, fmt.Errorf("don't know how to handle EXEC segment: %v start=0x%x limit=0x%x offset=0x%x", *loadSegment, start, limit, offset)
 	case elf.ET_REL:
 		if offset != 0 {
