@@ -874,7 +874,7 @@ func printFunctionClosing(w io.Writer) {
 
 // printPageClosing prints the end of the page in a weblist report.
 func printPageClosing(w io.Writer) {
-	fmt.Fprint(w, weblistPageClosing)
+	fmt.Fprintln(w, weblistPageClosing)
 }
 
 // getSourceFromFile collects the sources of a function from a source
