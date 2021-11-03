@@ -269,6 +269,11 @@ func GetBase(fh *elf.FileHeader, loadSegment *elf.ProgHeader, stextOffset *uint6
 		if loadSegment == nil {
 			return start - offset, nil
 		}
+		// Kernels compiled as PIE can be ET_DYN as well. Use heuristic, similar to
+		// the ET_EXEC case above.
+		if base, match := kernelBase(loadSegment, stextOffset, start, limit, offset); match {
+			return base, nil
+		}
 		// The program header, if not nil, indicates the offset in the file where
 		// the executable segment is located (loadSegment.Off), and the base virtual
 		// address where the first byte of the segment is loaded
