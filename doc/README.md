@@ -192,7 +192,7 @@ the graph, controlled by the *nodecount* option.
 
 * **Node Color**:
   * large positive cum values are red.
-  * large negative cum values are green.
+  * large negative cum values are green; negative values are most likely to appear during profile comparison, see [this section](https://github.com/google/pprof/tree/master/doc#comparing-profiles) for details.
   * cum values close to zero are grey.
 
 * **Node Font Size**:
