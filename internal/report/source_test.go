@@ -47,7 +47,7 @@ func TestWebList(t *testing.T) {
 	}
 	output := buf.String()
 
-	for _, expect := range []string{"func busyLoop", "callq.*mapassign"} {
+	for _, expect := range []string{"func busyLoop", "call.*mapassign"} {
 		if match, _ := regexp.MatchString(expect, output); !match {
 			t.Errorf("weblist output does not contain '%s':\n%s", expect, output)
 		}
