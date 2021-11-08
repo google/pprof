@@ -48,6 +48,7 @@ const (
 	Traces
 	Tree
 	WebList
+	Folded
 )
 
 // Options are the formatting and filtering options used to generate a
@@ -94,6 +95,8 @@ func Generate(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 		return printDOT(w, rpt)
 	case Tree:
 		return printTree(w, rpt)
+	case Folded:
+		return printFolded(w, rpt)
 	case Text:
 		return printText(w, rpt)
 	case Traces:
@@ -824,6 +827,55 @@ func printText(w io.Writer, rpt *Report) error {
 			measurement.Percentage(flatSum, rpt.total),
 			item.CumFormat, measurement.Percentage(item.Cum, rpt.total),
 			item.Name, inl)
+	}
+	return nil
+}
+
+// printFolded prints a profile in Brendan Gregg's Folded Stacks format.
+func printFolded(w io.Writer, rpt *Report) error {
+	prof := rpt.prof
+	o := rpt.options
+
+	_, locations := graph.CreateNodes(prof, &graph.Options{})
+	for _, sample := range prof.Sample {
+		var stack []*graph.NodeInfo
+		for _, loc := range sample.Location {
+			nodes := locations[loc.ID]
+			for _, n := range nodes {
+				stack = append(stack, &n.Info)
+			}
+		}
+
+		if len(stack) == 0 {
+			continue
+		}
+
+		var d, v int64
+		v = o.SampleValue(sample.Value)
+		if o.SampleMeanDivisor != nil {
+			d = o.SampleMeanDivisor(sample.Value)
+		}
+		if d != 0 {
+			v = v / d
+		}
+		// Print call stack.
+		for i := range stack {
+			// Folded stack convention: start with root frame, end
+			// with leaves.
+			s := stack[len(stack)-i-1]
+			if i > 0 {
+				fmt.Fprint(w, ";")
+			}
+			// TODO: should we print more than just s.Name?
+			// NodeInfo.PrintableName() has a lot more.
+
+			// Remove semicolons and newlines.
+			name := strings.ReplaceAll(s.Name, ";", "")
+			name = strings.ReplaceAll(name, "\n", "")
+			fmt.Fprint(w, name)
+		}
+		// We just want a raw number, so don't use rpt.formatValue().
+		fmt.Fprintf(w, " %d\n", v)
 	}
 	return nil
 }

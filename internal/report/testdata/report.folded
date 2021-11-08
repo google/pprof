@@ -1,0 +1,5 @@
+main 1
+main;foo;bar 10
+main;bar;tee 100
+main;tee 1000
+main;tee;tee 10000

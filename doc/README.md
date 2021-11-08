@@ -171,6 +171,8 @@ pprof text reports show the location hierarchy in text format.
 * **-peek= _regex_:** Print the location entry with all its predecessors and
   successors, without trimming any entries.
 * **-traces:** Prints each sample with a location per line.
+* **-folded:** Prints each sample in [Brendan Gregg's Folded Stacks
+  format](https://queue.acm.org/detail.cfm?id=2927301#:~:text=The%20folded%20stack%2Dtrace%20format,trace%2C%20followed%20by%20a%20semicolon.).
 
 ## Graphical reports
 
