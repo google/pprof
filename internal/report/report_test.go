@@ -33,7 +33,7 @@ type testcase struct {
 	want string
 }
 
-func TestSource(t *testing.T) {
+func TestTextReports(t *testing.T) {
 	const path = "testdata/"
 
 	sampleValue1 := func(v []int64) int64 {
@@ -53,7 +53,7 @@ func TestSource(t *testing.T) {
 					SampleUnit:  testProfile.SampleType[1].Unit,
 				},
 			),
-			want: path + "source.rpt",
+			want: path + "report.source",
 		},
 		{
 			rpt: New(
@@ -68,7 +68,7 @@ func TestSource(t *testing.T) {
 					SampleUnit:  testProfile.SampleType[1].Unit,
 				},
 			),
-			want: path + "source.dot",
+			want: path + "report.dot",
 		},
 	} {
 		var b bytes.Buffer
