@@ -45,7 +45,8 @@ automatically set in all console sessions.
 To get the source code, run
 
 ```
-go get github.com/google/pprof
+eval {'mkdir -p',cd}\ $GOPATH/src/github.com/google\;
+git clone git@github.com:google/pprof.git
 ```
 
 To run the tests, do

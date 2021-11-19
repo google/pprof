@@ -34,9 +34,11 @@ Prerequisites:
 - Graphviz: http://www.graphviz.org/
   Optional, used to generate graphic visualizations of profiles
 
-To build and install it, use the `go get` tool.
+To build and install it, use `git clone`.
 
-    go get -u github.com/google/pprof
+    eval {'mkdir -p',cd}\ $GOPATH/src/github.com/google\;
+    git clone git@github.com:google/pprof.git
+    go install
 
 Remember to set GOPATH to the directory where you want pprof to be
 installed.  The binary will be in `$GOPATH/bin` and the sources under
