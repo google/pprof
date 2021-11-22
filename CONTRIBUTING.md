@@ -38,20 +38,21 @@ specific platforms, making internal pprof APIs public, etc.
 
 # Development
 
-Make sure `GOPATH` is set in your current shell. The common way is to have
-something like `export GOPATH=$HOME/gocode` in your `.bashrc` file so that it's
-automatically set in all console sessions.
+The commands below assume `/tmp/pprof` as the location for the source code.
+You can change it to a directory of your choice.
 
 To get the source code, run
 
 ```
-go get github.com/google/pprof
+cd /tmp
+git clone git@github.com:google/pprof.git
+cd pprof
 ```
 
 To run the tests, do
 
 ```
-cd $GOPATH/src/github.com/google/pprof
+cd /tmp/pprof
 go test -v ./...
 ```
 
@@ -62,7 +63,7 @@ get` your fork directly, you'll be getting errors like `use of internal package
 not allowed` when running tests.  To set up the remote do something like
 
 ```
-cd $GOPATH/src/github.com/google/pprof
+cd /tmp/pprof
 git remote add aalexand git@github.com:aalexand/pprof.git
 git fetch aalexand
 git checkout -b my-new-feature
