@@ -69,7 +69,7 @@ message Profile {
   // regexp will be dropped from the samples, along with their successors.
   int64 drop_frames = 7;   // Index into string table.
   // frames with Function.function_name fully matching the following
-  // regexp will be kept, even if it matches drop_functions.
+  // regexp will be kept, even if it matches drop_frames.
   int64 keep_frames = 8;  // Index into string table.
 
   // The following fields are informational, do not affect
