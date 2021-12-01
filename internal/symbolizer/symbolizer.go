@@ -325,7 +325,7 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 		}
 
 		name := filepath.Base(m.File)
-		f, err := obj.Open(m.File, m.Start, m.Limit, m.Offset)
+		f, err := obj.Open(m.File, m.Start, m.Limit, m.Offset, name)
 		if err != nil {
 			ui.PrintErr("Local symbolization failed for ", name, ": ", err)
 			missingBinaries = true

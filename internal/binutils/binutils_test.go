@@ -17,6 +17,7 @@ package binutils
 import (
 	"bytes"
 	"debug/elf"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math"
@@ -346,7 +347,7 @@ func TestObjFile(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			bu := &Binutils{}
-			f, err := bu.Open(filepath.Join("testdata", "exe_linux_64"), tc.start, tc.limit, tc.offset)
+			f, err := bu.Open(filepath.Join("testdata", "exe_linux_64"), tc.start, tc.limit, tc.offset, "exe_linux_64")
 			if err != nil {
 				t.Fatalf("Open: unexpected error %v", err)
 			}
@@ -416,7 +417,7 @@ func TestMachoFiles(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			bu := &Binutils{}
-			f, err := bu.Open(filepath.Join("testdata", tc.file), tc.start, tc.limit, tc.offset)
+			f, err := bu.Open(filepath.Join("testdata", tc.file), tc.start, tc.limit, tc.offset, tc.file)
 			if err != nil {
 				t.Fatalf("Open: unexpected error %v", err)
 			}
@@ -505,7 +506,7 @@ func TestPEFile(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			bu := &Binutils{}
-			f, err := bu.Open(filepath.Join("testdata", "exe_windows_64.exe"), tc.start, tc.limit, tc.offset)
+			f, err := bu.Open(filepath.Join("testdata", "exe_windows_64.exe"), tc.start, tc.limit, tc.offset, "exe_windows_64.exe")
 			if err != nil {
 				t.Fatalf("Open: unexpected error %v", err)
 			}
@@ -544,7 +545,7 @@ func TestOpenMalformedELF(t *testing.T) {
 	// Test that opening a malformed ELF file will report an error containing
 	// the word "ELF".
 	bu := &Binutils{}
-	_, err := bu.Open(filepath.Join("testdata", "malformed_elf"), 0, 0, 0)
+	_, err := bu.Open(filepath.Join("testdata", "malformed_elf"), 0, 0, 0, "")
 	if err == nil {
 		t.Fatalf("Open: unexpected success")
 	}
@@ -558,7 +559,7 @@ func TestOpenMalformedMachO(t *testing.T) {
 	// Test that opening a malformed Mach-O file will report an error containing
 	// the word "Mach-O".
 	bu := &Binutils{}
-	_, err := bu.Open(filepath.Join("testdata", "malformed_macho"), 0, 0, 0)
+	_, err := bu.Open(filepath.Join("testdata", "malformed_macho"), 0, 0, 0, "")
 	if err == nil {
 		t.Fatalf("Open: unexpected success")
 	}
@@ -785,7 +786,7 @@ func TestComputeBase(t *testing.T) {
 				t.Errorf("got base %x, want %x", f.base, tc.wantBase)
 			}
 			if f.isData != tc.wantIsData {
-				t.Errorf("got isData %v, want %v", f.isData, tc.wantIsData)
+				t.Errorf("got isdata %v, want %v", f.isData, tc.wantIsData)
 			}
 		})
 	}
@@ -818,7 +819,7 @@ func TestELFObjAddr(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			b := binrep{}
-			o, err := b.openELF(name, tc.start, tc.limit, tc.offset)
+			o, err := b.openELF(name, tc.start, tc.limit, tc.offset, "exe_linux_64")
 			if (err != nil) != tc.wantOpenError {
 				t.Errorf("openELF got error %v, want any error=%v", err, tc.wantOpenError)
 			}
@@ -836,5 +837,141 @@ func TestELFObjAddr(t *testing.T) {
 				t.Errorf("got ObjAddr %x; want %x\n", got, tc.wantObjAddr)
 			}
 		})
+	}
+}
+
+type buf struct {
+	data []byte
+}
+
+// write appends a null-terminated string and returns its starting index.
+func (b *buf) write(s string) uint32 {
+	res := uint32(len(b.data))
+	b.data = append(b.data, s...)
+	b.data = append(b.data, '\x00')
+	return res
+}
+
+// fakeELFFile generates a minimal valid ELF file, with fake .head.text and
+// .text sections, and their corresponding _text and _stext start symbols,
+// mimicking a kernel vmlinux image.
+func fakeELFFile(t *testing.T) *elf.File {
+	var (
+		sizeHeader64  = binary.Size(elf.Header64{})
+		sizeProg64    = binary.Size(elf.Prog64{})
+		sizeSection64 = binary.Size(elf.Section64{})
+	)
+
+	const (
+		textAddr  = 0xffff000010080000
+		stextAddr = 0xffff000010081000
+	)
+
+	// Generate magic to identify as an ELF file.
+	var ident [16]uint8
+	ident[0] = '\x7f'
+	ident[1] = 'E'
+	ident[2] = 'L'
+	ident[3] = 'F'
+	ident[elf.EI_CLASS] = uint8(elf.ELFCLASS64)
+	ident[elf.EI_DATA] = uint8(elf.ELFDATA2LSB)
+	ident[elf.EI_VERSION] = uint8(elf.EV_CURRENT)
+	ident[elf.EI_OSABI] = uint8(elf.ELFOSABI_NONE)
+
+	// A single program header, containing code and starting at the _text address.
+	progs := []elf.Prog64{{
+		Type: uint32(elf.PT_LOAD), Flags: uint32(elf.PF_R | elf.PF_X), Off: 0x10000, Vaddr: textAddr, Paddr: textAddr, Filesz: 0x1234567, Memsz: 0x1234567, Align: 0x10000}}
+
+	symNames := buf{data: make([]byte, 0)}
+	syms := []elf.Sym64{
+		{}, // first symbol empty by convention
+		{Name: symNames.write("_text"), Info: 0, Other: 0, Shndx: 0, Value: textAddr, Size: 0},
+		{Name: symNames.write("_stext"), Info: 0, Other: 0, Shndx: 0, Value: stextAddr, Size: 0},
+	}
+
+	const numSections = 5
+	const textSize = 16 // # zero bytes we'll write for the contents of .text.
+	// Offset of section contents in the byte stream -- after header, program headers, and section headers.
+	sectionsStart := uint64(sizeHeader64 + len(progs)*sizeProg64 + numSections*sizeSection64)
+
+	secNames := buf{data: make([]byte, 0)}
+	sections := [numSections]elf.Section64{
+		{Name: secNames.write(".head.text"), Type: uint32(elf.SHT_PROGBITS), Flags: uint64(elf.SHF_ALLOC | elf.SHF_EXECINSTR), Addr: textAddr, Off: sectionsStart, Size: textSize, Link: 0, Info: 0, Addralign: 2048, Entsize: 0},
+		{Name: secNames.write(".text"), Type: uint32(elf.SHT_PROGBITS), Flags: uint64(elf.SHF_ALLOC | elf.SHF_EXECINSTR), Addr: stextAddr, Off: sectionsStart + textSize, Size: textSize, Link: 0, Info: 0, Addralign: 2048, Entsize: 0},
+		{Name: secNames.write(".symtab"), Type: uint32(elf.SHT_SYMTAB), Flags: 0, Addr: 0, Off: sectionsStart + 2*textSize, Size: uint64(len(syms) * elf.Sym64Size), Link: 3 /*index of .strtab*/, Info: 0, Addralign: 8, Entsize: elf.Sym64Size},
+		{Name: secNames.write(".strtab"), Type: uint32(elf.SHT_STRTAB), Flags: 0, Addr: 0, Off: sectionsStart + 2*textSize + uint64(len(syms)*elf.Sym64Size), Size: uint64(len(symNames.data)), Link: 0, Info: 0, Addralign: 1, Entsize: 0},
+		{Name: secNames.write(".shstrtab"), Type: uint32(elf.SHT_STRTAB), Flags: 0, Addr: 0, Off: sectionsStart + 2*textSize + uint64(len(syms)*elf.Sym64Size+len(symNames.data)), Size: uint64(len(secNames.data)), Link: 0, Info: 0, Addralign: 1, Entsize: 0},
+	}
+
+	hdr := elf.Header64{
+		Ident:     ident,
+		Type:      uint16(elf.ET_DYN),
+		Machine:   uint16(elf.EM_AARCH64),
+		Version:   uint32(elf.EV_CURRENT),
+		Entry:     textAddr,
+		Phoff:     uint64(sizeHeader64),
+		Shoff:     uint64(sizeHeader64 + len(progs)*sizeProg64),
+		Flags:     0,
+		Ehsize:    uint16(sizeHeader64),
+		Phentsize: uint16(sizeProg64),
+		Phnum:     uint16(len(progs)),
+		Shentsize: uint16(sizeSection64),
+		Shnum:     uint16(len(sections)),
+		Shstrndx:  4, // index of .shstrtab
+	}
+
+	// Serialize all headers and sections into a single binary stream.
+	var data bytes.Buffer
+	for i, b := range []interface{}{hdr, progs, sections, [textSize]byte{}, [textSize]byte{}, syms, symNames.data, secNames.data} {
+		err := binary.Write(&data, binary.LittleEndian, b)
+		if err != nil {
+			t.Fatalf("Write(%v) got err %v, want nil", i, err)
+		}
+	}
+
+	// ... and parse it as and ELF file.
+	ef, err := elf.NewFile(bytes.NewReader(data.Bytes()))
+	if err != nil {
+		t.Fatalf("elf.NewFile got err %v, want nil", err)
+	}
+	return ef
+}
+
+func TestELFKernelOffset(t *testing.T) {
+	realELFOpen := elfOpen
+	defer func() {
+		elfOpen = realELFOpen
+	}()
+
+	wantAddr := uint64(0xffff000010082000)
+	elfOpen = func(_ string) (*elf.File, error) {
+		return fakeELFFile(t), nil
+	}
+
+	for _, tc := range []struct {
+		name  string
+		dso   string
+		start uint64
+	}{
+		{"_text", "[kernel.kallsyms]_text", 0xffff000020080000},
+		{"_stext", "[kernel.kallsyms]_stext", 0xffff000020081000},
+	} {
+
+		b := binrep{}
+		o, err := b.openELF("vmlinux", tc.start, 0xffffffffffffffff, tc.start, tc.dso)
+		if err != nil {
+			t.Errorf("%v: openELF got error %v, want nil", tc.name, err)
+			continue
+		}
+
+		addr, err := o.ObjAddr(0xffff000020082000)
+		if err != nil {
+			t.Errorf("%v: ObjAddr got err %v, want nil", tc.name, err)
+			continue
+		}
+		if addr != wantAddr {
+			t.Errorf("%v: ObjAddr got %x, want %x", tc.name, addr, wantAddr)
+		}
+
 	}
 }

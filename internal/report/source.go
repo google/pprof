@@ -744,7 +744,8 @@ func (sp *sourcePrinter) objectFile(m *profile.Mapping) plugin.ObjFile {
 	if object, ok := sp.objects[m.File]; ok {
 		return object // May be nil if we detected an error earlier.
 	}
-	object, err := sp.objectTool.Open(m.File, m.Start, m.Limit, m.Offset)
+	baseName := filepath.Base(m.File)
+	object, err := sp.objectTool.Open(m.File, m.Start, m.Limit, m.Offset, baseName)
 	if err != nil {
 		object = nil
 	}

@@ -420,7 +420,7 @@ mapping:
 				fileNames = append(fileNames, filepath.Join(path, m.File))
 			}
 			for _, name := range fileNames {
-				if f, err := obj.Open(name, m.Start, m.Limit, m.Offset); err == nil {
+				if f, err := obj.Open(name, m.Start, m.Limit, m.Offset, baseName); err == nil {
 					defer f.Close()
 					fileBuildID := f.BuildID()
 					if m.BuildID != "" && m.BuildID != fileBuildID {
