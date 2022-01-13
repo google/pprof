@@ -308,6 +308,7 @@ func (pm *profileMerger) mapMapping(src *Mapping) mapInfo {
 		Limit:           src.Limit,
 		Offset:          src.Offset,
 		File:            src.File,
+		DSO:             src.DSO,
 		BuildID:         src.BuildID,
 		HasFunctions:    src.HasFunctions,
 		HasFilenames:    src.HasFilenames,

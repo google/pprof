@@ -106,6 +106,10 @@ type Mapping struct {
 
 	fileX    int64
 	buildIDX int64
+
+	// DSO name, extracted from File.
+	// The two can diverge if File is updated, say for local symbolization.
+	DSO string
 }
 
 // Location corresponds to Profile.Location
