@@ -137,10 +137,10 @@ type MappingSources map[string][]struct {
 type ObjTool interface {
 	// Open opens the named object file. If the object is a shared
 	// library, start/limit/offset are the addresses where it is mapped
-	// into memory in the address space being inspected. baseName is the
-	// filename included in the mapping metadata, potentially different
+	// into memory in the address space being inspected. dso is the
+	// module name included in the mapping metadata, potentially different
 	// from file.
-	Open(file string, start, limit, offset uint64, baseName string) (ObjFile, error)
+	Open(file string, start, limit, offset uint64, dso string) (ObjFile, error)
 
 	// Disasm disassembles the named object file, starting at
 	// the start address and stopping at (before) the end address.
@@ -234,8 +234,8 @@ type internalObjTool struct {
 	ObjTool
 }
 
-func (o *internalObjTool) Open(file string, start, limit, offset uint64, baseName string) (plugin.ObjFile, error) {
-	f, err := o.ObjTool.Open(file, start, limit, offset, baseName)
+func (o *internalObjTool) Open(file string, start, limit, offset uint64, dso string) (plugin.ObjFile, error) {
+	f, err := o.ObjTool.Open(file, start, limit, offset, dso)
 	if err != nil {
 		return nil, err
 	}
