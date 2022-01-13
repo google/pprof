@@ -247,7 +247,9 @@ func (p *Profile) postDecode() error {
 	mappingIds := make([]*Mapping, len(p.Mapping)+1)
 	for _, m := range p.Mapping {
 		m.File, err = getString(p.stringTable, &m.fileX, err)
-		m.DSO = filepath.Base(m.File)
+		if m.File != "" {
+			m.DSO = filepath.Base(m.File)
+		}
 		m.BuildID, err = getString(p.stringTable, &m.buildIDX, err)
 		if m.ID < uint64(len(mappingIds)) {
 			mappingIds[m.ID] = m
