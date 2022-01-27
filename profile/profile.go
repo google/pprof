@@ -109,6 +109,9 @@ type Mapping struct {
 
 	// DSO name, extracted from File.
 	// The two can diverge if File is updated, say for local symbolization.
+	// Note, this public field is not persisted in the proto. For the
+	// purposes of copying / merging / hashing profiles, it is considered
+	// subsumed by File.
 	DSO string
 }
 
