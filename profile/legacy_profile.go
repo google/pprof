@@ -24,6 +24,7 @@ import (
 	"io"
 	"math"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -34,6 +35,10 @@ var (
 
 	heapHeaderRE = regexp.MustCompile(`heap profile: *(\d+): *(\d+) *\[ *(\d+): *(\d+) *\] *@ *(heap[_a-z0-9]*)/?(\d*)`)
 	heapSampleRE = regexp.MustCompile(`(-?\d+): *(-?\d+) *\[ *(\d+): *(\d+) *] @([ x0-9a-f]*)`)
+
+	jemallocHeapHeaderRE = regexp.MustCompile(`^heap_v2/*(\d+)$`)
+	jemallocThreadRE     = regexp.MustCompile(`t(\d+): (-?\d+): *(-?\d+) *\[ *(\d+): *(\d+) *\]`)
+	jemallocBacktraceRE  = regexp.MustCompile(`@([ x0-9a-f]*)`)
 
 	contentionSampleRE = regexp.MustCompile(`(\d+) *(\d+) @([ x0-9a-f]*)`)
 
@@ -485,6 +490,11 @@ func parseHeap(b []byte) (p *Profile, err error) {
 		p.Period = 1
 	} else if header = fragmentationHeaderRE.FindStringSubmatch(line); header != nil {
 		p.Period = 1
+	} else if header = jemallocHeapHeaderRE.FindStringSubmatch(line); header != nil {
+		sampling, p.Period, hasAlloc, err = parseJemallocHeapHeader(line)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		return nil, errUnrecognized
 	}
@@ -503,6 +513,112 @@ func parseHeap(b []byte) (p *Profile, err error) {
 			{Type: "objects", Unit: "count"},
 			{Type: "space", Unit: "bytes"},
 		}
+	}
+
+	// jemalloc specific routines
+	// jemalloc heap profile is in form
+	// @ a1 a2 ... an
+	//   t*: <count1>: <bytes1> [<count2>: <bytes2>]
+	//   t1: <count1>: <bytes1> [<count2>: <bytes2>]
+	//     ...
+	//   tn: <count1>: <bytes1> [<count2>: <bytes2>]
+	if sampling == "jemalloc_v2" {
+		type jemallocThreadValue struct {
+			value     []int64
+			blocksize int64
+		}
+		locs := make(map[uint64]*Location)
+		var (
+			err       error
+			addrs     []uint64
+			threadMap = map[string]jemallocThreadValue{}
+		)
+
+		for s.Scan() {
+			line := strings.TrimSpace(s.Text())
+
+			if isSpaceOrComment(line) {
+				continue
+			}
+
+			if isMemoryMapSentinel(line) {
+				break
+			}
+
+			if sampleData := jemallocThreadRE.FindStringSubmatch(line); sampleData != nil {
+				if len(addrs) == 0 {
+					// we have not seen the backtrace for this set of allocations yet.
+					// This is likely global aggregation, we can ignore it
+					continue
+				}
+				thread, value, blocksize, err := parseJemallocThreadLine(line, p.Period, sampling, hasAlloc)
+				if err != nil {
+					return nil, err
+				}
+				threadMap[thread] = jemallocThreadValue{
+					value:     value,
+					blocksize: blocksize,
+				}
+			}
+
+			if sampleData := jemallocBacktraceRE.FindStringSubmatch(line); sampleData != nil {
+				// we have next set of addresses, finish the previous one
+				if len(addrs) > 0 && len(threadMap) > 0 {
+					// complete sample
+
+					var sloc []*Location
+					for _, addr := range addrs {
+						// Addresses from stack traces point to the next instruction after
+						// each call. Adjust by -1 to land somewhere on the actual call.
+						addr--
+						loc := locs[addr]
+						if locs[addr] == nil {
+							loc = &Location{
+								Address: addr,
+							}
+							p.Location = append(p.Location, loc)
+							locs[addr] = loc
+						}
+						sloc = append(sloc, loc)
+					}
+					// iterate the thread map sorted by tid
+					tids := make([]string, 0, len(threadMap))
+					for tid := range threadMap {
+						tids = append(tids, tid)
+					}
+					sort.Slice(tids, func(i, j int) bool { return tids[i] < tids[j] })
+					for _, tid := range tids {
+						tv := threadMap[tid]
+						p.Sample = append(p.Sample, &Sample{
+							Value:    tv.value,
+							Location: sloc,
+							Label: map[string][]string{
+								"thread": {tid},
+							},
+							NumLabel: map[string][]int64{
+								"bytes": {tv.blocksize},
+							},
+						})
+					}
+
+					// reset
+					addrs = nil
+					threadMap = map[string]jemallocThreadValue{}
+				}
+
+				addrs, err = parseHexAddresses(sampleData[1])
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+		if err := s.Err(); err != nil {
+			return nil, err
+		}
+		if err := parseAdditionalSections(s, p); err != nil {
+			return nil, err
+		}
+		return p, nil
 	}
 
 	locs := make(map[uint64]*Location)
@@ -579,6 +695,67 @@ func parseHeapHeader(line string) (sampling string, period int64, hasAlloc bool,
 	default:
 		return "", 0, false, errUnrecognized
 	}
+}
+
+func parseJemallocHeapHeader(line string) (sampling string, period int64, hasAlloc bool, err error) {
+	header := jemallocHeapHeaderRE.FindStringSubmatch(line)
+	if header == nil {
+		return "", 0, false, errUnrecognized
+	}
+
+	if len(header[1]) > 0 {
+		if period, err = strconv.ParseInt(header[1], 10, 64); err != nil {
+			return "", 0, false, errUnrecognized
+		}
+	}
+
+	return "jemalloc_v2", period, false, nil
+}
+
+func parseJemallocThreadLine(line string, rate int64, sampling string, includeAlloc bool) (thread string, value []int64, blocksize int64, err error) {
+	sampleData := jemallocThreadRE.FindStringSubmatch(line)
+	if len(sampleData) != 6 {
+		return "", nil, 0, fmt.Errorf("unexpected number of sample values: got %d, want 6", len(sampleData))
+	}
+
+	thread = sampleData[1]
+
+	// This is a local-scoped helper function to avoid needing to pass
+	// around rate, sampling and many return parameters.
+	addValues := func(countString, sizeString string, label string) error {
+		count, err := strconv.ParseInt(countString, 10, 64)
+		if err != nil {
+			return fmt.Errorf("malformed sample: %s: %v", line, err)
+		}
+		size, err := strconv.ParseInt(sizeString, 10, 64)
+		if err != nil {
+			return fmt.Errorf("malformed sample: %s: %v", line, err)
+		}
+		if count == 0 && size != 0 {
+			return fmt.Errorf("%s count was 0 but %s bytes was %d", label, label, size)
+		}
+		if count != 0 {
+			blocksize = size / count
+			if sampling == "jemalloc_v2" {
+				count, size = scaleHeapSample(count, size, rate)
+			}
+		}
+		value = append(value, count, size)
+		return nil
+	}
+
+	if includeAlloc {
+		if err := addValues(sampleData[4], sampleData[5], "allocation"); err != nil {
+			return "", nil, 0, fmt.Errorf("malformed sample: %s: %v", line, err)
+		}
+	}
+
+	if err := addValues(sampleData[2], sampleData[3], "inuse"); err != nil {
+		return "", nil, 0, fmt.Errorf("malformed sample: %s: %v", line, err)
+	}
+
+	// we don't have addrs here yet
+	return thread, value, blocksize, nil
 }
 
 // parseHeapSample parses a single row from a heap profile into a new Sample.

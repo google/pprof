@@ -48,6 +48,7 @@ func TestParse(t *testing.T) {
 		"java.cpu",
 		"java.heap",
 		"java.contention",
+		"jemalloc.heap",
 	} {
 		inbytes, err := ioutil.ReadFile(filepath.Join(path, source))
 		if err != nil {
