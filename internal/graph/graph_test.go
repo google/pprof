@@ -531,3 +531,18 @@ func TestShortenFunctionName(t *testing.T) {
 		}
 	}
 }
+
+func TestJoinLabels(t *testing.T) {
+	input := &profile.Sample{
+		Label: map[string][]string{
+			"key1": {"v1", "v2"},
+			// value with an embedded newline
+			"key2": {"value line1\nline2"},
+		},
+	}
+	const expected = "key1:v1\nkey1:v2\nkey2:value line1\nline2"
+	output := joinLabels(input)
+	if output != expected {
+		t.Errorf("output=%#v != expected=%#v", output, expected)
+	}
+}

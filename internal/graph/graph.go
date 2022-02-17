@@ -519,6 +519,7 @@ func (g *Graph) TrimTree(kept NodePtrSet) {
 	g.RemoveRedundantEdges()
 }
 
+// joinLabels returns the labels as they should be displayed to the user (not escaped).
 func joinLabels(s *profile.Sample) string {
 	if len(s.Label) == 0 {
 		return ""
@@ -531,7 +532,8 @@ func joinLabels(s *profile.Sample) string {
 		}
 	}
 	sort.Strings(labels)
-	return strings.Join(labels, `\n`)
+	// join labels with a newline: this can be a bit confusing for labels with newlines
+	return strings.Join(labels, "\n")
 }
 
 // isNegative returns true if the node is considered as "negative" for the
