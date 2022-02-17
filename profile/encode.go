@@ -16,8 +16,8 @@ package profile
 
 import (
 	"errors"
-	"path/filepath"
 	"sort"
+	"strings"
 )
 
 func (p *Profile) decoder() []decoder {
@@ -247,15 +247,19 @@ func (p *Profile) postDecode() error {
 	mappingIds := make([]*Mapping, len(p.Mapping)+1)
 	for _, m := range p.Mapping {
 		m.File, err = getString(p.stringTable, &m.fileX, err)
-		if m.File != "" {
-			m.DSO = filepath.Base(m.File)
-		}
 		m.BuildID, err = getString(p.stringTable, &m.buildIDX, err)
 		if m.ID < uint64(len(mappingIds)) {
 			mappingIds[m.ID] = m
 		} else {
 			mappings[m.ID] = m
 		}
+
+		// If this a main linux kernel mapping with a relocation symbol suffix
+		// ("[kernel.kallsyms]_text"), extract said suffix.
+		if strings.HasPrefix(m.File, "[kernel.kallsyms]") {
+			m.KernelRelocationSymbol = strings.ReplaceAll(m.File, "[kernel.kallsyms]", "")
+		}
+
 	}
 
 	functions := make(map[uint64]*Function, len(p.Function))

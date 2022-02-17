@@ -181,7 +181,7 @@ func (f fakeObj) Symbols(r *regexp.Regexp, addr uint64) ([]*plugin.Sym, error) {
 
 type fakeObjTool struct{}
 
-func (obj fakeObjTool) Open(file string, start, limit, offset uint64, dso string) (plugin.ObjFile, error) {
+func (obj fakeObjTool) Open(file string, start, limit, offset uint64, relocationSymbol string) (plugin.ObjFile, error) {
 	return fakeObj{}, nil
 }
 

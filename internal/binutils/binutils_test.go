@@ -346,7 +346,7 @@ func TestObjFile(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			bu := &Binutils{}
-			f, err := bu.Open(filepath.Join("testdata", "exe_linux_64"), tc.start, tc.limit, tc.offset, "exe_linux_64")
+			f, err := bu.Open(filepath.Join("testdata", "exe_linux_64"), tc.start, tc.limit, tc.offset, "")
 			if err != nil {
 				t.Fatalf("Open: unexpected error %v", err)
 			}
@@ -416,7 +416,7 @@ func TestMachoFiles(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			bu := &Binutils{}
-			f, err := bu.Open(filepath.Join("testdata", tc.file), tc.start, tc.limit, tc.offset, tc.file)
+			f, err := bu.Open(filepath.Join("testdata", tc.file), tc.start, tc.limit, tc.offset, "")
 			if err != nil {
 				t.Fatalf("Open: unexpected error %v", err)
 			}
@@ -505,7 +505,7 @@ func TestPEFile(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			bu := &Binutils{}
-			f, err := bu.Open(filepath.Join("testdata", "exe_windows_64.exe"), tc.start, tc.limit, tc.offset, "exe_windows_64.exe")
+			f, err := bu.Open(filepath.Join("testdata", "exe_windows_64.exe"), tc.start, tc.limit, tc.offset, "")
 			if err != nil {
 				t.Fatalf("Open: unexpected error %v", err)
 			}
@@ -818,7 +818,7 @@ func TestELFObjAddr(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			b := binrep{}
-			o, err := b.openELF(name, tc.start, tc.limit, tc.offset, "exe_linux_64")
+			o, err := b.openELF(name, tc.start, tc.limit, tc.offset, "")
 			if (err != nil) != tc.wantOpenError {
 				t.Errorf("openELF got error %v, want any error=%v", err, tc.wantOpenError)
 			}
