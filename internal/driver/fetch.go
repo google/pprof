@@ -427,7 +427,7 @@ mapping:
 						ui.PrintErr("Ignoring local file " + name + ": build-id mismatch (" + m.BuildID + " != " + fileBuildID + ")")
 					} else {
 						// Explicitly do not update KernelRelocationSymbol --
-						// the relocated file name is most likely missing it.
+						// the new local file name is most likely missing it.
 						m.File = name
 						continue mapping
 					}
