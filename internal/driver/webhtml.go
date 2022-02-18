@@ -1329,7 +1329,7 @@ function viewer(baseUrl, nodes) {
   <script>viewer(new URL(window.location.href), {{.Nodes}});</script>
   <script>{{template "d3flamegraphscript" .}}</script>
   <script>
-    var data = {{.FlameGraph}};
+    var data = JSON.parse("{{.FlameGraph}}");
 
     var width = document.getElementById('chart').clientWidth;
 
