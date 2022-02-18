@@ -256,6 +256,7 @@ func (p *Profile) postDecode() error {
 
 		// If this a main linux kernel mapping with a relocation symbol suffix
 		// ("[kernel.kallsyms]_text"), extract said suffix.
+		// It is fairly hacky to handle at this level, but the alternatives appear even worse.
 		if strings.HasPrefix(m.File, "[kernel.kallsyms]") {
 			m.KernelRelocationSymbol = strings.ReplaceAll(m.File, "[kernel.kallsyms]", "")
 		}
