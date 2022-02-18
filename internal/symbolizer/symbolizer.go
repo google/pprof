@@ -325,6 +325,9 @@ func newMapping(prof *profile.Profile, obj plugin.ObjTool, ui plugin.UI, force b
 		}
 
 		name := filepath.Base(m.File)
+		if m.BuildID != "" {
+			name += fmt.Sprintf(" (build ID %s)", m.BuildID)
+		}
 		f, err := obj.Open(m.File, m.Start, m.Limit, m.Offset, m.KernelRelocationSymbol)
 		if err != nil {
 			ui.PrintErr("Local symbolization failed for ", name, ": ", err)

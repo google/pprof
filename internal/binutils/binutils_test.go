@@ -786,7 +786,7 @@ func TestComputeBase(t *testing.T) {
 				t.Errorf("got base %x, want %x", f.base, tc.wantBase)
 			}
 			if f.isData != tc.wantIsData {
-				t.Errorf("got isdata %v, want %v", f.isData, tc.wantIsData)
+				t.Errorf("got isData %v, want %v", f.isData, tc.wantIsData)
 			}
 		})
 	}

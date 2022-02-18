@@ -463,12 +463,13 @@ func (b *binrep) openELF(name string, start, limit, offset uint64, relocationSym
 		// been able to parse it from the mapping, we default to _stext.
 		if relocationSymbol == "" {
 			relocationSymbol = "_stext"
- 		}
- 		for _, s := range symbols {
+		}
+		for _, s := range symbols {
 			if s.Name == relocationSymbol {
- 				kernelOffset = &s.Value
- 				break
- 			}
+				kernelOffset = &s.Value
+				break
+			}
+		}
 	}
 
 	// Check that we can compute a base for the binary. This may not be the
