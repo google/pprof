@@ -1215,7 +1215,8 @@ func reportLabels(rpt *Report, g *graph.Graph, origCount, droppedNodes, droppedE
 	// Help new users understand the graph.
 	// A new line is intentionally added here to better show this message.
 	if fullHeaders {
-		label = append(label, "\nSee https://git.io/JfYMW for how to read the graph")
+		// Include an empty string to separate with a blank line.
+		label = append(label, "", "See https://git.io/JfYMW for how to read the graph")
 	}
 
 	return label

@@ -153,15 +153,15 @@ func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 func TestComposeWithTagsThatNeedEscaping(t *testing.T) {
 	g := baseGraph()
 	a, c := baseAttrsAndConfig()
-	// test both named and numeric tags
+	// Tag names are normally escaped by joinLabels.
 	g.Nodes[0].LabelTags["a"] = &Tag{
-		Name: `label"quote"` + "\nline2",
+		Name: escapeForDot(`label"quote"` + "\nline2"),
 		Cum:  10,
 		Flat: 10,
 	}
 	g.Nodes[0].NumericTags[""] = TagMap{
 		"b": &Tag{
-			Name: `numeric"quote"`,
+			Name: escapeForDot(`numeric"quote"`),
 			Cum:  20,
 			Flat: 20,
 			Unit: "ms",
@@ -369,14 +369,14 @@ func TestEscapeForDot(t *testing.T) {
 		want  []string
 	}{
 		{
+			desc:  "empty does nothing",
+			input: []string{``},
+			want:  []string{``},
+		},
+		{
 			desc:  "with multiple doubles quotes",
 			input: []string{`label: "foo" and "bar"`},
 			want:  []string{`label: \"foo\" and \"bar\"`},
-		},
-		{
-			desc:  "with graphviz center line character",
-			input: []string{"label: foo \n bar"},
-			want:  []string{`label: foo \l bar`},
 		},
 		{
 			desc:  "with two backslashes",
@@ -392,6 +392,11 @@ func TestEscapeForDot(t *testing.T) {
 			desc:  "with multiple labels",
 			input: []string{`label1: "foo"`, `label2: "bar"`},
 			want:  []string{`label1: \"foo\"`, `label2: \"bar\"`},
+		},
+		{
+			desc:  "escape newlines and control chars",
+			input: []string{"line1\nline2", "null:\x00", "alert:\a", "backspace:\b"},
+			want:  []string{`line1\\nline2`, `null:\\x00`, `alert:\\a`, `backspace:\\b`},
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {

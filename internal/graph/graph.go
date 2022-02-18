@@ -270,7 +270,7 @@ func (e *Edge) WeightValue() int64 {
 
 // Tag represent sample annotations
 type Tag struct {
-	Name          string
+	Name          string // Must be escaped for dot
 	Unit          string // Describe the value, "" for non-numeric tags
 	Value         int64
 	Flat, FlatDiv int64
@@ -519,7 +519,7 @@ func (g *Graph) TrimTree(kept NodePtrSet) {
 	g.RemoveRedundantEdges()
 }
 
-// joinLabels returns the labels as they should be displayed to the user (not escaped).
+// joinLabels returns the labels as a string escaped for dot.
 func joinLabels(s *profile.Sample) string {
 	if len(s.Label) == 0 {
 		return ""
@@ -528,12 +528,12 @@ func joinLabels(s *profile.Sample) string {
 	var labels []string
 	for key, vals := range s.Label {
 		for _, v := range vals {
-			labels = append(labels, key+":"+v)
+			labels = append(labels, escapeForDot(key+":"+v))
 		}
 	}
 	sort.Strings(labels)
-	// join labels with a newline: this can be a bit confusing for labels with newlines
-	return strings.Join(labels, "\n")
+	// To show labels on separate lines, include "\n" in the dot output.
+	return strings.Join(labels, "\\n")
 }
 
 // isNegative returns true if the node is considered as "negative" for the
