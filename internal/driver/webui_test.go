@@ -88,8 +88,8 @@ func TestWebInterface(t *testing.T) {
 		{"/flamegraph", []string{
 			"File: testbin",
 			// Check profile frame JSON is included.
-			"\"n\":\"root\"",
-			"\"n\":\"F1\"",
+			`\\u0022n\\u0022:\\u0022root\\u0022`,
+			`\\u0022n\\u0022:\\u0022F1\\u0022`,
 			// Check minified d3-flame-graph JS is included.
 			`flamegraph:\(\)=>`,
 			// Check d3-flame-graph CSS is included.
