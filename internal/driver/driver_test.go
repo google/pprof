@@ -1580,7 +1580,7 @@ func TestSymbolzAfterMerge(t *testing.T) {
 
 type mockObjTool struct{}
 
-func (*mockObjTool) Open(file string, start, limit, offset uint64) (plugin.ObjFile, error) {
+func (*mockObjTool) Open(file string, start, limit, offset uint64, relocationSymbol string) (plugin.ObjFile, error) {
 	return &mockFile{file, "abcdef", 0}, nil
 }
 

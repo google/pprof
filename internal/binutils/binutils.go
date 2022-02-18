@@ -284,7 +284,7 @@ func (bu *Binutils) Disasm(file string, start, end uint64, intelSyntax bool) ([]
 }
 
 // Open satisfies the plugin.ObjTool interface.
-func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
+func (bu *Binutils) Open(name string, start, limit, offset uint64, relocationSymbol string) (plugin.ObjFile, error) {
 	b := bu.get()
 
 	// Make sure file is a supported executable.
@@ -316,7 +316,7 @@ func (bu *Binutils) Open(name string, start, limit, offset uint64) (plugin.ObjFi
 
 	// Match against supported file types.
 	if elfMagic == elf.ELFMAG {
-		f, err := b.openELF(name, start, limit, offset)
+		f, err := b.openELF(name, start, limit, offset, relocationSymbol)
 		if err != nil {
 			return nil, fmt.Errorf("error reading ELF file %s: %v", name, err)
 		}
@@ -425,7 +425,7 @@ func (b *binrep) openMachO(name string, start, limit, offset uint64) (plugin.Obj
 	return b.openMachOCommon(name, of, start, limit, offset)
 }
 
-func (b *binrep) openELF(name string, start, limit, offset uint64) (plugin.ObjFile, error) {
+func (b *binrep) openELF(name string, start, limit, offset uint64, relocationSymbol string) (plugin.ObjFile, error) {
 	ef, err := elfOpen(name)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing %s: %v", name, err)

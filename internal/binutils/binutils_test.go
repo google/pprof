@@ -346,7 +346,7 @@ func TestObjFile(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			bu := &Binutils{}
-			f, err := bu.Open(filepath.Join("testdata", "exe_linux_64"), tc.start, tc.limit, tc.offset)
+			f, err := bu.Open(filepath.Join("testdata", "exe_linux_64"), tc.start, tc.limit, tc.offset, "")
 			if err != nil {
 				t.Fatalf("Open: unexpected error %v", err)
 			}
@@ -416,7 +416,7 @@ func TestMachoFiles(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			bu := &Binutils{}
-			f, err := bu.Open(filepath.Join("testdata", tc.file), tc.start, tc.limit, tc.offset)
+			f, err := bu.Open(filepath.Join("testdata", tc.file), tc.start, tc.limit, tc.offset, "")
 			if err != nil {
 				t.Fatalf("Open: unexpected error %v", err)
 			}
@@ -505,7 +505,7 @@ func TestPEFile(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			bu := &Binutils{}
-			f, err := bu.Open(filepath.Join("testdata", "exe_windows_64.exe"), tc.start, tc.limit, tc.offset)
+			f, err := bu.Open(filepath.Join("testdata", "exe_windows_64.exe"), tc.start, tc.limit, tc.offset, "")
 			if err != nil {
 				t.Fatalf("Open: unexpected error %v", err)
 			}
@@ -544,7 +544,7 @@ func TestOpenMalformedELF(t *testing.T) {
 	// Test that opening a malformed ELF file will report an error containing
 	// the word "ELF".
 	bu := &Binutils{}
-	_, err := bu.Open(filepath.Join("testdata", "malformed_elf"), 0, 0, 0)
+	_, err := bu.Open(filepath.Join("testdata", "malformed_elf"), 0, 0, 0, "")
 	if err == nil {
 		t.Fatalf("Open: unexpected success")
 	}
@@ -558,7 +558,7 @@ func TestOpenMalformedMachO(t *testing.T) {
 	// Test that opening a malformed Mach-O file will report an error containing
 	// the word "Mach-O".
 	bu := &Binutils{}
-	_, err := bu.Open(filepath.Join("testdata", "malformed_macho"), 0, 0, 0)
+	_, err := bu.Open(filepath.Join("testdata", "malformed_macho"), 0, 0, 0, "")
 	if err == nil {
 		t.Fatalf("Open: unexpected success")
 	}
@@ -818,7 +818,7 @@ func TestELFObjAddr(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			b := binrep{}
-			o, err := b.openELF(name, tc.start, tc.limit, tc.offset)
+			o, err := b.openELF(name, tc.start, tc.limit, tc.offset, "")
 			if (err != nil) != tc.wantOpenError {
 				t.Errorf("openELF got error %v, want any error=%v", err, tc.wantOpenError)
 			}
