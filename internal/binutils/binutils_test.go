@@ -882,7 +882,7 @@ func fakeELFFile(t *testing.T) *elf.File {
 	progs := []elf.Prog64{{
 		Type: uint32(elf.PT_LOAD), Flags: uint32(elf.PF_R | elf.PF_X), Off: 0x10000, Vaddr: textAddr, Paddr: textAddr, Filesz: 0x1234567, Memsz: 0x1234567, Align: 0x10000}}
 
-	symNames := buf{data: make([]byte, 0)}
+	symNames := buf{}
 	syms := []elf.Sym64{
 		{}, // first symbol empty by convention
 		{Name: symNames.write("_text"), Info: 0, Other: 0, Shndx: 0, Value: textAddr, Size: 0},
@@ -890,11 +890,12 @@ func fakeELFFile(t *testing.T) *elf.File {
 	}
 
 	const numSections = 5
-	const textSize = 16 // # zero bytes we'll write for the contents of .text.
+	// We'll write `textSize` zero bytes as contents of the .head.text and .text sections.
+	const textSize = 16
 	// Offset of section contents in the byte stream -- after header, program headers, and section headers.
 	sectionsStart := uint64(sizeHeader64 + len(progs)*sizeProg64 + numSections*sizeSection64)
 
-	secNames := buf{data: make([]byte, 0)}
+	secNames := buf{}
 	sections := [numSections]elf.Section64{
 		{Name: secNames.write(".head.text"), Type: uint32(elf.SHT_PROGBITS), Flags: uint64(elf.SHF_ALLOC | elf.SHF_EXECINSTR), Addr: textAddr, Off: sectionsStart, Size: textSize, Link: 0, Info: 0, Addralign: 2048, Entsize: 0},
 		{Name: secNames.write(".text"), Type: uint32(elf.SHT_PROGBITS), Flags: uint64(elf.SHF_ALLOC | elf.SHF_EXECINSTR), Addr: stextAddr, Off: sectionsStart + textSize, Size: textSize, Link: 0, Info: 0, Addralign: 2048, Entsize: 0},
