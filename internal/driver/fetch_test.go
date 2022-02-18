@@ -147,7 +147,7 @@ type testObj struct {
 	home string
 }
 
-func (o testObj) Open(file string, start, limit, offset uint64, baseName string) (plugin.ObjFile, error) {
+func (o testObj) Open(file string, start, limit, offset uint64, relocationSymbol string) (plugin.ObjFile, error) {
 	switch file {
 	case "/alternate/architecture/binary":
 		return testFile{file, "abcde10001"}, nil

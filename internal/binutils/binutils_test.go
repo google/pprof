@@ -347,7 +347,7 @@ func TestObjFile(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			bu := &Binutils{}
-			f, err := bu.Open(filepath.Join("testdata", "exe_linux_64"), tc.start, tc.limit, tc.offset, "exe_linux_64")
+			f, err := bu.Open(filepath.Join("testdata", "exe_linux_64"), tc.start, tc.limit, tc.offset, "")
 			if err != nil {
 				t.Fatalf("Open: unexpected error %v", err)
 			}
@@ -417,7 +417,7 @@ func TestMachoFiles(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			bu := &Binutils{}
-			f, err := bu.Open(filepath.Join("testdata", tc.file), tc.start, tc.limit, tc.offset, tc.file)
+			f, err := bu.Open(filepath.Join("testdata", tc.file), tc.start, tc.limit, tc.offset, "")
 			if err != nil {
 				t.Fatalf("Open: unexpected error %v", err)
 			}
@@ -506,7 +506,7 @@ func TestPEFile(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			bu := &Binutils{}
-			f, err := bu.Open(filepath.Join("testdata", "exe_windows_64.exe"), tc.start, tc.limit, tc.offset, "exe_windows_64.exe")
+			f, err := bu.Open(filepath.Join("testdata", "exe_windows_64.exe"), tc.start, tc.limit, tc.offset, "")
 			if err != nil {
 				t.Fatalf("Open: unexpected error %v", err)
 			}
@@ -819,7 +819,7 @@ func TestELFObjAddr(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			b := binrep{}
-			o, err := b.openELF(name, tc.start, tc.limit, tc.offset, "exe_linux_64")
+			o, err := b.openELF(name, tc.start, tc.limit, tc.offset, "")
 			if (err != nil) != tc.wantOpenError {
 				t.Errorf("openELF got error %v, want any error=%v", err, tc.wantOpenError)
 			}
@@ -949,16 +949,16 @@ func TestELFKernelOffset(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		name  string
-		dso   string
-		start uint64
+		name             string
+		relocationSymbol string
+		start            uint64
 	}{
-		{"_text", "[kernel.kallsyms]_text", 0xffff000020080000},
-		{"_stext", "[kernel.kallsyms]_stext", 0xffff000020081000},
+		{"text", "_text", 0xffff000020080000},
+		{"stext", "_stext", 0xffff000020081000},
 	} {
 
 		b := binrep{}
-		o, err := b.openELF("vmlinux", tc.start, 0xffffffffffffffff, tc.start, tc.dso)
+		o, err := b.openELF("vmlinux", tc.start, 0xffffffffffffffff, tc.start, tc.relocationSymbol)
 		if err != nil {
 			t.Errorf("%v: openELF got error %v, want nil", tc.name, err)
 			continue

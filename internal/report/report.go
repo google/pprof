@@ -526,8 +526,7 @@ func symbolsFromBinaries(prof *profile.Profile, g *graph.Graph, rx *regexp.Regex
 			}
 		}
 
-		baseName := filepath.Base(m.File)
-		f, err := obj.Open(m.File, m.Start, m.Limit, m.Offset, baseName)
+		f, err := obj.Open(m.File, m.Start, m.Limit, m.Offset, m.KernelRelocationSymbol)
 		if err != nil {
 			fmt.Printf("%v\n", err)
 			continue

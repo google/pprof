@@ -85,7 +85,16 @@ func TestWebInterface(t *testing.T) {
 			[]string{"300ms.*F1", "200ms.*300ms.*F2"}, false},
 		{"/disasm?f=" + url.QueryEscape("F[12]"),
 			[]string{"f1:asm", "f2:asm"}, false},
-		{"/flamegraph", []string{"File: testbin", "\"n\":\"root\"", "\"n\":\"F1\"", "var flamegraph = function", "function hierarchy"}, false},
+		{"/flamegraph", []string{
+			"File: testbin",
+			// Check profile frame JSON is included.
+			"\"n\":\"root\"",
+			"\"n\":\"F1\"",
+			// Check minified d3-flame-graph JS is included.
+			`flamegraph:\(\)=>`,
+			// Check d3-flame-graph CSS is included.
+			".d3-flame-graph rect {",
+		}, false},
 	}
 	for _, c := range testcases {
 		if c.needDot && !haveDot {
@@ -172,7 +181,7 @@ func (f fakeObj) Symbols(r *regexp.Regexp, addr uint64) ([]*plugin.Sym, error) {
 
 type fakeObjTool struct{}
 
-func (obj fakeObjTool) Open(file string, start, limit, offset uint64, baseName string) (plugin.ObjFile, error) {
+func (obj fakeObjTool) Open(file string, start, limit, offset uint64, relocationSymbol string) (plugin.ObjFile, error) {
 	return fakeObj{}, nil
 }
 

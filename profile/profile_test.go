@@ -249,6 +249,16 @@ var cpuM = []*Mapping{
 		HasLineNumbers:  true,
 		HasInlineFrames: true,
 	},
+	{
+		ID:              5,
+		Start:           0xffff000010080000,
+		Limit:           0xffffffffffffffff,
+		File:            "[kernel.kallsyms]_text",
+		HasFunctions:    true,
+		HasFilenames:    true,
+		HasLineNumbers:  true,
+		HasInlineFrames: true,
+	},
 }
 
 var cpuF = []*Function{
@@ -1431,6 +1441,13 @@ func TestSetMain(t *testing.T) {
 	testProfile1.massageMappings()
 	if testProfile1.Mapping[0].File != mainBinary {
 		t.Errorf("got %s for main", testProfile1.Mapping[0].File)
+	}
+}
+
+func TestParseKernelRelocation(t *testing.T) {
+	src := testProfile1.Copy()
+	if src.Mapping[len(src.Mapping)-1].KernelRelocationSymbol != "_text" {
+		t.Errorf("got %s for Mapping.KernelRelocationSymbol", src.Mapping[0].KernelRelocationSymbol)
 	}
 }
 
