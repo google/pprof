@@ -15,6 +15,7 @@ var cpuF = []*profile.Function{
 	{ID: 1, Name: "main", SystemName: "main", Filename: "main.c"},
 	{ID: 2, Name: "foo", SystemName: "foo", Filename: "foo.c"},
 	{ID: 3, Name: "foo_caller", SystemName: "foo_caller", Filename: "foo.c"},
+	{ID: 4, Name: "bar", SystemName: "bar", Filename: "bar.c"},
 }
 
 var cpuM = []*profile.Mapping{
@@ -33,26 +34,6 @@ var cpuM = []*profile.Mapping{
 		Start:           0x1000,
 		Limit:           0x4000,
 		File:            "/lib/lib.so",
-		HasFunctions:    true,
-		HasFilenames:    true,
-		HasLineNumbers:  true,
-		HasInlineFrames: true,
-	},
-	{
-		ID:              3,
-		Start:           0x4000,
-		Limit:           0x5000,
-		File:            "/lib/lib2_c.so.6",
-		HasFunctions:    true,
-		HasFilenames:    true,
-		HasLineNumbers:  true,
-		HasInlineFrames: true,
-	},
-	{
-		ID:              4,
-		Start:           0x5000,
-		Limit:           0x9000,
-		File:            "/lib/lib.so_6 (deleted)",
 		HasFunctions:    true,
 		HasFilenames:    true,
 		HasLineNumbers:  true,
@@ -101,6 +82,14 @@ var cpuL = []*profile.Location{
 		Address: 0x3002,
 		Line: []profile.Line{
 			{Function: cpuF[2], Line: 3},
+		},
+	},
+	{
+		ID:      3003,
+		Mapping: cpuM[0],
+		Address: 0x3003,
+		Line: []profile.Line{
+			{Function: cpuF[3], Line: 1},
 		},
 	},
 }
@@ -173,6 +162,13 @@ var testProfile1 = &profile.Profile{
 				"allocations": {"byte", "kilobyte"},
 			},
 		},
+		{
+			Location: []*profile.Location{cpuL[5], cpuL[0]},
+			Value:    []int64{200, 200},
+			NumLabel: map[string][]int64{
+				"allocations": {1024},
+			},
+		},
 	},
 	Location: cpuL,
 	Function: cpuF,
@@ -199,6 +195,7 @@ func TestAddLabelNodesMatchBooleans(t *testing.T) {
 				"main(main.c);foo(foo.c);foo_caller(foo.c) 10",
 				"main(main.c);foo_caller(foo.c) 10000",
 				"main(main.c);foo_caller(foo.c) 1",
+				"main(main.c);bar(bar.c) 200",
 			},
 		},
 		{
@@ -211,6 +208,7 @@ func TestAddLabelNodesMatchBooleans(t *testing.T) {
 				"(key404);main(main.c);foo(foo.c);foo_caller(foo.c);(key404) 10",
 				"(key404);main(main.c);foo_caller(foo.c);(key404) 10000",
 				"(key404);main(main.c);foo_caller(foo.c);(key404) 1",
+				"(key404);main(main.c);bar(bar.c);(key404) 200",
 			},
 		},
 		{
@@ -223,6 +221,7 @@ func TestAddLabelNodesMatchBooleans(t *testing.T) {
 				"tag3(key1);main(main.c);foo(foo.c);foo_caller(foo.c) 10",
 				"tag4(key1);main(main.c);foo_caller(foo.c) 10000",
 				"tag4(key1);main(main.c);foo_caller(foo.c) 1",
+				"(key1);main(main.c);bar(bar.c) 200",
 			},
 		},
 		{
@@ -235,6 +234,7 @@ func TestAddLabelNodesMatchBooleans(t *testing.T) {
 				"tag2(key2);main(main.c);foo(foo.c);foo_caller(foo.c) 10",
 				"tag1(key2);main(main.c);foo_caller(foo.c) 10000",
 				"tag1,tag5(key2);main(main.c);foo_caller(foo.c) 1",
+				"(key2);main(main.c);bar(bar.c) 200",
 			},
 		},
 		{
@@ -247,6 +247,7 @@ func TestAddLabelNodesMatchBooleans(t *testing.T) {
 				"main(main.c);foo(foo.c);foo_caller(foo.c);tag3(key1) 10",
 				"main(main.c);foo_caller(foo.c);tag4(key1) 10000",
 				"main(main.c);foo_caller(foo.c);tag4(key1) 1",
+				"main(main.c);bar(bar.c);(key1) 200",
 			},
 		},
 		{
@@ -259,6 +260,7 @@ func TestAddLabelNodesMatchBooleans(t *testing.T) {
 				"main(main.c);foo(foo.c);foo_caller(foo.c);(key3) 10",
 				"main(main.c);foo_caller(foo.c);(key3) 10000",
 				"main(main.c);foo_caller(foo.c);(key3) 1",
+				"main(main.c);bar(bar.c);(key3) 200",
 			},
 		},
 		{
@@ -271,6 +273,7 @@ func TestAddLabelNodesMatchBooleans(t *testing.T) {
 				"tag3(key1);tag2(key2);main(main.c);foo(foo.c);foo_caller(foo.c) 10",
 				"tag4(key1);tag1(key2);main(main.c);foo_caller(foo.c) 10000",
 				"tag4(key1);tag1,tag5(key2);main(main.c);foo_caller(foo.c) 1",
+				"(key1);(key2);main(main.c);bar(bar.c) 200",
 			},
 		},
 		{
@@ -283,6 +286,7 @@ func TestAddLabelNodesMatchBooleans(t *testing.T) {
 				"main(main.c);foo(foo.c);foo_caller(foo.c);tag3(key1);tag2(key2) 10",
 				"main(main.c);foo_caller(foo.c);tag4(key1);tag1(key2) 10000",
 				"main(main.c);foo_caller(foo.c);tag4(key1);tag1,tag5(key2) 1",
+				"main(main.c);bar(bar.c);(key1);(key2) 200",
 			},
 		},
 		{
@@ -292,10 +296,10 @@ func TestAddLabelNodesMatchBooleans(t *testing.T) {
 			wantSampleFuncs: []string{
 				"main(main.c);(allocations) 1000",
 				"main(main.c);foo(foo.c);foo_caller(foo.c);(allocations) 100",
-				// TODO: bug #651, this line should say 1024(allocations)
-				"main(main.c);foo(foo.c);foo_caller(foo.c);(allocations) 10",
+				"main(main.c);foo(foo.c);foo_caller(foo.c);1024(allocations) 10",
 				"main(main.c);foo_caller(foo.c);1024B,2048B(allocations) 10000",
 				"main(main.c);foo_caller(foo.c);1024B,1024B(allocations) 1",
+				"main(main.c);bar(bar.c);1024(allocations) 200",
 			},
 		},
 		{
@@ -305,10 +309,10 @@ func TestAddLabelNodesMatchBooleans(t *testing.T) {
 			wantSampleFuncs: []string{
 				"(allocations);main(main.c) 1000",
 				"(allocations);main(main.c);foo(foo.c);foo_caller(foo.c) 100",
-				// TODO: bug #651, this line should say 1024(allocations)
-				"(allocations);main(main.c);foo(foo.c);foo_caller(foo.c) 10",
+				"1024(allocations);main(main.c);foo(foo.c);foo_caller(foo.c) 10",
 				"1024B,2048B(allocations);main(main.c);foo_caller(foo.c) 10000",
 				"1024B,1024B(allocations);main(main.c);foo_caller(foo.c) 1",
+				"1024(allocations);main(main.c);bar(bar.c) 200",
 			},
 		},
 		{
@@ -319,10 +323,23 @@ func TestAddLabelNodesMatchBooleans(t *testing.T) {
 			wantSampleFuncs: []string{
 				"main(main.c);(allocations) 1000",
 				"main(main.c);foo(foo.c);foo_caller(foo.c);(allocations) 100",
-				// TODO: bug, this line should say 1024(allocations)
-				"main(main.c);foo(foo.c);foo_caller(foo.c);(allocations) 10",
+				"main(main.c);foo(foo.c);foo_caller(foo.c);1024(allocations) 10",
 				"main(main.c);foo_caller(foo.c);1kB,2kB(allocations) 10000",
 				"main(main.c);foo_caller(foo.c);1kB,1kB(allocations) 1",
+				"main(main.c);bar(bar.c);1024(allocations) 200",
+			},
+		},
+		{
+			name:    "Numeric units with no units are handled properly by tagleaf",
+			tagleaf: []string{"allocations"},
+			leafm:   true,
+			wantSampleFuncs: []string{
+				"main(main.c);(allocations) 1000",
+				"main(main.c);foo(foo.c);foo_caller(foo.c);(allocations) 100",
+				"main(main.c);foo(foo.c);foo_caller(foo.c);1024(allocations) 10",
+				"main(main.c);foo_caller(foo.c);1024B,2048B(allocations) 10000",
+				"main(main.c);foo_caller(foo.c);1024B,1024B(allocations) 1",
+				"main(main.c);bar(bar.c);1024(allocations) 200",
 			},
 		},
 	} {
