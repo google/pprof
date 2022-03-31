@@ -150,6 +150,19 @@ func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 	compareGraphs(t, buf.Bytes(), "compose7.dot")
 }
 
+func TestComposeWithCommentsWithNewlines(t *testing.T) {
+	g := baseGraph()
+	a, c := baseAttrsAndConfig()
+	// comments that could be added with the -add_comment command line tool
+	// the first label is used as the dot "node name"; the others are escaped as labels
+	c.Labels = []string{"comment line 1\ncomment line 2 \"unterminated double quote", `second comment "double quote"`}
+
+	var buf bytes.Buffer
+	ComposeDot(&buf, g, a, c)
+
+	compareGraphs(t, buf.Bytes(), "compose9.dot")
+}
+
 func baseGraph() *Graph {
 	src := &Node{
 		Info:        NodeInfo{Name: "src"},
