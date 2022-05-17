@@ -263,7 +263,7 @@ func frame(fname, file string, line int) plugin.Frame {
 
 type mockObjTool struct{}
 
-func (mockObjTool) Open(file string, start, limit, offset uint64) (plugin.ObjFile, error) {
+func (mockObjTool) Open(file string, start, limit, offset uint64, relocationSymbol string) (plugin.ObjFile, error) {
 	return mockObjFile{frames: mockAddresses}, nil
 }
 
