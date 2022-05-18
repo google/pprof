@@ -95,13 +95,22 @@ func TestWebInterface(t *testing.T) {
 			// Check d3-flame-graph CSS is included.
 			".d3-flame-graph rect {",
 		}, false},
+		{"/flamegraph2", []string{
+			"File: testbin",
+			// Check that interesting frames are included.
+			`\bF1\b`,
+			`\bF2\b`,
+			// Check new view JS is included.
+			`function stackViewer`,
+			// Check new view CSS is included.
+			"#stack-chart {",
+		}, false},
 	}
 	for _, c := range testcases {
 		if c.needDot && !haveDot {
 			t.Log("skipping", c.path, "since dot (graphviz) does not seem to be installed")
 			continue
 		}
-
 		res, err := http.Get(server.URL + c.path)
 		if err != nil {
 			t.Error("could not fetch", c.path, err)

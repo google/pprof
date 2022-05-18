@@ -146,6 +146,7 @@ func TestFilter(t *testing.T) {
 	}
 }
 
+// testM contains mappings for fake profiles used in tests.
 var testM = []*profile.Mapping{
 	{
 		ID:              1,
@@ -156,6 +157,7 @@ var testM = []*profile.Mapping{
 	},
 }
 
+// testF contains functions for fake profiles used in tests.
 var testF = []*profile.Function{
 	{
 		ID:       1,
@@ -179,6 +181,7 @@ var testF = []*profile.Function{
 	},
 }
 
+// testL contains locations for fake profiles used in tests.
 var testL = []*profile.Location{
 	{
 		ID:      1,
@@ -232,6 +235,29 @@ var testL = []*profile.Location{
 	},
 }
 
+// testSample returns a profile sample with specified value and stack.
+// Note: callees come first in sample stacks.
+func testSample(value int64, locs ...*profile.Location) *profile.Sample {
+	return &profile.Sample{
+		Value:    []int64{value},
+		Location: locs,
+	}
+}
+
+// makeTestProfile returns a profile with specified samples that uses testL/testF/testM
+// (defined in report_test.go).
+func makeTestProfile(samples ...*profile.Sample) *profile.Profile {
+	return &profile.Profile{
+		SampleType: []*profile.ValueType{{Type: "samples", Unit: "count"}},
+		Sample:     samples,
+		Location:   testL,
+		Function:   testF,
+		Mapping:    testM,
+	}
+}
+
+// testProfile contains a fake profile used in tests.
+// Various report methods modify profiles so tests should operate on testProfile.Copy().
 var testProfile = &profile.Profile{
 	PeriodType:    &profile.ValueType{Type: "cpu", Unit: "millisecond"},
 	Period:        10,

@@ -399,6 +399,40 @@ the user to interactively view profile data in multiple formats.
 
 The top of the display is a header that contains some buttons and menus.
 
+## View
+
+The `View` menu allows the user to switch between different visualizations of
+the profile.
+
+Top
+:   Displays a tabular view of profile entries. The table can be sorted
+    interactively.
+
+Graph
+:   Displays a scrollable/zoomable graph view; each function (or profile entry)
+    is represented by a node and edges connect callers to callees.
+
+Flame Graph
+:   Displays a [flame graph](https://www.brendangregg.com/flamegraphs.html).
+
+Flame (experimental)
+:   Displays a view similar to a flame graph that can show the selected node's
+    callers and callees simultaneously.
+
+NOTE: This view is currently experimental and may eventually replace the normal
+Flame Graph view.
+
+Peek
+:   Shows callers / callees per function in a simple textual forma.
+
+Source
+:   Displays source code annotated with profile information. Clicking on a
+    source line can show the disassembled machine instructions for that line.
+
+Disassemble
+:   Displays disassembled machine instructions annotated with profile
+    information.
+
 ## Config
 
 The `Config` menu allows the user to save the current refinement
