@@ -135,9 +135,9 @@ func TestConfigMenu(t *testing.T) {
 	pageURL, _ := url.Parse("/top?f=foo")
 	menu := configMenu(fname, *pageURL)
 	want := []configMenuEntry{
-		{Name: "Default", URL: "/top", Current: false, UserConfig: false},
-		{Name: "A", URL: "/top?f=foo", Current: true, UserConfig: true},
-		{Name: "B", URL: "/top?f=bar", Current: false, UserConfig: true},
+		{Name: "Default", URL: "?", Current: false, UserConfig: false},
+		{Name: "A", URL: "?f=foo", Current: true, UserConfig: true},
+		{Name: "B", URL: "?f=bar", Current: false, UserConfig: true},
 	}
 	if !reflect.DeepEqual(menu, want) {
 		t.Errorf("ConfigMenu returned %v; want %v", menu, want)
