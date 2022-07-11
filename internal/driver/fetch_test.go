@@ -126,11 +126,17 @@ func TestCollectMappingSources(t *testing.T) {
 
 func TestUnsourceMappings(t *testing.T) {
 	for _, tc := range []struct {
-		file, buildID, want string
+		os, file, buildID, want string
 	}{
-		{"/usr/bin/binary", "buildId", "/usr/bin/binary"},
-		{"http://example.com", "", ""},
+		{"", "/usr/bin/binary", "buildId", "/usr/bin/binary"},
+		{"", "http://example.com", "", ""},
+		{"windows", `C:\example.exe`, "", `C:\example.exe`},
+		{"windows", `c:/example.exe`, "", `c:/example.exe`},
 	} {
+		if tc.os != "" && tc.os != runtime.GOOS {
+			continue
+		}
+
 		p := &profile.Profile{
 			Mapping: []*profile.Mapping{
 				{

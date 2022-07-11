@@ -389,7 +389,7 @@ func collectMappingSources(p *profile.Profile, source string) plugin.MappingSour
 // set to the remote source URL by collectMappingSources back to empty string.
 func unsourceMappings(p *profile.Profile) {
 	for _, m := range p.Mapping {
-		if m.BuildID == "" {
+		if m.BuildID == "" && filepath.VolumeName(m.File) == "" {
 			if u, err := url.Parse(m.File); err == nil && u.IsAbs() {
 				m.File = ""
 			}
