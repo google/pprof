@@ -337,6 +337,30 @@ func TestDemangleSingleFunction(t *testing.T) {
 			symbol: "example.com/foo.(*Bar).Bat",
 			want:   "example.com/foo.(*Bar).Bat",
 		},
+		{
+			// Method on type with type parameters, as reported by
+			// Go pprof profiles (simplified symbol name).
+			symbol: "example.com/foo.(*Bar[...]).Bat",
+			want:   "example.com/foo.(*Bar[...]).Bat",
+		},
+		{
+			// Method on type with type parameters, as reported by
+			// perf profiles (actual symbol name).
+			symbol: "example.com/foo.(*Bar[go.shape.string_0,go.shape.int_1]).Bat",
+			want:   "example.com/foo.(*Bar[go.shape.string_0,go.shape.int_1]).Bat",
+		},
+		{
+			// Function with type parameters, as reported by Go
+			// pprof profiles (simplified symbol name).
+			symbol: "example.com/foo.Bar[...]",
+			want:   "example.com/foo.Bar[...]",
+		},
+		{
+			// Function with type parameters, as reported by perf
+			// profiles (actual symbol name).
+			symbol: "example.com/foo.Bar[go.shape.string_0,go.shape.int_1]",
+			want:   "example.com/foo.Bar[go.shape.string_0,go.shape.int_1]",
+		},
 	}
 	for _, tc := range cases {
 		fn := &profile.Function{

@@ -257,7 +257,12 @@ func demangleSingleFunction(fn *profile.Function, options []demangle.Option) {
 // the result of demangling C++. If so, further heuristics will be
 // applied to simplify the name.
 func looksLikeDemangledCPlusPlus(demangled string) bool {
-	if strings.Contains(demangled, ".<") { // Skip java names of the form "class.<init>"
+	// Skip java names of the form "class.<init>".
+	if strings.Contains(demangled, ".<") {
+		return false
+	}
+	// Skip Go names of the form "foo.(*Bar[...]).Method".
+	if strings.Contains(demangled, "]).") {
 		return false
 	}
 	return strings.ContainsAny(demangled, "<>[]") || strings.Contains(demangled, "::")
