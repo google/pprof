@@ -261,6 +261,118 @@ func frame(fname, file string, line int) plugin.Frame {
 		Line: line}
 }
 
+func TestDemangleSingleFunction(t *testing.T) {
+	// All tests with default mode.
+	demanglerMode := ""
+	options := demanglerModeToOptions(demanglerMode)
+
+	cases := []struct {
+		symbol string
+		want   string
+	}{
+		{
+			// Trivial C symbol.
+			symbol: "printf",
+			want:   "printf",
+		},
+		{
+			// foo::bar(int)
+			symbol: "_ZN3foo3barEi",
+			want:   "foo::bar",
+		},
+		{
+			// Already demangled.
+			symbol: "foo::bar(int)",
+			want:   "foo::bar",
+		},
+		{
+			// int foo::baz<double>(double)
+			symbol: "_ZN3foo3bazIdEEiT",
+			want:   "foo::baz",
+		},
+		{
+			// Already demangled.
+			//
+			// TODO: The demangled form of this is actually
+			// 'int foo::baz<double>(double)', but our heuristic
+			// can't strip the return type. Should it be able to?
+			symbol: "foo::baz<double>(double)",
+			want:   "foo::baz",
+		},
+		{
+			// operator delete[](void*)
+			symbol: "_ZdaPv",
+			want:   "operator delete[]",
+		},
+		{
+			// Already demangled.
+			symbol: "operator delete[](void*)",
+			want:   "operator delete[]",
+		},
+		{
+			// bar(int (*) [5])
+			symbol: "_Z3barPA5_i",
+			want:   "bar",
+		},
+		{
+			// Already demangled.
+			symbol: "bar(int (*) [5])",
+			want:   "bar",
+		},
+		// Java symbols, do not demangle.
+		{
+			symbol: "java.lang.Float.parseFloat",
+			want:   "java.lang.Float.parseFloat",
+		},
+		{
+			symbol: "java.lang.Float.<init>",
+			want:   "java.lang.Float.<init>",
+		},
+		// Go symbols, do not demangle.
+		{
+			symbol: "example.com/foo.Bar",
+			want:   "example.com/foo.Bar",
+		},
+		{
+			symbol: "example.com/foo.(*Bar).Bat",
+			want:   "example.com/foo.(*Bar).Bat",
+		},
+		{
+			// Method on type with type parameters, as reported by
+			// Go pprof profiles (simplified symbol name).
+			symbol: "example.com/foo.(*Bar[...]).Bat",
+			want:   "example.com/foo.(*Bar[...]).Bat",
+		},
+		{
+			// Method on type with type parameters, as reported by
+			// perf profiles (actual symbol name).
+			symbol: "example.com/foo.(*Bar[go.shape.string_0,go.shape.int_1]).Bat",
+			want:   "example.com/foo.(*Bar[go.shape.string_0,go.shape.int_1]).Bat",
+		},
+		{
+			// Function with type parameters, as reported by Go
+			// pprof profiles (simplified symbol name).
+			symbol: "example.com/foo.Bar[...]",
+			want:   "example.com/foo.Bar[...]",
+		},
+		{
+			// Function with type parameters, as reported by perf
+			// profiles (actual symbol name).
+			symbol: "example.com/foo.Bar[go.shape.string_0,go.shape.int_1]",
+			want:   "example.com/foo.Bar[go.shape.string_0,go.shape.int_1]",
+		},
+	}
+	for _, tc := range cases {
+		fn := &profile.Function{
+			SystemName: tc.symbol,
+		}
+		demangleSingleFunction(fn, options)
+		if fn.Name != tc.want {
+			t.Errorf("demangleSingleFunction(%s) got %s want %s", tc.symbol, fn.Name, tc.want)
+		}
+	}
+}
+
 type mockObjTool struct{}
 
 func (mockObjTool) Open(file string, start, limit, offset uint64, relocationSymbol string) (plugin.ObjFile, error) {
