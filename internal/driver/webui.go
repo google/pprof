@@ -86,6 +86,7 @@ type webArgs struct {
 	TextBody    string
 	Top         []report.TextItem
 	FlameGraph  template.JS
+	Stacks      template.JS
 	Configs     []configMenuEntry
 }
 
@@ -107,6 +108,8 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options, d
 	}
 	ui.help["details"] = "Show information about the profile and this view"
 	ui.help["graph"] = "Display profile as a directed graph"
+	ui.help["flamegraph"] = "Display profile as a flame graph"
+	ui.help["flamegraph2"] = "Display profile as a flame graph (experimental version that can display caller info on selection)"
 	ui.help["reset"] = "Show the entire profile"
 	ui.help["save_config"] = "Save current settings"
 
@@ -125,6 +128,7 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options, d
 			"/source":       http.HandlerFunc(ui.source),
 			"/peek":         http.HandlerFunc(ui.peek),
 			"/flamegraph":   http.HandlerFunc(ui.flamegraph),
+			"/flamegraph2":  http.HandlerFunc(ui.stackView), // Experimental
 			"/saveconfig":   http.HandlerFunc(ui.saveConfig),
 			"/deleteconfig": http.HandlerFunc(ui.deleteConfig),
 			"/download": http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
