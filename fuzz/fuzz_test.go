@@ -15,7 +15,7 @@
 package pprof
 
 import (
-	"io/ioutil"
+	"os"
 	"runtime"
 	"testing"
 
@@ -28,13 +28,13 @@ func TestParseData(t *testing.T) {
 	}
 
 	const path = "testdata/"
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		t.Errorf("Problem reading directory %s : %v", path, err)
 	}
 	for _, f := range files {
 		file := path + f.Name()
-		inbytes, err := ioutil.ReadFile(file)
+		inbytes, err := os.ReadFile(file)
 		if err != nil {
 			t.Errorf("Problem reading file: %s : %v", file, err)
 			continue

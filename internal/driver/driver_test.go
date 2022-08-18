@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net"
 	_ "net/http/pprof"
 	"os"
@@ -117,7 +116,7 @@ func TestParse(t *testing.T) {
 			flags := strings.Split(tc.flags, ",")
 
 			// Encode profile into a protobuf and decode it again.
-			protoTempFile, err := ioutil.TempFile("", "profile_proto")
+			protoTempFile, err := os.CreateTemp("", "profile_proto")
 			if err != nil {
 				t.Errorf("cannot create tempfile: %v", err)
 			}
@@ -145,7 +144,7 @@ func TestParse(t *testing.T) {
 			setCurrentConfig(baseConfig)
 
 			// Read the profile from the encoded protobuf
-			outputTempFile, err := ioutil.TempFile("", "profile_output")
+			outputTempFile, err := os.CreateTemp("", "profile_output")
 			if err != nil {
 				t.Errorf("cannot create tempfile: %v", err)
 			}
@@ -180,14 +179,14 @@ func TestParse(t *testing.T) {
 			if err := PProf(o2); err != nil {
 				t.Errorf("%s: %v", tc.source, err)
 			}
-			b, err := ioutil.ReadFile(outputTempFile.Name())
+			b, err := os.ReadFile(outputTempFile.Name())
 			if err != nil {
 				t.Errorf("Failed to read profile %s: %v", outputTempFile.Name(), err)
 			}
 
 			// Read data file with expected solution
 			solution = "testdata/" + solution
-			sbuf, err := ioutil.ReadFile(solution)
+			sbuf, err := os.ReadFile(solution)
 			if err != nil {
 				t.Fatalf("reading solution file %s: %v", solution, err)
 			}
@@ -215,7 +214,7 @@ func TestParse(t *testing.T) {
 				}
 				t.Errorf("%s\n%s\n", solution, d)
 				if *updateFlag {
-					err := ioutil.WriteFile(solution, b, 0644)
+					err := os.WriteFile(solution, b, 0644)
 					if err != nil {
 						t.Errorf("failed to update the solution file %q: %v", solution, err)
 					}

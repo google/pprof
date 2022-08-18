@@ -22,7 +22,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"net"
 	"net/http"
@@ -52,7 +51,7 @@ func TestSymbolizationPath(t *testing.T) {
 	saveHome := os.Getenv(homeEnv())
 	savePath := os.Getenv("PPROF_BINARY_PATH")
 
-	tempdir, err := ioutil.TempDir("", "home")
+	tempdir, err := os.MkdirTemp("", "home")
 	if err != nil {
 		t.Fatal("creating temp dir: ", err)
 	}
@@ -530,7 +529,7 @@ func TestHTTPSInsecure(t *testing.T) {
 		t.Skip("test assumes tcp available")
 	}
 	saveHome := os.Getenv(homeEnv())
-	tempdir, err := ioutil.TempDir("", "home")
+	tempdir, err := os.MkdirTemp("", "home")
 	if err != nil {
 		t.Fatal("creating temp dir: ", err)
 	}
@@ -564,7 +563,7 @@ func TestHTTPSInsecure(t *testing.T) {
 	}()
 	defer l.Close()
 
-	outputTempFile, err := ioutil.TempFile("", "profile_output")
+	outputTempFile, err := os.CreateTemp("", "profile_output")
 	if err != nil {
 		t.Fatalf("Failed to create tempfile: %v", err)
 	}
@@ -603,7 +602,7 @@ func TestHTTPSWithServerCertFetch(t *testing.T) {
 		t.Skip("test assumes tcp available")
 	}
 	saveHome := os.Getenv(homeEnv())
-	tempdir, err := ioutil.TempDir("", "home")
+	tempdir, err := os.MkdirTemp("", "home")
 	if err != nil {
 		t.Fatal("creating temp dir: ", err)
 	}
@@ -645,7 +644,7 @@ func TestHTTPSWithServerCertFetch(t *testing.T) {
 	}()
 	defer l.Close()
 
-	outputTempFile, err := ioutil.TempFile("", "profile_output")
+	outputTempFile, err := os.CreateTemp("", "profile_output")
 	if err != nil {
 		t.Fatalf("Failed to create tempfile: %v", err)
 	}
@@ -665,7 +664,7 @@ func TestHTTPSWithServerCertFetch(t *testing.T) {
 		Symbolize: "remote",
 	}
 
-	certTempFile, err := ioutil.TempFile("", "cert_output")
+	certTempFile, err := os.CreateTemp("", "cert_output")
 	if err != nil {
 		t.Errorf("cannot create cert tempfile: %v", err)
 	}
@@ -673,7 +672,7 @@ func TestHTTPSWithServerCertFetch(t *testing.T) {
 	defer certTempFile.Close()
 	certTempFile.Write(certBytes)
 
-	keyTempFile, err := ioutil.TempFile("", "key_output")
+	keyTempFile, err := os.CreateTemp("", "key_output")
 	if err != nil {
 		t.Errorf("cannot create key tempfile: %v", err)
 	}
