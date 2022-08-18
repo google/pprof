@@ -16,7 +16,7 @@ package report
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"regexp"
 	"runtime"
 	"strings"
@@ -76,7 +76,7 @@ func TestSource(t *testing.T) {
 			t.Fatalf("%s: %v", tc.want, err)
 		}
 
-		gold, err := ioutil.ReadFile(tc.want)
+		gold, err := os.ReadFile(tc.want)
 		if err != nil {
 			t.Fatalf("%s: %v", tc.want, err)
 		}

@@ -16,7 +16,7 @@ package driver
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -116,7 +116,7 @@ func TestWebInterface(t *testing.T) {
 			t.Error("could not fetch", c.path, err)
 			continue
 		}
-		data, err := ioutil.ReadAll(res.Body)
+		data, err := io.ReadAll(res.Body)
 		if err != nil {
 			t.Error("could not read response", c.path, err)
 			continue
@@ -148,7 +148,7 @@ func TestWebInterface(t *testing.T) {
 					t.Error("could not fetch", c.path, err)
 					return
 				}
-				if _, err = ioutil.ReadAll(res.Body); err != nil {
+				if _, err = io.ReadAll(res.Body); err != nil {
 					t.Error("could not read response", c.path, err)
 				}
 			}()

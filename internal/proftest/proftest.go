@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
@@ -31,14 +30,14 @@ import (
 // differences. It is meant for testing purposes to display the
 // differences between expected and actual output.
 func Diff(b1, b2 []byte) (data []byte, err error) {
-	f1, err := ioutil.TempFile("", "proto_test")
+	f1, err := os.CreateTemp("", "proto_test")
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(f1.Name())
 	defer f1.Close()
 
-	f2, err := ioutil.TempFile("", "proto_test")
+	f2, err := os.CreateTemp("", "proto_test")
 	if err != nil {
 		return nil, err
 	}

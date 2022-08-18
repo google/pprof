@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -214,7 +214,7 @@ func baseAttrsAndConfig() (*DotAttributes, *DotConfig) {
 
 func compareGraphs(t *testing.T, got []byte, wantFile string) {
 	wantFile = filepath.Join("testdata", wantFile)
-	want, err := ioutil.ReadFile(wantFile)
+	want, err := os.ReadFile(wantFile)
 	if err != nil {
 		t.Fatalf("error reading test file %s: %v", wantFile, err)
 	}
@@ -226,7 +226,7 @@ func compareGraphs(t *testing.T, got []byte, wantFile string) {
 		}
 		t.Errorf("Compose incorrectly wrote %s", string(d))
 		if *updateFlag {
-			err := ioutil.WriteFile(wantFile, got, 0644)
+			err := os.WriteFile(wantFile, got, 0644)
 			if err != nil {
 				t.Errorf("failed to update the golden file %q: %v", wantFile, err)
 			}
