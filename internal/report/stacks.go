@@ -48,6 +48,7 @@ type StackSource struct {
 	FullName   string
 	FileName   string
 	UniqueName string // Disambiguates functions with same names
+	Inlined    bool   // If true this source was inlined into its caller
 
 	// Alternative names to display (with decreasing lengths) to make text fit.
 	// Guaranteed to be non-empty.
@@ -105,11 +106,16 @@ func (rpt *Report) Stacks() StackSet {
 }
 
 func (s *StackSet) makeInitialStacks(rpt *Report) {
-	srcs := map[profile.Line]int{} // Sources identified so far.
+	type key struct {
+		line    profile.Line
+		inlined bool
+	}
+	srcs := map[key]int{} // Sources identified so far.
 	seenFunctions := map[string]bool{}
 	unknownIndex := 1
-	getSrc := func(line profile.Line) int {
-		if i, ok := srcs[line]; ok {
+	getSrc := func(line profile.Line, inlined bool) int {
+		k := key{line, inlined}
+		if i, ok := srcs[k]; ok {
 			return i
 		}
 		x := StackSource{Places: []StackSlot{}} // Ensure Places is non-nil
@@ -128,10 +134,11 @@ func (s *StackSet) makeInitialStacks(rpt *Report) {
 			x.UniqueName = x.FullName
 			unknownIndex++
 		}
+		x.Inlined = inlined
 		x.RE = "^" + regexp.QuoteMeta(x.UniqueName) + "$"
 		x.Display = shortNameList(x.FullName)
 		s.Sources = append(s.Sources, x)
-		srcs[line] = len(s.Sources) - 1
+		srcs[k] = len(s.Sources) - 1
 		return len(s.Sources) - 1
 	}
 
@@ -151,7 +158,8 @@ func (s *StackSet) makeInitialStacks(rpt *Report) {
 			loc := sample.Location[i]
 			for j := len(loc.Line) - 1; j >= 0; j-- {
 				line := loc.Line[j]
-				stack.Sources = append(stack.Sources, getSrc(line))
+				inlined := (j != len(loc.Line)-1)
+				stack.Sources = append(stack.Sources, getSrc(line, inlined))
 			}
 		}
 

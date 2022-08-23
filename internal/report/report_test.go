@@ -233,6 +233,20 @@ var testL = []*profile.Location{
 			},
 		},
 	},
+	{
+		ID:      6,
+		Mapping: testM[0],
+		Line: []profile.Line{
+			{
+				Function: testF[3],
+				Line:     7,
+			},
+			{
+				Function: testF[2],
+				Line:     6,
+			},
+		},
+	},
 }
 
 // testSample returns a profile sample with specified value and stack.

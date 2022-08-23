@@ -434,7 +434,7 @@ Graph
 Flame Graph
 :   Displays a [flame graph](https://www.brendangregg.com/flamegraphs.html).
 
-Flame (experimental)
+[Flame Graph (new)](#flame-graph)
 :   Displays a view similar to a flame graph that can show the selected node's
     callers and callees simultaneously.
 
@@ -470,6 +470,34 @@ configuration. Selecting such an entry applies that configuration. The
 currently selected entry is marked with a ✓. Clicking on the 🗙 on the
 right-hand side of such an entry deletes the configuration (after
 prompting the user to confirm).
+
+## Flame graph
+
+The `Flame graph (new)` view displays profile information as a
+[flame graph](https://www.brendangregg.com/flamegraphs.html).
+
+Boxes on this view corresponding to stack frames in the profile. Caller boxes
+are directly above callee boxes. The width of each box is proportional to the
+number of profile samples where that frame was present on the call stack.
+Children of a particular box are laid out left to right in decreasing size
+order.
+
+Inlining is indicated by the absence of a horizontal border between a caller and
+a callee. E.g., suppose X calls Y calls Z and the call from Y to Z is inlined into
+Y. There will be a black border between X and Y, but no border between Y and Z.
+
+Names displayed in different boxes may have different font sizes. These size
+differences are due to an attempt to fit as much of the name into the box as
+possible; no other interpretation should be placed on the size.
+
+Boxes are colored according to the name of the package in which the corresponding
+function occurs. E.g., in C++ profiles all frames corresponding to `std::` functions
+will be assigned the same color.
+
+In addition to the package-based coloring, the left hand side of a box may be darker.
+This darker area corresponds to the number of samples that occurred directly in
+the code representated by the box (as opposed to samples in functions called by
+the code.)
 
 ## TODO: cover the following issues:
 

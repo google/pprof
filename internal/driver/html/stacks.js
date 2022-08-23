@@ -176,8 +176,9 @@ function stackViewer(stacks, nodes) {
 
   function handleEnter(box, div) {
     if (actionMenuOn) return;
+    const src = stacks.Sources[box.src];
     const d = details(box);
-    div.title = d + ' ' + stacks.Sources[box.src].FullName;
+    div.title = d + ' ' + src.FullName + (src.Inlined ? "\n(inlined)" : "");
     detailBox.innerText = d;
     // Highlight all boxes that have the same source as box.
     toggleClass(box.src, 'hilite2', true);
@@ -371,10 +372,13 @@ function stackViewer(stacks, nodes) {
     r.style.left = box.x + 'px';
     r.style.top = box.y + 'px';
     r.style.width = w + 'px';
-    r.style.height = (ROW-1) + 'px';  // Leave 1px gap
+    r.style.height = ROW + 'px';
     r.classList.add('boxbg');
     r.style.background = makeColor(src.Color);
     addElem(srcIndex, r);
+    if (!src.Inlined) {
+      r.classList.add('not-inlined');
+    }
 
     // Box that shows time spent in self
     if (box.selfWidth >= MIN_WIDTH) {
