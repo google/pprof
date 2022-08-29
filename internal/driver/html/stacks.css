@@ -27,6 +27,11 @@ body {
   border-width: 0px;
   position: absolute;
   overflow: hidden;
+  box-sizing: border-box;
+}
+/* Not-inlined frames are visually separated from their caller. */
+.not-inlined {
+  border-top: 1px solid black;
 }
 /* Function name */
 .boxtext {

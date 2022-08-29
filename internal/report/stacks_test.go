@@ -78,16 +78,17 @@ func TestStacks(t *testing.T) {
 
 func TestStackSources(t *testing.T) {
 	// See report_test.go for the functions available to use in tests.
-	main, foo, bar, tee := testL[0], testL[1], testL[2], testL[3]
+	main, foo, bar, tee, inl := testL[0], testL[1], testL[2], testL[3], testL[5]
 
 	type srcInfo struct {
-		name string
-		self int64
+		name    string
+		self    int64
+		inlined bool
 	}
 
 	source := func(stacks StackSet, name string) srcInfo {
 		src := findSource(stacks, name)
-		return srcInfo{src.FullName, src.Self}
+		return srcInfo{src.FullName, src.Self, src.Inlined}
 	}
 
 	for _, c := range []struct {
@@ -108,10 +109,21 @@ func TestStackSources(t *testing.T) {
 				testSample(1000, tee, main),
 			),
 			[]srcInfo{
-				{"main", 0},
-				{"bar", 100},
-				{"foo", 0},
-				{"tee", 1200},
+				{"main", 0, false},
+				{"bar", 100, false},
+				{"foo", 0, false},
+				{"tee", 1200, false},
+			},
+		},
+		{
+			"inlined",
+			makeTestStacks(
+				testSample(100, inl),
+				testSample(200, inl),
+			),
+			[]srcInfo{
+				// inl has bar->tee
+				{"tee", 300, true},
 			},
 		},
 		{
@@ -121,8 +133,8 @@ func TestStackSources(t *testing.T) {
 				testSample(100, foo, foo, main),
 			),
 			[]srcInfo{
-				{"main", 0},
-				{"foo", 200},
+				{"main", 0, false},
+				{"foo", 200, false},
 			},
 		},
 		{
@@ -134,10 +146,10 @@ func TestStackSources(t *testing.T) {
 				testSample(100, tee),
 			),
 			[]srcInfo{
-				{"main", 100},
-				{"bar", 100},
-				{"foo", 100},
-				{"tee", 100},
+				{"main", 100, false},
+				{"bar", 100, false},
+				{"foo", 100, false},
+				{"tee", 100, false},
 			},
 		},
 	} {
