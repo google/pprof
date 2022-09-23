@@ -75,7 +75,7 @@ message Profile {
   // The following fields are informational, do not affect
   // interpretation of results.
 
-  // Time of collection (UTC) represented as nanoseconds past the epoch.
+  // Time the collection started (UTC) represented as nanoseconds past the epoch.
   int64 time_nanos = 9;
   // Duration of the profile, if a duration makes sense.
   int64 duration_nanos = 10;
@@ -115,6 +115,24 @@ message Sample {
   // label includes additional context for this sample. It can include
   // things like a thread id, allocation size, etc
   repeated Label label = 3;
+  // Breakdown can hold the individual timestamps and values for a sample that
+  // has aggregated values. The type and unit of each breakdown is defined by
+  // the corresponding entry in Profile.sample_type. It's acceptable to have
+  // less, but not more, breakdown entries than Profile.sample_type entries.
+  repeated Breakdown breakdown = 4;
+}
+
+message Breakdown {
+  // A list of timestamps at which the values of the associated sample were
+  // collected. The time is given relative to Profile.time_nanos and values are
+  // delta encoded. So for two events captured at 3, 4 and 6 nsec after the
+  // profile start, this list should hold the values [3, 1, 2].
+  repeated int64 time_offset_nanos = 1;
+  // A list that is either empty or holding exactly the same number of elements
+  // as Sample.time_offset_nanos, associating each point in time with a
+  // recorded value. For cumulative sample types the sum of these values should
+  // add up to the corresponding Sample.value.
+  repeated int64 value = 2;
 }
 
 message Label {
