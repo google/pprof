@@ -125,7 +125,7 @@ message Sample {
 message Breakdown {
   // A list of timestamps at which the values of the associated sample were
   // collected. The time is given relative to Profile.time_nanos and values are
-  // delta encoded. So for two events captured at 3, 4 and 6 nsec after the
+  // delta encoded. So for three events captured at 3, 4 and 6 nsec after the
   // profile start, this list should hold the values [3, 1, 2].
   repeated int64 time_offset_nanos = 1;
   // A list that is either empty or holding exactly the same number of elements
