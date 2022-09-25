@@ -129,7 +129,7 @@ message Breakdown {
   // profile start, this list should hold the values [3, 1, 2].
   repeated int64 time_offset_nanos = 1;
   // A list that is either empty or holding exactly the same number of elements
-  // as Sample.time_offset_nanos, associating each point in time with a
+  // as Breakdown.time_offset_nanos, associating each point in time with a
   // recorded value. For cumulative sample types the sum of these values should
   // add up to the corresponding Sample.value.
   repeated int64 value = 2;
