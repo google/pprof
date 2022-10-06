@@ -128,7 +128,7 @@ message Sample {
 }
 
 // Breakdown stores data about the individual events that have been aggregated
-// into a Sample.
+// into a Sample. There can be one breakdown for each Profile.sample_type.
 message Breakdown {
   // A list of timestamps at which the values of the associated sample were
   // collected. The time is given in Profile.tick_unit resolution relative to
