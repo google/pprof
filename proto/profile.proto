@@ -89,8 +89,8 @@ message Profile {
   // Index into the string table of the type of the preferred sample
   // value. If unset, clients should default to the last sample value.
   int64 default_sample_type = 14;
-  // Defines the resolution of Breakdown.ticks, e.g. "nanoseconds" or
-  // "microseconds".
+  // Index into the string table that defines the resolution of
+  // Breakdown.ticks, e.g. "nanoseconds" or "microseconds".
   int64 tick_unit = 15;
   // Labels referenced by Breakdown.
   repeated LabelSet label_set = 16;
