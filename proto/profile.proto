@@ -129,6 +129,9 @@ message Sample {
 
 // Breakdown stores data about the individual events that have been aggregated
 // into a Sample. There can be one breakdown for each Profile.sample_type.
+//
+// TODO: Figure out if this can also be used for the exemplar UC from alexey:
+// https://github.com/google/pprof/pull/725#issuecomment-1264841904
 message Breakdown {
   // A list of timestamps at which the values of the associated sample were
   // collected. The time is given in Profile.tick_unit resolution relative to
