@@ -89,6 +89,11 @@ message Profile {
   // Index into the string table of the type of the preferred sample
   // value. If unset, clients should default to the last sample value.
   int64 default_sample_type = 14;
+  // Defines the resolution of Breakdown.ticks, e.g. "nanoseconds" or
+  // "microseconds".
+  int64 tick_unit = 15;
+  // Labels referenced by Breakdown.
+  repeated LabelSet label_set = 16;
 }
 
 // ValueType describes the semantics and measurement units of a value.
@@ -122,17 +127,26 @@ message Sample {
   repeated Breakdown breakdown = 4;
 }
 
+// Breakdown stores data about the individual events that have been aggregated
+// into a Sample.
 message Breakdown {
   // A list of timestamps at which the values of the associated sample were
-  // collected. The time is given relative to Profile.time_nanos and values are
-  // delta encoded. So for three events captured at 3, 4 and 6 nsec after the
-  // profile start, this list should hold the values [3, 1, 2].
-  repeated int64 time_offset_nanos = 1;
+  // collected. The time is given in Profile.tick_unit resolution relative to
+  // Profile.time_nanos and values are delta encoded. So for three events
+  // captured at 100, 110 and 150 ticks after the profile start, this list should
+  // hold the values [100, 10, 40].
+  //
+  // TODO: Is delta encoding going to safe enough space to justify the
+  // complexity?
+  repeated int64 ticks = 1;
   // A list that is either empty or holding exactly the same number of elements
-  // as Breakdown.time_offset_nanos, associating each point in time with a
-  // recorded value. For cumulative sample types the sum of these values should
-  // add up to the corresponding Sample.value.
+  // as Breakdown.ticks, associating each point in time with a recorded value.
+  // For cumulative sample types the sum of these values should add up to the
+  // corresponding Sample.value.
   repeated int64 value = 2;
+  // A list that is either empty or holding exactly the same number of elements
+  // as Breakdown.ticks, associating each point in time with a LabelSet.
+  repeated uint64 label_set_id = 1;
 }
 
 message Label {
@@ -150,6 +164,15 @@ message Label {
   // units and units like "seconds" and "nanoseconds" as time units,
   // and apply appropriate unit conversions to these.
   int64 num_unit = 4;  // Index into string table
+}
+
+// A group of labels that can be referenced multiple times in order to reduce
+// overhead. Example use cases for reusable label sets:
+//
+// - Tracing IDs (e.g. trace_id=123, span_id=345)
+// - Thread/Process IDs (e.g. process_id=123, thread_id=456)
+message LabelSet {
+  repeated Label label = 1;
 }
 
 message Mapping {
