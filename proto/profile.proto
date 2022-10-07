@@ -149,7 +149,7 @@ message Breakdown {
   repeated int64 value = 2;
   // A list that is either empty or holding exactly the same number of elements
   // as Breakdown.ticks, associating each point in time with a LabelSet.
-  repeated uint64 label_set_id = 1;
+  repeated uint64 label_set_id = 3;
 }
 
 message Label {
