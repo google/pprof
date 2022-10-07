@@ -175,7 +175,9 @@ message Label {
 // - Tracing IDs (e.g. trace_id=123, span_id=345)
 // - Thread/Process IDs (e.g. process_id=123, thread_id=456)
 message LabelSet {
-  repeated Label label = 1;
+  // Unique nonzero id for the LabelSet.
+  uint64 id = 1;
+  repeated Label label = 2;
 }
 
 message Mapping {
