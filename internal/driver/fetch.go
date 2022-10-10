@@ -166,7 +166,7 @@ func grabSourcesAndBases(sources, bases []profileSource, fetch plugin.Fetcher, o
 // a single profile. It fetches a chunk of profiles concurrently, with a maximum
 // chunk size to limit its memory usage.
 func chunkedGrab(sources []profileSource, fetch plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI, tr http.RoundTripper) (*profile.Profile, plugin.MappingSources, bool, int, error) {
-	const chunkSize = 64
+	const chunkSize = 128
 
 	var p *profile.Profile
 	var msrc plugin.MappingSources
