@@ -59,6 +59,9 @@ func TestSymbolizationPath(t *testing.T) {
 	os.MkdirAll(filepath.Join(tempdir, "pprof", "binaries", "abcde10001"), 0700)
 	os.Create(filepath.Join(tempdir, "pprof", "binaries", "abcde10001", "binary"))
 
+	os.MkdirAll(filepath.Join(tempdir, "pprof", "binaries", "fg"), 0700)
+	os.Create(filepath.Join(tempdir, "pprof", "binaries", "fg", "hij10001.debug"))
+
 	obj := testObj{tempdir}
 	os.Setenv(homeEnv(), tempdir)
 	for _, tc := range []struct {
@@ -71,6 +74,7 @@ func TestSymbolizationPath(t *testing.T) {
 		{"", "/prod/path/binary", "abcde10001", filepath.Join(tempdir, "pprof/binaries/abcde10001/binary"), 0},
 		{"/alternate/architecture", "/usr/bin/binary", "", "/alternate/architecture/binary", 0},
 		{"/alternate/architecture", "/usr/bin/binary", "abcde10001", "/alternate/architecture/binary", 0},
+		{"", "", "fghij10001", filepath.Join(tempdir, "pprof/binaries/fg/hij10001.debug"), 0},
 		{"/nowhere:/alternate/architecture", "/usr/bin/binary", "fedcb10000", "/usr/bin/binary", 1},
 		{"/nowhere:/alternate/architecture", "/usr/bin/binary", "abcde10002", "/usr/bin/binary", 1},
 	} {
@@ -154,6 +158,8 @@ func (o testObj) Open(file string, start, limit, offset uint64, relocationSymbol
 		return testFile{file, "fedcb10000"}, nil
 	case filepath.Join(o.home, "pprof/binaries/abcde10001/binary"):
 		return testFile{file, "abcde10001"}, nil
+	case filepath.Join(o.home, "pprof/binaries/fg/hij10001.debug"):
+		return testFile{file, "fghij10001"}, nil
 	}
 	return nil, fmt.Errorf("not found: %s", file)
 }
