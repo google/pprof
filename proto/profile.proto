@@ -122,7 +122,7 @@ message Sample {
   // combination with breakdown, the breakdown labels take precedence if
   // there is a key overlap.
   repeated Label label = 3;
-  // Breakdown can hold the individual timestamps and values for a sample that
+  // breakdown can hold the individual timestamps and values for a sample that
   // has aggregated values. The type and unit of each breakdown is defined by
   // the corresponding entry in Profile.sample_type. It's acceptable to have
   // less, but not more, breakdown entries than Profile.sample_type entries.
