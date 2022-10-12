@@ -118,7 +118,9 @@ message Sample {
   // lists of the originals.
   repeated int64 value = 2;
   // label includes additional context for this sample. It can include
-  // things like a thread id, allocation size, etc
+  // things like a thread id, allocation size, etc. When using label in
+  // combination with breakdown, the breakdown labels take precedence if
+  // there is a key overlap.
   repeated Label label = 3;
   // Breakdown can hold the individual timestamps and values for a sample that
   // has aggregated values. The type and unit of each breakdown is defined by
