@@ -122,35 +122,33 @@ message Sample {
   // combination with breakdown, the breakdown labels take precedence if
   // there is a key overlap.
   repeated Label label = 3;
-  // breakdown can hold the individual timestamps and values for a sample that
-  // has aggregated values. The type and unit of each breakdown is defined by
-  // the corresponding entry in Profile.sample_type. It's acceptable to have
-  // less, but not more, breakdown entries than Profile.sample_type entries.
+  // breakdown can hold the individual timestamps and values for a
+  // sample that represents an aggregation of events. The type and unit
+  // of each breakdown is defined by the corresponding entry in
+  // Profile.sample_type. It's acceptable to have less, but not more,
+  // breakdown entries than Profile.sample_type entries. Put sample
+  // types that don't have breakdown data available at the end of
+  // Profile.sample_type and omit them here to take advantage of this.
   repeated Breakdown breakdown = 4;
 }
 
-// Breakdown stores data about the individual events that have been aggregated
-// into a Sample. There can be one breakdown for each Profile.sample_type.
-//
-// TODO: Figure out if this can also be used for the exemplar UC from alexey:
-// https://github.com/google/pprof/pull/725#issuecomment-1264841904
+// Breakdown stores data about the individual events that have been
+// aggregated into a Sample. There can be one breakdown for each
+// Profile.sample_type.
 message Breakdown {
-  // A list of timestamps at which the values of the associated sample were
-  // collected. The time is given in Profile.tick_unit resolution relative to
-  // Profile.time_nanos and values are delta encoded. So for three events
-  // captured at 100, 110 and 150 ticks after the profile start, this list should
-  // hold the values [100, 10, 40].
-  //
-  // TODO: Is delta encoding going to safe enough space to justify the
-  // complexity?
+  // A list of timestamps at which the values of the associated sample
+  // were collected. The time is given in Profile.tick_unit resolution
+  // relative to Profile.time_nanos.
   repeated int64 ticks = 1;
-  // A list that is either empty or holding exactly the same number of elements
-  // as Breakdown.ticks, associating each point in time with a recorded value.
-  // For cumulative sample types the sum of these values should add up to the
-  // corresponding Sample.value.
+  // A list that is either empty or holding exactly the same number of
+  // elements as Breakdown.ticks, associating each point in time with a
+  // recorded value. For cumulative sample types the sum of these values
+  // should add up to the corresponding Sample.value. Leaving the list
+  // empty makes sense if all events have the same value.
   repeated int64 value = 2;
-  // A list that is either empty or holding exactly the same number of elements
-  // as Breakdown.ticks, associating each point in time with a LabelSet.
+  // A list that is either empty or holding exactly the same number of
+  // elements as Breakdown.ticks, associating each point in time with a
+  // LabelSet.
   repeated uint64 label_set_id = 3;
 }
 
