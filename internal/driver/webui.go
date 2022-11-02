@@ -36,13 +36,14 @@ import (
 // webInterface holds the state needed for serving a browser based interface.
 type webInterface struct {
 	prof         *profile.Profile
+	copier       profileCopier
 	options      *plugin.Options
 	help         map[string]string
 	templates    *template.Template
 	settingsFile string
 }
 
-func makeWebInterface(p *profile.Profile, opt *plugin.Options) (*webInterface, error) {
+func makeWebInterface(p *profile.Profile, copier profileCopier, opt *plugin.Options) (*webInterface, error) {
 	settingsFile, err := settingsFileName()
 	if err != nil {
 		return nil, err
@@ -52,6 +53,7 @@ func makeWebInterface(p *profile.Profile, opt *plugin.Options) (*webInterface, e
 	report.AddSourceTemplates(templates)
 	return &webInterface{
 		prof:         p,
+		copier:       copier,
 		options:      opt,
 		help:         make(map[string]string),
 		templates:    templates,
@@ -96,7 +98,8 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options, d
 		return err
 	}
 	interactiveMode = true
-	ui, err := makeWebInterface(p, o)
+	copier := makeProfileCopier(p)
+	ui, err := makeWebInterface(p, copier, o)
 	if err != nil {
 		return err
 	}
@@ -266,7 +269,7 @@ func (ui *webInterface) makeReport(w http.ResponseWriter, req *http.Request,
 	catcher := &errorCatcher{UI: ui.options.UI}
 	options := *ui.options
 	options.UI = catcher
-	_, rpt, err := generateRawReport(ui.prof, cmd, cfg, &options)
+	_, rpt, err := generateRawReport(ui.copier.newCopy(), cmd, cfg, &options)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		ui.options.UI.PrintErr(err)

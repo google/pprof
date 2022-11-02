@@ -32,12 +32,10 @@ import (
 	"github.com/google/pprof/profile"
 )
 
-func TestWebInterface(t *testing.T) {
+func makeTestServer(t testing.TB, prof *profile.Profile) *httptest.Server {
 	if runtime.GOOS == "nacl" || runtime.GOOS == "js" {
 		t.Skip("test assumes tcp available")
 	}
-
-	prof := makeFakeProfile()
 
 	// Custom http server creator
 	var server *httptest.Server
@@ -60,8 +58,16 @@ func TestWebInterface(t *testing.T) {
 		HTTPServer: creator,
 	}, false)
 	<-serverCreated
-	defer server.Close()
 
+	// Close the server when the test is done.
+	t.Cleanup(server.Close)
+
+	return server
+}
+
+func TestWebInterface(t *testing.T) {
+	prof := makeFakeProfile()
+	server := makeTestServer(t, prof)
 	haveDot := false
 	if _, err := exec.LookPath("dot"); err == nil {
 		haveDot = true
@@ -302,6 +308,35 @@ func TestIsLocalHost(t *testing.T) {
 		}
 		if !isLocalhost(host) {
 			t.Errorf("host %s from %s not considered local", host, s)
+		}
+	}
+}
+
+func BenchmarkTop(b *testing.B)   { benchmarkURL(b, "/top", false) }
+func BenchmarkFlame(b *testing.B) { benchmarkURL(b, "/flamegraph2", false) }
+func BenchmarkDot(b *testing.B)   { benchmarkURL(b, "/", true) }
+
+func benchmarkURL(b *testing.B, path string, needDot bool) {
+	if needDot {
+		if _, err := exec.LookPath("dot"); err != nil {
+			b.Skip("dot not available")
+		}
+	}
+	prof := largeProfile(b)
+	server := makeTestServer(b, prof)
+	url := server.URL + path
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		res, err := http.Get(url)
+		if err != nil {
+			b.Fatal(err)
+		}
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if i == 0 && testing.Verbose() {
+			b.Logf("%-12s : %10d bytes", path, len(data))
 		}
 	}
 }

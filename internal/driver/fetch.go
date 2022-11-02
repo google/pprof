@@ -245,6 +245,11 @@ func combineProfiles(profiles []*profile.Profile, msrcs []plugin.MappingSources)
 		return nil, nil, err
 	}
 
+	// Avoid expensive work for the common case of a single profile/src.
+	if len(profiles) == 1 && len(msrcs) == 1 {
+		return profiles[0], msrcs[0], nil
+	}
+
 	p, err := profile.Merge(profiles)
 	if err != nil {
 		return nil, nil, err

@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -1475,4 +1476,28 @@ func TestThreadSafety(t *testing.T) {
 		var b bytes.Buffer
 		src.Write(&b)
 	})
+}
+
+func BenchmarkParse(b *testing.B) {
+	data := proftest.LargeProfile(b)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := Parse(bytes.NewBuffer(data))
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkWrite(b *testing.B) {
+	p, err := Parse(bytes.NewBuffer(proftest.LargeProfile(b)))
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if err := p.WriteUncompressed(io.Discard); err != nil {
+			b.Fatal(err)
+		}
+	}
 }
