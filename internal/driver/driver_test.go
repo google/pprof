@@ -1029,6 +1029,16 @@ func symzProfile() *profile.Profile {
 	}
 }
 
+func largeProfile(tb testing.TB) *profile.Profile {
+	tb.Helper()
+	input := proftest.LargeProfile(tb)
+	prof, err := profile.Parse(bytes.NewBuffer(input))
+	if err != nil {
+		tb.Fatal(err)
+	}
+	return prof
+}
+
 var autoCompleteTests = []struct {
 	in  string
 	out string
@@ -1574,6 +1584,41 @@ func TestSymbolzAfterMerge(t *testing.T) {
 		if got, want := l.Line[0].Function.Name, fmt.Sprintf("%#x", address); got != want {
 			t.Errorf("symbolz %#x, got %s, want %s", address, got, want)
 		}
+	}
+}
+
+func TestProfileCopier(t *testing.T) {
+	type testCase struct {
+		name string
+		prof *profile.Profile
+	}
+	for _, c := range []testCase{
+		{"cpu", cpuProfile()},
+		{"heap", heapProfile()},
+		{"contention", contentionProfile()},
+		{"symbolz", symzProfile()},
+		{"long_name_funcs", longNameFuncsProfile()},
+		{"large", largeProfile(t)},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			copier := makeProfileCopier(c.prof)
+
+			// Muck with one copy to check that fresh copies are unaffected
+			tmp := copier.newCopy()
+			tmp.Sample = tmp.Sample[:0]
+
+			// Get new copy and check it is same as the original.
+			want := c.prof.String()
+			got := copier.newCopy().String()
+			if got != want {
+				t.Errorf("New copy is not same as original profile")
+				diff, err := proftest.Diff([]byte(want), []byte(got))
+				if err != nil {
+					t.Fatalf("Diff: %v", err)
+				}
+				t.Logf("Diff:\n%s\n", string(diff))
+			}
+		})
 	}
 }
 
