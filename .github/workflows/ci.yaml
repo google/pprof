@@ -6,15 +6,9 @@ on:
   pull_request:
   schedule:
     - cron: '0 2 * * *' # Run every day, at 2AM UTC.
-env:
-  GOPATH: ${{ github.workspace }}
-  WORKING_DIR: ./src/github.com/google/pprof/
 jobs:
   test-mac:
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        working-directory: ${{ env.WORKING_DIR }}
     strategy:
       fail-fast: false
       matrix:
@@ -49,7 +43,6 @@ jobs:
 
       - name: Update Go version manually
         if: matrix.go == 'tip'
-        working-directory: ${{ github.workspace }}
         run: |
           git clone https://go.googlesource.com/go $HOME/gotip
           cd $HOME/gotip/src
@@ -60,8 +53,6 @@ jobs:
 
       - name: Checkout the repo
         uses: actions/checkout@v2
-        with:
-          path: ${{ env.WORKING_DIR }}
 
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -100,9 +91,6 @@ jobs:
 
   test-linux:
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        working-directory: ${{ env.WORKING_DIR }}
     strategy:
       fail-fast: false
       matrix:
@@ -117,7 +105,6 @@ jobs:
 
       - name: Update Go version manually
         if: matrix.go == 'tip'
-        working-directory: ${{ github.workspace }}
         run: |
           git clone https://go.googlesource.com/go $HOME/gotip
           cd $HOME/gotip/src
@@ -128,8 +115,6 @@ jobs:
 
       - name: Checkout the repo
         uses: actions/checkout@v2
-        with:
-          path: ${{ env.WORKING_DIR }}
 
       - name: Fetch dependencies
         run: |
@@ -157,9 +142,7 @@ jobs:
           go test -v ./...
 
       - name: Code coverage
-        uses: codecov/codecov-action@v1
-        with:
-          file: ./${{ env.WORKING_DIR }}/coverage.txt
+        uses: codecov/codecov-action@v3
 
   test-windows:
     runs-on: windows-2019
@@ -175,8 +158,6 @@ jobs:
 
       - name: Checkout the repo
         uses: actions/checkout@v2
-        with:
-          path: ${{ env.WORKING_DIR }}
 
       - name: Fetch Windows dependency
         uses: crazy-max/ghaction-chocolatey@v1
@@ -194,4 +175,3 @@ jobs:
           go env
           go build github.com/google/pprof
           go test -v ./...
-        working-directory: ${{ env.WORKING_DIR }}
