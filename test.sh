@@ -40,3 +40,7 @@ for d in $PKG; do
   fi
 done
 
+go vet -all ./...
+golangci-lint run -D errcheck ./...  # TODO: Enable errcheck back.
+
+gofmt -s -d .

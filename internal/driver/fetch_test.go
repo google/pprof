@@ -22,7 +22,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"net"
 	"net/http"
@@ -52,13 +51,16 @@ func TestSymbolizationPath(t *testing.T) {
 	saveHome := os.Getenv(homeEnv())
 	savePath := os.Getenv("PPROF_BINARY_PATH")
 
-	tempdir, err := ioutil.TempDir("", "home")
+	tempdir, err := os.MkdirTemp("", "home")
 	if err != nil {
 		t.Fatal("creating temp dir: ", err)
 	}
 	defer os.RemoveAll(tempdir)
 	os.MkdirAll(filepath.Join(tempdir, "pprof", "binaries", "abcde10001"), 0700)
 	os.Create(filepath.Join(tempdir, "pprof", "binaries", "abcde10001", "binary"))
+
+	os.MkdirAll(filepath.Join(tempdir, "pprof", "binaries", "fg"), 0700)
+	os.Create(filepath.Join(tempdir, "pprof", "binaries", "fg", "hij10001.debug"))
 
 	obj := testObj{tempdir}
 	os.Setenv(homeEnv(), tempdir)
@@ -72,6 +74,7 @@ func TestSymbolizationPath(t *testing.T) {
 		{"", "/prod/path/binary", "abcde10001", filepath.Join(tempdir, "pprof/binaries/abcde10001/binary"), 0},
 		{"/alternate/architecture", "/usr/bin/binary", "", "/alternate/architecture/binary", 0},
 		{"/alternate/architecture", "/usr/bin/binary", "abcde10001", "/alternate/architecture/binary", 0},
+		{"", "", "fghij10001", filepath.Join(tempdir, "pprof/binaries/fg/hij10001.debug"), 0},
 		{"/nowhere:/alternate/architecture", "/usr/bin/binary", "fedcb10000", "/usr/bin/binary", 1},
 		{"/nowhere:/alternate/architecture", "/usr/bin/binary", "abcde10002", "/usr/bin/binary", 1},
 	} {
@@ -155,6 +158,8 @@ func (o testObj) Open(file string, start, limit, offset uint64, relocationSymbol
 		return testFile{file, "fedcb10000"}, nil
 	case filepath.Join(o.home, "pprof/binaries/abcde10001/binary"):
 		return testFile{file, "abcde10001"}, nil
+	case filepath.Join(o.home, "pprof/binaries/fg/hij10001.debug"):
+		return testFile{file, "fghij10001"}, nil
 	}
 	return nil, fmt.Errorf("not found: %s", file)
 }
@@ -530,7 +535,7 @@ func TestHTTPSInsecure(t *testing.T) {
 		t.Skip("test assumes tcp available")
 	}
 	saveHome := os.Getenv(homeEnv())
-	tempdir, err := ioutil.TempDir("", "home")
+	tempdir, err := os.MkdirTemp("", "home")
 	if err != nil {
 		t.Fatal("creating temp dir: ", err)
 	}
@@ -564,7 +569,7 @@ func TestHTTPSInsecure(t *testing.T) {
 	}()
 	defer l.Close()
 
-	outputTempFile, err := ioutil.TempFile("", "profile_output")
+	outputTempFile, err := os.CreateTemp("", "profile_output")
 	if err != nil {
 		t.Fatalf("Failed to create tempfile: %v", err)
 	}
@@ -603,7 +608,7 @@ func TestHTTPSWithServerCertFetch(t *testing.T) {
 		t.Skip("test assumes tcp available")
 	}
 	saveHome := os.Getenv(homeEnv())
-	tempdir, err := ioutil.TempDir("", "home")
+	tempdir, err := os.MkdirTemp("", "home")
 	if err != nil {
 		t.Fatal("creating temp dir: ", err)
 	}
@@ -645,7 +650,7 @@ func TestHTTPSWithServerCertFetch(t *testing.T) {
 	}()
 	defer l.Close()
 
-	outputTempFile, err := ioutil.TempFile("", "profile_output")
+	outputTempFile, err := os.CreateTemp("", "profile_output")
 	if err != nil {
 		t.Fatalf("Failed to create tempfile: %v", err)
 	}
@@ -665,7 +670,7 @@ func TestHTTPSWithServerCertFetch(t *testing.T) {
 		Symbolize: "remote",
 	}
 
-	certTempFile, err := ioutil.TempFile("", "cert_output")
+	certTempFile, err := os.CreateTemp("", "cert_output")
 	if err != nil {
 		t.Errorf("cannot create cert tempfile: %v", err)
 	}
@@ -673,7 +678,7 @@ func TestHTTPSWithServerCertFetch(t *testing.T) {
 	defer certTempFile.Close()
 	certTempFile.Write(certBytes)
 
-	keyTempFile, err := ioutil.TempFile("", "key_output")
+	keyTempFile, err := os.CreateTemp("", "key_output")
 	if err != nil {
 		t.Errorf("cannot create key tempfile: %v", err)
 	}

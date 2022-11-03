@@ -18,7 +18,8 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -49,7 +50,7 @@ func TestParse(t *testing.T) {
 		"java.heap",
 		"java.contention",
 	} {
-		inbytes, err := ioutil.ReadFile(filepath.Join(path, source))
+		inbytes, err := os.ReadFile(filepath.Join(path, source))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -61,12 +62,12 @@ func TestParse(t *testing.T) {
 		js := p.String()
 		goldFilename := path + source + ".string"
 		if *update {
-			err := ioutil.WriteFile(goldFilename, []byte(js), 0644)
+			err := os.WriteFile(goldFilename, []byte(js), 0644)
 			if err != nil {
 				t.Errorf("failed to update the golden file file %q: %v", goldFilename, err)
 			}
 		}
-		gold, err := ioutil.ReadFile(goldFilename)
+		gold, err := os.ReadFile(goldFilename)
 		if err != nil {
 			t.Fatalf("%s: %v", source, err)
 		}
@@ -134,7 +135,7 @@ func TestParseConcatentated(t *testing.T) {
 func TestCheckValid(t *testing.T) {
 	const path = "testdata/java.cpu"
 
-	inbytes, err := ioutil.ReadFile(path)
+	inbytes, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("failed to read profile file %q: %v", path, err)
 	}
@@ -196,7 +197,7 @@ func TestCheckValid(t *testing.T) {
 // temp filename. This is useful to recover a profile when the test
 // fails.
 func leaveTempfile(b []byte) string {
-	f1, err := ioutil.TempFile("", "profile_test")
+	f1, err := os.CreateTemp("", "profile_test")
 	if err != nil {
 		panic(err)
 	}
@@ -1475,4 +1476,28 @@ func TestThreadSafety(t *testing.T) {
 		var b bytes.Buffer
 		src.Write(&b)
 	})
+}
+
+func BenchmarkParse(b *testing.B) {
+	data := proftest.LargeProfile(b)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := Parse(bytes.NewBuffer(data))
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkWrite(b *testing.B) {
+	p, err := Parse(bytes.NewBuffer(proftest.LargeProfile(b)))
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if err := p.WriteUncompressed(io.Discard); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

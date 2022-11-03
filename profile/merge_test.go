@@ -15,7 +15,11 @@
 package profile
 
 import (
+	"bytes"
+	"fmt"
 	"testing"
+
+	"github.com/google/pprof/internal/proftest"
 )
 
 func TestMapMapping(t *testing.T) {
@@ -160,6 +164,59 @@ func TestMapMapping(t *testing.T) {
 				wantM2.ID = gotM2.ID
 				if gotM2 != wantM2 {
 					t.Errorf("second mapping got %v, want %v", gotM2, wantM2)
+				}
+			}
+		})
+	}
+}
+
+func TestLocationIDMap(t *testing.T) {
+	ids := []uint64{1, 2, 5, 9, 10, 11, 100, 1000, 1000000}
+	missing := []uint64{3, 4, 200}
+
+	// Populate the map,.
+	idmap := makeLocationIDMap(10)
+	for _, id := range ids {
+		loc := &Location{ID: id}
+		idmap.set(id, loc)
+	}
+
+	// Check ids that should be present in the map.
+	for _, id := range ids {
+		loc := idmap.get(id)
+		if loc == nil {
+			t.Errorf("No location found for %d", id)
+		} else if loc.ID != id {
+			t.Errorf("Wrong location %d found for %d", loc.ID, id)
+		}
+	}
+
+	// Check ids that should not be present in the map.
+	for _, id := range missing {
+		loc := idmap.get(id)
+		if loc != nil {
+			t.Errorf("Unexpected location %d found for %d", loc.ID, id)
+		}
+	}
+}
+
+func BenchmarkMerge(b *testing.B) {
+	data := proftest.LargeProfile(b)
+	for n := 1; n <= 2; n++ { // Merge either 1 or 2 instances.
+		b.Run(fmt.Sprintf("%d", n), func(b *testing.B) {
+			list := make([]*Profile, n)
+			for i := 0; i < n; i++ {
+				prof, err := Parse(bytes.NewBuffer(data))
+				if err != nil {
+					b.Fatal(err)
+				}
+				list[i] = prof
+			}
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				_, err := Merge(list)
+				if err != nil {
+					b.Fatal(err)
 				}
 			}
 		})
