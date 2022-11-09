@@ -41,6 +41,8 @@ for d in $PKG; do
 done
 
 go vet -all ./...
-golangci-lint run -D errcheck ./...  # TODO: Enable errcheck back.
+if [ `go version | { read _ _ v _; echo ${v#go}; }` != "tip" ];  then
+  golangci-lint run -D errcheck ./...  # TODO: Enable errcheck back.
+fi
 
 gofmt -s -d .
