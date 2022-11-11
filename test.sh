@@ -41,6 +41,8 @@ for d in $PKG; do
 done
 
 go vet -all ./...
-golangci-lint run -D errcheck ./...  # TODO: Enable errcheck back.
+if [ "$RUN_GOLANGCI_LINTER" != "false" ];  then
+  golangci-lint run -D errcheck ./...  # TODO: Enable errcheck back.
+fi
 
 gofmt -s -d .
