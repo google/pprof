@@ -241,6 +241,13 @@ func concurrentGrab(sources []profileSource, fetch plugin.Fetcher, obj plugin.Ob
 
 func combineProfiles(profiles []*profile.Profile, msrcs []plugin.MappingSources) (*profile.Profile, plugin.MappingSources, error) {
 	// Merge profiles.
+	//
+	// The merge call below only treats exactly matching sample type lists as
+	// compatible and will fail otherwise. Make the profiles' sample types
+	// compatible for the merge, see CompatibilizeSampleTypes() doc for details.
+	if err := profile.CompatibilizeSampleTypes(profiles); err != nil {
+		return nil, nil, err
+	}
 	if err := measurement.ScaleProfiles(profiles); err != nil {
 		return nil, nil, err
 	}

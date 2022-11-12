@@ -219,13 +219,14 @@ func TestFetchWithBase(t *testing.T) {
 
 	const path = "testdata/"
 	type testcase struct {
-		desc         string
-		sources      []string
-		bases        []string
-		diffBases    []string
-		normalize    bool
-		wantSamples  []WantSample
-		wantErrorMsg string
+		desc              string
+		sources           []string
+		bases             []string
+		diffBases         []string
+		normalize         bool
+		wantSamples       []WantSample
+		wantParseErrorMsg string
+		wantFetchErrorMsg string
 	}
 
 	testcases := []testcase{
@@ -237,6 +238,7 @@ func TestFetchWithBase(t *testing.T) {
 			false,
 			nil,
 			"",
+			"",
 		},
 		{
 			"not normalized base is same as source",
@@ -245,6 +247,7 @@ func TestFetchWithBase(t *testing.T) {
 			nil,
 			false,
 			nil,
+			"",
 			"",
 		},
 		{
@@ -280,6 +283,7 @@ func TestFetchWithBase(t *testing.T) {
 				},
 			},
 			"",
+			"",
 		},
 		{
 			"not normalized, different base and source",
@@ -314,6 +318,7 @@ func TestFetchWithBase(t *testing.T) {
 				},
 			},
 			"",
+			"",
 		},
 		{
 			"normalized base is same as source",
@@ -323,6 +328,7 @@ func TestFetchWithBase(t *testing.T) {
 			true,
 			nil,
 			"",
+			"",
 		},
 		{
 			"normalized single source, multiple base (all profiles same)",
@@ -331,6 +337,7 @@ func TestFetchWithBase(t *testing.T) {
 			nil,
 			true,
 			nil,
+			"",
 			"",
 		},
 		{
@@ -365,6 +372,7 @@ func TestFetchWithBase(t *testing.T) {
 					labels: map[string][]string{},
 				},
 			},
+			"",
 			"",
 		},
 		{
@@ -424,6 +432,7 @@ func TestFetchWithBase(t *testing.T) {
 				},
 			},
 			"",
+			"",
 		},
 		{
 			"diff_base and base both specified",
@@ -433,6 +442,27 @@ func TestFetchWithBase(t *testing.T) {
 			false,
 			nil,
 			"-base and -diff_base flags cannot both be specified",
+			"",
+		},
+		{
+			"input profiles with different sample types (non empty intersection)",
+			[]string{path + "cppbench.cpu", path + "cppbench.cpu_no_samples_type"},
+			[]string{path + "cppbench.cpu", path + "cppbench.cpu_no_samples_type"},
+			nil,
+			false,
+			nil,
+			"",
+			"",
+		},
+		{
+			"input profiles with different sample types (empty intersection)",
+			[]string{path + "cppbench.cpu", path + "cppbench.contention"},
+			[]string{path + "cppbench.cpu", path + "cppbench.contention"},
+			nil,
+			false,
+			nil,
+			"",
+			"problem fetching source profiles: profiles have empty common sample type list",
 		},
 	}
 
@@ -457,13 +487,13 @@ func TestFetchWithBase(t *testing.T) {
 			})
 			src, _, err := parseFlags(o)
 
-			if tc.wantErrorMsg != "" {
+			if tc.wantParseErrorMsg != "" {
 				if err == nil {
-					t.Fatalf("got nil, want error %q", tc.wantErrorMsg)
+					t.Fatalf("got nil, want error %q", tc.wantParseErrorMsg)
 				}
 
-				if gotErrMsg := err.Error(); gotErrMsg != tc.wantErrorMsg {
-					t.Fatalf("got error %q, want error %q", gotErrMsg, tc.wantErrorMsg)
+				if gotErrMsg := err.Error(); gotErrMsg != tc.wantParseErrorMsg {
+					t.Fatalf("got error %q, want error %q", gotErrMsg, tc.wantParseErrorMsg)
 				}
 				return
 			}
@@ -473,6 +503,17 @@ func TestFetchWithBase(t *testing.T) {
 			}
 
 			p, err := fetchProfiles(src, o)
+
+			if tc.wantFetchErrorMsg != "" {
+				if err == nil {
+					t.Fatalf("got nil, want error %q", tc.wantFetchErrorMsg)
+				}
+
+				if gotErrMsg := err.Error(); gotErrMsg != tc.wantFetchErrorMsg {
+					t.Fatalf("got error %q, want error %q", gotErrMsg, tc.wantFetchErrorMsg)
+				}
+				return
+			}
 
 			if err != nil {
 				t.Fatalf("got error %q, want no error", err)

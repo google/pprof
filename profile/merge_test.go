@@ -222,3 +222,224 @@ func BenchmarkMerge(b *testing.B) {
 		})
 	}
 }
+
+func TestCompatibilizeSampleTypes(t *testing.T) {
+	for _, tc := range []struct {
+		desc      string
+		ps        []*Profile
+		want      []*Profile
+		wantError bool
+	}{
+		{
+			desc: "drop first sample types",
+			ps: []*Profile{
+				{
+					DefaultSampleType: "delete1",
+					SampleType: []*ValueType{
+						{Type: "delete1", Unit: "Unit1"},
+						{Type: "delete2", Unit: "Unit2"},
+						{Type: "keep1", Unit: "Unit3"},
+						{Type: "keep2", Unit: "Unit4"},
+						{Type: "keep3", Unit: "Unit5"},
+					},
+					Sample: []*Sample{
+						{Value: []int64{1, 2, 3, 4, 5}},
+						{Value: []int64{10, 20, 30, 40, 50}},
+					},
+				},
+				{
+					DefaultSampleType: "keep1",
+					SampleType: []*ValueType{
+						{Type: "keep1", Unit: "Unit3"},
+						{Type: "keep2", Unit: "Unit4"},
+						{Type: "keep3", Unit: "Unit5"},
+					},
+					Sample: []*Sample{
+						{Value: []int64{1, 2, 3}},
+						{Value: []int64{10, 20, 30}},
+					},
+				},
+			},
+			want: []*Profile{
+				{
+					DefaultSampleType: "keep1",
+					SampleType: []*ValueType{
+						{Type: "keep1", Unit: "Unit3"},
+						{Type: "keep2", Unit: "Unit4"},
+						{Type: "keep3", Unit: "Unit5"},
+					},
+					Sample: []*Sample{
+						{Value: []int64{3, 4, 5}},
+						{Value: []int64{30, 40, 50}},
+					},
+				},
+				{
+					DefaultSampleType: "keep1",
+					SampleType: []*ValueType{
+						{Type: "keep1", Unit: "Unit3"},
+						{Type: "keep2", Unit: "Unit4"},
+						{Type: "keep3", Unit: "Unit5"},
+					},
+					Sample: []*Sample{
+						{Value: []int64{1, 2, 3}},
+						{Value: []int64{10, 20, 30}},
+					},
+				},
+			},
+		},
+		{
+			desc: "drop last sample types",
+			ps: []*Profile{
+				{
+					DefaultSampleType: "delete2",
+					SampleType: []*ValueType{
+						{Type: "keep1", Unit: "Unit3"},
+						{Type: "keep2", Unit: "Unit4"},
+						{Type: "keep3", Unit: "Unit5"},
+						{Type: "delete1", Unit: "Unit1"},
+						{Type: "delete2", Unit: "Unit2"},
+					},
+					Sample: []*Sample{
+						{Value: []int64{1, 2, 3, 4, 5}},
+						{Value: []int64{10, 20, 30, 40, 50}},
+					},
+				},
+				{
+					DefaultSampleType: "keep2",
+					SampleType: []*ValueType{
+						{Type: "keep1", Unit: "Unit3"},
+						{Type: "keep2", Unit: "Unit4"},
+						{Type: "keep3", Unit: "Unit5"},
+					},
+					Sample: []*Sample{
+						{Value: []int64{1, 2, 3}},
+						{Value: []int64{10, 20, 30}},
+					},
+				},
+			},
+			want: []*Profile{
+				{
+					DefaultSampleType: "keep1",
+					SampleType: []*ValueType{
+						{Type: "keep1", Unit: "Unit3"},
+						{Type: "keep2", Unit: "Unit4"},
+						{Type: "keep3", Unit: "Unit5"},
+					},
+					Sample: []*Sample{
+						{Value: []int64{1, 2, 3}},
+						{Value: []int64{10, 20, 30}},
+					},
+				},
+				{
+					DefaultSampleType: "keep2",
+					SampleType: []*ValueType{
+						{Type: "keep1", Unit: "Unit3"},
+						{Type: "keep2", Unit: "Unit4"},
+						{Type: "keep3", Unit: "Unit5"},
+					},
+					Sample: []*Sample{
+						{Value: []int64{1, 2, 3}},
+						{Value: []int64{10, 20, 30}},
+					},
+				},
+			},
+		},
+		{
+			desc: "drop sample types and reorder",
+			ps: []*Profile{
+				{
+					DefaultSampleType: "keep3",
+					SampleType: []*ValueType{
+						{Type: "delete1", Unit: "Unit1"},
+						{Type: "keep1", Unit: "Unit3"},
+						{Type: "delete2", Unit: "Unit2"},
+						{Type: "keep2", Unit: "Unit4"},
+						{Type: "keep3", Unit: "Unit5"},
+					},
+					Sample: []*Sample{
+						{Value: []int64{1, 2, 3, 4, 5}},
+						{Value: []int64{10, 20, 30, 40, 50}},
+					},
+				},
+				{
+					DefaultSampleType: "keep2",
+					SampleType: []*ValueType{
+						{Type: "keep3", Unit: "Unit5"},
+						{Type: "keep2", Unit: "Unit4"},
+						{Type: "keep1", Unit: "Unit3"},
+					},
+					Sample: []*Sample{
+						{Value: []int64{1, 2, 3}},
+						{Value: []int64{10, 20, 30}},
+					},
+				},
+			},
+			want: []*Profile{
+				{
+					DefaultSampleType: "keep3",
+					SampleType: []*ValueType{
+						{Type: "keep1", Unit: "Unit3"},
+						{Type: "keep2", Unit: "Unit4"},
+						{Type: "keep3", Unit: "Unit5"},
+					},
+					Sample: []*Sample{
+						{Value: []int64{2, 4, 5}},
+						{Value: []int64{20, 40, 50}},
+					},
+				},
+				{
+					DefaultSampleType: "keep2",
+					SampleType: []*ValueType{
+						{Type: "keep1", Unit: "Unit3"},
+						{Type: "keep2", Unit: "Unit4"},
+						{Type: "keep3", Unit: "Unit5"},
+					},
+					Sample: []*Sample{
+						{Value: []int64{3, 2, 1}},
+						{Value: []int64{30, 20, 10}},
+					},
+				},
+			},
+		},
+		{
+			desc: "empty common types",
+			ps: []*Profile{
+				{
+					SampleType: []*ValueType{
+						{Type: "keep1", Unit: "Unit1"},
+						{Type: "keep2", Unit: "Unit2"},
+						{Type: "keep3", Unit: "Unit3"},
+					},
+				},
+				{
+					SampleType: []*ValueType{
+						{Type: "keep4", Unit: "Unit4"},
+						{Type: "keep5", Unit: "Unit5"},
+					},
+				},
+			},
+			wantError: true,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			err := CompatibilizeSampleTypes(tc.ps)
+			if (err != nil) != tc.wantError {
+				t.Fatalf("CompatibilizeSampleTypes() returned error: %v, want any error=%t", err, tc.wantError)
+			}
+			if err != nil {
+				return
+			}
+			for i := 0; i < len(tc.want); i++ {
+				gotStr := tc.ps[i].String()
+				wantStr := tc.want[i].String()
+				if gotStr != wantStr {
+					d, err := proftest.Diff([]byte(wantStr), []byte(gotStr))
+					if err != nil {
+						t.Fatalf("failed to get diff: %v", err)
+					}
+					t.Errorf("CompatibilizeSampleTypes(): profile[%d] got diff (-want +got)\n%s", i, string(d))
+				}
+			}
+		})
+	}
+}
