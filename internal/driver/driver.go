@@ -201,7 +201,6 @@ func applyCommandOverrides(cmd string, outputFormat int, cfg config) config {
 	case report.Proto, report.Raw, report.Callgrind:
 		trim = false
 		cfg.Granularity = "addresses"
-		cfg.NoInlines = false
 	}
 
 	if !trim {
