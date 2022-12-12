@@ -93,7 +93,7 @@ jobs:
           go test -v ./...
 
       - name: Code coverage
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           file: ./coverage.txt
 
@@ -155,7 +155,7 @@ jobs:
           go test -v ./...
 
       - name: Code coverage
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           file: ./coverage.txt
 
