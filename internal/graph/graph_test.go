@@ -526,6 +526,10 @@ func TestShortenFunctionName(t *testing.T) {
 			"foo",
 		},
 		{
+			"foo/xyz",
+			"foo/xyz",
+		},
+		{
 			"com.google.perftools.gwp.benchmark.FloatBench.lambda$run$0",
 			"FloatBench.lambda$run$0",
 		},
