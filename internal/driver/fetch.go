@@ -461,8 +461,8 @@ mapping:
 			l.Mapping = m
 		}
 	}
-	// Replace executable filename/buildID with the overrides from source.
-	// Assumes the executable is the first Mapping entry.
+	// If configured, apply executable filename override and (maybe, see below)
+	// build ID override from source. Assume the executable is the first mapping.
 	if execName, buildID := s.ExecName, s.BuildID; execName != "" || buildID != "" {
 		m := p.Mapping[0]
 		if execName != "" {
@@ -470,7 +470,10 @@ mapping:
 			// the source override is most likely missing it.
 			m.File = execName
 		}
-		if buildID != "" {
+		// Only apply the build ID override if the build ID in the main mapping is
+		// missing. Overwriting the build ID in case it's present is very likely a
+		// wrong thing to do so we refuse to do that.
+		if buildID != "" && m.BuildID == "" {
 			m.BuildID = buildID
 		}
 	}
