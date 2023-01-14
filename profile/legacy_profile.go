@@ -64,6 +64,8 @@ var (
 	procMapsRE  = regexp.MustCompile(`^` + cHexRange + cPerm + cSpaceHex + hexPair + spaceDigits + cSpaceString)
 	briefMapsRE = regexp.MustCompile(`^` + cHexRange + cPerm + cSpaceString + cSpaceAtOffset + cSpaceHex)
 
+	taggedAnonRE = regexp.MustCompile(`\[anon:.buildid_([0-9a-f]+).address_([0-9a-f]+).offset_([0-9a-f]+)\]`)
+
 	// Regular expression to parse log data, of the form:
 	// ... file:line] msg...
 	logInfoRE = regexp.MustCompile(`^[^\[\]]+:[0-9]+]\s`)
@@ -1071,6 +1073,19 @@ func parseMappingEntry(l string) (*Mapping, error) {
 			return nil, errUnrecognized
 		}
 	}
+
+	// Parse any anonymous VMA tags.
+	if me := taggedAnonRE.FindStringSubmatch(file); len(me) == 4 {
+		buildID := me[1]
+		tagAddress, addrErr := strconv.ParseUint(me[2], 16, 64)
+		tagOffset, offErr := strconv.ParseUint(me[3], 16, 64)
+		if addrErr == nil && offErr == nil {
+			mapping.BuildID = buildID
+			mapping.Offset += mapping.Start - tagAddress + tagOffset
+			mapping.File = ""
+		}
+	}
+
 	return mapping, nil
 }
 

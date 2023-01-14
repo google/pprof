@@ -245,6 +245,24 @@ func TestParseMappingEntry(t *testing.T) {
 		{entry: "7f5e5435e000-7f5e5455e000 ---p 00002000 00:00 1531        myprogram",
 			want: nil,
 		},
+		{entry: "562f1fe00000-562f20600000 r-xp 00000000 fc:00 377679872      [anon:.buildid_83387e33ca18026676fe50cdea843fc4.address_562f1fe00000.offset_12800000]",
+			want: &Mapping{
+				Start:   0x562f1fe00000,
+				Limit:   0x562f20600000,
+				File:    "",
+				Offset:  0x12800000,
+				BuildID: "83387e33ca18026676fe50cdea843fc4",
+			},
+		},
+		{entry: "562f20000000-562f20600000 r-xp 00000000 fc:00 377679872      [anon:.buildid_83387e33ca18026676fe50cdea843fc4.address_562f1fe00000.offset_12800000]",
+			want: &Mapping{
+				Start:   0x562f20000000,
+				Limit:   0x562f20600000,
+				File:    "",
+				Offset:  0x12a00000,
+				BuildID: "83387e33ca18026676fe50cdea843fc4",
+			},
+		},
 	} {
 		got, err := ParseProcMaps(strings.NewReader(test.entry))
 		if err != nil {
