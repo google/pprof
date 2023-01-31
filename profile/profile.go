@@ -72,9 +72,23 @@ type ValueType struct {
 type Sample struct {
 	Location []*Location
 	Value    []int64
-	Label    map[string][]string
+	// Label is a per-label-key map to values for string labels.
+	//
+	// In general, having multiple values for the given label key is strongly
+	// discouraged - see docs for the sample label field in profile.proto.  The
+	// main reason this unlikely state is tracked here is to make the
+	// decoding->encoding roundtrip not lossy. But we expect that the value
+	// slices present in this map are always of length 1.
+	Label map[string][]string
+	// NumLabel is a per-label-key map to values for numeric labels. See a note
+	// above on handling multiple values for a label.
 	NumLabel map[string][]int64
-	NumUnit  map[string][]string
+	// NumUnit is a per-label-key map to the unit names of corresponding numeric
+	// label values. The unit info may be missing even if the label is in
+	// NumLabel, see the docs in profile.proto for details. When the value is
+	// slice is present and not nil, its length must be equal to the length of
+	// the corresponding value slice in NumLabel.
+	NumUnit map[string][]string
 
 	locationIDX []uint64
 	labelX      []label
