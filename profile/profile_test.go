@@ -1327,7 +1327,9 @@ func TestSetNumLabel(t *testing.T) {
 		samples    []*Sample
 		setKey     string
 		setVal     []int64
-		wantLabels []map[string][]int64
+		setUnit    []string
+		wantValues []map[string][]int64
+		wantUnits  []map[string][]string
 	}{
 		{
 			desc: "some samples have label already",
@@ -1343,6 +1345,10 @@ func TestSetNumLabel(t *testing.T) {
 						"key1": {1, 2, 3},
 						"key2": {1},
 					},
+					NumUnit: map[string][]string{
+						"key1": {"bytes", "bytes", "bytes"},
+						"key2": {"gallons"},
+					},
 				},
 				{
 					Location: []*Location{cpuL[0]},
@@ -1350,14 +1356,23 @@ func TestSetNumLabel(t *testing.T) {
 					NumLabel: map[string][]int64{
 						"key1": {2},
 					},
+					NumUnit: map[string][]string{
+						"key1": {"volts"},
+					},
 				},
 			},
-			setKey: "key1",
-			setVal: []int64{1},
-			wantLabels: []map[string][]int64{
+			setKey:  "key1",
+			setVal:  []int64{1},
+			setUnit: []string{"bytes"},
+			wantValues: []map[string][]int64{
 				{"key1": {1}},
 				{"key1": {1}, "key2": {1}},
 				{"key1": {1}},
+			},
+			wantUnits: []map[string][]string{
+				{"key1": {"bytes"}},
+				{"key1": {"bytes"}, "key2": {"gallons"}},
+				{"key1": {"bytes"}},
 			},
 		},
 		{
@@ -1368,10 +1383,14 @@ func TestSetNumLabel(t *testing.T) {
 					Value:    []int64{1000},
 				},
 			},
-			setKey: "key1",
-			setVal: []int64{1},
-			wantLabels: []map[string][]int64{
+			setKey:  "key1",
+			setVal:  []int64{1},
+			setUnit: []string{"bytes"},
+			wantValues: []map[string][]int64{
 				{"key1": {1}},
+			},
+			wantUnits: []map[string][]string{
+				{"key1": {"bytes"}},
 			},
 		},
 		{
@@ -1383,6 +1402,9 @@ func TestSetNumLabel(t *testing.T) {
 					NumLabel: map[string][]int64{
 						"key2": {2},
 					},
+					NumUnit: map[string][]string{
+						"key2": {"joules"},
+					},
 				},
 				{
 					Location: []*Location{cpuL[0]},
@@ -1390,13 +1412,21 @@ func TestSetNumLabel(t *testing.T) {
 					NumLabel: map[string][]int64{
 						"key3": {3},
 					},
+					NumUnit: map[string][]string{
+						"key3": {"meters"},
+					},
 				},
 			},
-			setKey: "key1",
-			setVal: []int64{1},
-			wantLabels: []map[string][]int64{
+			setKey:  "key1",
+			setVal:  []int64{1},
+			setUnit: []string{"seconds"},
+			wantValues: []map[string][]int64{
 				{"key1": {1}, "key2": {2}},
 				{"key1": {1}, "key3": {3}},
+			},
+			wantUnits: []map[string][]string{
+				{"key1": {"seconds"}, "key2": {"joules"}},
+				{"key1": {"seconds"}, "key3": {"meters"}},
 			},
 		},
 		{
@@ -1408,6 +1438,9 @@ func TestSetNumLabel(t *testing.T) {
 					NumLabel: map[string][]int64{
 						"key1": {1},
 					},
+					NumUnit: map[string][]string{
+						"key1": {"exabytes"},
+					},
 				},
 				{
 					Location: []*Location{cpuL[0]},
@@ -1415,13 +1448,21 @@ func TestSetNumLabel(t *testing.T) {
 					NumLabel: map[string][]int64{
 						"key1": {1},
 					},
+					NumUnit: map[string][]string{
+						"key1": {"petabytes"},
+					},
 				},
 			},
-			setKey: "key1",
-			setVal: []int64{1},
-			wantLabels: []map[string][]int64{
-				{"key1": {1}},
-				{"key1": {1}},
+			setKey:  "key1",
+			setVal:  []int64{1, 2},
+			setUnit: []string{"daltons", ""},
+			wantValues: []map[string][]int64{
+				{"key1": {1, 2}},
+				{"key1": {1, 2}},
+			},
+			wantUnits: []map[string][]string{
+				{"key1": {"daltons", ""}},
+				{"key1": {"daltons", ""}},
 			},
 		},
 	}
@@ -1430,23 +1471,41 @@ func TestSetNumLabel(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			profile := testProfile1.Copy()
 			profile.Sample = tc.samples
-			profile.SetNumLabel(tc.setKey, tc.setVal)
-			if got, want := len(profile.Sample), len(tc.wantLabels); got != want {
+			profile.SetNumLabel(tc.setKey, tc.setVal, tc.setUnit)
+			if got, want := len(profile.Sample), len(tc.wantValues); got != want {
+				t.Fatalf("got %v samples, want %v samples", got, want)
+			}
+			if got, want := len(profile.Sample), len(tc.wantUnits); got != want {
 				t.Fatalf("got %v samples, want %v samples", got, want)
 			}
 			for i, sample := range profile.Sample {
-				wantLabels := tc.wantLabels[i]
-				if got, want := len(sample.NumLabel), len(wantLabels); got != want {
-					t.Errorf("got %v label keys for sample %v, want %v", got, i, want)
+				wantValues := tc.wantValues[i]
+				if got, want := len(sample.NumLabel), len(wantValues); got != want {
+					t.Errorf("got %v label values for sample %v, want %v", got, i, want)
 					continue
 				}
-				for wantKey, wantValues := range wantLabels {
-					if gotValues, ok := sample.NumLabel[wantKey]; ok {
-						if !reflect.DeepEqual(gotValues, wantValues) {
-							t.Errorf("for key %s, got values %v, want values %v", wantKey, gotValues, wantValues)
+				for key, values := range wantValues {
+					if gotValues, ok := sample.NumLabel[key]; ok {
+						if !reflect.DeepEqual(gotValues, values) {
+							t.Errorf("for key %s, got values %v, want values %v", key, gotValues, values)
 						}
 					} else {
-						t.Errorf("for key %s got no values, want %v", wantKey, wantValues)
+						t.Errorf("for key %s got no values, want %v", key, values)
+					}
+				}
+
+				wantUnits := tc.wantUnits[i]
+				if got, want := len(sample.NumUnit), len(wantUnits); got != want {
+					t.Errorf("got %v label units for sample %v, want %v", got, i, want)
+					continue
+				}
+				for key, units := range wantUnits {
+					if gotUnits, ok := sample.NumUnit[key]; ok {
+						if !reflect.DeepEqual(gotUnits, units) {
+							t.Errorf("for key %s, got units %v, want units %v", key, gotUnits, units)
+						}
+					} else {
+						t.Errorf("for key %s got no units, want %v", key, units)
 					}
 				}
 			}
@@ -1459,7 +1518,8 @@ func TestRemoveNumLabel(t *testing.T) {
 		desc       string
 		samples    []*Sample
 		removeKey  string
-		wantLabels []map[string][]int64
+		wantValues []map[string][]int64
+		wantUnits  []map[string][]string
 	}{
 		{
 			desc: "some samples have label already",
@@ -1475,6 +1535,10 @@ func TestRemoveNumLabel(t *testing.T) {
 						"key1": {1, 2, 3},
 						"key2": {1},
 					},
+					NumUnit: map[string][]string{
+						"key1": {"foo", "bar", "baz"},
+						"key2": {"seconds"},
+					},
 				},
 				{
 					Location: []*Location{cpuL[0]},
@@ -1482,12 +1546,20 @@ func TestRemoveNumLabel(t *testing.T) {
 					NumLabel: map[string][]int64{
 						"key1": {2},
 					},
+					NumUnit: map[string][]string{
+						"key1": {"seconds"},
+					},
 				},
 			},
 			removeKey: "key1",
-			wantLabels: []map[string][]int64{
+			wantValues: []map[string][]int64{
 				{},
 				{"key2": {1}},
+				{},
+			},
+			wantUnits: []map[string][]string{
+				{},
+				{"key2": {"seconds"}},
 				{},
 			},
 		},
@@ -1500,7 +1572,10 @@ func TestRemoveNumLabel(t *testing.T) {
 				},
 			},
 			removeKey: "key1",
-			wantLabels: []map[string][]int64{
+			wantValues: []map[string][]int64{
+				{},
+			},
+			wantUnits: []map[string][]string{
 				{},
 			},
 		},
@@ -1513,6 +1588,9 @@ func TestRemoveNumLabel(t *testing.T) {
 					NumLabel: map[string][]int64{
 						"key2": {2},
 					},
+					NumUnit: map[string][]string{
+						"key2": {"terabytes"},
+					},
 				},
 				{
 					Location: []*Location{cpuL[0]},
@@ -1520,12 +1598,19 @@ func TestRemoveNumLabel(t *testing.T) {
 					NumLabel: map[string][]int64{
 						"key3": {3},
 					},
+					NumUnit: map[string][]string{
+						"key3": {""},
+					},
 				},
 			},
 			removeKey: "key1",
-			wantLabels: []map[string][]int64{
+			wantValues: []map[string][]int64{
 				{"key2": {2}},
 				{"key3": {3}},
+			},
+			wantUnits: []map[string][]string{
+				{"key2": {"terabytes"}},
+				{"key3": {""}},
 			},
 		},
 	}
@@ -1535,108 +1620,41 @@ func TestRemoveNumLabel(t *testing.T) {
 			profile := testProfile1.Copy()
 			profile.Sample = tc.samples
 			profile.RemoveNumLabel(tc.removeKey)
-			if got, want := len(profile.Sample), len(tc.wantLabels); got != want {
-				t.Fatalf("got %v samples, want %v samples", got, want)
+			if got, want := len(profile.Sample), len(tc.wantValues); got != want {
+				t.Fatalf("got %v samples, want %v values", got, want)
+			}
+			if got, want := len(profile.Sample), len(tc.wantUnits); got != want {
+				t.Fatalf("got %v samples, want %v units", got, want)
 			}
 			for i, sample := range profile.Sample {
-				wantLabels := tc.wantLabels[i]
-				if got, want := len(sample.NumLabel), len(wantLabels); got != want {
-					t.Errorf("got %v label keys for sample %v, want %v", got, i, want)
+				wantValues := tc.wantValues[i]
+				if got, want := len(sample.NumLabel), len(wantValues); got != want {
+					t.Errorf("got %v label values for sample %v, want %v", got, i, want)
 					continue
 				}
-				for wantKey, wantValues := range wantLabels {
-					if gotValues, ok := sample.NumLabel[wantKey]; ok {
-						if !reflect.DeepEqual(gotValues, wantValues) {
-							t.Errorf("for key %s, got values %v, want values %v", wantKey, gotValues, wantValues)
+				for key, values := range wantValues {
+					if gotValues, ok := sample.NumLabel[key]; ok {
+						if !reflect.DeepEqual(gotValues, values) {
+							t.Errorf("for key %s, got values %v, want values %v", key, gotValues, values)
 						}
 					} else {
-						t.Errorf("for key %s got no values, want %v", wantKey, wantValues)
+						t.Errorf("for key %s got no values, want %v", key, values)
 					}
 				}
-			}
-		})
-	}
-}
-
-func TestHasNumLabel(t *testing.T) {
-	var testcases = []struct {
-		desc      string
-		sample    Sample
-		testKey   string
-		testValue int64
-		want      bool
-	}{
-		{
-			desc: "correct key, correct value",
-			sample: Sample{
-				Location: []*Location{cpuL[0]},
-				Value:    []int64{1000},
-				NumLabel: map[string][]int64{
-					"key1": {1},
-					"key2": {2},
-				},
-			},
-			testKey:   "key1",
-			testValue: 1,
-			want:      true,
-		},
-		{
-			desc: "correct key, one of correct values",
-			sample: Sample{
-				Location: []*Location{cpuL[0]},
-				Value:    []int64{1000},
-				NumLabel: map[string][]int64{
-					"key1": {1, 2, 3},
-				},
-			},
-			testKey:   "key1",
-			testValue: 2,
-			want:      true,
-		},
-		{
-			desc: "correct key, none of correct values",
-			sample: Sample{
-				Location: []*Location{cpuL[0]},
-				Value:    []int64{1000},
-				NumLabel: map[string][]int64{
-					"key1": {1, 2, 3},
-				},
-			},
-			testKey:   "key1",
-			testValue: 4,
-			want:      false,
-		},
-		{
-			desc: "wrong key, correct value",
-			sample: Sample{
-				Location: []*Location{cpuL[0]},
-				Value:    []int64{1000},
-				NumLabel: map[string][]int64{
-					"key1": {1},
-				},
-			},
-			testKey:   "key2",
-			testValue: 1,
-			want:      false,
-		},
-		{
-			desc: "no labels",
-			sample: Sample{
-				Location: []*Location{cpuL[0]},
-				Value:    []int64{1000},
-			},
-			testKey:   "key1",
-			testValue: 1,
-			want:      false,
-		},
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.desc, func(t *testing.T) {
-			got := tc.sample.HasNumLabel(tc.testKey, tc.testValue)
-			if got != tc.want {
-				t.Errorf(`HasNumLabel(key="%s", value="%d") for %v returned %v, expected %v`,
-					tc.testKey, tc.testValue, tc.sample, got, tc.want)
+				wantUnits := tc.wantUnits[i]
+				if got, want := len(sample.NumLabel), len(wantUnits); got != want {
+					t.Errorf("got %v label values for sample %v, want %v", got, i, want)
+					continue
+				}
+				for key, units := range wantUnits {
+					if gotUnits, ok := sample.NumUnit[key]; ok {
+						if !reflect.DeepEqual(gotUnits, units) {
+							t.Errorf("for key %s, got units %v, want units %v", key, gotUnits, units)
+						}
+					} else {
+						t.Errorf("for key %s got no units, want %v", key, units)
+					}
+				}
 			}
 		})
 	}
