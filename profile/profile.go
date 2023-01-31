@@ -729,6 +729,35 @@ func (s *Sample) HasLabel(key, value string) bool {
 	return false
 }
 
+// SetNumLabel sets the specified key to the specified value for all samples in the
+// profile. "unit" is a slice that describes the units that each corresponding member
+// of "values" is measured in (e.g. bytes or seconds).  If there is no relevant
+// unit for a given value, that member of "unit" should be the empty string.
+// "unit" must either have the same length as "value", or be nil.
+func (p *Profile) SetNumLabel(key string, value []int64, unit []string) {
+	for _, sample := range p.Sample {
+		if sample.NumLabel == nil {
+			sample.NumLabel = map[string][]int64{key: value}
+		} else {
+			sample.NumLabel[key] = value
+		}
+		if sample.NumUnit == nil {
+			sample.NumUnit = map[string][]string{key: unit}
+		} else {
+			sample.NumUnit[key] = unit
+		}
+	}
+}
+
+// RemoveNumLabel removes all numerical labels associated with the specified key for all
+// samples in the profile.
+func (p *Profile) RemoveNumLabel(key string) {
+	for _, sample := range p.Sample {
+		delete(sample.NumLabel, key)
+		delete(sample.NumUnit, key)
+	}
+}
+
 // DiffBaseSample returns true if a sample belongs to the diff base and false
 // otherwise.
 func (s *Sample) DiffBaseSample() bool {
