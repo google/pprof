@@ -1321,6 +1321,327 @@ func TestSetLabel(t *testing.T) {
 	}
 }
 
+func TestSetNumLabel(t *testing.T) {
+	var testcases = []struct {
+		desc       string
+		samples    []*Sample
+		setKey     string
+		setVal     []int64
+		wantLabels []map[string][]int64
+	}{
+		{
+			desc: "some samples have label already",
+			samples: []*Sample{
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+				},
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					NumLabel: map[string][]int64{
+						"key1": {1, 2, 3},
+						"key2": {1},
+					},
+				},
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					NumLabel: map[string][]int64{
+						"key1": {2},
+					},
+				},
+			},
+			setKey: "key1",
+			setVal: []int64{1},
+			wantLabels: []map[string][]int64{
+				{"key1": {1}},
+				{"key1": {1}, "key2": {1}},
+				{"key1": {1}},
+			},
+		},
+		{
+			desc: "no samples have labels",
+			samples: []*Sample{
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+				},
+			},
+			setKey: "key1",
+			setVal: []int64{1},
+			wantLabels: []map[string][]int64{
+				{"key1": {1}},
+			},
+		},
+		{
+			desc: "all samples have some labels, but not key being added",
+			samples: []*Sample{
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					NumLabel: map[string][]int64{
+						"key2": {2},
+					},
+				},
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					NumLabel: map[string][]int64{
+						"key3": {3},
+					},
+				},
+			},
+			setKey: "key1",
+			setVal: []int64{1},
+			wantLabels: []map[string][]int64{
+				{"key1": {1}, "key2": {2}},
+				{"key1": {1}, "key3": {3}},
+			},
+		},
+		{
+			desc: "all samples have key being added",
+			samples: []*Sample{
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					NumLabel: map[string][]int64{
+						"key1": {1},
+					},
+				},
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					NumLabel: map[string][]int64{
+						"key1": {1},
+					},
+				},
+			},
+			setKey: "key1",
+			setVal: []int64{1},
+			wantLabels: []map[string][]int64{
+				{"key1": {1}},
+				{"key1": {1}},
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.desc, func(t *testing.T) {
+			profile := testProfile1.Copy()
+			profile.Sample = tc.samples
+			profile.SetNumLabel(tc.setKey, tc.setVal)
+			if got, want := len(profile.Sample), len(tc.wantLabels); got != want {
+				t.Fatalf("got %v samples, want %v samples", got, want)
+			}
+			for i, sample := range profile.Sample {
+				wantLabels := tc.wantLabels[i]
+				if got, want := len(sample.NumLabel), len(wantLabels); got != want {
+					t.Errorf("got %v label keys for sample %v, want %v", got, i, want)
+					continue
+				}
+				for wantKey, wantValues := range wantLabels {
+					if gotValues, ok := sample.NumLabel[wantKey]; ok {
+						if !reflect.DeepEqual(gotValues, wantValues) {
+							t.Errorf("for key %s, got values %v, want values %v", wantKey, gotValues, wantValues)
+						}
+					} else {
+						t.Errorf("for key %s got no values, want %v", wantKey, wantValues)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestRemoveNumLabel(t *testing.T) {
+	var testcases = []struct {
+		desc       string
+		samples    []*Sample
+		removeKey  string
+		wantLabels []map[string][]int64
+	}{
+		{
+			desc: "some samples have label already",
+			samples: []*Sample{
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+				},
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					NumLabel: map[string][]int64{
+						"key1": {1, 2, 3},
+						"key2": {1},
+					},
+				},
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					NumLabel: map[string][]int64{
+						"key1": {2},
+					},
+				},
+			},
+			removeKey: "key1",
+			wantLabels: []map[string][]int64{
+				{},
+				{"key2": {1}},
+				{},
+			},
+		},
+		{
+			desc: "no samples have label",
+			samples: []*Sample{
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+				},
+			},
+			removeKey: "key1",
+			wantLabels: []map[string][]int64{
+				{},
+			},
+		},
+		{
+			desc: "all samples have some labels, but not key being removed",
+			samples: []*Sample{
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					NumLabel: map[string][]int64{
+						"key2": {2},
+					},
+				},
+				{
+					Location: []*Location{cpuL[0]},
+					Value:    []int64{1000},
+					NumLabel: map[string][]int64{
+						"key3": {3},
+					},
+				},
+			},
+			removeKey: "key1",
+			wantLabels: []map[string][]int64{
+				{"key2": {2}},
+				{"key3": {3}},
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.desc, func(t *testing.T) {
+			profile := testProfile1.Copy()
+			profile.Sample = tc.samples
+			profile.RemoveNumLabel(tc.removeKey)
+			if got, want := len(profile.Sample), len(tc.wantLabels); got != want {
+				t.Fatalf("got %v samples, want %v samples", got, want)
+			}
+			for i, sample := range profile.Sample {
+				wantLabels := tc.wantLabels[i]
+				if got, want := len(sample.NumLabel), len(wantLabels); got != want {
+					t.Errorf("got %v label keys for sample %v, want %v", got, i, want)
+					continue
+				}
+				for wantKey, wantValues := range wantLabels {
+					if gotValues, ok := sample.NumLabel[wantKey]; ok {
+						if !reflect.DeepEqual(gotValues, wantValues) {
+							t.Errorf("for key %s, got values %v, want values %v", wantKey, gotValues, wantValues)
+						}
+					} else {
+						t.Errorf("for key %s got no values, want %v", wantKey, wantValues)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestHasNumLabel(t *testing.T) {
+	var testcases = []struct {
+		desc      string
+		sample    Sample
+		testKey   string
+		testValue int64
+		want      bool
+	}{
+		{
+			desc: "correct key, correct value",
+			sample: Sample{
+				Location: []*Location{cpuL[0]},
+				Value:    []int64{1000},
+				NumLabel: map[string][]int64{
+					"key1": {1},
+					"key2": {2},
+				},
+			},
+			testKey:   "key1",
+			testValue: 1,
+			want:      true,
+		},
+		{
+			desc: "correct key, one of correct values",
+			sample: Sample{
+				Location: []*Location{cpuL[0]},
+				Value:    []int64{1000},
+				NumLabel: map[string][]int64{
+					"key1": {1, 2, 3},
+				},
+			},
+			testKey:   "key1",
+			testValue: 2,
+			want:      true,
+		},
+		{
+			desc: "correct key, none of correct values",
+			sample: Sample{
+				Location: []*Location{cpuL[0]},
+				Value:    []int64{1000},
+				NumLabel: map[string][]int64{
+					"key1": {1, 2, 3},
+				},
+			},
+			testKey:   "key1",
+			testValue: 4,
+			want:      false,
+		},
+		{
+			desc: "wrong key, correct value",
+			sample: Sample{
+				Location: []*Location{cpuL[0]},
+				Value:    []int64{1000},
+				NumLabel: map[string][]int64{
+					"key1": {1},
+				},
+			},
+			testKey:   "key2",
+			testValue: 1,
+			want:      false,
+		},
+		{
+			desc: "no labels",
+			sample: Sample{
+				Location: []*Location{cpuL[0]},
+				Value:    []int64{1000},
+			},
+			testKey:   "key1",
+			testValue: 1,
+			want:      false,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := tc.sample.HasNumLabel(tc.testKey, tc.testValue)
+			if got != tc.want {
+				t.Errorf(`HasNumLabel(key="%s", value="%d") for %v returned %v, expected %v`,
+					tc.testKey, tc.testValue, tc.sample, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestNumLabelUnits(t *testing.T) {
 	var tagFilterTests = []struct {
 		desc             string

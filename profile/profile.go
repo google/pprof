@@ -715,6 +715,36 @@ func (s *Sample) HasLabel(key, value string) bool {
 	return false
 }
 
+// SetNumLabel sets the specified key to the specified value for all samples in the
+// profile.
+func (p *Profile) SetNumLabel(key string, value []int64) {
+	for _, sample := range p.Sample {
+		if sample.NumLabel == nil {
+			sample.NumLabel = map[string][]int64{key: value}
+		} else {
+			sample.NumLabel[key] = value
+		}
+	}
+}
+
+// RemoveNumLabel removes all labels associated with the specified key for all
+// samples in the profile.
+func (p *Profile) RemoveNumLabel(key string) {
+	for _, sample := range p.Sample {
+		delete(sample.NumLabel, key)
+	}
+}
+
+// HasNumLabel returns true if a sample has a label with indicated key and value.
+func (s *Sample) HasNumLabel(key string, value int64) bool {
+	for _, v := range s.NumLabel[key] {
+		if v == value {
+			return true
+		}
+	}
+	return false
+}
+
 // DiffBaseSample returns true if a sample belongs to the diff base and false
 // otherwise.
 func (s *Sample) DiffBaseSample() bool {
