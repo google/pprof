@@ -719,6 +719,7 @@ func (s *Sample) HasLabel(key, value string) bool {
 // profile. "unit" is a slice that describes the units that each corresponding member
 // of "values" is measured in (e.g. bytes or seconds).  If there is no relevant
 // unit for a given value, that member of "unit" should be the empty string.
+// "unit" must either have the same length as "value", or be nil.
 func (p *Profile) SetNumLabel(key string, value []int64, unit []string) {
 	for _, sample := range p.Sample {
 		if sample.NumLabel == nil {
