@@ -117,7 +117,13 @@ message Sample {
   // lists of the originals.
   repeated int64 value = 2;
   // label includes additional context for this sample. It can include
-  // things like a thread id, allocation size, etc
+  // things like a thread id, allocation size, etc.
+  //
+  // NOTE: While possible, having multiple values for the same label key is
+  // strongly discouraged and should never be used. Most tools (e.g. pprof) do
+  // not have good (or any) support for multi-value labels. And an even more
+  // discouraged case is having a string label and a numeric label of the same
+  // name on a sample.  Again, possible to express, but should not be used.
   repeated Label label = 3;
 }
 
