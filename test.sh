@@ -20,11 +20,8 @@ set -x
 MODE=atomic
 echo "mode: $MODE" > coverage.txt
 
-# All packages.
-PKG=$(go list ./...)
-
 if [ "$RUN_STATICCHECK" != "false" ]; then
-  staticcheck $PKG
+  staticcheck ./...
 fi
 
 # Packages that have any tests.
