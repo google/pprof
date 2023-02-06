@@ -51,10 +51,10 @@ func TestParse(t *testing.T) {
 	testcase := []struct {
 		flags, source string
 	}{
-		// {"text,functions,flat", "cpu"},
-		// {"text,functions,noinlines,flat", "cpu"},
-		// {"text,filefunctions,noinlines,flat", "cpu"},
-		// {"text,addresses,noinlines,flat", "cpu"},
+		{"text,functions,flat", "cpu"},
+		{"text,functions,noinlines,flat", "cpu"},
+		{"text,filefunctions,noinlines,flat", "cpu"},
+		{"text,addresses,noinlines,flat", "cpu"},
 		{"tree,addresses,flat,nodecount=4", "cpusmall"},
 		{"text,functions,flat,nodecount=5,call_tree", "unknown"},
 		{"text,alloc_objects,flat", "heap_alloc"},
