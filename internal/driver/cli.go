@@ -37,7 +37,7 @@ type source struct {
 	Symbolize          string
 	HTTPHostport       string
 	HTTPDisableBrowser bool
-	Comment            string
+	Comments           []*string
 }
 
 // parseFlags parses the command lines through the specified flags package
@@ -52,7 +52,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	flagSymbolize := flag.String("symbolize", "", "Options for profile symbolization")
 	flagBuildID := flag.String("buildid", "", "Override build id for first mapping")
 	flagTimeout := flag.Int("timeout", -1, "Timeout in seconds for fetching a profile")
-	flagAddComment := flag.String("add_comment", "", "Annotation string to record in the profile")
+	flagAddComment := flag.StringList("add_comment", "", "Annotation string to record in the profile")
 	// CPU profile options
 	flagSeconds := flag.Int("seconds", -1, "Length of time for dynamic profiles")
 	// Heap profile options
@@ -148,7 +148,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		Symbolize:          *flagSymbolize,
 		HTTPHostport:       *flagHTTP,
 		HTTPDisableBrowser: *flagNoBrowser,
-		Comment:            *flagAddComment,
+		Comments:           *flagAddComment,
 	}
 
 	if err := source.addBaseProfiles(*flagBase, *flagDiffBase); err != nil {
