@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.18', '1.19', 'tip']
+        go: ['1.19', '1.20', 'tip']
         # Supported macOS versions can be found in
         # https://github.com/actions/virtual-environments#available-environments.
         os: ['macos-10.15', 'macos-11']
@@ -74,9 +74,9 @@ jobs:
           brew install graphviz
           # Do not let tools interfere with the main module's go.mod.
           cd && go mod init tools
-          go get -u honnef.co/go/tools/cmd/... github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
-          go install honnef.co/go/tools/cmd/...
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
+          # TODO: Update to a specific version when https://github.com/dominikh/go-tools/issues/1362 is fixed.
+          go install honnef.co/go/tools/cmd/staticcheck@master
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.0
           # Add PATH for installed tools.
           echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
 
@@ -105,7 +105,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.18', '1.19', 'tip']
+        go: ['1.19', '1.20', 'tip']
         os: ['ubuntu-20.04', 'ubuntu-18.04']
     steps:
       - name: Update Go version using setup-go
@@ -136,9 +136,9 @@ jobs:
           sudo apt-get install graphviz
           # Do not let tools interfere with the main module's go.mod.
           cd && go mod init tools
-          go get -u honnef.co/go/tools/cmd/... github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
-          go install honnef.co/go/tools/cmd/...
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
+          # TODO: Update to a specific version when https://github.com/dominikh/go-tools/issues/1362 is fixed.
+          go install honnef.co/go/tools/cmd/staticcheck@master
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.0
           # Add PATH for installed tools.
           echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
 
@@ -164,7 +164,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.18', '1.19']
+        go: ['1.19', '1.20']
     steps:
       - name: Update Go version using setup-go
         uses: actions/setup-go@v2
