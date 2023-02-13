@@ -750,7 +750,7 @@ func (sp *sourcePrinter) objectFile(m *profile.Mapping) plugin.ObjFile {
 	if err != nil {
 		return nil
 	}
-	if m.BuildID != "" && string(buildID) != m.BuildID {
+	if m.BuildID != "" && fmt.Sprintf("%x", buildID) != m.BuildID {
 		return nil
 	}
 	if object, ok := sp.objects[m.File]; ok {
