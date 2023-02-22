@@ -409,8 +409,10 @@ func locateBinaries(p *profile.Profile, s *source, obj plugin.ObjTool, ui plugin
 mapping:
 	for _, m := range p.Mapping {
 		var baseName string
+		var dirName string
 		if m.File != "" {
 			baseName = filepath.Base(m.File)
+			dirName = filepath.Dir(m.File)
 		}
 
 		for _, path := range filepath.SplitList(searchPath) {
@@ -429,10 +431,13 @@ mapping:
 			if m.File != "" {
 				// Try both the basename and the full path, to support the same directory
 				// structure as the perf symfs option.
-				if baseName != "" {
-					fileNames = append(fileNames, filepath.Join(path, baseName))
-				}
+				fileNames = append(fileNames, filepath.Join(path, baseName))
 				fileNames = append(fileNames, filepath.Join(path, m.File))
+				// Other locations: use the same search paths as GDB, according to
+				// https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
+				fileNames = append(fileNames, filepath.Join(path, m.File+".debug"))
+				fileNames = append(fileNames, filepath.Join(path, dirName, ".debug", baseName+".debug"))
+				fileNames = append(fileNames, filepath.Join(path, "usr", "lib", "debug", dirName, baseName+".debug"))
 			}
 			for _, name := range fileNames {
 				if f, err := obj.Open(name, m.Start, m.Limit, m.Offset, m.KernelRelocationSymbol); err == nil {
