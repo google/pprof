@@ -1,6 +1,6 @@
 module github.com/google/pprof
 
-go 1.18
+go 1.19
 
 require (
 	github.com/chzyer/readline v1.5.1
