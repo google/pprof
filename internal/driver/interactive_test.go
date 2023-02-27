@@ -105,8 +105,8 @@ var script = []string{
 	"flat=true;check sort=flat;cum=1;check sort=cum",
 }
 
-func makeShortcuts(input []string, seed int) (shortcuts, []string) {
-	rand.Seed(int64(seed))
+func makeShortcuts(input []string, seed int64) (shortcuts, []string) {
+	rand := rand.New(rand.NewSource(seed))
 
 	s := shortcuts{}
 	var output, chunk []string
@@ -157,12 +157,12 @@ func checkValue(p *profile.Profile, cmd []string, cfg config, o *plugin.Options)
 	return nil
 }
 
-func interleave(input []string, seed int) []string {
+func interleave(input []string, seed int64) []string {
 	var inputs [][]string
 	for _, s := range input {
 		inputs = append(inputs, strings.Split(s, ";"))
 	}
-	rand.Seed(int64(seed))
+	rand := rand.New(rand.NewSource(seed))
 	var output []string
 	for len(inputs) > 0 {
 		next := rand.Intn(len(inputs))
