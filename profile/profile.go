@@ -38,6 +38,7 @@ type Profile struct {
 	Mapping           []*Mapping
 	Location          []*Location
 	Function          []*Function
+	Title             string
 	Comments          []string
 
 	DropFrames string
@@ -545,6 +546,9 @@ func (p *Profile) NumLabelUnits() (map[string]string, map[string][]string) {
 // for debugging purposes.
 func (p *Profile) String() string {
 	ss := make([]string, 0, len(p.Comments)+len(p.Sample)+len(p.Mapping)+len(p.Location))
+	if pt := p.Title; pt != "" {
+		ss = append(ss, "Title: "+pt)
+	}
 	for _, c := range p.Comments {
 		ss = append(ss, "Comment: "+c)
 	}

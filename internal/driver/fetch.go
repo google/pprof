@@ -84,9 +84,13 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 	p.RemoveUninteresting()
 	unsourceMappings(p)
 
+	if s.Title != "" {
+		p.Title = s.Title
+	}
+
 	if len(s.Comments) > 0 {
 		for _, comment := range s.Comments {
-			p.Comments = append(p.Comments, *comment)
+			p.Comments = append(p.Comments, comment)
 		}
 	}
 
