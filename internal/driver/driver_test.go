@@ -358,16 +358,16 @@ func (f testFlags) String(s, d, c string) *string {
 	return &d
 }
 
-func (f testFlags) StringList(s, d, c string) *[]*string {
-	if t, ok := f.stringLists[s]; ok {
+func (f testFlags) StringList(name string, def []string, usage string) *[]string {
+	if t, ok := f.stringLists[name]; ok {
 		// convert slice of strings to slice of string pointers before returning.
-		tp := make([]*string, len(t))
+		tp := make([]string, len(t))
 		for i, _ := range t {
-			tp[i] = &t[i]
+			tp[i] = t[i]
 		}
 		return &tp
 	}
-	return &[]*string{}
+	return &[]string{}
 }
 
 func (f testFlags) Parse(func()) []string {
