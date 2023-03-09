@@ -79,7 +79,7 @@ message Profile {
   int64 time_nanos = 9;
   // Duration of the profile, if a duration makes sense.
   int64 duration_nanos = 10;
-  // The kind of events between sampled ocurrences.
+  // The kind of events between sampled occurrences.
   // e.g [ "cpu","cycles" ] or [ "heap","bytes" ]
   ValueType period_type = 11;
   // The number of events between sampled occurrences.
