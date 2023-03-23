@@ -42,7 +42,7 @@ jobs:
           xcode-version: '12.0.1'
     steps:
       - name: Update Go version using setup-go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         if: matrix.go != 'tip'
         with:
           go-version: ${{ matrix.go }}
@@ -60,7 +60,7 @@ jobs:
           echo "$HOME/gotip/bin:$PATH" >> $GITHUB_PATH
 
       - name: Checkout the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ${{ env.WORKING_DIR }}
 
@@ -109,7 +109,7 @@ jobs:
         os: ['ubuntu-20.04', 'ubuntu-18.04']
     steps:
       - name: Update Go version using setup-go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         if: matrix.go != 'tip'
         with:
           go-version: ${{ matrix.go }}
@@ -127,7 +127,7 @@ jobs:
           echo "$HOME/gotip/bin" >> $GITHUB_PATH
 
       - name: Checkout the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ${{ env.WORKING_DIR }}
 
@@ -167,12 +167,12 @@ jobs:
         go: ['1.19', '1.20']
     steps:
       - name: Update Go version using setup-go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go }}
 
       - name: Checkout the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ${{ env.WORKING_DIR }}
 
