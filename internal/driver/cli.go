@@ -67,7 +67,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	flagTools := flag.String("tools", os.Getenv("PPROF_TOOLS"), "Path for object tool pathnames")
 
 	flagHTTP := flag.String("http", "", "Present interactive web UI at the specified http host:port")
-	flagNoBrowser := flag.Bool("no_browser", false, "Skip opening a browswer for the interactive web UI")
+	flagNoBrowser := flag.Bool("no_browser", false, "Skip opening a browser for the interactive web UI")
 
 	// Flags that set configuration properties.
 	cfg := currentConfig()
