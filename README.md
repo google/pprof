@@ -1,4 +1,4 @@
-[![Github Action CI](https://github.com/google/pprof/workflows/ci/badge.svg)](https://github.com/google/pprof/actions)
+[![Github Action CI](https://github.com/google/pprof/workflows/ci/badge.svg)](https://github.com/google/pprof/actions?query=branch:main)
 [![Codecov](https://codecov.io/gh/google/pprof/graph/badge.svg)](https://codecov.io/gh/google/pprof)
 [![Go Reference](https://pkg.go.dev/badge/github.com/google/pprof/profile.svg)](https://pkg.go.dev/github.com/google/pprof/profile)
 
