@@ -58,9 +58,9 @@ message Profile {
   // Mapping from address ranges to the image/binary/library mapped
   // into that address range.  mapping[0] will be the main binary.
   repeated Mapping mapping = 3;
-  // Useful program location
+  // Locations referenced by samples.
   repeated Location location = 4;
-  // Functions referenced by locations
+  // Functions referenced by locations.
   repeated Function function = 5;
   // A common table for strings referenced by various messages.
   // string_table[0] must always be "".
