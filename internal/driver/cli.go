@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/google/pprof/internal/binutils"
 	"github.com/google/pprof/internal/plugin"
@@ -101,9 +100,6 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		if file, err := o.Obj.Open(arg0, 0, ^uint64(0), 0, ""); err == nil {
 			file.Close()
 			execName = arg0
-			args = args[1:]
-		} else if *flagBuildID == "" && isBuildID(arg0) {
-			*flagBuildID = arg0
 			args = args[1:]
 		}
 	}
@@ -263,12 +259,6 @@ func installConfigFlags(flag plugin.FlagSet, cfg *config) func() error {
 		}
 		return nil
 	}
-}
-
-// isBuildID determines if the profile may contain a build ID, by
-// checking that it is a string of hex digits.
-func isBuildID(id string) bool {
-	return strings.Trim(id, "0123456789abcdefABCDEF") == ""
 }
 
 func sampleIndex(flag *bool, si string, sampleType, option string, ui plugin.UI) string {
