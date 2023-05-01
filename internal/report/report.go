@@ -437,7 +437,7 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 			if len(symbols) == 0 {
 				return fmt.Errorf("no matches found for regexp %s in binaries", o.Symbol)
 			} else {
-				return fmt.Errorf("regex %s found in binaries, but in the profile", o.Symbol)
+				return fmt.Errorf("regex %s found in binaries, but not in the profile", o.Symbol)
 			}
 		} else { // User provides an address
 			if len(symbols) == 0 {
