@@ -397,12 +397,6 @@ func unsourceMappings(p *profile.Profile) {
 	}
 }
 
-// trimWindowsVolume removes windows volume name from path, if it exists.
-func trimWindowsVolume(path string) string {
-	volume := filepath.VolumeName(path)
-	return path[len(volume):]
-}
-
 // locateBinaries searches for binary files listed in the profile and, if found,
 // updates the profile accordingly.
 func locateBinaries(p *profile.Profile, s *source, obj plugin.ObjTool, ui plugin.UI) {
@@ -414,13 +408,14 @@ func locateBinaries(p *profile.Profile, s *source, obj plugin.ObjTool, ui plugin
 	}
 mapping:
 	for _, m := range p.Mapping {
+		cleanFile := strings.TrimPrefix(m.File, filepath.VolumeName(m.File))
+
 		var baseName string
 		var dirName string
 		if m.File != "" {
 			baseName = filepath.Base(m.File)
-			dirName = trimWindowsVolume(filepath.Dir(m.File))
+			dirName = filepath.Dir(cleanFile)
 		}
-		cleanFile := trimWindowsVolume(m.File)
 
 		for _, path := range filepath.SplitList(searchPath) {
 			var fileNames []string
