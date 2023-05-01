@@ -441,7 +441,7 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 			}
 		} else { // User provides an address
 			if len(symbols) == 0 {
-				return fmt.Errorf("The address 0x%x is not found in binaries", *address)
+				return fmt.Errorf("the address 0x%x is not found in binaries", *address)
 			} else {
 				return fmt.Errorf("address 0x%x found in binaries, but not in the profile", *address)
 			}
