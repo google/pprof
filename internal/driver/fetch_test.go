@@ -126,23 +126,31 @@ func TestCollectMappingSources(t *testing.T) {
 
 func TestUnsourceMappings(t *testing.T) {
 	for _, tc := range []struct {
-		file, buildID, want string
+		os, file, buildID, want string
 	}{
-		{"/usr/bin/binary", "buildId", "/usr/bin/binary"},
-		{"http://example.com", "", ""},
+		{"any", "/usr/bin/binary", "buildId", "/usr/bin/binary"},
+		{"any", "http://example.com", "", ""},
+		{"windows", `C:\example.exe`, "", `C:\example.exe`},
+		{"windows", `c:/example.exe`, "", `c:/example.exe`},
 	} {
-		p := &profile.Profile{
-			Mapping: []*profile.Mapping{
-				{
-					File:    tc.file,
-					BuildID: tc.buildID,
+		t.Run(tc.file+"-"+tc.os, func(t *testing.T) {
+			if tc.os != "any" && tc.os != runtime.GOOS {
+				t.Skipf("%s only test", tc.os)
+			}
+
+			p := &profile.Profile{
+				Mapping: []*profile.Mapping{
+					{
+						File:    tc.file,
+						BuildID: tc.buildID,
+					},
 				},
-			},
-		}
-		unsourceMappings(p)
-		if got := p.Mapping[0].File; got != tc.want {
-			t.Errorf("%s:%s, want %s, got %s", tc.file, tc.buildID, tc.want, got)
-		}
+			}
+			unsourceMappings(p)
+			if got := p.Mapping[0].File; got != tc.want {
+				t.Errorf("%s:%s, want %s, got %s", tc.file, tc.buildID, tc.want, got)
+			}
+		})
 	}
 }
 
