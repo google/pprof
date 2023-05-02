@@ -442,7 +442,7 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 			if len(symbols) == 0 {
 				return fmt.Errorf("address 0x%x is not found in the binary", *address)
 			}
-			return fmt.Errorf("address 0x%x found in binary, not in the profile", *address)
+			return fmt.Errorf("address 0x%x found in binary, but not in the profile", *address)
 		}
 	}
 
