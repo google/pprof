@@ -408,13 +408,13 @@ func locateBinaries(p *profile.Profile, s *source, obj plugin.ObjTool, ui plugin
 	}
 mapping:
 	for _, m := range p.Mapping {
-		cleanFile := strings.TrimPrefix(m.File, filepath.VolumeName(m.File))
-
+		var noVolumeFile string
 		var baseName string
 		var dirName string
 		if m.File != "" {
+			noVolumeFile = strings.TrimPrefix(m.File, filepath.VolumeName(m.File))
 			baseName = filepath.Base(m.File)
-			dirName = filepath.Dir(cleanFile)
+			dirName = filepath.Dir(noVolumeFile)
 		}
 
 		for _, path := range filepath.SplitList(searchPath) {
@@ -424,7 +424,7 @@ mapping:
 				if matches, err := filepath.Glob(filepath.Join(path, m.BuildID, "*")); err == nil {
 					fileNames = append(fileNames, matches...)
 				}
-				fileNames = append(fileNames, filepath.Join(path, cleanFile, m.BuildID)) // perf path format
+				fileNames = append(fileNames, filepath.Join(path, noVolumeFile, m.BuildID)) // perf path format
 				// Llvm buildid protocol: the first two characters of the build id
 				// are used as directory, and the remaining part is in the filename.
 				// e.g. `/ab/cdef0123456.debug`
@@ -434,10 +434,10 @@ mapping:
 				// Try both the basename and the full path, to support the same directory
 				// structure as the perf symfs option.
 				fileNames = append(fileNames, filepath.Join(path, baseName))
-				fileNames = append(fileNames, filepath.Join(path, cleanFile))
+				fileNames = append(fileNames, filepath.Join(path, noVolumeFile))
 				// Other locations: use the same search paths as GDB, according to
 				// https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
-				fileNames = append(fileNames, filepath.Join(path, cleanFile+".debug"))
+				fileNames = append(fileNames, filepath.Join(path, noVolumeFile+".debug"))
 				fileNames = append(fileNames, filepath.Join(path, dirName, ".debug", baseName+".debug"))
 				fileNames = append(fileNames, filepath.Join(path, "usr", "lib", "debug", dirName, baseName+".debug"))
 			}

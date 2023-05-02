@@ -133,22 +133,24 @@ func TestUnsourceMappings(t *testing.T) {
 		{"windows", `C:\example.exe`, "", `C:\example.exe`},
 		{"windows", `c:/example.exe`, "", `c:/example.exe`},
 	} {
-		if tc.os != "" && tc.os != runtime.GOOS {
-			continue
-		}
+		t.Run("", func(t *testing.T) {
+			if tc.os != "" && tc.os != runtime.GOOS {
+				t.Skipf("%s only test", tc.os)
+			}
 
-		p := &profile.Profile{
-			Mapping: []*profile.Mapping{
-				{
-					File:    tc.file,
-					BuildID: tc.buildID,
+			p := &profile.Profile{
+				Mapping: []*profile.Mapping{
+					{
+						File:    tc.file,
+						BuildID: tc.buildID,
+					},
 				},
-			},
-		}
-		unsourceMappings(p)
-		if got := p.Mapping[0].File; got != tc.want {
-			t.Errorf("%s:%s, want %s, got %s", tc.file, tc.buildID, tc.want, got)
-		}
+			}
+			unsourceMappings(p)
+			if got := p.Mapping[0].File; got != tc.want {
+				t.Errorf("%s:%s, want %s, got %s", tc.file, tc.buildID, tc.want, got)
+			}
+		})
 	}
 }
 
