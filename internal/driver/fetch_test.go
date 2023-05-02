@@ -128,13 +128,13 @@ func TestUnsourceMappings(t *testing.T) {
 	for _, tc := range []struct {
 		os, file, buildID, want string
 	}{
-		{"", "/usr/bin/binary", "buildId", "/usr/bin/binary"},
-		{"", "http://example.com", "", ""},
+		{"any", "/usr/bin/binary", "buildId", "/usr/bin/binary"},
+		{"any", "http://example.com", "", ""},
 		{"windows", `C:\example.exe`, "", `C:\example.exe`},
 		{"windows", `c:/example.exe`, "", `c:/example.exe`},
 	} {
-		t.Run("", func(t *testing.T) {
-			if tc.os != "" && tc.os != runtime.GOOS {
+		t.Run(tc.file+"-"+tc.os, func(t *testing.T) {
+			if tc.os != "any" && tc.os != runtime.GOOS {
 				t.Skipf("%s only test", tc.os)
 			}
 
