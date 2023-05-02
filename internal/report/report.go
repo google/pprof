@@ -435,16 +435,14 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 	if len(syms) == 0 {
 		if address == nil { // User provides a symbol instead of an address
 			if len(symbols) == 0 {
-				return fmt.Errorf("no matches found for regexp %s in binaries", o.Symbol)
-			} else {
-				return fmt.Errorf("regex %s found in binaries, but not in the profile", o.Symbol)
+				return fmt.Errorf("no matches found for regexp %s in the binary", o.Symbol)
 			}
+			return fmt.Errorf("regex %s found in the binary, but not in the profile", o.Symbol)
 		} else { // User provides an address
 			if len(symbols) == 0 {
-				return fmt.Errorf("the address 0x%x is not found in binaries", *address)
-			} else {
-				return fmt.Errorf("address 0x%x found in binaries, but not in the profile", *address)
+				return fmt.Errorf("address 0x%x is not found in the binary", *address)
 			}
+			return fmt.Errorf("address 0x%x found in binary, not in the profile", *address)
 		}
 	}
 
