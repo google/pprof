@@ -433,11 +433,12 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 	}
 
 	if len(syms) == 0 {
-		if address == nil { // User provides a symbol
+		// The symbol regexp case
+		if address == nil {
 			return fmt.Errorf("no matches found for regexp %s", o.Symbol)
 		}
 
-		// User provides an address
+		// The address case
 		if len(symbols) == 0 {
 			return fmt.Errorf("no matches found for address 0x%x", *address)
 		}
