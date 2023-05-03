@@ -515,8 +515,7 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 }
 
 // symbolsFromBinaries examines the binaries listed on the profile that have
-// associated samples, and returns the identified symbols matching rx, together
-// with a boolean indicating if the matched symbols have samples.
+// associated samples, and returns the identified symbols matching rx.
 func symbolsFromBinaries(prof *profile.Profile, g *graph.Graph, rx *regexp.Regexp, address *uint64, obj plugin.ObjTool) []*objSymbol {
 	// fileHasSamplesAndMatched is for optimization to speed up pprof: when later
 	// walking through the profile mappings, it will only examine the ones that have
@@ -532,7 +531,7 @@ func symbolsFromBinaries(prof *profile.Profile, g *graph.Graph, rx *regexp.Regex
 	var objSyms []*objSymbol
 	for _, m := range prof.Mapping {
 		// Skip the mapping if its file does not have samples or is not matched to
-		// the regexp (unless the regex is an address and the mapping's range covers
+		// the regexp (unless the regexp is an address and the mapping's range covers
 		// the address)
 		if !fileHasSamplesAndMatched[m.File] {
 			if address == nil || !(m.Start <= *address && *address <= m.Limit) {
