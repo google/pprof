@@ -529,7 +529,7 @@ func TestPrintAssemblyErrorMessage(t *testing.T) {
 		{
 			desc:   "matched address in binary but not in the profile",
 			symbol: "0x400000",
-			want:   "address 0x400000 found in binary, but not in the profile",
+			want:   "address 0x400000 found in binary, but the corresponding symbols do not have samples in the profile",
 		},
 	} {
 		rpt := New(

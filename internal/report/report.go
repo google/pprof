@@ -441,7 +441,7 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 		if len(symbols) == 0 {
 			return fmt.Errorf("no matches found for address 0x%x", *address)
 		}
-		return fmt.Errorf("address 0x%x found in binary, but not in the profile", *address)
+		return fmt.Errorf("address 0x%x found in binary, but the corresponding symbols do not have samples in the profile", *address)
 	}
 
 	// Correlate the symbols from the binary with the profile samples.
