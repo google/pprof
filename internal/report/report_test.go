@@ -17,6 +17,7 @@ package report
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -505,4 +506,50 @@ func TestComputeTotal(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPrintAssemblyErrorMessage(t *testing.T) {
+	profile := readProfile(filepath.Join("testdata", "sample.cpu"), t)
+
+	for _, tc := range []struct {
+		desc   string
+		symbol string
+		want   string
+	}{
+		{
+			desc:   "no matched symbol in binary",
+			symbol: "symbol-not-exist",
+			want:   "no matches found for regexp symbol-not-exist",
+		},
+		{
+			desc:   "no matched address in binary",
+			symbol: "0xffffaaaa",
+			want:   "no matches found for address 0xffffaaaa",
+		},
+		{
+			desc:   "matched address in binary but not in the profile",
+			symbol: "0x400000",
+			want:   "address 0x400000 found in binary, but not in the profile",
+		},
+	} {
+		rpt := New(
+			profile.Copy(),
+			&Options{
+				OutputFormat: List,
+				Symbol:       regexp.MustCompile(tc.symbol),
+
+				SampleValue: func(v []int64) int64 {
+					return v[1]
+				},
+				SampleUnit: profile.SampleType[1].Unit,
+			},
+		)
+
+		err := PrintAssembly(os.Stdout, rpt, &binutils.Binutils{}, -1)
+
+		if err == nil || err.Error() != tc.want {
+			t.Errorf("Got \"%v\", want \"%s\"", err, tc.want)
+		}
+	}
+
 }
