@@ -537,7 +537,6 @@ func TestPrintAssemblyErrorMessage(t *testing.T) {
 			&Options{
 				OutputFormat: List,
 				Symbol:       regexp.MustCompile(tc.symbol),
-
 				SampleValue: func(v []int64) int64 {
 					return v[1]
 				},
@@ -545,11 +544,8 @@ func TestPrintAssemblyErrorMessage(t *testing.T) {
 			},
 		)
 
-		err := PrintAssembly(os.Stdout, rpt, &binutils.Binutils{}, -1)
-
-		if err == nil || err.Error() != tc.want {
-			t.Errorf("Got \"%v\", want \"%s\"", err, tc.want)
+		if err := PrintAssembly(os.Stdout, rpt, &binutils.Binutils{}, -1); err == nil || err.Error() != tc.want {
+			t.Errorf(`Got "%v", want %q`, err, tc.want)
 		}
 	}
-
 }
