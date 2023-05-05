@@ -389,7 +389,7 @@ func collectMappingSources(p *profile.Profile, source string) plugin.MappingSour
 // set to the remote source URL by collectMappingSources back to empty string.
 func unsourceMappings(p *profile.Profile) {
 	for _, m := range p.Mapping {
-		if m.BuildID == "" {
+		if m.BuildID == "" && filepath.VolumeName(m.File) == "" {
 			if u, err := url.Parse(m.File); err == nil && u.IsAbs() {
 				m.File = ""
 			}
@@ -408,11 +408,13 @@ func locateBinaries(p *profile.Profile, s *source, obj plugin.ObjTool, ui plugin
 	}
 mapping:
 	for _, m := range p.Mapping {
+		var noVolumeFile string
 		var baseName string
 		var dirName string
 		if m.File != "" {
+			noVolumeFile = strings.TrimPrefix(m.File, filepath.VolumeName(m.File))
 			baseName = filepath.Base(m.File)
-			dirName = filepath.Dir(m.File)
+			dirName = filepath.Dir(noVolumeFile)
 		}
 
 		for _, path := range filepath.SplitList(searchPath) {
@@ -422,7 +424,7 @@ mapping:
 				if matches, err := filepath.Glob(filepath.Join(path, m.BuildID, "*")); err == nil {
 					fileNames = append(fileNames, matches...)
 				}
-				fileNames = append(fileNames, filepath.Join(path, m.File, m.BuildID)) // perf path format
+				fileNames = append(fileNames, filepath.Join(path, noVolumeFile, m.BuildID)) // perf path format
 				// Llvm buildid protocol: the first two characters of the build id
 				// are used as directory, and the remaining part is in the filename.
 				// e.g. `/ab/cdef0123456.debug`
@@ -432,10 +434,10 @@ mapping:
 				// Try both the basename and the full path, to support the same directory
 				// structure as the perf symfs option.
 				fileNames = append(fileNames, filepath.Join(path, baseName))
-				fileNames = append(fileNames, filepath.Join(path, m.File))
+				fileNames = append(fileNames, filepath.Join(path, noVolumeFile))
 				// Other locations: use the same search paths as GDB, according to
 				// https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
-				fileNames = append(fileNames, filepath.Join(path, m.File+".debug"))
+				fileNames = append(fileNames, filepath.Join(path, noVolumeFile+".debug"))
 				fileNames = append(fileNames, filepath.Join(path, dirName, ".debug", baseName+".debug"))
 				fileNames = append(fileNames, filepath.Join(path, "usr", "lib", "debug", dirName, baseName+".debug"))
 			}
