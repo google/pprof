@@ -91,7 +91,7 @@ func TestWebInterface(t *testing.T) {
 			[]string{"300ms.*F1", "200ms.*300ms.*F2"}, false},
 		{"/disasm?f=" + url.QueryEscape("F[12]"),
 			[]string{"f1:asm", "f2:asm"}, false},
-		{"/flamegraph", []string{
+		{"/flamegraphold", []string{
 			"File: testbin",
 			// Check profile frame JSON is included.
 			`\\u0022n\\u0022:\\u0022root\\u0022`,
@@ -101,7 +101,7 @@ func TestWebInterface(t *testing.T) {
 			// Check d3-flame-graph CSS is included.
 			".d3-flame-graph rect {",
 		}, false},
-		{"/flamegraph2", []string{
+		{"/flamegraph", []string{
 			"File: testbin",
 			// Check that interesting frames are included.
 			`\bF1\b`,

@@ -682,7 +682,9 @@ function viewer(baseUrl, nodes, options) {
     toptable.addEventListener('touchstart', handleTopClick);
   }
 
-  const ids = ['topbtn', 'graphbtn', 'flamegraph', 'flamegraph2', 'peek', 'list',
+  const ids = ['topbtn', 'graphbtn',
+	       'flamegraph', 'flamegraph2', 'flamegraphold',
+	       'peek', 'list',
 	       'disasm', 'focus', 'ignore', 'hide', 'show', 'show-from'];
   ids.forEach(makeSearchLinkDynamic);
 
