@@ -371,7 +371,7 @@ type mappingTable struct {
 	segments map[*profile.Mapping]plugin.ObjFile
 }
 
-// Close releases any external processes being used for the mapping.
+// close releases any external processes being used for the mapping.
 func (mt *mappingTable) close() {
 	for _, segment := range mt.segments {
 		segment.Close()
