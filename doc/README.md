@@ -485,11 +485,6 @@ Boxes are colored according to the name of the package in which the correspondin
 function occurs. E.g., in C++ profiles all frames corresponding to `std::` functions
 will be assigned the same color.
 
-In addition to the package-based coloring, the left hand side of a box may be
-darker. This darker area corresponds to the sum of the sample values of samples
-that occurred directly in the code representated by the box (as opposed to
-samples in functions called by the code.)
-
 Inlining is indicated by the absence of a horizontal border between a caller and
 a callee. E.g., suppose X calls Y calls Z and the call from Y to Z is inlined into
 Y. There will be a black border between X and Y, but no border between Y and Z.

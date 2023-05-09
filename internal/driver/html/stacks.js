@@ -380,15 +380,6 @@ function stackViewer(stacks, nodes) {
       r.classList.add('not-inlined');
     }
 
-    // Box that shows time spent in self
-    if (box.selfWidth >= MIN_WIDTH) {
-      const s = document.createElement('div');
-      s.style.width = Math.min(box.selfWidth, w)+'px';
-      s.style.height = (ROW-1)+'px';
-      s.classList.add('self');
-      r.appendChild(s);
-    }
-
     // Label
     if (box.width >= MIN_TEXT_WIDTH) {
       const t = document.createElement('div');
