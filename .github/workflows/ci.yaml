@@ -101,7 +101,7 @@ jobs:
       - name: Code coverage
         uses: codecov/codecov-action@v3
         with:
-          file: ./coverage.txt
+          file: ${{ env.WORKING_DIR }}/coverage.txt
 
   test-linux:
     runs-on: ${{ matrix.os }}
@@ -163,7 +163,7 @@ jobs:
       - name: Code coverage
         uses: codecov/codecov-action@v3
         with:
-          file: ./coverage.txt
+          file: ${{ env.WORKING_DIR }}/coverage.txt
 
   test-windows:
     runs-on: windows-2019
