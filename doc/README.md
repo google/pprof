@@ -431,15 +431,10 @@ Graph
 :   Displays a scrollable/zoomable graph view; each function (or profile entry)
     is represented by a node and edges connect callers to callees.
 
-Flame Graph
-:   Displays a [flame graph](https://www.brendangregg.com/flamegraphs.html).
-
-[Flame Graph (new)](#flame-graph)
-:   Displays a view similar to a flame graph that can show the selected node's
-    callers and callees simultaneously.
-
-    NOTE: This view is currently experimental and may eventually replace the normal
-    Flame Graph view.
+[Flame Graph](#flame-graph)
+:   Displays a view similar to a
+    [flame graph](https://www.brendangregg.com/flamegraphs.html)
+    that can show the selected node's callers and callees simultaneously.
 
 Peek
 :   Shows callers / callees per function in a simple textual forma.
@@ -473,8 +468,8 @@ prompting the user to confirm).
 
 ## Flame graph
 
-The `Flame graph (new)` view displays profile information as a
-[flame graph](https://www.brendangregg.com/flamegraphs.html).
+The `Flame graph` view displays profile information as a [flame
+graph](https://www.brendangregg.com/flamegraphs.html).
 
 Boxes on this view correspond to stack frames in the profile. Caller boxes are
 directly above callee boxes. The width of each box is proportional to the sum of
