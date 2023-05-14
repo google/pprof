@@ -52,7 +52,7 @@ a {
 }
 #detailsbox {
   display: none;
-  z-index: 1;
+  z-index: 3;
   position: fixed;
   top: 40px;
   right: 20px;
