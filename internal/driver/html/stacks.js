@@ -398,8 +398,8 @@ function stackViewer(stacks, nodes) {
   function drawSep(y) {
     const m = document.createElement('div');
     m.innerText = percent(shownTotal, stacks.Total) +
-	'\xa0\xa0\xa0\xa0' +  // Some non-breaking spaces
-	valueString(shownTotal);
+        '\xa0\xa0\xa0\xa0' +  // Some non-breaking spaces
+        valueString(shownTotal);
     m.style.top = (y-ROW) + 'px';
     m.style.left = PADDING + 'px';
     m.style.width = (chart.clientWidth - PADDING*2) + 'px';
