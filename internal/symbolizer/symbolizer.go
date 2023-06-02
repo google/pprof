@@ -214,9 +214,9 @@ func Demangle(prof *profile.Profile, force bool, demanglerMode string) {
 func demanglerModeToOptions(demanglerMode string) []demangle.Option {
 	switch demanglerMode {
 	case "": // demangled, simplified: no parameters, no templates, no return type
-		return []demangle.Option{demangle.NoParams, demangle.NoTemplateParams}
+		return []demangle.Option{demangle.NoParams, demangle.NoEnclosingParams, demangle.NoTemplateParams}
 	case "templates": // demangled, simplified: no parameters, no return type
-		return []demangle.Option{demangle.NoParams}
+		return []demangle.Option{demangle.NoParams, demangle.NoEnclosingParams}
 	case "full":
 		return []demangle.Option{demangle.NoClones}
 	case "none": // no demangling
