@@ -48,7 +48,7 @@ jobs:
           xcode-version: '13.0'
     steps:
       - name: Update Go version using setup-go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753 # v4.0.1
         if: matrix.go != 'tip'
         with:
           go-version: ${{ matrix.go }}
@@ -66,12 +66,12 @@ jobs:
           echo "$HOME/gotip/bin:$PATH" >> $GITHUB_PATH
 
       - name: Checkout the repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           path: ${{ env.WORKING_DIR }}
 
       - name: Set up Xcode
-        uses: maxim-lobanov/setup-xcode@v1
+        uses: maxim-lobanov/setup-xcode@9a697e2b393340c3cacd97468baa318e4c883d98 # v1.5.1
         with:
           xcode-version: ${{ matrix.xcode-version }}
 
@@ -99,7 +99,7 @@ jobs:
           go test -v ./...
 
       - name: Code coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
         with:
           file: ${{ env.WORKING_DIR }}/coverage.txt
 
@@ -115,7 +115,7 @@ jobs:
         os: ['ubuntu-22.04', 'ubuntu-20.04']
     steps:
       - name: Update Go version using setup-go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753 # v4.0.1
         if: matrix.go != 'tip'
         with:
           go-version: ${{ matrix.go }}
@@ -133,7 +133,7 @@ jobs:
           echo "$HOME/gotip/bin" >> $GITHUB_PATH
 
       - name: Checkout the repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           path: ${{ env.WORKING_DIR }}
 
@@ -161,7 +161,7 @@ jobs:
           go test -v ./...
 
       - name: Code coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
         with:
           file: ${{ env.WORKING_DIR }}/coverage.txt
 
@@ -173,17 +173,17 @@ jobs:
         go: ['1.19', '1.20']
     steps:
       - name: Update Go version using setup-go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753 # v4.0.1
         with:
           go-version: ${{ matrix.go }}
 
       - name: Checkout the repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           path: ${{ env.WORKING_DIR }}
 
       - name: Fetch Windows dependency
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@5a5864861ce2c988001531e48993aa687c51f6c8 # v2.2.0
         with:
           args: install graphviz llvm
 
@@ -209,6 +209,6 @@ jobs:
     - test-windows
     steps:
     - name: Decide whether the needed jobs succeeded or failed
-      uses: re-actors/alls-green@release/v1
+      uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe # v1.2.2
       with:
         jobs: ${{ toJSON(needs) }}
