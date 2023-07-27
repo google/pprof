@@ -485,6 +485,15 @@ Boxes are colored according to the name of the package in which the correspondin
 function occurs. E.g., in C++ profiles all frames corresponding to `std::` functions
 will be assigned the same color.
 
+When using the **--diff_base** option, box width is proportional to the sum of
+the increases and decreases in the sub-tree rooted at box. E.g., if the cost of
+one child of box decreases by 150 and the cost of another child increases by
+200, the box width will be proportional to 150+200. The net increase or decrease
+(the preceding example has a net increase of 200-150, i.e., 50) is indicated by
+a shaded region. The size of the shaded region is proportional to the net
+increase or net decrease. The shading is red for a net increase, and green for a
+net decrease.
+
 Inlining is indicated by the absence of a horizontal border between a caller and
 a callee. E.g., suppose X calls Y calls Z and the call from Y to Z is inlined into
 Y. There will be a black border between X and Y, but no border between Y and Z.

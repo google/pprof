@@ -28,7 +28,10 @@ body {
   position: absolute;
   overflow: hidden;
   box-sizing: border-box;
+  background: #d8d8d8;
 }
+.positive { position: absolute; background: #caa; }
+.negative { position: absolute; background: #aca; }
 /* Not-inlined frames are visually separated from their caller. */
 .not-inlined {
   border-top: 1px solid black;
