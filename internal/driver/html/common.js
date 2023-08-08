@@ -563,11 +563,11 @@ function viewer(baseUrl, nodes, options) {
     return str.replace(/([\\\.?+*\[\](){}|^$])/g, '\\$1');
   }
 
-  function setSampleIndexLink(id) {
-    const elem = document.getElementById(id);
+  function setSampleIndexLink(si) {
+    const elem = document.getElementById('sampletype-' + si);
     if (elem != null) {
       setHrefParams(elem, function (params) {
-        params.set("si", id);
+        params.set("si", si);
       });
     }
   }
