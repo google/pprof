@@ -130,6 +130,10 @@ jobs:
         with:
           path: ${{ env.WORKING_DIR }}
 
+      - name: Check chrome for browser tests
+        run: |
+          google-chrome --version
+
       - name: Fetch dependencies
         run: |
           sudo apt-get install graphviz
