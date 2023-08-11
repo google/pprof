@@ -416,36 +416,153 @@ argument on the command-line), pprof starts a web server and opens a browser
 window pointing at that server. The web interface provided by the server allows
 the user to interactively view profile data in multiple formats.
 
-The top of the display is a header that contains some buttons and menus.
+## Views
 
-## View
+The top of the display is a header that contains some buttons and menus.  The
+`View` menu allows the user to switch between different visualizations of the
+profile. The available views are described here:
 
-The `View` menu allows the user to switch between different visualizations of
-the profile.
+### Graph
 
-Top
-:   Displays a tabular view of profile entries. The table can be sorted
-    interactively.
+The default view in the local web interface displays a graph where the nodes are
+functions, and edges indicate caller/callee relations.
 
-Graph
-:   Displays a scrollable/zoomable graph view; each function (or profile entry)
-    is represented by a node and edges connect callers to callees.
+Note: You can drag the display around with the mouse button held down, or zoom
+in and out using a mouse scroll-wheel or pinch/expand touch gestures.
 
-[Flame Graph](#flame-graph)
-:   Displays a view similar to a
-    [flame graph](https://www.brendangregg.com/flamegraphs.html)
-    that can show the selected node's callers and callees simultaneously.
+![Graph view](images/webui/graph.png)
 
-Peek
-:   Shows callers / callees per function in a simple textual forma.
+E.g., `FormatPack` has an outgoing edge to `FormatUntyped` that indicates that
+the former calls the latter. The number along the edge (5.72s) indicates the
+amount of time that was spent in `FormatUntyped` (and its callees) when called
+from `FormatPack`.
 
-Source
-:   Displays source code annotated with profile information. Clicking on a
-    source line can show the disassembled machine instructions for that line.
+See [earlier explanation](#interpreting-the-callgraph) for more details.
 
-Disassemble
-:   Displays disassembled machine instructions annotated with profile
-    information.
+### Flame graph
+
+Switching to the `Flame graph` view (via the `View` menu) will display a [flame
+graph](https://www.brendangregg.com/flamegraphs.html). This view provides a
+compact representation of caller/callee relations:
+
+![Flame graph](images/webui/flame.png)
+
+Boxes on this view correspond to stack frames in the profile. Caller boxes are
+directly above callee boxes. The width of each box is proportional to the sum of
+the sample value of profile samples where that frame was present on the call
+stack. Children of a particular box are laid out left to right in decreasing
+size order.
+
+E.g., here we see that `FormatPack` is right above `FormatUntyped`, which
+indicates that the former calls the latter. The width of `FormatUntyped`
+corresponds to the fraction of time accounted for by this call.
+
+Names displayed in different boxes may have different font sizes. These size
+differences are due to an attempt to fit as much of the name into the box as
+possible; no other interpretation should be placed on the size.
+
+Boxes are colored according to the name of the package in which the corresponding
+function occurs. E.g., in C++ profiles all frames corresponding to `std::` functions
+will be assigned the same color.
+
+#### Viewing callers
+
+Traditional flame graphs provide a top-down view: it is easy to see the
+functions called by a particular function, but harder to find callers of a
+particular function. E.g., in the linked example there are multiple occurrences
+of `FormatUntyped` since it has multiple callers.
+
+Pprof's flame graph extend the traditional model: when a function is selected,
+the graph changes to show call-stacks leading that function. Therefore, clicking
+on any of the `FormatUntyped` boxes will show the call stacks that end up
+calling `FormatUntyped`:
+
+![Flame graph showing multiple callers](images/webui/flame-multi.png)
+
+#### Diff mode
+
+When using the **--diff_base** option, box width is proportional to the sum of
+the increases and decreases in the sub-tree rooted at box. E.g., if the cost of
+one child of box decreases by 150 and the cost of another child increases by
+200, the box width will be proportional to 150+200. The net increase or decrease
+(the preceding example has a net increase of 200-150, i.e., 50) is indicated by
+a shaded region. The size of the shaded region is proportional to the net
+increase or net decrease. The shading is red for a net increase, and green for a
+net decrease.
+
+#### Inlining
+
+Inlining is indicated by the absence of a horizontal border between a caller and
+a callee. E.g., suppose X calls Y calls Z and the call from Y to Z is inlined into
+Y. There will be a black border between X and Y, but no border between Y and Z.
+
+### Annotated Source Code
+
+Let's try to dig into what is going on inside `FormatUntyped` by viewing its
+source-code annotated with performance data. First, right-click on the box for
+the function to get a context menu.
+
+![Flame menu](images/webui/flame-menu.png)
+
+Select `Show source in new tab`. That will create a new tab that displays source
+code for the function.
+
+Note: You can also display source code by selecting `Source` from the `View`
+menu, but only do so if you are focused on just one or a few routines since
+source code display can be very slow and voluminous when multiple functions are
+being viewed.
+
+![Source listing](images/webui/source.png)
+
+Each source line is annotated with the time spent in that source line. There are
+two numbers (e.g., 840ms and 6.17s on line 207 in the screenshot). The first
+number does not count time spent in functions called from the source line, the
+second number includes that time.
+
+Let's dig down a bit more by clicking on line 207. That will expand the display
+to include the source code for inlined function calls, as well as the
+corresponding assembly code.
+
+![Expanded source listing](images/webui/source-expanded.png)
+
+The assembly code is displayed in green. Source code for inlined functions is
+displayed in blue and is indented by its inlining level. For example, the
+indentation indicates that the `ConvertAll` call on line 207 is inlined, and it
+in turn has an inlined call to `has_parsed_conversion`, which in turn expands to
+a `cmpq` instruction.
+
+### Disassembly
+
+Sometimes it is helpful to view just the disassembly in instruction order
+without interleaving with source code. You can achieve this by selecting
+`Disassemble`" from the `View` menu.
+
+Note: Do not select `Disassemble` unless you are focused on just one or a few
+routines since disassembly can be very slow and voluminous when multiple
+functions are being viewed.
+
+![Disassembly](images/webui/disasm.png)
+
+### Top Functions
+
+You may sometimes find a table that displays just the top functions in the
+profile helpful.
+
+![Top functions](images/webui/top.png)
+
+The table shows numbers (and percentages) for two different metrics:
+
+*   `flat`: profile samples in this function
+*   `cum`: (cumulative) profile samples in this function and its callees
+
+The table is initially sorted in decreasing order of `flat`. Clicking on the
+`Cum` table header will sort it in decreasing order of samples in the function
+and its callees.
+
+### Peek
+
+This view shows callers / callees per function in a simple textual format.
+The Flame graph view is typically more helpful.
 
 ## Config
 
@@ -466,40 +583,7 @@ currently selected entry is marked with a ✓. Clicking on the 🗙 on the
 right-hand side of such an entry deletes the configuration (after
 prompting the user to confirm).
 
-## Flame graph
-
-The `Flame graph` view displays profile information as a [flame
-graph](https://www.brendangregg.com/flamegraphs.html).
-
-Boxes on this view correspond to stack frames in the profile. Caller boxes are
-directly above callee boxes. The width of each box is proportional to the sum of
-the sample value of profile samples where that frame was present on the call
-stack. Children of a particular box are laid out left to right in decreasing
-size order.
-
-Names displayed in different boxes may have different font sizes. These size
-differences are due to an attempt to fit as much of the name into the box as
-possible; no other interpretation should be placed on the size.
-
-Boxes are colored according to the name of the package in which the corresponding
-function occurs. E.g., in C++ profiles all frames corresponding to `std::` functions
-will be assigned the same color.
-
-When using the **--diff_base** option, box width is proportional to the sum of
-the increases and decreases in the sub-tree rooted at box. E.g., if the cost of
-one child of box decreases by 150 and the cost of another child increases by
-200, the box width will be proportional to 150+200. The net increase or decrease
-(the preceding example has a net increase of 200-150, i.e., 50) is indicated by
-a shaded region. The size of the shaded region is proportional to the net
-increase or net decrease. The shading is red for a net increase, and green for a
-net decrease.
-
-Inlining is indicated by the absence of a horizontal border between a caller and
-a callee. E.g., suppose X calls Y calls Z and the call from Y to Z is inlined into
-Y. There will be a black border between X and Y, but no border between Y and Z.
-
 ## TODO: cover the following issues:
 
 *   Overall layout
-*   Menu entries
-*   Explanation of all the views
+*   Other menu entries
