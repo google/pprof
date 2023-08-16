@@ -145,7 +145,7 @@ function stackViewer(stacks, nodes) {
     }
 
     // Update params to include src.
-    let v = stacks.Sources[src].RE;
+    let v = pprofQuoteMeta(stacks.Sources[src].FullName);
     if (param != 'f' && param != 'sf') { // old f,sf values are overwritten
       // Add new source to current parameter value.
       const old = params.get(param);
@@ -445,7 +445,7 @@ function stackViewer(stacks, nodes) {
       r.appendChild(t);
     }
 
-    r.addEventListener('click', () => { switchPivots(src.RE); });
+    r.addEventListener('click', () => { switchPivots(pprofQuoteMeta(src.UniqueName)); });
     r.addEventListener('mouseenter', () => { handleEnter(box, r); });
     r.addEventListener('mouseleave', () => { handleLeave(box); });
     r.addEventListener('contextmenu', (e) => { showActionMenu(e, box); });
