@@ -91,13 +91,6 @@ jobs:
           go version
           ./test.sh
 
-      - name: Check to make sure that tests also work in GOPATH mode
-        env:
-          GO111MODULE: off
-        run: |
-          go get -d .
-          go test -v ./...
-
       - name: Code coverage
         uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
         with:
@@ -152,13 +145,6 @@ jobs:
         run: |
           go version
           ./test.sh
-
-      - name: Check to make sure that tests also work in GOPATH mode
-        env:
-          GO111MODULE: off
-        run: |
-          go get -d .
-          go test -v ./...
 
       - name: Code coverage
         uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
