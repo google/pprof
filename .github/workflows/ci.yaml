@@ -48,7 +48,7 @@ jobs:
           xcode-version: '13.0'
     steps:
       - name: Update Go version using setup-go
-        uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753 # v4.0.1
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
         if: matrix.go != 'tip'
         with:
           go-version: ${{ matrix.go }}
@@ -108,7 +108,7 @@ jobs:
         os: ['ubuntu-22.04', 'ubuntu-20.04']
     steps:
       - name: Update Go version using setup-go
-        uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753 # v4.0.1
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
         if: matrix.go != 'tip'
         with:
           go-version: ${{ matrix.go }}
@@ -163,7 +163,7 @@ jobs:
         go: ['1.19', '1.20']
     steps:
       - name: Update Go version using setup-go
-        uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753 # v4.0.1
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
         with:
           go-version: ${{ matrix.go }}
 
