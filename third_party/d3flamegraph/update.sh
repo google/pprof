@@ -21,36 +21,10 @@ D3FLAMEGRAPH_CSS="d3-flamegraph.css"
 
 cd $(dirname $0)
 
-generate_d3_flame_graph_go() {
+install_and_copy() {
     npm install
-    # https://stackoverflow.com/a/21199041/171898
-    local d3_js=$(cat d3.js | sed 's/`/`+"`"+`/g')
-    local d3_css=$(cat "node_modules/d3-flame-graph/dist/${D3FLAMEGRAPH_CSS}")
 
-    cat <<-EOF > d3_flame_graph.go
-// D3.js is a JavaScript library for manipulating documents based on data.
-// https://github.com/d3/d3
-// See D3_LICENSE file for license details
-
-// d3-flame-graph is a D3.js plugin that produces flame graphs from hierarchical data.
-// https://github.com/spiermar/d3-flame-graph
-// See D3_FLAME_GRAPH_LICENSE file for license details
-
-package d3flamegraph
-
-// JSSource returns the d3 and d3-flame-graph JavaScript bundle
-const JSSource = \`
-
-$d3_js
-\`
-
-// CSSSource returns the $D3FLAMEGRAPH_CSS file
-const CSSSource = \`
-$d3_css
-\`
-
-EOF
-    gofmt -w d3_flame_graph.go
+    cp node_modules/d3-flame-graph/dist/${D3FLAMEGRAPH_CSS} d3.css
 }
 
 get_licenses() {
@@ -59,4 +33,4 @@ get_licenses() {
 }
 
 get_licenses
-generate_d3_flame_graph_go
+install_and_copy
