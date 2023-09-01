@@ -34,6 +34,7 @@ generate_d3_flame_graph_go() {
 // d3-flame-graph is a D3.js plugin that produces flame graphs from hierarchical data.
 // https://github.com/spiermar/d3-flame-graph
 // See D3_FLAME_GRAPH_LICENSE file for license details
+
 package d3flamegraph
 
 // JSSource returns the d3 and d3-flame-graph JavaScript bundle
@@ -41,6 +42,7 @@ const JSSource = \`
 
 $d3_js
 \`
+
 // CSSSource returns the $D3FLAMEGRAPH_CSS file
 const CSSSource = \`
 $d3_css
