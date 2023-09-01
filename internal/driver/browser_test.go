@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	_ "embed"
+
 	"github.com/chromedp/chromedp"
 )
 
@@ -76,6 +78,29 @@ func TestTopTable(t *testing.T) {
 	}
 }
 
+func TestFlameGraph(t *testing.T) {
+	maybeSkipBrowserTest(t)
+
+	prof := makeFakeProfile()
+	server := makeTestServer(t, prof)
+	ctx, cancel := context.WithTimeout(context.Background(), browserDeadline)
+	defer cancel()
+	ctx, cancel = chromedp.NewContext(ctx)
+	defer cancel()
+
+	err := chromedp.Run(ctx,
+		chromedp.Navigate(server.URL+"/flamegraph"),
+		chromedp.Evaluate(jsTestFixture, nil),
+		eval(t, jsCheckFlame),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+//go:embed testdata/testflame.js
+var jsCheckFlame string
+
 // matchRegexp is a chromedp.Action that fetches the text of the first
 // node that matched query and checks that the text matches regexp re.
 func matchRegexp(t *testing.T, query, re string) chromedp.ActionFunc {
@@ -119,3 +144,29 @@ func matchInOrder(t *testing.T, query string, sequence ...string) chromedp.Actio
 		return nil
 	}
 }
+
+// eval runs the specified javascript in the browser. The javascript must
+// return an [][]any, where each of the []any starts with either "LOG" or
+// "ERROR" (see testdata/testfixture.js).
+func eval(t *testing.T, js string) chromedp.ActionFunc {
+	return func(ctx context.Context) error {
+		var result [][]any
+		err := chromedp.Evaluate(js, &result).Do(ctx)
+		if err != nil {
+			return err
+		}
+		for _, s := range result {
+			if len(s) > 0 && s[0] == "LOG" {
+				t.Log(s[1:]...)
+			} else if len(s) > 0 && s[0] == "ERROR" {
+				t.Error(s[1:]...)
+			} else {
+				t.Error(s...) // Treat missing prefix as an error.
+			}
+		}
+		return nil
+	}
+}
+
+//go:embed testdata/testfixture.js
+var jsTestFixture string
