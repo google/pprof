@@ -1,4 +1,6 @@
 function TestFlame() {
+  const PADDING = 2; // Matches PADDING in stackViewer
+
   const test = new TestFixture();
   const chart = document.getElementById("stack-chart");
   if (!chart) {
@@ -55,7 +57,7 @@ function TestFlame() {
     test.setContext("checkWidth", t, fraction);
     const r = rect(t);
     if (!r) return;
-    const expect = (chartRect.width - 4) * fraction;
+    const expect = (chartRect.width - 2*PADDING) * fraction;
     if (r.width < expect*0.95 || r.width > expect*1.05) {
       test.err("bad width", r.width, "expecting ~", expect);
     }
