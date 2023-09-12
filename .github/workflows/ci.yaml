@@ -173,7 +173,7 @@ jobs:
           path: ${{ env.WORKING_DIR }}
 
       - name: Fetch Windows dependency
-        uses: crazy-max/ghaction-chocolatey@834401ba518bc98bb1bb936e421d37ae96c1a8a0 # v2.3.0
+        uses: crazy-max/ghaction-chocolatey@0e015857dd851f84fcb7fb53380eb5c4c8202333 # v3.0.0
         with:
           args: install graphviz llvm
 
