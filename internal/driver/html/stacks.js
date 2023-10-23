@@ -76,11 +76,11 @@ function stackViewer(stacks, nodes) {
     current: () => {
       let r = new Map();
       if (pivots.length == 1 && pivots[0] == 0) {
-	// Not pivoting
+        // Not pivoting
       } else {
-	for (let p of pivots) {
+        for (let p of pivots) {
           r.set(p, true);
-	}
+        }
       }
       return r;
     }});
