@@ -75,8 +75,12 @@ function stackViewer(stacks, nodes) {
     hiliter: (n, on) => { return hilite(n, on); },
     current: () => {
       let r = new Map();
-      for (let p of pivots) {
-        r.set(p, true);
+      if (pivots.length == 1 && pivots[0] == 0) {
+        // Not pivoting
+      } else {
+        for (let p of pivots) {
+          r.set(p, true);
+        }
       }
       return r;
     }});
@@ -174,7 +178,11 @@ function stackViewer(stacks, nodes) {
   function switchPivots(regexp) {
     // Switch URL without hitting the server.
     const url = new URL(document.URL);
-    url.searchParams.set('p', regexp);
+    if (regexp === '' || regexp === '^$') {
+      url.searchParams.delete('p');  // Not pivoting
+    } else {
+      url.searchParams.set('p', regexp);
+    }
     history.pushState('', '', url.toString()); // Makes back-button work
     matches = new Set();
     search.value = '';

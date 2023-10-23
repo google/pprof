@@ -87,6 +87,28 @@ function TestFlame() {
     checkWidth("F2", 100/100);
     checkWidth("F3", 100/100);
   });
+
+  test.run("NavigateWithoutPivot", function() {
+    // Clear pivot
+    boxMap.get("root").click();
+
+    // Trigger link update.
+    const btn = document.getElementById("graphbtn");
+    if (!btn) {
+      test.err("no graph button on page");
+      return;
+    }
+    const event = new Event("mouseenter");
+    btn.dispatchEvent(event);
+
+    // Check that URL does not contain a focus parameter.
+    test.log(btn.href);
+    const url = new URL(btn.href);
+    if (url.searchParams.has('f')) {
+      test.err("unexpected focus parameter in URL", btn.href);
+    }
+  });
+
   return test.result;
 }
 TestFlame();
