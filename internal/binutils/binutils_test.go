@@ -461,8 +461,8 @@ func TestLLVMSymbolizer(t *testing.T) {
 		frames []plugin.Frame
 	}{
 		{0x10, false, []plugin.Frame{
-			{Func: "Inlined_0x10", File: "foo.h", Line: 0},
-			{Func: "Func_0x10", File: "foo.c", Line: 2},
+			{Func: "Inlined_0x10", File: "foo.h", Line: 0, Column: 0},
+			{Func: "Func_0x10", File: "foo.c", Line: 2, Column: 1},
 		}},
 		{0x20, true, []plugin.Frame{
 			{Func: "foo_0x20", File: "0x20 8"},

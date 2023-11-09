@@ -86,6 +86,7 @@ func TestParseConfig(t *testing.T) {
 		Sort:                "cum",
 		Granularity:         "functions",
 		NoInlines:           true,
+		Columns:             true,
 	}
 	url, changed := cfg.makeURL(url.URL{})
 	if !changed {

@@ -247,6 +247,8 @@ var configHelp = map[string]string{
 	"noinlines": helpText(
 		"Ignore inlines.",
 		"Attributes inlined functions to their first out-of-line caller."),
+	"columns": helpText(
+		"Use column numbers when aggregating at the source code line level."),
 }
 
 func helpText(s ...string) string {

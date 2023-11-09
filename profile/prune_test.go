@@ -61,7 +61,7 @@ var locs1 = []*Location{
 	{
 		ID: 1,
 		Line: []Line{
-			{Function: funs[0], Line: 1},
+			{Function: funs[0], Line: 1, Column: 7},
 		},
 	},
 	{
@@ -75,7 +75,7 @@ var locs1 = []*Location{
 		ID: 3,
 		Line: []Line{
 			{Function: funs[3], Line: 2},
-			{Function: funs[1], Line: 1},
+			{Function: funs[1], Line: 1, Column: 7},
 		},
 	},
 	{
@@ -135,11 +135,11 @@ samples/count cpu/milliseconds
           1          1: 4 1
           1          1: 2 1
 Locations
-     1: 0x0 main main.c:1 s=0
-     2: 0x0 fun2 fun.c:1 s=0
-     3: 0x0 fun3 fun.c:2 s=0
-             fun1 fun.c:1 s=0
-     4: 0x0 fun5 fun.c:2 s=0
+     1: 0x0 main main.c:1:7 s=0
+     2: 0x0 fun2 fun.c:1:0 s=0
+     3: 0x0 fun3 fun.c:2:0 s=0
+             fun1 fun.c:1:7 s=0
+     4: 0x0 fun5 fun.c:2:0 s=0
 Mappings
 `
 
@@ -221,10 +221,10 @@ samples/count cpu/milliseconds
           1          1: 4 1
           1          1: 1
 Locations
-     1: 0x0 main main.c:1 s=0
-     2: 0x0 unsimplified_fun(int) fun.c:1 s=0
-     3: 0x0 Foo::(anonymous namespace)::Test::Bar fun.c:1 s=0
-     4: 0x0 Hello::(anonymous namespace)::World(const Foo::(anonymous namespace)::Test::Bar) fun.c:1 s=0
-     5: 0x0 Foo::operator()(::Bar) fun.c:1 s=0
+     1: 0x0 main main.c:1:0 s=0
+     2: 0x0 unsimplified_fun(int) fun.c:1:0 s=0
+     3: 0x0 Foo::(anonymous namespace)::Test::Bar fun.c:1:0 s=0
+     4: 0x0 Hello::(anonymous namespace)::World(const Foo::(anonymous namespace)::Test::Bar) fun.c:1:0 s=0
+     5: 0x0 Foo::operator()(::Bar) fun.c:1:0 s=0
 Mappings
 `

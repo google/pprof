@@ -1680,8 +1680,9 @@ func (m *mockFile) BuildID() string {
 func (*mockFile) SourceLine(addr uint64) ([]plugin.Frame, error) {
 	// Return enough data to support the SourceLine() calls needed for
 	// weblist on cpuProfile() contents.
-	frame := func(fn, file string, line int) plugin.Frame {
-		return plugin.Frame{Func: fn, File: file, Line: line}
+	frame := func(fn, file string, num int) plugin.Frame {
+		// Reuse the same num for line number and column number.
+		return plugin.Frame{Func: fn, File: file, Line: num, Column: num}
 	}
 	switch addr {
 	case 0x1000:

@@ -51,6 +51,7 @@ type config struct {
 	TagShow      string  `json:"tagshow,omitempty"`
 	TagHide      string  `json:"taghide,omitempty"`
 	NoInlines    bool    `json:"noinlines,omitempty"`
+	Columns      bool    `json:"columns,omitempty"`
 
 	// Output granularity
 	Granularity string `json:"granularity,omitempty"`
@@ -124,7 +125,7 @@ func init() {
 	// take on one of a bounded set of values.
 	choices := map[string][]string{
 		"sort":        {"cum", "flat"},
-		"granularity": {"functions", "filefunctions", "files", "lines", "addresses"},
+		"granularity": {"functions", "filefunctions", "files", "lines", "columns", "addresses"},
 	}
 
 	// urlparam holds the mapping from a config field name to the URL
@@ -157,6 +158,7 @@ func init() {
 		"sort":                 "sort",
 		"granularity":          "g",
 		"noinlines":            "noinlines",
+		"columns":              "columns",
 	}
 
 	def := defaultConfig()

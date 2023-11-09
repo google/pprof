@@ -242,23 +242,27 @@ func checkSymbolizedLocation(a uint64, got []profile.Line) error {
 		if g.Line != int64(w.Line) {
 			return fmt.Errorf("want lineno: %d, got %d", w.Line, g.Line)
 		}
+		if g.Column != int64(w.Column) {
+			return fmt.Errorf("want column: %d, got %d", w.Column, g.Column)
+		}
 	}
 	return nil
 }
 
 var mockAddresses = map[uint64][]plugin.Frame{
-	1000: {frame("fun11", "file11.src", 10)},
-	2000: {frame("fun21", "file21.src", 20), frame("fun22", "file22.src", 20)},
-	3000: {frame("fun31", "file31.src", 30), frame("fun32", "file32.src", 30), frame("fun33", "file33.src", 30)},
-	4000: {frame("fun41", "file41.src", 40), frame("fun42", "file42.src", 40), frame("fun43", "file43.src", 40), frame("fun44", "file44.src", 40)},
-	5000: {frame("fun51", "file51.src", 50), frame("fun52", "file52.src", 50), frame("fun53", "file53.src", 50), frame("fun54", "file54.src", 50), frame("fun55", "file55.src", 50)},
+	1000: {frame("fun11", "file11.src", 10, 1)},
+	2000: {frame("fun21", "file21.src", 20, 2), frame("fun22", "file22.src", 20, 2)},
+	3000: {frame("fun31", "file31.src", 30, 3), frame("fun32", "file32.src", 30, 3), frame("fun33", "file33.src", 30, 3)},
+	4000: {frame("fun41", "file41.src", 40, 4), frame("fun42", "file42.src", 40, 4), frame("fun43", "file43.src", 40, 4), frame("fun44", "file44.src", 40, 4)},
+	5000: {frame("fun51", "file51.src", 50, 5), frame("fun52", "file52.src", 50, 5), frame("fun53", "file53.src", 50, 5), frame("fun54", "file54.src", 50, 5), frame("fun55", "file55.src", 50, 5)},
 }
 
-func frame(fname, file string, line int) plugin.Frame {
+func frame(fname, file string, line int, column int) plugin.Frame {
 	return plugin.Frame{
-		Func: fname,
-		File: file,
-		Line: line}
+		Func:   fname,
+		File:   file,
+		Line:   line,
+		Column: column}
 }
 
 func TestDemangleSingleFunction(t *testing.T) {
