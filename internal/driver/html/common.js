@@ -261,6 +261,10 @@ function initMenus() {
       cancelActiveMenu();
     }
   }, { passive: true, capture: true });
+
+  // fill search input from url parameter
+  const urlSearchParams = new URLSearchParams(window.location.search);
+  document.getElementById('search').value = urlSearchParams.get('f') || '';
 }
 
 function sendURL(method, url, done) {
