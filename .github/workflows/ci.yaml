@@ -18,34 +18,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.19', '1.20', 'tip']
+        go: ['1.20', '1.21', 'tip']
         # Supported macOS versions can be found in
         # https://github.com/actions/virtual-environments#available-environments.
-        os: ['macos-11', 'macos-12']
-        # Supported Xcode versions for macOS 11 can be found in
-        # https://github.com/actions/virtual-environments/blob/main/images/macos/macos-11-Readme.md#xcode
-        # Supported Xcode versions for macOS 12 can be found in
-        # https://github.com/actions/virtual-environments/blob/main/images/macos/macos-12-Readme.md#xcode
-        xcode-version: ['14.2', '14.1', '14.0.1', '13.4.1', '13.3.1', '13.2.1', '13.1', '13.0', '12.5.1', '12.4', '11.7']
-        exclude:
-        - os: 'macos-11'
-          xcode-version: '13.3.1'
-        - os: 'macos-11'
-          xcode-version: '13.4.1'
-        - os: 'macos-11'
-          xcode-version: '14.0.1'
-        - os: 'macos-11'
-          xcode-version: '14.1'
-        - os: 'macos-11'
-          xcode-version: '14.2'
-        - os: 'macos-12'
-          xcode-version: '11.7'
-        - os: 'macos-12'
-          xcode-version: '12.4'
-        - os: 'macos-12'
-          xcode-version: '12.5.1'
-        - os: 'macos-12'
-          xcode-version: '13.0'
+        # TODO: Add macos-13. As of now there are build errors when installing graphviz.
+        os: ['macos-12']
+        # Supported Xcode versions can be found in:
+        # - https://github.com/actions/virtual-environments/blob/main/images/macos/macos-12-Readme.md#xcode
+        # - https://github.com/actions/virtual-environments/blob/main/images/macos/macos-13-Readme.md#xcode
+        xcode-version: ['14.2', '14.1', '14.0.1', '13.4.1', '13.3.1', '13.2.1', '13.1']
     steps:
       - name: Update Go version using setup-go
         uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
@@ -104,7 +85,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.19', '1.20', 'tip']
+        go: ['1.20', '1.21', 'tip']
         os: ['ubuntu-22.04', 'ubuntu-20.04']
     steps:
       - name: Update Go version using setup-go
@@ -160,7 +141,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.19', '1.20']
+        go: ['1.20', '1.21']
     steps:
       - name: Update Go version using setup-go
         uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
