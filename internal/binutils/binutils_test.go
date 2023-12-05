@@ -532,7 +532,7 @@ func TestPEFile(t *testing.T) {
 				t.Fatalf("SourceLine: unexpected error %v", err)
 			}
 			wantFrames := []plugin.Frame{
-				{Func: "main", File: "hello.c", Line: 3},
+				{Func: "main", File: "hello.c", Line: 3, Column: 12},
 			}
 			if !reflect.DeepEqual(gotFrames, wantFrames) {
 				t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, wantFrames)
