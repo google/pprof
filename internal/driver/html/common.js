@@ -678,7 +678,7 @@ function viewer(baseUrl, nodes, options) {
   }
 
   const ids = ['topbtn', 'graphbtn',
-               'flamegraph', 'flamegraph2', 'flamegraphold',
+               'flamegraph',
                'peek', 'list',
                'disasm', 'focus', 'ignore', 'hide', 'show', 'show-from'];
   ids.forEach(makeSearchLinkDynamic);

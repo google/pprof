@@ -91,16 +91,6 @@ func TestWebInterface(t *testing.T) {
 			[]string{"300ms.*F1", "200ms.*300ms.*F2"}, false},
 		{"/disasm?f=" + url.QueryEscape("F[12]"),
 			[]string{"f1:asm", "f2:asm"}, false},
-		{"/flamegraphold", []string{
-			"File: testbin",
-			// Check profile frame JSON is included.
-			`\\u0022n\\u0022:\\u0022root\\u0022`,
-			`\\u0022n\\u0022:\\u0022F1\\u0022`,
-			// Check d3-flame-graph JS is included.
-			`flamegraph:\(\)=>|flamegraph.*function|function.*flamegraph`,
-			// Check d3-flame-graph CSS is included.
-			".d3-flame-graph rect {",
-		}, false},
 		{"/flamegraph", []string{
 			"File: testbin",
 			// Check that interesting frames are included.
@@ -313,7 +303,7 @@ func TestIsLocalHost(t *testing.T) {
 }
 
 func BenchmarkTop(b *testing.B)   { benchmarkURL(b, "/top", false) }
-func BenchmarkFlame(b *testing.B) { benchmarkURL(b, "/flamegraph2", false) }
+func BenchmarkFlame(b *testing.B) { benchmarkURL(b, "/flamegraph", false) }
 func BenchmarkDot(b *testing.B)   { benchmarkURL(b, "/", true) }
 
 func benchmarkURL(b *testing.B, path string, needDot bool) {
