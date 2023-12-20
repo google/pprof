@@ -231,7 +231,7 @@ func dropEmptyStrings(in []string) (out []string) {
 }
 
 func aggregate(prof *profile.Profile, cfg config) error {
-	var function, filename, linenumber, columnnumber, address bool
+	var function, filename, linenumber, address bool
 	inlines := !cfg.NoInlines
 	switch cfg.Granularity {
 	case "addresses":
@@ -246,11 +246,6 @@ func aggregate(prof *profile.Profile, cfg config) error {
 		function = true
 		filename = true
 		linenumber = true
-	case "columns":
-		function = true
-		filename = true
-		linenumber = true
-		columnnumber = true
 	case "files":
 		filename = true
 	case "functions":
@@ -261,7 +256,7 @@ func aggregate(prof *profile.Profile, cfg config) error {
 	default:
 		return fmt.Errorf("unexpected granularity")
 	}
-	return prof.Aggregate(inlines, function, filename, linenumber, columnnumber, address)
+	return prof.Aggregate(inlines, function, filename, linenumber, cfg.ShowColumns, address)
 }
 
 func reportOptions(p *profile.Profile, numLabelUnits map[string]string, cfg config) (*report.Options, error) {

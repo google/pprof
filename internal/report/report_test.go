@@ -191,6 +191,7 @@ var testL = []*profile.Location{
 			{
 				Function: testF[0],
 				Line:     2,
+				Column:   2,
 			},
 		},
 	},
@@ -201,6 +202,7 @@ var testL = []*profile.Location{
 			{
 				Function: testF[1],
 				Line:     4,
+				Column:   4,
 			},
 		},
 	},
