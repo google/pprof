@@ -1,5 +1,5 @@
 Total: 11111
-ROUTINE ======================== bar in testdata/source1
+ROUTINE ======================== b;ar in testdata/source1
         10        110 (flat, cum)  0.99% of Total
          .          .      5:source1 line 5;
          .          .      6:source1 line 6;

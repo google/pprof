@@ -34,9 +34,12 @@ type testcase struct {
 	want string
 }
 
-func TestSource(t *testing.T) {
+func TestTextReports(t *testing.T) {
 	const path = "testdata/"
 
+	sampleValue0 := func(v []int64) int64 {
+		return v[0]
+	}
 	sampleValue1 := func(v []int64) int64 {
 		return v[1]
 	}
@@ -54,7 +57,7 @@ func TestSource(t *testing.T) {
 					SampleUnit:  testProfile.SampleType[1].Unit,
 				},
 			),
-			want: path + "source.rpt",
+			want: path + "report.source",
 		},
 		{
 			rpt: New(
@@ -69,7 +72,44 @@ func TestSource(t *testing.T) {
 					SampleUnit:  testProfile.SampleType[1].Unit,
 				},
 			),
-			want: path + "source.dot",
+			want: path + "report.dot",
+		},
+		{
+			rpt: New(
+				testProfile.Copy(),
+				&Options{
+					OutputFormat: Folded,
+
+					SampleValue: sampleValue1,
+					SampleUnit:  testProfile.SampleType[1].Unit,
+				},
+			),
+			want: path + "report.folded",
+		},
+		{
+			rpt: New(
+				testProfile.Copy(),
+				&Options{
+					OutputFormat: Folded,
+
+					SampleValue: sampleValue0,
+					SampleUnit:  testProfile.SampleType[0].Unit,
+				},
+			),
+			want: path + "report0.folded",
+		},
+		{
+			rpt: New(
+				testProfile.Copy(),
+				&Options{
+					OutputFormat: Folded,
+
+					SampleValue:       sampleValue1,
+					SampleUnit:        testProfile.SampleType[1].Unit,
+					SampleMeanDivisor: sampleValue0,
+				},
+			),
+			want: path + "report_mean.folded",
 		},
 	} {
 		var b bytes.Buffer
@@ -172,7 +212,7 @@ var testF = []*profile.Function{
 	},
 	{
 		ID:       3,
-		Name:     "bar",
+		Name:     "b;ar",
 		Filename: "testdata/source1",
 	},
 	{
@@ -300,7 +340,7 @@ var testProfile = &profile.Profile{
 		},
 		{
 			Location: []*profile.Location{testL[4], testL[3], testL[0]},
-			Value:    []int64{1, 10000},
+			Value:    []int64{2, 10000},
 		},
 	},
 	Location: testL,
