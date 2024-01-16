@@ -243,7 +243,7 @@ func checkSymbolizedLocation(a uint64, got []profile.Line) error {
 			return fmt.Errorf("want lineno: %d, got %d", w.Line, g.Line)
 		}
 		if g.Column != int64(w.Column) {
-			return fmt.Errorf("want column: %d, got %d", w.Column, g.Column)
+			return fmt.Errorf("want columnno: %d, got %d", w.Column, g.Column)
 		}
 	}
 	return nil
