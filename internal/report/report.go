@@ -339,6 +339,7 @@ func printTopProto(w io.Writer, rpt *Report) error {
 			Line: []profile.Line{
 				{
 					Line:     int64(n.Info.Lineno),
+					Column:   int64(n.Info.Columnno),
 					Function: f,
 				},
 			},
