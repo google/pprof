@@ -128,7 +128,10 @@ message Sample {
 }
 
 message Label {
-  int64 key = 1;   // Index into string table
+  // Index into string table. An annotation for a sample (e.g.
+  // "allocation_size") with an associated value.
+  // Keys with "pprof::" prefix are reserved for internal use by pprof.
+  int64 key = 1;
 
   // At most one of the following must be present
   int64 str = 2;   // Index into string table
@@ -205,6 +208,8 @@ message Line {
   uint64 function_id = 1;
   // Line number in source code.
   int64 line = 2;
+  // Column number in source code.
+  int64 column = 3;
 }
 
 message Function {

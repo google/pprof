@@ -274,7 +274,7 @@ var cpuL = []*Location{
 		Mapping: cpuM[1],
 		Address: 0x1000,
 		Line: []Line{
-			{Function: cpuF[0], Line: 1},
+			{Function: cpuF[0], Line: 1, Column: 1},
 		},
 	},
 	{
@@ -282,8 +282,8 @@ var cpuL = []*Location{
 		Mapping: cpuM[0],
 		Address: 0x2000,
 		Line: []Line{
-			{Function: cpuF[1], Line: 2},
-			{Function: cpuF[2], Line: 1},
+			{Function: cpuF[1], Line: 2, Column: 2},
+			{Function: cpuF[2], Line: 1, Column: 1},
 		},
 	},
 	{
@@ -291,8 +291,8 @@ var cpuL = []*Location{
 		Mapping: cpuM[0],
 		Address: 0x3000,
 		Line: []Line{
-			{Function: cpuF[1], Line: 2},
-			{Function: cpuF[2], Line: 1},
+			{Function: cpuF[1], Line: 2, Column: 2},
+			{Function: cpuF[2], Line: 1, Column: 1},
 		},
 	},
 	{
@@ -300,7 +300,7 @@ var cpuL = []*Location{
 		Mapping: cpuM[0],
 		Address: 0x3001,
 		Line: []Line{
-			{Function: cpuF[2], Line: 2},
+			{Function: cpuF[2], Line: 2, Column: 2},
 		},
 	},
 	{
@@ -308,7 +308,16 @@ var cpuL = []*Location{
 		Mapping: cpuM[0],
 		Address: 0x3002,
 		Line: []Line{
-			{Function: cpuF[2], Line: 3},
+			{Function: cpuF[2], Line: 3, Column: 3},
+		},
+	},
+	// Differs from 1000 due to address and column number.
+	{
+		ID:      1001,
+		Mapping: cpuM[1],
+		Address: 0x1001,
+		Line: []Line{
+			{Function: cpuF[0], Line: 1, Column: 2},
 		},
 	},
 }
@@ -564,26 +573,92 @@ var testProfile5 = &Profile{
 	Mapping:  cpuM,
 }
 
+var testProfile6 = &Profile{
+	TimeNanos:     10000,
+	PeriodType:    &ValueType{Type: "cpu", Unit: "milliseconds"},
+	Period:        1,
+	DurationNanos: 10e9,
+	SampleType: []*ValueType{
+		{Type: "samples", Unit: "count"},
+		{Type: "cpu", Unit: "milliseconds"},
+	},
+	Sample: []*Sample{
+		{
+			Location: []*Location{cpuL[0]},
+			Value:    []int64{1000, 1000},
+			Label: map[string][]string{
+				"key1": {"tag1"},
+				"key2": {"tag1"},
+			},
+		},
+		{
+			Location: []*Location{cpuL[1], cpuL[0]},
+			Value:    []int64{100, 100},
+			Label: map[string][]string{
+				"key1": {"tag2"},
+				"key3": {"tag2"},
+			},
+		},
+		{
+			Location: []*Location{cpuL[2], cpuL[0]},
+			Value:    []int64{10, 10},
+			Label: map[string][]string{
+				"key1": {"tag3"},
+				"key2": {"tag2"},
+			},
+		},
+		{
+			Location: []*Location{cpuL[3], cpuL[0]},
+			Value:    []int64{10000, 10000},
+			Label: map[string][]string{
+				"key1": {"tag4"},
+				"key2": {"tag1"},
+			},
+		},
+		{
+			Location: []*Location{cpuL[4], cpuL[0]},
+			Value:    []int64{1, 1},
+			Label: map[string][]string{
+				"key1": {"tag4"},
+				"key2": {"tag1"},
+			},
+		},
+		{
+			Location: []*Location{cpuL[5]},
+			Value:    []int64{1, 1},
+			Label: map[string][]string{
+				"key1": {"tag5"},
+				"key2": {"tag1"},
+			},
+		},
+	},
+	Location: cpuL,
+	Function: cpuF,
+	Mapping:  cpuM,
+}
+
 var aggTests = map[string]aggTest{
-	"precise":         {true, true, true, true, 5},
-	"fileline":        {false, true, true, true, 4},
-	"inline_function": {false, true, false, true, 3},
-	"function":        {false, true, false, false, 2},
+	"precise":         {true, true, true, true, true, 6},
+	"columns":         {false, true, true, true, true, 5},
+	"fileline":        {false, true, true, false, true, 4},
+	"inline_function": {false, true, false, false, true, 3},
+	"function":        {false, true, false, false, false, 2},
 }
 
 type aggTest struct {
-	precise, function, fileline, inlineFrame bool
-	rows                                     int
+	precise, function, fileline, column, inlineFrame bool
+	rows                                             int
 }
 
-const totalSamples = int64(11111)
+// totalSamples is the sum of sample.Value[0] for testProfile6.
+const totalSamples = int64(11112)
 
 func TestAggregation(t *testing.T) {
-	prof := testProfile1.Copy()
-	for _, resolution := range []string{"precise", "fileline", "inline_function", "function"} {
+	prof := testProfile6.Copy()
+	for _, resolution := range []string{"precise", "columns", "fileline", "inline_function", "function"} {
 		a := aggTests[resolution]
 		if !a.precise {
-			if err := prof.Aggregate(a.inlineFrame, a.function, a.fileline, a.fileline, false); err != nil {
+			if err := prof.Aggregate(a.inlineFrame, a.function, a.fileline, a.fileline, a.column, false); err != nil {
 				t.Error("aggregating to " + resolution + ":" + err.Error())
 			}
 		}
@@ -638,6 +713,9 @@ func checkAggregation(prof *Profile, a *aggTest) error {
 		}
 
 		for _, ln := range l.Line {
+			if !a.column && ln.Column != 0 {
+				return fmt.Errorf("found column %d on location %d, want:0", ln.Column, l.ID)
+			}
 			if !a.fileline && (ln.Function.Filename != "" || ln.Line != 0) {
 				return fmt.Errorf("found line %s:%d on location %d, want :0",
 					ln.Function.Filename, ln.Line, l.ID)
@@ -753,7 +831,7 @@ func TestMerge(t *testing.T) {
 	}
 
 	// Use aggregation to merge locations at function granularity.
-	if err := prof.Aggregate(false, true, false, false, false); err != nil {
+	if err := prof.Aggregate(false, true, false, false, false, false); err != nil {
 		t.Errorf("aggregating after merge: %v", err)
 	}
 
@@ -900,7 +978,7 @@ func TestEmptyMappingMerge(t *testing.T) {
 	}
 
 	// Use aggregation to merge locations at function granularity.
-	if err := prof.Aggregate(false, true, false, false, false); err != nil {
+	if err := prof.Aggregate(false, true, false, false, false, false); err != nil {
 		t.Errorf("aggregating after merge: %v", err)
 	}
 
@@ -997,7 +1075,7 @@ func locationHash(s *Sample) string {
 	var tb string
 	for _, l := range s.Location {
 		for _, ln := range l.Line {
-			tb = tb + fmt.Sprintf("%s:%d@%d ", ln.Function.Name, ln.Line, l.Address)
+			tb = tb + fmt.Sprintf("%s:%d:%d@%d ", ln.Function.Name, ln.Line, ln.Column, l.Address)
 		}
 	}
 	return tb

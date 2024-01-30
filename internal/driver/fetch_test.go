@@ -192,12 +192,28 @@ func TestFetch(t *testing.T) {
 	type testcase struct {
 		source, execName string
 	}
-
-	for _, tc := range []testcase{
+	ts := []testcase{
 		{path + "go.crc32.cpu", ""},
 		{path + "go.nomappings.crash", "/bin/gotest.exe"},
 		{"http://localhost/profile?file=cppbench.cpu", ""},
-	} {
+	}
+	// Test that paths with a colon character are recognized as file paths
+	// if the file exists, rather than as a URL. We have to skip this test
+	// on Windows since the colon char is not allowed in Windows paths.
+	if runtime.GOOS != "windows" {
+		src := filepath.Join(path, "go.crc32.cpu")
+		dst := filepath.Join(t.TempDir(), "go.crc32.cpu_2023-11-11_01:02:03")
+		data, err := os.ReadFile(src)
+		if err != nil {
+			t.Fatalf("read src file %s failed: %#v", src, err)
+		}
+		err = os.WriteFile(dst, data, 0644)
+		if err != nil {
+			t.Fatalf("create dst file %s failed: %#v", dst, err)
+		}
+		ts = append(ts, testcase{dst, ""})
+	}
+	for _, tc := range ts {
 		p, _, _, err := grabProfile(&source{ExecName: tc.execName}, tc.source, nil, testObj{}, &proftest.TestUI{T: t}, &httpTransport{})
 		if err != nil {
 			t.Fatalf("%s: %s", tc.source, err)

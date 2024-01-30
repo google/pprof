@@ -17,7 +17,7 @@ class TestFixture {
   // setContext arranges to add name(args) to all messages added
   // until the next setContext or run call.
   setContext(name, ...args) {
-    this.context = name + "(" + args.join(",") + ")"
+    this.context = name + "(" + args.join(",") + ")";
   }
 
   log(...args) {
@@ -27,4 +27,4 @@ class TestFixture {
   err(...args) {
     this.result.push(["ERROR", this.context, ...args]);
   }
-};
+}

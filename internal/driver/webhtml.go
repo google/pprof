@@ -19,8 +19,6 @@ import (
 	"fmt"
 	"html/template"
 	"os"
-
-	"github.com/google/pprof/third_party/d3flamegraph"
 )
 
 //go:embed html
@@ -52,10 +50,6 @@ func addTemplates(templates *template.Template) {
 		template.Must(templates.AddParseTree(name, sub.Tree))
 	}
 
-	// Pre-packaged third-party files.
-	def("d3flamegraphscript", d3flamegraph.JSSource)
-	def("d3flamegraphcss", d3flamegraph.CSSSource)
-
 	// Embedded files.
 	def("css", loadCSS("html/common.css"))
 	def("header", loadFile("html/header.html"))
@@ -64,7 +58,7 @@ func addTemplates(templates *template.Template) {
 	def("top", loadFile("html/top.html"))
 	def("sourcelisting", loadFile("html/source.html"))
 	def("plaintext", loadFile("html/plaintext.html"))
-	def("flamegraph", loadFile("html/flamegraph.html"))
+	// TODO: Rename "stacks" to "flamegraph" to seal moving off d3 flamegraph.
 	def("stacks", loadFile("html/stacks.html"))
 	def("stacks_css", loadCSS("html/stacks.css"))
 	def("stacks_js", loadJS("html/stacks.js"))
