@@ -101,6 +101,28 @@ func TestFlameGraph(t *testing.T) {
 //go:embed testdata/testflame.js
 var jsCheckFlame string
 
+func TestSource(t *testing.T) {
+	maybeSkipBrowserTest(t)
+
+	prof := makeFakeProfile()
+	server := makeTestServer(t, prof)
+	ctx, cancel := context.WithTimeout(context.Background(), browserDeadline)
+	defer cancel()
+	ctx, cancel = chromedp.NewContext(ctx)
+	defer cancel()
+
+	err := chromedp.Run(ctx,
+		chromedp.Navigate(server.URL+"/source?f=F3"),
+		chromedp.WaitVisible(`#content`, chromedp.ByID),
+		matchRegexp(t, "#content", `F3`),            // Header
+		matchRegexp(t, "#content", `Total:.*100ms`), // Total for function
+		matchRegexp(t, "#content", `\b22\b.*100ms`), // Line 22
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 // matchRegexp is a chromedp.Action that fetches the text of the first
 // node that matched query and checks that the text matches regexp re.
 func matchRegexp(t *testing.T, query, re string) chromedp.ActionFunc {

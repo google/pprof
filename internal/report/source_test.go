@@ -15,7 +15,6 @@
 package report
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -40,11 +39,11 @@ func TestWebList(t *testing.T) {
 		SampleValue:  func(v []int64) int64 { return v[1] },
 		SampleUnit:   cpu.SampleType[1].Unit,
 	})
-	var buf bytes.Buffer
-	if err := Generate(&buf, rpt, &binutils.Binutils{}); err != nil {
+	result, err := MakeWebList(rpt, &binutils.Binutils{}, -1)
+	if err != nil {
 		t.Fatalf("could not generate weblist: %v", err)
 	}
-	output := buf.String()
+	output := fmt.Sprint(result)
 
 	for _, expect := range []string{"func busyLoop", "call.*mapassign"} {
 		if match, _ := regexp.MatchString(expect, output); !match {
@@ -106,12 +105,12 @@ func testSourceMapping(t *testing.T, zeroAddress bool) {
 		formatValue: func(v int64) string { return fmt.Sprint(v) },
 	}
 
-	var out bytes.Buffer
-	err := PrintWebList(&out, rpt, nil, -1)
+	result, err := MakeWebList(rpt, nil, -1)
 	if err != nil {
-		t.Fatalf("PrintWebList returned unexpected error: %v", err)
+		t.Fatalf("MakeWebList returned unexpected error: %v", err)
 	}
-	got := out.String()
+	got := fmt.Sprint(result)
+
 	expect := regexp.MustCompile(
 		`(?s)` + // Allow "." to match newline
 			`bar\.go.* 50\b.* 17 +26 .*` +

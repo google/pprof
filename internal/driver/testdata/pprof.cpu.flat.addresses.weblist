@@ -1,10 +1,10 @@
-
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Pprof listing</title>
-<style type="text/css">
+  <meta charset="utf-8">
+  <title>testbinary cpu</title>
+  
+  <style type="text/css">
 body #content{
 font-family: sans-serif;
 }
@@ -31,7 +31,7 @@ color: #008800;
 display: none;
 }
 </style>
-<script type="text/javascript">
+  <script type="text/javascript">
 function pprof_toggle_asm(e) {
   var target;
   if (!e) e = window.event;
