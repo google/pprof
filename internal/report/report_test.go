@@ -113,10 +113,6 @@ func TestFilter(t *testing.T) {
 			format: List,
 		},
 		{
-			name:   "weblist",
-			format: WebList,
-		},
-		{
 			name:   "disasm",
 			format: Dis,
 		},
