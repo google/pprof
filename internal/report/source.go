@@ -704,7 +704,7 @@ func (sp *sourcePrinter) generateFile(f *sourceFile, rpt *Report) WebListFile {
 				})
 			}
 
-			listfn.Lines = append(listfn.Lines, webListLine(l, flatSum, cumSum, lineContents, asm, sp.reader, rpt))
+			listfn.Lines = append(listfn.Lines, makeWebListLine(l, flatSum, cumSum, lineContents, asm, sp.reader, rpt))
 		}
 
 		result.Funcs = append(result.Funcs, listfn)
@@ -804,9 +804,9 @@ func (sp *sourcePrinter) objectFile(m *profile.Mapping) plugin.ObjFile {
 	return object
 }
 
-// webListLine returns the contents of a single line in a web listing. This includes
+// makeWebListLine returns the contents of a single line in a web listing. This includes
 // the source line and the corresponding assembly.
-func webListLine(lineNo int, flat, cum int64, lineContents string,
+func makeWebListLine(lineNo int, flat, cum int64, lineContents string,
 	assembly []assemblyInstruction, reader *sourceReader, rpt *Report) WebListLine {
 	line := WebListLine{
 		SrcLine:    lineContents,
@@ -831,12 +831,12 @@ func webListLine(lineNo int, flat, cum int64, lineContents string,
 
 	if nestedInfo {
 		srcIndent := indentation(lineContents)
-		line.Instructions = webListInstructions(srcIndent, assembly, reader, rpt)
+		line.Instructions = makeWebListInstructions(srcIndent, assembly, reader, rpt)
 	}
 	return line
 }
 
-func webListInstructions(srcIndent int, assembly []assemblyInstruction, reader *sourceReader, rpt *Report) []WebListInstruction {
+func makeWebListInstructions(srcIndent int, assembly []assemblyInstruction, reader *sourceReader, rpt *Report) []WebListInstruction {
 	var result []WebListInstruction
 	var curCalls []callID
 	for i, an := range assembly {
