@@ -122,7 +122,7 @@ func generateReport(p *profile.Profile, cmd []string, cfg config, o *plugin.Opti
 	switch rpt.OutputFormat() {
 	case report.WebList:
 		// We need template expansion, so generate here instead of in report.
-		err = weblist(dst, rpt, o.Obj)
+		err = printWebList(dst, rpt, o.Obj)
 	default:
 		err = report.Generate(dst, rpt, o.Obj)
 	}
@@ -163,7 +163,7 @@ func generateReport(p *profile.Profile, cmd []string, cfg config, o *plugin.Opti
 	return out.Close()
 }
 
-func weblist(dst io.Writer, rpt *report.Report, obj plugin.ObjTool) error {
+func printWebList(dst io.Writer, rpt *report.Report, obj plugin.ObjTool) error {
 	listing, err := report.MakeWebList(rpt, obj, -1)
 	if err != nil {
 		return err

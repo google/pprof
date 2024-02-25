@@ -115,7 +115,7 @@ func Generate(w io.Writer, rpt *Report, obj plugin.ObjTool) error {
 		return printCallgrind(w, rpt)
 	}
 	// Note: WebList handling is in driver package.
-	return fmt.Errorf("unexpected output format")
+	return fmt.Errorf("unexpected output format %v", o.OutputFormat)
 }
 
 // newTrimmedGraph creates a graph for this report, trimmed according
