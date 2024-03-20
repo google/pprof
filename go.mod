@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/chromedp/chromedp v0.9.2
 	github.com/chzyer/readline v1.5.1
-	github.com/ianlancetaylor/demangle v0.0.0-20230524184225-eabc099b10ab
+	github.com/ianlancetaylor/demangle v0.0.0-20240312041847-bd984b5ce465
 )
 
 require (
