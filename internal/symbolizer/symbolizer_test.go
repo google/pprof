@@ -26,12 +26,16 @@ import (
 	"github.com/google/pprof/profile"
 )
 
+const filePath = "mapping"
+const buildID = "build-id"
+
 var testM = []*profile.Mapping{
 	{
-		ID:    1,
-		Start: 0x1000,
-		Limit: 0x5000,
-		File:  "mapping",
+		ID:      1,
+		Start:   0x1000,
+		Limit:   0x5000,
+		File:    filePath,
+		BuildID: buildID,
 	},
 }
 
@@ -222,6 +226,69 @@ func TestLocalSymbolization(t *testing.T) {
 	}
 }
 
+func TestLocalSymbolizationHandlesSpecialCases(t *testing.T) {
+	for _, tc := range []struct {
+		desc, file, buildID, allowOutputRx string
+		wantNumOutputRegexMatches          int
+	}{{
+		desc:    "Unsymbolizable files are skipped",
+		file:    "[some unsymbolizable file]",
+		buildID: "",
+	}, {
+		desc:    "HTTP URL like paths are skipped",
+		file:    "http://original-url-source-of-profile-fetch",
+		buildID: "",
+	}, {
+		desc:                      "Non-existent files are ignored",
+		file:                      "/does-not-exist",
+		buildID:                   buildID,
+		allowOutputRx:             "(?s)unknown or non-existent file|Some binary filenames not available.*Try setting PPROF_BINARY_PATH",
+		wantNumOutputRegexMatches: 2,
+	}, {
+		desc:                      "Missing main binary is detected",
+		file:                      "",
+		buildID:                   buildID,
+		allowOutputRx:             "Main binary filename not available",
+		wantNumOutputRegexMatches: 1,
+	}, {
+		desc:                      "Different build ID is detected",
+		file:                      filePath,
+		buildID:                   "unexpected-build-id",
+		allowOutputRx:             "build ID mismatch",
+		wantNumOutputRegexMatches: 1,
+	},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			prof := testProfile.Copy()
+			prof.Mapping[0].File = tc.file
+			prof.Mapping[0].BuildID = tc.buildID
+			origProf := prof.Copy()
+
+			if prof.HasFunctions() {
+				t.Error("unexpected function names")
+			}
+			if prof.HasFileLines() {
+				t.Error("unexpected filenames or line numbers")
+			}
+
+			b := mockObjTool{}
+			ui := &proftest.TestUI{T: t, AllowRx: tc.allowOutputRx}
+			if err := localSymbolize(prof, false, false, b, ui); err != nil {
+				t.Fatalf("localSymbolize(): %v", err)
+			}
+			if ui.NumAllowRxMatches != tc.wantNumOutputRegexMatches {
+				t.Errorf("localSymbolize(): got %d matches for %q UI regexp, want %d", ui.NumAllowRxMatches, tc.allowOutputRx, tc.wantNumOutputRegexMatches)
+			}
+
+			if diff, err := proftest.Diff([]byte(origProf.String()), []byte(prof.String())); err != nil {
+				t.Fatalf("Failed to get diff: %v", err)
+			} else if string(diff) != "" {
+				t.Errorf("Profile changed unexpectedly, diff(want->got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func checkSymbolizedLocation(a uint64, got []profile.Line) error {
 	want, ok := mockAddresses[a]
 	if !ok {
@@ -380,10 +447,16 @@ func TestDemangleSingleFunction(t *testing.T) {
 type mockObjTool struct{}
 
 func (mockObjTool) Open(file string, start, limit, offset uint64, relocationSymbol string) (plugin.ObjFile, error) {
+	if file != filePath {
+		return nil, fmt.Errorf("unknown or non-existent file %q", file)
+	}
 	return mockObjFile{frames: mockAddresses}, nil
 }
 
 func (mockObjTool) Disasm(file string, start, end uint64, intelSyntax bool) ([]plugin.Inst, error) {
+	if file != filePath {
+		return nil, fmt.Errorf("unknown or non-existent file %q", file)
+	}
 	return nil, fmt.Errorf("disassembly not supported")
 }
 
@@ -392,7 +465,7 @@ type mockObjFile struct {
 }
 
 func (mockObjFile) Name() string {
-	return ""
+	return filePath
 }
 
 func (mockObjFile) ObjAddr(addr uint64) (uint64, error) {
@@ -400,7 +473,7 @@ func (mockObjFile) ObjAddr(addr uint64) (uint64, error) {
 }
 
 func (mockObjFile) BuildID() string {
-	return ""
+	return buildID
 }
 
 func (mf mockObjFile) SourceLine(addr uint64) ([]plugin.Frame, error) {
