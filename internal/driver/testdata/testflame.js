@@ -120,7 +120,7 @@ function TestFlame() {
     // Time units, plus logic tests.
     checkUnitText("s", 0.51e-9, "0.51ns");
     checkUnitText("s", 3e-9, "3ns");
-    checkUnitText("s", 1.23e-6, "1.23µs");
+    checkUnitText("s", 1.23e-6, "1.23us");
     checkUnitText("s", 0.04, "40ms");
     checkUnitText("s", 1, "1s");
     checkUnitText("s", 3599, "3599s");
