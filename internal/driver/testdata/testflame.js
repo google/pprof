@@ -109,6 +109,30 @@ function TestFlame() {
     }
   });
 
+  test.run("Units", function() {
+    function checkUnitText(unit, v, expect) {
+      const result = pprofUnitText(v, unit);
+      if (result != expect) {
+        test.err("bad text for", v, unit, ":", result, "expecting:", expect);
+      }
+    }
+
+    // Time units, plus logic tests.
+    checkUnitText("s", 0.51e-9, "0.51ns");
+    checkUnitText("s", 3e-9, "3ns");
+    checkUnitText("s", 1.23e-6, "1.23µs");
+    checkUnitText("s", 0.04, "40ms");
+    checkUnitText("s", 1, "1s");
+    checkUnitText("s", 3599, "3599s");
+    checkUnitText("s", 3600, "1hrs");
+
+    // Sanity check for byte units.
+    checkUnitText("B", 2*1048576, "2MB");
+
+    // Unknown unit.
+    checkUnitText("cm", 100, "100cm");
+  });
+
   return test.result;
 }
 TestFlame();

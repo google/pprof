@@ -88,9 +88,10 @@ func TestFlameGraph(t *testing.T) {
 	ctx, cancel = chromedp.NewContext(ctx)
 	defer cancel()
 
+	var ignored []byte // Some chromedp.Evaluate() versions wants non-nil result argument
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(server.URL+"/flamegraph"),
-		chromedp.Evaluate(jsTestFixture, nil),
+		chromedp.Evaluate(jsTestFixture, &ignored),
 		eval(t, jsCheckFlame),
 	)
 	if err != nil {
