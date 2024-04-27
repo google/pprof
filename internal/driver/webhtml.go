@@ -73,6 +73,7 @@ func addTemplates(templates *template.Template) {
 	def("css", loadCSS("html/common.css"))
 	def("header", loadFile("html/header.html"))
 	def("graph", loadFile("html/graph.html"))
+	def("graph_css", loadCSS("html/graph.css"))
 	def("script", loadJS("html/common.js"))
 	def("top", loadFile("html/top.html"))
 	def("sourcelisting", loadFile("html/source.html"))
