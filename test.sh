@@ -20,18 +20,22 @@ set -x
 MODE=atomic
 echo "mode: $MODE" > coverage.txt
 
+# Note: browsertests is in a separate module and is therefore not
+# covered by a local ./... pattern.
+
 if [ "$RUN_STATICCHECK" != "false" ]; then
   staticcheck ./...
+  (cd browsertests && staticcheck ./...)
 fi
 
 # Packages that have any tests.
 PKG=$(go list -f '{{if .TestGoFiles}} {{.ImportPath}} {{end}}' ./...)
 
 go test $PKG
+(cd browsertests && go test ./...)
+(cd browsertests && go test -race ./...)
 
-# Browser tests are in a separate module, so do not show in $PKG.
-(cd browsertests && go test)
-
+# Skip browsertests since it test-only code and gives no useful coverage info
 for d in $PKG; do
   go test -race -coverprofile=profile.out -covermode=$MODE $d
   if [ -f profile.out ]; then
@@ -41,8 +45,11 @@ for d in $PKG; do
 done
 
 go vet -all ./...
+(cd browsertests && go vet -all ./...)
 if [ "$RUN_GOLANGCI_LINTER" != "false" ];  then
   golangci-lint run -D errcheck --timeout=3m ./...  # TODO: Enable errcheck back.
+  (cd browsertests && golangci-lint run --timeout=3m ./...)
 fi
 
 gofmt -s -d .
+(cd browsertests && gofmt -s -d .)

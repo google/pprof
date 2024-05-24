@@ -1,4 +1,4 @@
-package browser_test
+package browsertests
 
 import (
 	"fmt"
