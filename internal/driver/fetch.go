@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"net/url"
 	"os"
@@ -510,10 +511,19 @@ func fetch(source string, duration, timeout time.Duration, ui plugin.UI, tr http
 			src = sourceURL
 		}
 	}
-	if err == nil {
-		defer f.Close()
-		p, err = profile.Parse(f)
+
+	if err != nil {
+		return
 	}
+
+	if f == nil {
+		err = fmt.Errorf("could not fetch source: %q: %w", source, fs.ErrNotExist)
+		return
+	}
+
+	defer f.Close()
+	p, err = profile.Parse(f)
+
 	return
 }
 

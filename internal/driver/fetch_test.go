@@ -21,7 +21,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
+	"io/fs"
 	"math/big"
 	"net"
 	"net/http"
@@ -823,4 +825,17 @@ func selfSignedCert(t *testing.T, host string) (tls.Certificate, []byte, []byte)
 		t.Fatalf("failed to create TLS key pair: %v", err)
 	}
 	return cert, bc, bk
+}
+
+func TestFetchDoesNotPanicOnMissingSource(t *testing.T) {
+	_, _, err := fetch("non-existent-source", 10*time.Millisecond, 10*time.Millisecond, nil, http.DefaultTransport)
+	if err == nil {
+		t.Fatal("expected a non-nil error")
+	}
+	if g, w := err, fs.ErrNotExist; !errors.Is(g, w) {
+		t.Fatalf("mismatched type: got %T, want %T", g, w)
+	}
+	if g, w := err.Error(), "could not fetch"; !strings.Contains(g, w) {
+		t.Fatalf("error substring mismatch\n\tGot  %q\n\tWant %q", g, w)
+	}
 }
