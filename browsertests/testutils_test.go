@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"runtime"
-	"strings"
 	"testing"
 	"time"
 
@@ -200,12 +199,7 @@ func (ui testUI) WantBrowser() bool                     { return false }
 func (ui testUI) SetAutoComplete(_ func(string) string) {}
 func (ui testUI) Print(args ...interface{})             {} // discard
 func (ui testUI) PrintErr(args ...interface{}) {
-	// Ignore expected messages.
-	str := fmt.Sprint(args...)
-	if strings.HasPrefix(str, "Saved profile") {
-		return
-	}
-	ui.T.Error("unexpected error: " + str)
+	ui.T.Error("unexpected error: " + fmt.Sprint(args...))
 }
 
 var _ driver.UI = testUI{}
@@ -215,7 +209,8 @@ type testFetcher struct {
 }
 
 func (f testFetcher) Fetch(source string, duration, timeout time.Duration) (*profile.Profile, string, error) {
-	return f.profile, "test", nil
+	// http://pproftest.local prevents file from being saved.
+	return f.profile, "http://pproftest.local", nil
 }
 
 var _ driver.Fetcher = testFetcher{}
