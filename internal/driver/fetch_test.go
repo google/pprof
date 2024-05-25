@@ -191,11 +191,13 @@ func TestFetch(t *testing.T) {
 	const path = "testdata/"
 	type testcase struct {
 		source, execName string
+		wantErr          bool
 	}
 	ts := []testcase{
-		{path + "go.crc32.cpu", ""},
-		{path + "go.nomappings.crash", "/bin/gotest.exe"},
-		{"http://localhost/profile?file=cppbench.cpu", ""},
+		{path + "go.crc32.cpu", "", false},
+		{path + "go.nomappings.crash", "/bin/gotest.exe", false},
+		{"http://localhost/profile?file=cppbench.cpu", "", false},
+		{"./missing", "", true},
 	}
 	// Test that paths with a colon character are recognized as file paths
 	// if the file exists, rather than as a URL. We have to skip this test
@@ -211,24 +213,32 @@ func TestFetch(t *testing.T) {
 		if err != nil {
 			t.Fatalf("create dst file %s failed: %#v", dst, err)
 		}
-		ts = append(ts, testcase{dst, ""})
+		ts = append(ts, testcase{dst, "", false})
 	}
 	for _, tc := range ts {
-		p, _, _, err := grabProfile(&source{ExecName: tc.execName}, tc.source, nil, testObj{}, &proftest.TestUI{T: t}, &httpTransport{})
-		if err != nil {
-			t.Fatalf("%s: %s", tc.source, err)
-		}
-		if len(p.Sample) == 0 {
-			t.Errorf("%s: want non-zero samples", tc.source)
-		}
-		if e := tc.execName; e != "" {
-			switch {
-			case len(p.Mapping) == 0 || p.Mapping[0] == nil:
-				t.Errorf("%s: want mapping[0].execName == %s, got no mappings", tc.source, e)
-			case p.Mapping[0].File != e:
-				t.Errorf("%s: want mapping[0].execName == %s, got %s", tc.source, e, p.Mapping[0].File)
+		t.Run(tc.source, func(t *testing.T) {
+			p, _, _, err := grabProfile(&source{ExecName: tc.execName}, tc.source, nil, testObj{}, &proftest.TestUI{T: t}, &httpTransport{})
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("got no error, want an error")
+				}
+				return
 			}
-		}
+			if err != nil {
+				t.Fatalf("got error %v, want no error", err)
+			}
+			if len(p.Sample) == 0 {
+				t.Error("got zero samples, want non-zero")
+			}
+			if e := tc.execName; e != "" {
+				switch {
+				case len(p.Mapping) == 0 || p.Mapping[0] == nil:
+					t.Errorf("got no mappings, want mapping[0].execName == %s", e)
+				case p.Mapping[0].File != e:
+					t.Errorf("got mapping[0].execName == %s, want %s", p.Mapping[0].File, e)
+				}
+			}
+		})
 	}
 }
 
