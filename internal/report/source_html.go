@@ -42,6 +42,7 @@ h1 {
 }
 .livesrc {
 cursor: pointer;
+color: #F2503B;
 }
 .livesrc:hover {
 background-color: #eeeeee;
