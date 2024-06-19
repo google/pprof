@@ -18,31 +18,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.17', '1.18', 'tip']
+        go: ['1.20', '1.21', 'tip']
         # Supported macOS versions can be found in
         # https://github.com/actions/virtual-environments#available-environments.
-        os: ['macos-10.15', 'macos-11']
-        # Supported Xcode versions for macOS 10.15 can be found in
-        # https://github.com/actions/virtual-environments/blob/main/images/macos/macos-10.15-Readme.md#xcode.
-        # Supported Xcode versions for macOS 11 can be found in
-        # https://github.com/actions/virtual-environments/blob/main/images/macos/macos-11-Readme.md#xcode
-        xcode-version: ['13.0', '12.5', '12.4', '12.3', '12.1.1', '12.0.1', '11.7']
-        exclude:
-        - os: 'macos-10.15'
-          xcode-version: '13.0'
-        - os: 'macos-10.15'
-          xcode-version: '12.5'
-        - os: 'macos-11'
-          xcode-version: '12.4'
-        - os: 'macos-11'
-          xcode-version: '12.3'
-        - os: 'macos-11'
-          xcode-version: '12.1.1'
-        - os: 'macos-11'
-          xcode-version: '12.0.1'
+        # TODO: Add macos-13. As of now there are build errors when installing graphviz.
+        os: ['macos-12']
+        # Supported Xcode versions can be found in:
+        # - https://github.com/actions/virtual-environments/blob/main/images/macos/macos-12-Readme.md#xcode
+        # - https://github.com/actions/virtual-environments/blob/main/images/macos/macos-13-Readme.md#xcode
+        xcode-version: ['14.2', '14.1', '14.0.1', '13.4.1', '13.3.1', '13.2.1', '13.1']
     steps:
       - name: Update Go version using setup-go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         if: matrix.go != 'tip'
         with:
           go-version: ${{ matrix.go }}
@@ -56,15 +43,16 @@ jobs:
           ./make.bash
           echo "GOROOT=$HOME/gotip" >> $GITHUB_ENV
           echo "RUN_STATICCHECK=false" >> $GITHUB_ENV
+          echo "RUN_GOLANGCI_LINTER=false" >> $GITHUB_ENV
           echo "$HOME/gotip/bin:$PATH" >> $GITHUB_PATH
 
       - name: Checkout the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           path: ${{ env.WORKING_DIR }}
 
       - name: Set up Xcode
-        uses: maxim-lobanov/setup-xcode@v1
+        uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd # v1.6.0
         with:
           xcode-version: ${{ matrix.xcode-version }}
 
@@ -73,30 +61,20 @@ jobs:
           brew install graphviz
           # Do not let tools interfere with the main module's go.mod.
           cd && go mod init tools
-          go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
-          go install golang.org/x/lint/golint honnef.co/go/tools/cmd/...
+          go install honnef.co/go/tools/cmd/staticcheck@v0.4.6
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.0
           # Add PATH for installed tools.
           echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
 
       - name: Run the script
         run: |
           go version
-          gofmtdiff=$(gofmt -s -d .) && if [ -n "$gofmtdiff" ]; then printf 'gofmt -s found:\n%s\n' "$gofmtdiff" && exit 1; fi
-          golintlint=$(golint ./...) && if [ -n "$golintlint" ]; then printf 'golint found:\n%s\n' "$golintlint" && exit 1; fi
-          go vet -all ./...
           ./test.sh
 
-      - name: Check to make sure that tests also work in GOPATH mode
-        env:
-          GO111MODULE: off
-        run: |
-          go get -d .
-          go test -v ./...
-
       - name: Code coverage
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@5ecb98a3c6b747ed38dc09f787459979aebb39be # v4.3.1
         with:
-          file: ./coverage.txt
+          file: ${{ env.WORKING_DIR }}/coverage.txt
 
   test-linux:
     runs-on: ${{ matrix.os }}
@@ -106,11 +84,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.17', '1.18', 'tip']
-        os: ['ubuntu-20.04', 'ubuntu-18.04']
+        go: ['1.20', '1.21', 'tip']
+        os: ['ubuntu-22.04', 'ubuntu-20.04']
     steps:
       - name: Update Go version using setup-go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         if: matrix.go != 'tip'
         with:
           go-version: ${{ matrix.go }}
@@ -124,62 +102,57 @@ jobs:
           ./make.bash
           echo "GOROOT=$HOME/gotip" >> $GITHUB_ENV
           echo "RUN_STATICCHECK=false" >> $GITHUB_ENV
+          echo "RUN_GOLANGCI_LINTER=false" >> $GITHUB_ENV
           echo "$HOME/gotip/bin" >> $GITHUB_PATH
 
       - name: Checkout the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           path: ${{ env.WORKING_DIR }}
+
+      - name: Check chrome for browser tests
+        run: |
+          google-chrome --version
 
       - name: Fetch dependencies
         run: |
           sudo apt-get install graphviz
           # Do not let tools interfere with the main module's go.mod.
           cd && go mod init tools
-          go get -u golang.org/x/lint/golint honnef.co/go/tools/cmd/...
-          go install golang.org/x/lint/golint honnef.co/go/tools/cmd/...
+          go install honnef.co/go/tools/cmd/staticcheck@v0.4.6
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.0
           # Add PATH for installed tools.
-          echo "PATH=$GOPATH/bin:$PATH" >> $GITHUB_ENV
+          echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
 
       - name: Run the script
         run: |
           go version
-          gofmtdiff=$(gofmt -s -d .) && if [ -n "$gofmtdiff" ]; then printf 'gofmt -s found:\n%s\n' "$gofmtdiff" && exit 1; fi
-          golintlint=$(golint ./...) && if [ -n "$golintlint" ]; then printf 'golint found:\n%s\n' "$golintlint" && exit 1; fi
-          go vet -all ./...
           ./test.sh
 
-      - name: Check to make sure that tests also work in GOPATH mode
-        env:
-          GO111MODULE: off
-        run: |
-          go get -d .
-          go test -v ./...
-
       - name: Code coverage
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@5ecb98a3c6b747ed38dc09f787459979aebb39be # v4.3.1
         with:
-          file: ./${{ env.WORKING_DIR }}/coverage.txt
+          file: ${{ env.WORKING_DIR }}/coverage.txt
 
   test-windows:
     runs-on: windows-2019
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.17', '1.18']
+        go: ['1.20', '1.21']
     steps:
       - name: Update Go version using setup-go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
           go-version: ${{ matrix.go }}
 
       - name: Checkout the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           path: ${{ env.WORKING_DIR }}
 
       - name: Fetch Windows dependency
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@0e015857dd851f84fcb7fb53380eb5c4c8202333 # v3.0.0
         with:
           args: install graphviz llvm
 
@@ -195,3 +168,16 @@ jobs:
           go build github.com/google/pprof
           go test -v ./...
         working-directory: ${{ env.WORKING_DIR }}
+
+  check:
+    if: always()
+    runs-on: ubuntu-latest
+    needs:
+    - test-mac
+    - test-linux
+    - test-windows
+    steps:
+    - name: Decide whether the needed jobs succeeded or failed
+      uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe # v1.2.2
+      with:
+        jobs: ${{ toJSON(needs) }}

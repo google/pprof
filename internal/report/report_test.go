@@ -16,7 +16,8 @@ package report
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -76,7 +77,7 @@ func TestSource(t *testing.T) {
 			t.Fatalf("%s: %v", tc.want, err)
 		}
 
-		gold, err := ioutil.ReadFile(tc.want)
+		gold, err := os.ReadFile(tc.want)
 		if err != nil {
 			t.Fatalf("%s: %v", tc.want, err)
 		}
@@ -112,10 +113,6 @@ func TestFilter(t *testing.T) {
 			format: List,
 		},
 		{
-			name:   "weblist",
-			format: WebList,
-		},
-		{
 			name:   "disasm",
 			format: Dis,
 		},
@@ -146,6 +143,7 @@ func TestFilter(t *testing.T) {
 	}
 }
 
+// testM contains mappings for fake profiles used in tests.
 var testM = []*profile.Mapping{
 	{
 		ID:              1,
@@ -156,6 +154,7 @@ var testM = []*profile.Mapping{
 	},
 }
 
+// testF contains functions for fake profiles used in tests.
 var testF = []*profile.Function{
 	{
 		ID:       1,
@@ -179,6 +178,7 @@ var testF = []*profile.Function{
 	},
 }
 
+// testL contains locations for fake profiles used in tests.
 var testL = []*profile.Location{
 	{
 		ID:      1,
@@ -187,6 +187,7 @@ var testL = []*profile.Location{
 			{
 				Function: testF[0],
 				Line:     2,
+				Column:   2,
 			},
 		},
 	},
@@ -197,6 +198,7 @@ var testL = []*profile.Location{
 			{
 				Function: testF[1],
 				Line:     4,
+				Column:   4,
 			},
 		},
 	},
@@ -230,8 +232,45 @@ var testL = []*profile.Location{
 			},
 		},
 	},
+	{
+		ID:      6,
+		Mapping: testM[0],
+		Line: []profile.Line{
+			{
+				Function: testF[3],
+				Line:     7,
+			},
+			{
+				Function: testF[2],
+				Line:     6,
+			},
+		},
+	},
 }
 
+// testSample returns a profile sample with specified value and stack.
+// Note: callees come first in sample stacks.
+func testSample(value int64, locs ...*profile.Location) *profile.Sample {
+	return &profile.Sample{
+		Value:    []int64{value},
+		Location: locs,
+	}
+}
+
+// makeTestProfile returns a profile with specified samples that uses testL/testF/testM
+// (defined in report_test.go).
+func makeTestProfile(samples ...*profile.Sample) *profile.Profile {
+	return &profile.Profile{
+		SampleType: []*profile.ValueType{{Type: "samples", Unit: "count"}},
+		Sample:     samples,
+		Location:   testL,
+		Function:   testF,
+		Mapping:    testM,
+	}
+}
+
+// testProfile contains a fake profile used in tests.
+// Various report methods modify profiles so tests should operate on testProfile.Copy().
 var testProfile = &profile.Profile{
 	PeriodType:    &profile.ValueType{Type: "cpu", Unit: "millisecond"},
 	Period:        10,
@@ -464,5 +503,47 @@ func TestComputeTotal(t *testing.T) {
 				t.Errorf("got total %d, want %v", gotTotal, tc.wantTotal)
 			}
 		})
+	}
+}
+
+func TestPrintAssemblyErrorMessage(t *testing.T) {
+	profile := readProfile(filepath.Join("testdata", "sample.cpu"), t)
+
+	for _, tc := range []struct {
+		desc   string
+		symbol string
+		want   string
+	}{
+		{
+			desc:   "no matched symbol in binary",
+			symbol: "symbol-not-exist",
+			want:   "no matches found for regexp symbol-not-exist",
+		},
+		{
+			desc:   "no matched address in binary",
+			symbol: "0xffffaaaa",
+			want:   "no matches found for address 0xffffaaaa",
+		},
+		{
+			desc:   "matched address in binary but not in the profile",
+			symbol: "0x400000",
+			want:   "address 0x400000 found in binary, but the corresponding symbols do not have samples in the profile",
+		},
+	} {
+		rpt := New(
+			profile.Copy(),
+			&Options{
+				OutputFormat: List,
+				Symbol:       regexp.MustCompile(tc.symbol),
+				SampleValue: func(v []int64) int64 {
+					return v[1]
+				},
+				SampleUnit: profile.SampleType[1].Unit,
+			},
+		)
+
+		if err := PrintAssembly(os.Stdout, rpt, &binutils.Binutils{}, -1); err == nil || err.Error() != tc.want {
+			t.Errorf(`Got "%v", want %q`, err, tc.want)
+		}
 	}
 }

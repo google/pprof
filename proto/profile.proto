@@ -58,9 +58,9 @@ message Profile {
   // Mapping from address ranges to the image/binary/library mapped
   // into that address range.  mapping[0] will be the main binary.
   repeated Mapping mapping = 3;
-  // Useful program location
+  // Locations referenced by samples.
   repeated Location location = 4;
-  // Functions referenced by locations
+  // Functions referenced by locations.
   repeated Function function = 5;
   // A common table for strings referenced by various messages.
   // string_table[0] must always be "".
@@ -79,12 +79,16 @@ message Profile {
   int64 time_nanos = 9;
   // Duration of the profile, if a duration makes sense.
   int64 duration_nanos = 10;
-  // The kind of events between sampled ocurrences.
+  // The kind of events between sampled occurrences.
   // e.g [ "cpu","cycles" ] or [ "heap","bytes" ]
   ValueType period_type = 11;
   // The number of events between sampled occurrences.
   int64 period = 12;
-  // Freeform text associated to the profile.
+  // Free-form text associated with the profile. The text is displayed as is
+  // to the user by the tools that read profiles (e.g. by pprof). This field
+  // should not be used to store any machine-readable information, it is only
+  // for human-friendly content. The profile must stay functional if this field
+  // is cleaned.
   repeated int64 comment = 13; // Indices into string table.
   // Index into the string table of the type of the preferred sample
   // value. If unset, clients should default to the last sample value.
@@ -113,12 +117,21 @@ message Sample {
   // lists of the originals.
   repeated int64 value = 2;
   // label includes additional context for this sample. It can include
-  // things like a thread id, allocation size, etc
+  // things like a thread id, allocation size, etc.
+  //
+  // NOTE: While possible, having multiple values for the same label key is
+  // strongly discouraged and should never be used. Most tools (e.g. pprof) do
+  // not have good (or any) support for multi-value labels. And an even more
+  // discouraged case is having a string label and a numeric label of the same
+  // name on a sample.  Again, possible to express, but should not be used.
   repeated Label label = 3;
 }
 
 message Label {
-  int64 key = 1;   // Index into string table
+  // Index into string table. An annotation for a sample (e.g.
+  // "allocation_size") with an associated value.
+  // Keys with "pprof::" prefix are reserved for internal use by pprof.
+  int64 key = 1;
 
   // At most one of the following must be present
   int64 str = 2;   // Index into string table
@@ -195,6 +208,8 @@ message Line {
   uint64 function_id = 1;
   // Line number in source code.
   int64 line = 2;
+  // Column number in source code.
+  int64 column = 3;
 }
 
 message Function {

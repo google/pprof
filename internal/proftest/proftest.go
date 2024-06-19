@@ -18,27 +18,31 @@ package proftest
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
 	"testing"
+
+	_ "embed" // For embedding profiles needed by tests and benchmarks
 )
+
+var flagLargeProfile = flag.String("large_profile", "", "The name of a file that contains a profile to use in benchmarks. If empty, a profile of a synthetic program is used.")
 
 // Diff compares two byte arrays using the diff tool to highlight the
 // differences. It is meant for testing purposes to display the
 // differences between expected and actual output.
 func Diff(b1, b2 []byte) (data []byte, err error) {
-	f1, err := ioutil.TempFile("", "proto_test")
+	f1, err := os.CreateTemp("", "proto_test")
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(f1.Name())
 	defer f1.Close()
 
-	f2, err := ioutil.TempFile("", "proto_test")
+	f2, err := os.CreateTemp("", "proto_test")
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +81,7 @@ func EncodeJSON(x interface{}) []byte {
 // Also tracks the number of times the error matches AllowRx in
 // NumAllowRxMatches.
 type TestUI struct {
-	T                 *testing.T
+	T                 testing.TB
 	Ignore            int
 	AllowRx           string
 	NumAllowRxMatches int
@@ -138,3 +142,25 @@ func (ui *TestUI) WantBrowser() bool {
 // SetAutoComplete is not supported by the test UI.
 func (ui *TestUI) SetAutoComplete(_ func(string) string) {
 }
+
+// LargeProfile returns a large profile that may be useful in benchmarks.
+//
+// If the flag --large_profile is set, the contents of the file
+// named by the flag are returned. Otherwise an embedded profile (~1.2MB)
+// for a synthetic program is returned.
+func LargeProfile(tb testing.TB) []byte {
+	tb.Helper()
+	if f := *flagLargeProfile; f != "" {
+		// Use custom profile.
+		data, err := os.ReadFile(f)
+		if err != nil {
+			tb.Fatalf("custom profile file: %v\n", err)
+		}
+		return data
+	}
+
+	return largeProfileData
+}
+
+//go:embed testdata/large.cpu
+var largeProfileData []byte
