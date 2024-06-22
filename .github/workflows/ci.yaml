@@ -72,7 +72,7 @@ jobs:
           ./test.sh
 
       - name: Code coverage
-        uses: codecov/codecov-action@5ecb98a3c6b747ed38dc09f787459979aebb39be # v4.3.1
+        uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
         with:
           file: ${{ env.WORKING_DIR }}/coverage.txt
 
@@ -130,7 +130,7 @@ jobs:
           ./test.sh
 
       - name: Code coverage
-        uses: codecov/codecov-action@5ecb98a3c6b747ed38dc09f787459979aebb39be # v4.3.1
+        uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
         with:
           file: ${{ env.WORKING_DIR }}/coverage.txt
 
