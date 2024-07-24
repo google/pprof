@@ -186,6 +186,10 @@ message Location {
   // for the corresponding mapping. A non-leaf address may be in the
   // middle of a call instruction. It is up to display tools to find
   // the beginning of the instruction if necessary.
+  // If Mapping.memory_start is 0, Mapping.memory_limit is 0 or the max uint64,
+  // and Mapping.file_offset is 0, then the location is already fully adjusted
+  // to the symbol table address space, and display tools should not attempt to
+  // further adjust it.
   uint64 address = 3;
   // Multiple line indicates this location has inlined functions,
   // where the last entry represents the caller into which the
