@@ -3,6 +3,7 @@ package report
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/google/pprof/profile"
@@ -161,6 +162,22 @@ func TestStackSources(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestLegend(t *testing.T) {
+	// See report_test.go for the functions available to use in tests.
+	main, foo, bar, tee := testL[0], testL[1], testL[2], testL[3]
+	stacks := makeTestStacks(
+		testSample(100, bar, foo, main),
+		testSample(200, tee, foo, main),
+	)
+	got := strings.Join(stacks.Legend(), "\n")
+	expectStrings := []string{"Type: samples", "Showing nodes", "100% of 300 total"}
+	for _, expect := range expectStrings {
+		if !strings.Contains(got, expect) {
+			t.Errorf("missing expected string %q in legend %q", expect, got)
+		}
 	}
 }
 
