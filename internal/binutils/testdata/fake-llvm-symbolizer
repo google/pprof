@@ -29,7 +29,7 @@ while read line; do
   addr=$3
   case ${kind} in
   CODE)
-    echo "{\"Address\":\"${addr}\",\"ModuleName\":\"${fname}\",\"Symbol\":[{\"Column\":0,\"FileName\":\"${fname}.h\",\"FunctionName\":\"Inlined_${addr}\",\"Line\":0},{\"Column\":1,\"FileName\":\"${fname}.c\",\"FunctionName\":\"Func_${addr}\",\"Line\":2}]}"
+    echo "{\"Address\":\"${addr}\",\"ModuleName\":\"${fname}\",\"Symbol\":[{\"Column\":0,\"FileName\":\"${fname}.h\",\"FunctionName\":\"Inlined_${addr}\",\"Line\":0,\"StartLine\":0},{\"Column\":1,\"FileName\":\"${fname}.c\",\"FunctionName\":\"Func_${addr}\",\"Line\":2,\"StartLine\":2}]}"
     ;;
   DATA)
     echo "{\"Address\":\"${addr}\",\"ModuleName\":\"${fname}\",\"Data\":{\"Name\":\"${fname}_${addr}\",\"Size\":\"0x8\",\"Start\":\"${addr}\"}}"

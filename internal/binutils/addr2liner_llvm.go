@@ -151,10 +151,11 @@ func (d *llvmSymbolizer) readCodeFrames() ([]plugin.Frame, error) {
 		Address    string `json:"Address"`
 		ModuleName string `json:"ModuleName"`
 		Symbol     []struct {
-			Line         int    `json:"Line"`
-			Column       int    `json:"Column"`
-			FunctionName string `json:"FunctionName"`
-			FileName     string `json:"FileName"`
+			Line          int    `json:"Line"`
+			Column        int    `json:"Column"`
+			FunctionName  string `json:"FunctionName"`
+			FileName      string `json:"FileName"`
+			StartLine     int    `json:"StartLine"`
 		} `json:"Symbol"`
 	}
 	if err := json.Unmarshal([]byte(line), &frame); err != nil {
@@ -162,7 +163,7 @@ func (d *llvmSymbolizer) readCodeFrames() ([]plugin.Frame, error) {
 	}
 	var stack []plugin.Frame
 	for _, s := range frame.Symbol {
-		stack = append(stack, plugin.Frame{Func: s.FunctionName, File: s.FileName, Line: s.Line, Column: s.Column})
+		stack = append(stack, plugin.Frame{Func: s.FunctionName, File: s.FileName, Line: s.Line, Column: s.Column, StartLine: s.StartLine})
 	}
 	return stack, nil
 }
