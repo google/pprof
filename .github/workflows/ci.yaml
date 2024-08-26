@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.20', '1.21', 'tip']
+        go: ['1.22', '1.23', 'tip']
         # Supported macOS versions can be found in
         # https://github.com/actions/virtual-environments#available-environments.
         # TODO: Add macos-13. As of now there are build errors when installing graphviz.
