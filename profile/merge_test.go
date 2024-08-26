@@ -17,6 +17,7 @@ package profile
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/google/pprof/internal/proftest"
@@ -439,6 +440,66 @@ func TestCompatibilizeSampleTypes(t *testing.T) {
 					}
 					t.Errorf("CompatibilizeSampleTypes(): profile[%d] got diff (-want +got)\n%s", i, string(d))
 				}
+			}
+		})
+	}
+}
+
+func TestDocURLMerge(t *testing.T) {
+	const url1 = "http://example.com/url1"
+	const url2 = "http://example.com/url2"
+	type testCase struct {
+		name     string
+		profiles []*Profile
+		want     string
+	}
+	profile := func(url string) *Profile {
+		return &Profile{
+			PeriodType: &ValueType{Type: "cpu", Unit: "seconds"},
+			DocURL:     url,
+		}
+	}
+	for _, test := range []testCase{
+		{
+			name: "nolinks",
+			profiles: []*Profile{
+				profile(""),
+				profile(""),
+			},
+			want: "",
+		},
+		{
+			name: "single",
+			profiles: []*Profile{
+				profile(url1),
+			},
+			want: url1,
+		},
+		{
+			name: "mix",
+			profiles: []*Profile{
+				profile(""),
+				profile(url1),
+			},
+			want: url1,
+		},
+		{
+			name: "different",
+			profiles: []*Profile{
+				profile(url1),
+				profile(url2),
+			},
+			want: url1,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			merged, err := combineHeaders(test.profiles)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := merged.DocURL
+			if !reflect.DeepEqual(test.want, got) {
+				t.Errorf("unexpected links; want: %#v, got: %#v", test.want, got)
 			}
 		})
 	}
