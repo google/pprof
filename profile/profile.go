@@ -39,6 +39,7 @@ type Profile struct {
 	Location          []*Location
 	Function          []*Function
 	Comments          []string
+	DocURL            string
 
 	DropFrames string
 	KeepFrames string
@@ -53,6 +54,7 @@ type Profile struct {
 	encodeMu sync.Mutex
 
 	commentX           []int64
+	docURLX            int64
 	dropFramesX        int64
 	keepFramesX        int64
 	stringTable        []string
@@ -554,6 +556,9 @@ func (p *Profile) String() string {
 	ss := make([]string, 0, len(p.Comments)+len(p.Sample)+len(p.Mapping)+len(p.Location))
 	for _, c := range p.Comments {
 		ss = append(ss, "Comment: "+c)
+	}
+	if url := p.DocURL; url != "" {
+		ss = append(ss, fmt.Sprintf("Doc: %s", url))
 	}
 	if pt := p.PeriodType; pt != nil {
 		ss = append(ss, fmt.Sprintf("PeriodType: %s %s", pt.Type, pt.Unit))
