@@ -1345,7 +1345,7 @@ func absoluteURL(str string) bool {
 	// Avoid returning relative URLs to prevent unwanted local navigation
 	// within pprof server.
 	u, err := url.Parse(str)
-	return err == nil && u.IsAbs()
+	return err == nil && (u.Scheme == "https" || u.Scheme == "http")
 }
 
 func abs64(i int64) int64 {
