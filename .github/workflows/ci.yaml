@@ -163,15 +163,17 @@ jobs:
       matrix:
         go: ['1.22', '1.23']
     steps:
-      - name: Update Go version using setup-go
-        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
-        with:
-          go-version: ${{ matrix.go }}
-
       - name: Checkout the repo
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           path: ${{ env.WORKING_DIR }}
+
+      - name: Update Go version using setup-go
+        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        with:
+          go-version: ${{ matrix.go }}
+          cache: true
+          cache-dependency-path: '**/go.sum'
 
       - name: Fetch Windows dependency
         uses: crazy-max/ghaction-chocolatey@0e015857dd851f84fcb7fb53380eb5c4c8202333 # v3.0.0
