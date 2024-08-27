@@ -45,6 +45,8 @@ jobs:
         with:
           # Bootstrapping go tip requires 1.22.6
           go-version: 1.22
+          cache: true
+          cache-dependency-path: '**/go.sum'
 
       - name: Update Go version manually
         if: matrix.go == 'tip'
@@ -111,6 +113,8 @@ jobs:
         with:
           # Bootstrapping go tip requires 1.22.6
           go-version: 1.22
+          cache: true
+          cache-dependency-path: '**/go.sum'
 
       - name: Update Go version manually
         if: matrix.go == 'tip'
