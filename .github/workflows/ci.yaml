@@ -62,7 +62,7 @@ jobs:
           # Do not let tools interfere with the main module's go.mod.
           cd && go mod init tools
           go install honnef.co/go/tools/cmd/staticcheck@v0.5.1
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.0
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.60.3
           # Add PATH for installed tools.
           echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
 
@@ -120,7 +120,7 @@ jobs:
           # Do not let tools interfere with the main module's go.mod.
           cd && go mod init tools
           go install honnef.co/go/tools/cmd/staticcheck@v0.5.1
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.0
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.60.3
           # Add PATH for installed tools.
           echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
 
