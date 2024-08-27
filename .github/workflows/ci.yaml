@@ -34,11 +34,14 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
 
-      - name: Update Go version manually
+      - name: Install Go bootstrap compiler
         if: matrix.go == 'tip'
         with:
           # Bootstrapping go tip requires 1.22.6
           go-version: 1.22
+
+      - name: Update Go version manually
+        if: matrix.go == 'tip'
         working-directory: ${{ github.workspace }}
         run: |
           git clone https://go.googlesource.com/go $HOME/gotip
@@ -96,11 +99,14 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
 
-      - name: Update Go version manually
+      - name: Install Go bootstrap compiler
         if: matrix.go == 'tip'
         with:
           # Bootstrapping go tip requires 1.22.6
           go-version: 1.22
+
+      - name: Update Go version manually
+        if: matrix.go == 'tip'
         working-directory: ${{ github.workspace }}
         run: |
           git clone https://go.googlesource.com/go $HOME/gotip
