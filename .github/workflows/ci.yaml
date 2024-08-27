@@ -28,6 +28,11 @@ jobs:
         # - https://github.com/actions/virtual-environments/blob/main/images/macos/macos-13-Readme.md#xcode
         xcode-version: ['14.2', '14.1', '14.0.1', '13.4.1', '13.3.1', '13.2.1', '13.1']
     steps:
+      - name: Checkout the repo
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          path: ${{ env.WORKING_DIR }}
+
       - name: Update Go version using setup-go
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         if: matrix.go != 'tip'
@@ -40,8 +45,6 @@ jobs:
         with:
           # Bootstrapping go tip requires 1.22.6
           go-version: 1.22
-          cache: true
-          cache-dependency-path: '**/go.sum'
 
       - name: Update Go version manually
         if: matrix.go == 'tip'
@@ -54,11 +57,6 @@ jobs:
           echo "RUN_STATICCHECK=false" >> $GITHUB_ENV
           echo "RUN_GOLANGCI_LINTER=false" >> $GITHUB_ENV
           echo "$HOME/gotip/bin:$PATH" >> $GITHUB_PATH
-
-      - name: Checkout the repo
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-        with:
-          path: ${{ env.WORKING_DIR }}
 
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd # v1.6.0
@@ -96,6 +94,11 @@ jobs:
         go: ['1.22', '1.23', 'tip']
         os: ['ubuntu-22.04', 'ubuntu-20.04']
     steps:
+      - name: Checkout the repo
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          path: ${{ env.WORKING_DIR }}
+
       - name: Update Go version using setup-go
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         if: matrix.go != 'tip'
@@ -108,8 +111,6 @@ jobs:
         with:
           # Bootstrapping go tip requires 1.22.6
           go-version: 1.22
-          cache: true
-          cache-dependency-path: '**/go.sum'
 
       - name: Update Go version manually
         if: matrix.go == 'tip'
@@ -122,11 +123,6 @@ jobs:
           echo "RUN_STATICCHECK=false" >> $GITHUB_ENV
           echo "RUN_GOLANGCI_LINTER=false" >> $GITHUB_ENV
           echo "$HOME/gotip/bin" >> $GITHUB_PATH
-
-      - name: Checkout the repo
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-        with:
-          path: ${{ env.WORKING_DIR }}
 
       - name: Check chrome for browser tests
         run: |
