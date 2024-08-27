@@ -38,6 +38,8 @@ jobs:
         if: matrix.go != 'tip'
         with:
           go-version: ${{ matrix.go }}
+          cache: true
+          cache-dependency-path: '**/go.sum'
 
       - name: Install Go bootstrap compiler
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
@@ -106,6 +108,8 @@ jobs:
         if: matrix.go != 'tip'
         with:
           go-version: ${{ matrix.go }}
+          cache: true
+          cache-dependency-path: '**/go.sum'
 
       - name: Install Go bootstrap compiler
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
