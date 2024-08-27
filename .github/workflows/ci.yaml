@@ -37,6 +37,8 @@ jobs:
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         if: matrix.go != 'tip'
         with:
+          # Include cache directives to allow proper caching. Without them, we
+          # get setup-go "Restore cache failed" warnings.
           go-version: ${{ matrix.go }}
           cache: true
           cache-dependency-path: '**/go.sum'
@@ -46,6 +48,8 @@ jobs:
         if: matrix.go == 'tip'
         with:
           # Bootstrapping go tip requires 1.22.6
+          # Include cache directives to allow proper caching. Without them, we
+          # get setup-go "Restore cache failed" warnings.
           go-version: 1.22
           cache: true
           cache-dependency-path: '**/go.sum'
@@ -107,6 +111,8 @@ jobs:
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         if: matrix.go != 'tip'
         with:
+          # Include cache directives to allow proper caching. Without them, we
+          # get setup-go "Restore cache failed" warnings.
           go-version: ${{ matrix.go }}
           cache: true
           cache-dependency-path: '**/go.sum'
@@ -116,6 +122,8 @@ jobs:
         if: matrix.go == 'tip'
         with:
           # Bootstrapping go tip requires 1.22.6
+          # Include cache directives to allow proper caching. Without them, we
+          # get setup-go "Restore cache failed" warnings.
           go-version: 1.22
           cache: true
           cache-dependency-path: '**/go.sum'
@@ -171,6 +179,8 @@ jobs:
       - name: Update Go version using setup-go
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
+          # Include cache directives to allow proper caching. Without them, we
+          # get setup-go "Restore cache failed" warnings.
           go-version: ${{ matrix.go }}
           cache: true
           cache-dependency-path: '**/go.sum'
