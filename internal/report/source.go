@@ -29,6 +29,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/pprof/internal/elfexec"
 	"github.com/google/pprof/internal/graph"
 	"github.com/google/pprof/internal/measurement"
 	"github.com/google/pprof/internal/plugin"
@@ -791,6 +792,17 @@ func (sp *sourcePrinter) functions(f *sourceFile) []sourceFunction {
 // It returns nil on error.
 func (sp *sourcePrinter) objectFile(m *profile.Mapping) plugin.ObjFile {
 	if m == nil {
+		return nil
+	}
+	f, err := os.Open(m.File)
+	if err != nil {
+		return nil
+	}
+	buildID, err := elfexec.GetBuildID(f)
+	if err != nil {
+		return nil
+	}
+	if m.BuildID != "" && fmt.Sprintf("%x", buildID) != m.BuildID {
 		return nil
 	}
 	if object, ok := sp.objects[m.File]; ok {
