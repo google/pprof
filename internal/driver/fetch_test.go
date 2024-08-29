@@ -242,6 +242,106 @@ func TestFetch(t *testing.T) {
 	}
 }
 
+func TestExecNameOverride(t *testing.T) {
+	type test struct {
+		name          string
+		inputMappings []*profile.Mapping
+		execName      string
+		wantMappings  []*profile.Mapping
+	}
+	tests := []test{
+		{
+			name: "returns original mappings when no exec name specified",
+			inputMappings: []*profile.Mapping{
+				{
+					File: "orginal_file_1",
+				},
+				{
+					File: "orginal_file_2",
+				},
+			},
+			execName: "",
+			wantMappings: []*profile.Mapping{
+				{
+					File: "orginal_file_1",
+				},
+				{
+					File: "orginal_file_2",
+				},
+			},
+		},
+		{
+			name: "override the first file when exec name specified",
+			inputMappings: []*profile.Mapping{
+				{
+					File: "orginal_file_1",
+				},
+				{
+					File: "orginal_file_2",
+				},
+			},
+			execName: "new_exec_name",
+			wantMappings: []*profile.Mapping{
+				{
+					File: "new_exec_name",
+				},
+				{
+					File: "orginal_file_2",
+				},
+			},
+		},
+		{
+			name: "override all the consecutive files",
+			inputMappings: []*profile.Mapping{
+				{
+					File: "orginal_file_1",
+				},
+				{
+					File: "orginal_file_1",
+				},
+				{
+					File: "orginal_file_2",
+				},
+			},
+			execName: "new_exec_name",
+			wantMappings: []*profile.Mapping{
+				{
+					File: "new_exec_name",
+				},
+				{
+					File: "new_exec_name",
+				},
+				{
+					File: "orginal_file_2",
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			p := profile.Profile{
+				Mapping: tc.inputMappings,
+			}
+
+			s := source{
+				ExecName: tc.execName,
+			}
+
+			locateBinaries(&p, &s, &mockObjTool{}, nil)
+
+			if len(p.Mapping) != len(tc.wantMappings) {
+				t.Fatalf("got %d mappings, want %d", len(p.Mapping), len(tc.wantMappings))
+			}
+			for i, m := range p.Mapping {
+				if filepath.Base(m.File) != filepath.Base(tc.wantMappings[i].File) {
+					t.Errorf("got mapping[%d].File == %s, want %s", i, m.File, tc.wantMappings[i].File)
+				}
+			}
+		})
+	}
+}
+
 func TestFetchWithBase(t *testing.T) {
 	baseConfig := currentConfig()
 	defer setCurrentConfig(baseConfig)
