@@ -472,15 +472,14 @@ mapping:
 	// build ID override from source. Assume the executable is the first mapping.
 	if execName, buildID := s.ExecName, s.BuildID; execName != "" || buildID != "" {
 		m := p.Mapping[0]
-		if execName != "" {
-			// Explicitly do not update KernelRelocationSymbol --
-			// the source override is most likely missing it.
-			m.File = execName
-		}
+		// Explicitly do not update KernelRelocationSymbol --
+		// the source override is most likely missing it.
+		m.File = execName
+
 		// Only apply the build ID override if the build ID in the main mapping is
 		// missing. Overwriting the build ID in case it's present is very likely a
 		// wrong thing to do so we refuse to do that.
-		if buildID != "" && m.BuildID == "" {
+		if m.BuildID == "" {
 			m.BuildID = buildID
 		}
 	}
