@@ -471,16 +471,24 @@ mapping:
 	// If configured, apply executable filename override and (maybe, see below)
 	// build ID override from source. Assume the executable is the first mapping.
 	if execName, buildID := s.ExecName, s.BuildID; execName != "" || buildID != "" {
-		m := p.Mapping[0]
-		// Explicitly do not update KernelRelocationSymbol --
-		// the source override is most likely missing it.
-		m.File = execName
+		// Keep overriding until there appears a different file.
+		var prevFile string
+		for i, m := range p.Mapping {
+			if i != 0 && m.File != prevFile {
+				break
+			}
+			prevFile = m.File
 
-		// Only apply the build ID override if the build ID in the main mapping is
-		// missing. Overwriting the build ID in case it's present is very likely a
-		// wrong thing to do so we refuse to do that.
-		if m.BuildID == "" {
-			m.BuildID = buildID
+			// Explicitly do not update KernelRelocationSymbol --
+			// the source override is most likely missing it.
+			m.File = execName
+
+			// Only apply the build ID override if the build ID in the main mapping is
+			// missing. Overwriting the build ID in case it's present is very likely a
+			// wrong thing to do so we refuse to do that.
+			if m.BuildID == "" {
+				m.BuildID = buildID
+			}
 		}
 	}
 }
