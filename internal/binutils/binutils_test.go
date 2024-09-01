@@ -373,7 +373,7 @@ func TestObjFile(t *testing.T) {
 				t.Fatalf("SourceLine: unexpected error %v", err)
 			}
 			wantFrames := []plugin.Frame{
-				{Func: "main", File: "/tmp/hello.c", Line: 3},
+				{Func: "main", File: "/tmp/hello.c", Line: 3, StartLine: 3},
 			}
 			if !reflect.DeepEqual(gotFrames, wantFrames) {
 				t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, wantFrames)
@@ -461,8 +461,8 @@ func TestLLVMSymbolizer(t *testing.T) {
 		frames []plugin.Frame
 	}{
 		{0x10, false, []plugin.Frame{
-			{Func: "Inlined_0x10", File: "foo.h", Line: 0, Column: 0},
-			{Func: "Func_0x10", File: "foo.c", Line: 2, Column: 1},
+			{Func: "Inlined_0x10", File: "foo.h", Line: 0, Column: 0, StartLine: 0},
+			{Func: "Func_0x10", File: "foo.c", Line: 2, Column: 1, StartLine: 2},
 		}},
 		{0x20, true, []plugin.Frame{
 			{Func: "foo_0x20", File: "0x20 8"},
@@ -480,6 +480,7 @@ func TestLLVMSymbolizer(t *testing.T) {
 			defer symbolizer.rw.close()
 
 			frames, err := symbolizer.addrInfo(c.addr)
+			t.Logf("EITA expect %v; got %v\n", c.frames, frames)
 			if err != nil {
 				t.Fatalf("LLVM: unexpected error %v", err)
 			}
