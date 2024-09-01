@@ -1869,6 +1869,28 @@ func TestParseKernelRelocation(t *testing.T) {
 	}
 }
 
+func TestEncodeDecodeDocURL(t *testing.T) {
+	input := testProfile1.Copy()
+	input.DocURL = "http://example.comp/url"
+
+	// Encode/decode.
+	var buf bytes.Buffer
+	if err := input.Write(&buf); err != nil {
+		t.Fatal("encode: ", err)
+	}
+	output, err := Parse(&buf)
+	if err != nil {
+		t.Fatal("decode: ", err)
+	}
+	if want, got := input.String(), output.String(); want != got {
+		d, err := proftest.Diff([]byte(want), []byte(got))
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Errorf("wrong result of encode/decode (-want,+got):\n%s\n", string(d))
+	}
+}
+
 // parallel runs n copies of fn in parallel.
 func parallel(n int, fn func()) {
 	var wg sync.WaitGroup

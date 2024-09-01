@@ -19,6 +19,7 @@ package report
 import (
 	"fmt"
 	"io"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -1330,6 +1331,22 @@ func (rpt *Report) Total() int64 { return rpt.total }
 
 // OutputFormat returns the output format for the report.
 func (rpt *Report) OutputFormat() int { return rpt.options.OutputFormat }
+
+// DocURL returns the documentation URL for Report, or "" if not available.
+func (rpt *Report) DocURL() string {
+	u := rpt.prof.DocURL
+	if u == "" || !absoluteURL(u) {
+		return ""
+	}
+	return u
+}
+
+func absoluteURL(str string) bool {
+	// Avoid returning relative URLs to prevent unwanted local navigation
+	// within pprof server.
+	u, err := url.Parse(str)
+	return err == nil && (u.Scheme == "https" || u.Scheme == "http")
+}
 
 func abs64(i int64) int64 {
 	if i < 0 {

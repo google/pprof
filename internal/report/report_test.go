@@ -547,3 +547,32 @@ func TestPrintAssemblyErrorMessage(t *testing.T) {
 		}
 	}
 }
+
+func TestDocURL(t *testing.T) {
+	type testCase struct {
+		input string
+		want  string
+	}
+	for name, c := range map[string]testCase{
+		"empty":    {"", ""},
+		"http":     {"http://example.com/pprof-help", "http://example.com/pprof-help"},
+		"https":    {"https://example.com/pprof-help", "https://example.com/pprof-help"},
+		"relative": {"/foo", ""},
+		"nonhttp":  {"mailto:nobody@example.com", ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			profile := testProfile.Copy()
+			profile.DocURL = c.input
+			rpt := New(profile, &Options{
+				OutputFormat: Dot,
+				Symbol:       regexp.MustCompile(`.`),
+				TrimPath:     "/some/path",
+				SampleValue:  func(v []int64) int64 { return v[1] },
+				SampleUnit:   testProfile.SampleType[1].Unit,
+			})
+			if got := rpt.DocURL(); got != c.want {
+				t.Errorf("bad doc URL %q, expecting %q", got, c.want)
+			}
+		})
+	}
+}
