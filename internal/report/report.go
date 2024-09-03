@@ -1169,6 +1169,9 @@ func ProfileLabels(rpt *Report) []string {
 	if o.SampleType != "" {
 		label = append(label, "Type: "+o.SampleType)
 	}
+	if url := prof.DocURL; url != "" {
+		label = append(label, "Doc: "+url)
+	}
 	if prof.TimeNanos != 0 {
 		const layout = "Jan 2, 2006 at 3:04pm (MST)"
 		label = append(label, "Time: "+time.Unix(0, prof.TimeNanos).Format(layout))
