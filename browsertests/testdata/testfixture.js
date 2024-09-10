@@ -1,6 +1,6 @@
 // TestFixture records log messages and errors in an array that will
 // be returned to Go code. Each element in the result array is either
-// an array of the form ["LOG", ...]", or ["ERROR", ...].
+// an array of the form ["LOG", ...], or ["ERROR", ...].
 class TestFixture {
   constructor() {
     this.context = "";  // Added to front of all log and error messages.

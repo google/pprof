@@ -16,6 +16,7 @@ package report
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -574,5 +575,23 @@ func TestDocURL(t *testing.T) {
 				t.Errorf("bad doc URL %q, expecting %q", got, c.want)
 			}
 		})
+	}
+}
+
+func TestDocURLInLabels(t *testing.T) {
+	const url = "http://example.com/pprof-help"
+	profile := testProfile.Copy()
+	profile.DocURL = url
+	rpt := New(profile, &Options{
+		OutputFormat: Text,
+		Symbol:       regexp.MustCompile(`.`),
+		TrimPath:     "/some/path",
+		SampleValue:  func(v []int64) int64 { return v[1] },
+		SampleUnit:   testProfile.SampleType[1].Unit,
+	})
+
+	labels := fmt.Sprintf("%v", ProfileLabels(rpt))
+	if !strings.Contains(labels, url) {
+		t.Errorf("expected URL %q not found in %s", url, labels)
 	}
 }
