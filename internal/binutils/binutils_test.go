@@ -480,7 +480,6 @@ func TestLLVMSymbolizer(t *testing.T) {
 			defer symbolizer.rw.close()
 
 			frames, err := symbolizer.addrInfo(c.addr)
-			t.Logf("EITA expect %v; got %v\n", c.frames, frames)
 			if err != nil {
 				t.Fatalf("LLVM: unexpected error %v", err)
 			}
@@ -533,7 +532,7 @@ func TestPEFile(t *testing.T) {
 				t.Fatalf("SourceLine: unexpected error %v", err)
 			}
 			wantFrames := []plugin.Frame{
-				{Func: "main", File: "hello.c", Line: 3, Column: 12},
+				{Func: "main", File: "hello.c", Line: 3, Column: 12, StartLine: 3},
 			}
 			if !reflect.DeepEqual(gotFrames, wantFrames) {
 				t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, wantFrames)
