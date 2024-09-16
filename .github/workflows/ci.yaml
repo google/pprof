@@ -144,10 +144,26 @@ jobs:
         run: |
           google-chrome --version
 
+      - name: Add LLVM repository (Ubuntu 20.04 only)
+        if: matrix.os == 'ubuntu-20.04'
+        run: |
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main"
+          sudo apt-get update
+
+      - name: Install LLVM and Clang
+        run: |
+          if [ "${{ matrix.os }}" = "ubuntu-20.04" ]; then
+            sudo apt-get install -y llvm-14 clang-14
+            sudo update-alternatives --install /usr/bin/llvm-symbolizer llvm-symbolizer /usr/bin/llvm-symbolizer-14 100
+          else
+            sudo apt-get update
+            sudo apt-get install -y llvm clang
+          fi
+
       - name: Fetch dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y graphviz llvm clang
+          sudo apt-get install graphviz
           # Do not let tools interfere with the main module's go.mod.
           cd && go mod init tools
           go install honnef.co/go/tools/cmd/staticcheck@v0.5.1
