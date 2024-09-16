@@ -146,13 +146,18 @@ jobs:
 
       - name: Fetch dependencies
         run: |
-          sudo apt-get install graphviz
+          sudo apt-get update
+          sudo apt-get install -y graphviz llvm clang
           # Do not let tools interfere with the main module's go.mod.
           cd && go mod init tools
           go install honnef.co/go/tools/cmd/staticcheck@v0.5.1
           go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.60.3
           # Add PATH for installed tools.
           echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
+
+      - name: Verify llvm-symbolizer installation
+        run: |
+          llvm-symbolizer --version
 
       - name: Run the script
         run: |
