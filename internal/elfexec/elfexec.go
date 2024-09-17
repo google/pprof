@@ -206,6 +206,25 @@ func kernelBase(loadSegment *elf.ProgHeader, stextOffset *uint64, start, limit, 
 		// stextOffset=0xffffffff81000198
 		return start - *stextOffset, true
 	}
+
+	// Here comme kernel mapped in the upper half of the address space.
+	if start >= 0x8000000000000000 {
+
+		// Fuchsia Zircon kernel profiles have the following
+		// `start` > 0x8000000000000000, and non-zero `limit`, `offset`,
+		// `loadSegment.Off`, `loadSegment.Vaddr`. The only null value is
+		// `stextOffset`.
+		// Start being the virtual address for the beginning of mapped range.
+		// Offset being the position of that first byte in the binary file.
+		//
+		// Base, the amount to be removed to a virtual address to turn it into a
+		// file offset, is a simple substraction (`start - offset`) which is the
+		// same as for ET_DYN.
+		//
+		// Reference Fuchsia symbolization implementation at
+		// https://cs.opensource.google/fuchsia/fuchsia/+/main:tools/symbolizer/symbolizer_impl.cc;l=236;drc=534a61053c54c048640d5298d8337619a528e251
+		return start - offset, true
+	}
 	return 0, false
 }
 
