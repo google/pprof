@@ -279,22 +279,22 @@ function stackViewer(stacks, nodes) {
   // // Group represents a displayed (sub)tree.
   // interface Group {
   //   name: string;     // Full name of source
-  //   src: number;	 // Index in stacks.Sources
+  //   src: number;      // Index in stacks.Sources
   //   self: number;     // Contribution as leaf (may be < 0 for diffs)
-  //   sumpos: number;	 // Sum of |self| of positive nodes in tree (>= 0)
-  //   sumneg: number;	 // Sum of |self| of negative nodes in tree (>= 0)
+  //   sumpos: number;   // Sum of |self| of positive nodes in tree (>= 0)
+  //   sumneg: number;   // Sum of |self| of negative nodes in tree (>= 0)
   //   places: Place[];  // Stack slots that contributed to this group
   // }
   //
   // // Box is a rendered item.
   // interface Box {
-  //   x: number;	   // X coordinate of top-left
-  //   y: number;	   // Y coordinate of top-left
-  //   width: number;	   // Width of box to display
-  //   src: number;	   // Index in stacks.Sources
-  //   sumpos: number;	   // From corresponding Group
-  //   sumneg: number;	   // From corresponding Group
-  //   self: number;	   // From corresponding Group
+  //   x: number;          // X coordinate of top-left
+  //   y: number;          // Y coordinate of top-left
+  //   width: number;      // Width of box to display
+  //   src: number;        // Index in stacks.Sources
+  //   sumpos: number;     // From corresponding Group
+  //   sumneg: number;     // From corresponding Group
+  //   self: number;       // From corresponding Group
   // };
 
   function groupWidth(xscale, g) {
@@ -314,14 +314,14 @@ function stackViewer(stacks, nodes) {
         y:      y,
         width:  width,
         src:    g.src,
-	sumpos: g.sumpos,
-	sumneg: g.sumneg,
+        sumpos: g.sumpos,
+        sumneg: g.sumneg,
         self:   g.self,
       };
       displayList.push(box);
       if (direction > 0) {
-	// Leave gap on left hand side to indicate self contribution.
-	x += xscale*Math.abs(g.self);
+        // Leave gap on left hand side to indicate self contribution.
+        x += xscale*Math.abs(g.self);
       }
     }
     y += direction * ROW;
@@ -371,9 +371,9 @@ function stackViewer(stacks, nodes) {
         groups.push(group);
       }
       if (stack.Value < 0) {
-	group.sumneg += -stack.Value;
+        group.sumneg += -stack.Value;
       } else {
-	group.sumpos += stack.Value;
+        group.sumpos += stack.Value;
       }
       group.self += (place.Pos == stack.Sources.length-1) ? stack.Value : 0;
       group.places.push(place);
@@ -441,8 +441,8 @@ function stackViewer(stacks, nodes) {
       const delta = box.sumpos - box.sumneg;
       const partWidth = xscale * Math.abs(delta);
       if (partWidth >= MIN_WIDTH) {
-	r.appendChild(makeRect((delta < 0 ? 'negative' : 'positive'),
-			       0, 0, partWidth, ROW-1));
+        r.appendChild(makeRect((delta < 0 ? 'negative' : 'positive'),
+                               0, 0, partWidth, ROW-1));
       }
     }
 
@@ -540,9 +540,9 @@ function stackViewer(stacks, nodes) {
       seen.add(place.Stack);
       const stack = stacks.Stacks[place.Stack];
       if (stack.Value < 0) {
-	neg += -stack.Value;
+        neg += -stack.Value;
       } else {
-	pos += stack.Value;
+        pos += stack.Value;
       }
     }
     return [pos, neg];
