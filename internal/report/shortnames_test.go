@@ -44,7 +44,7 @@ func TestFileNameSuffixes(t *testing.T) {
 	}
 
 	for _, c := range []testCase{
-		test("empty", "", "."),
+		test("empty", "", ""),
 		test("simple", "foo", "foo"),
 		test("manypaths", "a/b/c", "a/b/c", "b/c", "c"),
 		test("leading", "/a/b", "/a/b", "a/b", "b"),
