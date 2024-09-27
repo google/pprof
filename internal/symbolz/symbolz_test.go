@@ -31,6 +31,7 @@ func TestSymbolzURL(t *testing.T) {
 		"http://host:8000/profilez?seconds=5":                                     "http://host:8000/symbolz",
 		"http://host:8000/profilez?seconds=5&format=proto":                        "http://host:8000/symbolz",
 		"http://host:8000/heapz?format=legacy":                                    "http://host:8000/symbolz",
+		"http://host:8000/some/deeper/path/profilez?seconds=5":                    "http://host:8000/some/deeper/path/symbolz",
 		"http://host:8000/debug/pprof/profile":                                    "http://host:8000/debug/pprof/symbol",
 		"http://host:8000/debug/pprof/profile?seconds=10":                         "http://host:8000/debug/pprof/symbol",
 		"http://host:8000/debug/pprof/heap":                                       "http://host:8000/debug/pprof/symbol",
