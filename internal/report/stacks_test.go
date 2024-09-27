@@ -3,6 +3,7 @@ package report
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -18,7 +19,13 @@ func makeTestStacks(samples ...*profile.Sample) StackSet {
 
 func TestStacks(t *testing.T) {
 	// See report_test.go for the functions available to use in tests.
-	main, foo, bar, tee := testL[0], testL[1], testL[2], testL[3]
+	locs := clearLineAndColumn(testL)
+	main, foo, bar, tee := locs[0], locs[1], locs[2], locs[3]
+
+	// Also make some file-only locations to test file granularity.
+	fileMain := makeFileLocation(main)
+	fileFoo := makeFileLocation(foo)
+	fileBar := makeFileLocation(bar)
 
 	// stack holds an expected stack value found in StackSet.
 	type stack struct {
@@ -57,6 +64,17 @@ func TestStacks(t *testing.T) {
 				makeStack(200, "0:root", "1:main", "2:foo", "2:foo", "3:bar"),
 			},
 		},
+		{
+			"files",
+			makeTestStacks(
+				testSample(100, fileFoo, fileMain),
+				testSample(200, fileBar, fileMain),
+			),
+			[]stack{
+				makeStack(100, "0:root", "1:dir/main", "2:dir/foo"),
+				makeStack(200, "0:root", "1:dir/main", "3:dir/bar"),
+			},
+		},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			var got []stack
@@ -79,7 +97,8 @@ func TestStacks(t *testing.T) {
 
 func TestStackSources(t *testing.T) {
 	// See report_test.go for the functions available to use in tests.
-	main, foo, bar, tee, inl := testL[0], testL[1], testL[2], testL[3], testL[5]
+	locs := clearLineAndColumn(testL)
+	main, foo, bar, tee, inl := locs[0], locs[1], locs[2], locs[3], locs[5]
 
 	type srcInfo struct {
 		name    string
@@ -188,4 +207,34 @@ func findSource(stacks StackSet, name string) StackSource {
 		}
 	}
 	return StackSource{}
+}
+
+// clearLineAndColumn drops line and column numbers to simplify tests that
+// do not care about line and column numbers.
+func clearLineAndColumn(locs []*profile.Location) []*profile.Location {
+	result := make([]*profile.Location, len(locs))
+	for i, loc := range locs {
+		newLoc := *loc
+		newLoc.Line = slices.Clone(loc.Line)
+		for j := range newLoc.Line {
+			newLoc.Line[j].Line = 0
+			newLoc.Line[j].Column = 0
+		}
+		result[i] = &newLoc
+	}
+	return result
+}
+
+// makeFileLocation switches loc from function to file-granularity.
+func makeFileLocation(loc *profile.Location) *profile.Location {
+	result := *loc
+	result.ID += 1000
+	result.Line = slices.Clone(loc.Line)
+	for i := range result.Line {
+		fn := *result.Line[i].Function
+		fn.Filename = "dir/" + fn.Name
+		fn.Name = ""
+		result.Line[i].Function = &fn
+	}
+	return &result
 }
