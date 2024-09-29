@@ -373,7 +373,7 @@ func TestObjFile(t *testing.T) {
 				t.Fatalf("SourceLine: unexpected error %v", err)
 			}
 			wantFrames := []plugin.Frame{
-				{Func: "main", File: "/tmp/hello.c", Line: 3},
+				{Func: "main", File: "/tmp/hello.c", Line: 3, StartLine: 3},
 			}
 			if !reflect.DeepEqual(gotFrames, wantFrames) {
 				t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, wantFrames)
@@ -402,17 +402,17 @@ func TestMachoFiles(t *testing.T) {
 		{"normal mapping", "exe_mac_64", 0x100000000, math.MaxUint64, 0,
 			0x100000f50, "_main",
 			[]plugin.Frame{
-				{Func: "main", File: "/tmp/hello.c", Line: 3},
+				{Func: "main", File: "/tmp/hello.c", Line: 3, StartLine: 3},
 			}},
 		{"other mapping", "exe_mac_64", 0x200000000, math.MaxUint64, 0,
 			0x200000f50, "_main",
 			[]plugin.Frame{
-				{Func: "main", File: "/tmp/hello.c", Line: 3},
+				{Func: "main", File: "/tmp/hello.c", Line: 3, StartLine: 3},
 			}},
 		{"lib normal mapping", "lib_mac_64", 0, math.MaxUint64, 0,
 			0xfa0, "_bar",
 			[]plugin.Frame{
-				{Func: "bar", File: "/tmp/lib.c", Line: 5},
+				{Func: "bar", File: "/tmp/lib.c", Line: 5, StartLine: 5},
 			}},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -461,8 +461,8 @@ func TestLLVMSymbolizer(t *testing.T) {
 		frames []plugin.Frame
 	}{
 		{0x10, false, []plugin.Frame{
-			{Func: "Inlined_0x10", File: "foo.h", Line: 0, Column: 0},
-			{Func: "Func_0x10", File: "foo.c", Line: 2, Column: 1},
+			{Func: "Inlined_0x10", File: "foo.h", Line: 0, Column: 0, StartLine: 0},
+			{Func: "Func_0x10", File: "foo.c", Line: 2, Column: 1, StartLine: 2},
 		}},
 		{0x20, true, []plugin.Frame{
 			{Func: "foo_0x20", File: "0x20 8"},
@@ -532,7 +532,7 @@ func TestPEFile(t *testing.T) {
 				t.Fatalf("SourceLine: unexpected error %v", err)
 			}
 			wantFrames := []plugin.Frame{
-				{Func: "main", File: "hello.c", Line: 3, Column: 12},
+				{Func: "main", File: "hello.c", Line: 3, Column: 12, StartLine: 3},
 			}
 			if !reflect.DeepEqual(gotFrames, wantFrames) {
 				t.Fatalf("SourceLine for main: got %v; want %v\n", gotFrames, wantFrames)

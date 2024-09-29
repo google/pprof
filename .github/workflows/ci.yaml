@@ -144,6 +144,23 @@ jobs:
         run: |
           google-chrome --version
 
+      - name: Add LLVM 14.0 repository to ensure llvm-symbolizer 14.0.0+ on Ubuntu 20.04
+        if: matrix.os == 'ubuntu-20.04'
+        run: |
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main"
+          sudo apt-get update
+
+      - name: Install llvm-symbolizer
+        run: |
+          if [ "${{ matrix.os }}" = "ubuntu-20.04" ]; then
+            sudo apt-get install -y llvm-14 clang-14
+            sudo update-alternatives --install /usr/bin/llvm-symbolizer llvm-symbolizer /usr/bin/llvm-symbolizer-14 100
+          else
+            sudo apt-get update
+            sudo apt-get install -y llvm clang
+          fi
+
       - name: Fetch dependencies
         run: |
           sudo apt-get install graphviz
@@ -153,6 +170,10 @@ jobs:
           go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.60.3
           # Add PATH for installed tools.
           echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
+
+      - name: Check llvm-symbolizer installation
+        run: |
+          llvm-symbolizer --version
 
       - name: Run the script
         run: |
