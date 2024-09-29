@@ -144,14 +144,14 @@ jobs:
         run: |
           google-chrome --version
 
-      - name: Add LLVM repository (Ubuntu 20.04 only)
+      - name: Add LLVM 14.0 repository to ensure llvm-symbolizer 14.0.0+ on Ubuntu 20.04
         if: matrix.os == 'ubuntu-20.04'
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main"
           sudo apt-get update
 
-      - name: Install LLVM and Clang
+      - name: Install llvm-symbolizer
         run: |
           if [ "${{ matrix.os }}" = "ubuntu-20.04" ]; then
             sudo apt-get install -y llvm-14 clang-14
@@ -171,7 +171,7 @@ jobs:
           # Add PATH for installed tools.
           echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
 
-      - name: Verify llvm-symbolizer installation
+      - name: Check llvm-symbolizer installation
         run: |
           llvm-symbolizer --version
 
