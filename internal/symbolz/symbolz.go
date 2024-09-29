@@ -93,7 +93,7 @@ func symbolz(source string) string {
 		if strings.Contains(url.Path, "/debug/pprof/") || hasGperftoolsSuffix(url.Path) {
 			url.Path = path.Clean(url.Path + "/../symbol")
 		} else {
-			url.Path = "/symbolz"
+			url.Path = path.Clean(url.Path + "/../symbolz")
 		}
 		url.RawQuery = ""
 		return url.String()
