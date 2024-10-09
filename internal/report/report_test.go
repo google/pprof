@@ -21,8 +21,10 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/pprof/internal/binutils"
 	"github.com/google/pprof/internal/graph"
@@ -593,5 +595,23 @@ func TestDocURLInLabels(t *testing.T) {
 	labels := fmt.Sprintf("%v", ProfileLabels(rpt))
 	if !strings.Contains(labels, url) {
 		t.Errorf("expected URL %q not found in %s", url, labels)
+	}
+}
+
+func TestProfileLabels(t *testing.T) {
+	// Force the local timezone to UTC for the duration of this function to get a
+	// predictable result out of timezone printing.
+	defer func(prev *time.Location) { time.Local = prev }(time.Local)
+	time.Local = time.UTC
+
+	profile := testProfile.Copy()
+	profile.TimeNanos = time.Unix(131, 0).UnixNano()
+	rpt := New(profile, &Options{
+		SampleValue: func(v []int64) int64 { return v[1] },
+	})
+
+	const want = "Time: 1970-01-01 00:02:11 UTC"
+	if labels := ProfileLabels(rpt); !slices.Contains(labels, want) {
+		t.Errorf("wanted to find a label containing %q, but found none in %v", want, labels)
 	}
 }

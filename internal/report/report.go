@@ -1173,7 +1173,7 @@ func ProfileLabels(rpt *Report) []string {
 		label = append(label, "Doc: "+url)
 	}
 	if prof.TimeNanos != 0 {
-		const layout = "Jan 2, 2006 at 3:04pm (MST)"
+		const layout = "2006-01-02 15:04:05 MST"
 		label = append(label, "Time: "+time.Unix(0, prof.TimeNanos).Format(layout))
 	}
 	if prof.DurationNanos != 0 {
