@@ -46,7 +46,7 @@ func TestGetBase(t *testing.T) {
 	}
 	// Kernel PIE header with vaddr aligned to a 4k boundary
 	kernelPieAlignedHeader := &elf.ProgHeader{
-		Vaddr: 0xffff000010080000,
+		Vaddr: 0xffff800010010000,
 		Off:   0x10000,
 	}
 	// Kernel PIE header with vaddr that doesn't fall on a 4k boundary
@@ -87,7 +87,7 @@ func TestGetBase(t *testing.T) {
 		{"dyn map", fhDyn, lsOffset, nil, 0x0, 0x300000, 0, 0xFFFFFFFFFFE00000, false},
 		{"dyn nomap", fhDyn, nil, nil, 0x0, 0x0, 0, 0, false},
 		{"dyn map+offset", fhDyn, lsOffset, nil, 0x900000, 0xa00000, 0x200000, 0x500000, false},
-		{"dyn kernel", fhDyn, kernelPieAlignedHeader, uint64p(0xffff000010080000), 0xffff000010080000, 0xffffffffffffffff, 0xffff000010080000, 0, false},
+		{"dyn kernel", fhDyn, kernelPieAlignedHeader, uint64p(0xffff800010000000), 0xffff800010000000, 0xffff800012815c00, 0xffff800010000000, 0, false},
 		{"dyn chromeos aslr kernel", fhDyn, kernelPieUnalignedHeader, uint64p(0xffffffc010080800), 0x800, 0xb7f800, 0, 0x3feff80000, false},
 		{"dyn chromeos aslr kernel unremapped", fhDyn, kernelPieUnalignedHeader, uint64p(0xffffffc010080800), 0xffffffdb5d680800, 0xffffffdb5e200000, 0xffffffdb5d680800, 0x1b4d600000, false},
 		{"rel", fhRel, nil, nil, 0x2000000, 0x3000000, 0, 0x2000000, false},
