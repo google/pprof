@@ -34,7 +34,7 @@ jobs:
           path: ${{ env.WORKING_DIR }}
 
       - name: Update Go version using setup-go
-        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         if: matrix.go != 'tip'
         with:
           # Include cache directives to allow proper caching. Without them, we
@@ -44,7 +44,7 @@ jobs:
           cache-dependency-path: '**/go.sum'
 
       - name: Install Go bootstrap compiler
-        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         if: matrix.go == 'tip'
         with:
           # Bootstrapping go tip requires 1.22.6
@@ -108,7 +108,7 @@ jobs:
           path: ${{ env.WORKING_DIR }}
 
       - name: Update Go version using setup-go
-        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         if: matrix.go != 'tip'
         with:
           # Include cache directives to allow proper caching. Without them, we
@@ -118,7 +118,7 @@ jobs:
           cache-dependency-path: '**/go.sum'
 
       - name: Install Go bootstrap compiler
-        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         if: matrix.go == 'tip'
         with:
           # Bootstrapping go tip requires 1.22.6
@@ -198,7 +198,7 @@ jobs:
           path: ${{ env.WORKING_DIR }}
 
       - name: Update Go version using setup-go
-        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           # Include cache directives to allow proper caching. Without them, we
           # get setup-go "Restore cache failed" warnings.
