@@ -257,6 +257,10 @@ func Demangle(prof *profile.Profile, force bool, demanglerMode string) {
 	}
 
 	options := demanglerModeToOptions(demanglerMode)
+	// bail out fast to avoid any parsing, if we really don't want any demangling.
+	if len(options) == 0 {
+		return
+	}
 	for _, fn := range prof.Function {
 		demangleSingleFunction(fn, options)
 	}
