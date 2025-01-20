@@ -25,12 +25,12 @@ jobs:
         # Supported Xcode versions can be found in:
         # - https://github.com/actions/virtual-environments/blob/main/images/macos/macos-13-Readme.md#xcode
         # - https://github.com/actions/virtual-environments/blob/main/images/macos/macos-14-Readme.md#xcode
-        xcode-version: ['16.1', '16.0', '15.4', '15.3', '15.2', '15.1', '15.0.1', '14.3.1', '14.2', '14.1']
+        xcode-version: ['16.2', '16.1', '15.4', '15.3', '15.2', '15.1', '15.0.1', '14.3.1', '14.2', '14.1']
         exclude:
           - os: 'macos-13'
-            xcode-version: '16.1'
+            xcode-version: '16.2'
           - os: 'macos-13'
-            xcode-version: '16.0'
+            xcode-version: '16.1'
           - os: 'macos-13'
             xcode-version: '15.4'
           - os: 'macos-13'
