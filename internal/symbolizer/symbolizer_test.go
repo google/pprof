@@ -376,6 +376,11 @@ func TestDemangleSingleFunction(t *testing.T) {
 			want:   "operator delete[]",
 		},
 		{
+			// OSX prepends extra '_', which we're not able to remove. But we handle it when demangling.
+			symbol: "__ZdaPv",
+			want:   "operator delete[]",
+		},
+		{
 			// Already demangled.
 			symbol: "operator delete[](void*)",
 			want:   "operator delete[]",
