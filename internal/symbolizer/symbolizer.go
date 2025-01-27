@@ -292,6 +292,16 @@ func demangleSingleFunction(fn *profile.Function, options []demangle.Option) {
 		fn.Name = demangled
 		return
 	}
+
+	// OSX has all the symbols prefixed with extra '_' so lets try
+	// once more without it
+	if strings.HasPrefix(fn.SystemName, "_") {
+		if demangled := demangle.Filter(fn.SystemName[1:], o...); demangled != fn.SystemName {
+			fn.Name = demangled
+			return
+		}
+	}
+
 	// Could not demangle. Apply heuristics in case the name is
 	// already demangled.
 	name := fn.SystemName
