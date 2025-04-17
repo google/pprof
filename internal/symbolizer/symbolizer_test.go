@@ -381,6 +381,11 @@ func TestDemangleSingleFunction(t *testing.T) {
 			want:   "operator delete[]",
 		},
 		{
+			// Leave special double underscore symbols as is.
+			symbol: "__some_special_name",
+			want:   "__some_special_name",
+		},
+		{
 			// Already demangled.
 			symbol: "operator delete[](void*)",
 			want:   "operator delete[]",
