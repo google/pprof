@@ -19,6 +19,7 @@ package report
 import (
 	"fmt"
 	"io"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -698,13 +699,17 @@ func printTags(w io.Writer, rpt *Report) error {
 	p := rpt.prof
 
 	o := rpt.options
-	formatTag := func(v int64, key string) string {
-		return measurement.ScaledLabel(v, key, o.OutputUnit)
+	formatTag := func(v int64, unit string) string {
+		return measurement.ScaledLabel(v, unit, o.OutputUnit)
 	}
 
-	// Hashtable to keep accumulate tags as key,value,count.
+	// Accumulate tags as key,value,count.
 	tagMap := make(map[string]map[string]int64)
+	// Note that we assume single value per tag per sample. Multiple values are
+	// encodable in the format but are discouraged.
+	tagTotalMap := make(map[string]int64)
 	for _, s := range p.Sample {
+		sampleValue := o.SampleValue(s.Value)
 		for key, vals := range s.Label {
 			for _, val := range vals {
 				valueMap, ok := tagMap[key]
@@ -712,7 +717,8 @@ func printTags(w io.Writer, rpt *Report) error {
 					valueMap = make(map[string]int64)
 					tagMap[key] = valueMap
 				}
-				valueMap[val] += o.SampleValue(s.Value)
+				valueMap[val] += sampleValue
+				tagTotalMap[key] += sampleValue
 			}
 		}
 		for key, vals := range s.NumLabel {
@@ -724,7 +730,8 @@ func printTags(w io.Writer, rpt *Report) error {
 					valueMap = make(map[string]int64)
 					tagMap[key] = valueMap
 				}
-				valueMap[val] += o.SampleValue(s.Value)
+				valueMap[val] += sampleValue
+				tagTotalMap[key] += sampleValue
 			}
 		}
 	}
@@ -735,22 +742,23 @@ func printTags(w io.Writer, rpt *Report) error {
 	}
 	tabw := tabwriter.NewWriter(w, 0, 0, 1, ' ', tabwriter.AlignRight)
 	for _, tagKey := range graph.SortTags(tagKeys, true) {
-		var total int64
 		key := tagKey.Name
 		tags := make([]*graph.Tag, 0, len(tagMap[key]))
 		for t, c := range tagMap[key] {
-			total += c
 			tags = append(tags, &graph.Tag{Name: t, Flat: c})
 		}
 
-		f, u := measurement.Scale(total, o.SampleUnit, o.OutputUnit)
-		fmt.Fprintf(tabw, "%s:\t Total %.1f%s\n", key, f, u)
+		tagTotal, profileTotal := tagTotalMap[key], rpt.Total()
+		if profileTotal > 0 {
+			fmt.Fprintf(tabw, "%s:\t Total %s of %s (%s)\n", key, rpt.formatValue(tagTotal), rpt.formatValue(profileTotal), measurement.Percentage(tagTotal, profileTotal))
+		} else {
+			fmt.Fprintf(tabw, "%s:\t Total %s of %s\n", key, rpt.formatValue(tagTotal), rpt.formatValue(profileTotal))
+		}
 		for _, t := range graph.SortTags(tags, true) {
-			f, u := measurement.Scale(t.FlatValue(), o.SampleUnit, o.OutputUnit)
-			if total > 0 {
-				fmt.Fprintf(tabw, " \t%.1f%s (%s):\t %s\n", f, u, measurement.Percentage(t.FlatValue(), total), t.Name)
+			if profileTotal > 0 {
+				fmt.Fprintf(tabw, " \t%s (%s):\t %s\n", rpt.formatValue(t.FlatValue()), measurement.Percentage(t.FlatValue(), profileTotal), t.Name)
 			} else {
-				fmt.Fprintf(tabw, " \t%.1f%s:\t %s\n", f, u, t.Name)
+				fmt.Fprintf(tabw, " \t%s:\t %s\n", rpt.formatValue(t.FlatValue()), t.Name)
 			}
 		}
 		fmt.Fprintln(tabw)
@@ -1168,8 +1176,11 @@ func ProfileLabels(rpt *Report) []string {
 	if o.SampleType != "" {
 		label = append(label, "Type: "+o.SampleType)
 	}
+	if url := prof.DocURL; url != "" {
+		label = append(label, "Doc: "+url)
+	}
 	if prof.TimeNanos != 0 {
-		const layout = "Jan 2, 2006 at 3:04pm (MST)"
+		const layout = "2006-01-02 15:04:05 MST"
 		label = append(label, "Time: "+time.Unix(0, prof.TimeNanos).Format(layout))
 	}
 	if prof.DurationNanos != 0 {
@@ -1330,6 +1341,22 @@ func (rpt *Report) Total() int64 { return rpt.total }
 
 // OutputFormat returns the output format for the report.
 func (rpt *Report) OutputFormat() int { return rpt.options.OutputFormat }
+
+// DocURL returns the documentation URL for Report, or "" if not available.
+func (rpt *Report) DocURL() string {
+	u := rpt.prof.DocURL
+	if u == "" || !absoluteURL(u) {
+		return ""
+	}
+	return u
+}
+
+func absoluteURL(str string) bool {
+	// Avoid returning relative URLs to prevent unwanted local navigation
+	// within pprof server.
+	u, err := url.Parse(str)
+	return err == nil && (u.Scheme == "https" || u.Scheme == "http")
+}
 
 func abs64(i int64) int64 {
 	if i < 0 {

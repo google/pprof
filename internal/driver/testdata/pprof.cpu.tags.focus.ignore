@@ -1,6 +1,6 @@
- key1: Total 100.0ms
-       100.0ms (  100%): tag2
+ key1: Total 100ms of 1.12s ( 8.93%)
+       100ms ( 8.93%): tag2
 
- key3: Total 100.0ms
-       100.0ms (  100%): tag2
+ key3: Total 100ms of 1.12s ( 8.93%)
+       100ms ( 8.93%): tag2
 

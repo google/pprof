@@ -228,6 +228,7 @@ func symbolizeOneMapping(m *profile.Mapping, locs []*profile.Location, obj plugi
 				Name:       frame.Func,
 				SystemName: frame.Func,
 				Filename:   frame.File,
+				StartLine:  int64(frame.StartLine),
 			})
 			l.Line[i] = profile.Line{
 				Function: f,
@@ -256,6 +257,10 @@ func Demangle(prof *profile.Profile, force bool, demanglerMode string) {
 	}
 
 	options := demanglerModeToOptions(demanglerMode)
+	// Bail out fast to avoid any parsing, if we really don't want any demangling.
+	if len(options) == 0 {
+		return
+	}
 	for _, fn := range prof.Function {
 		demangleSingleFunction(fn, options)
 	}
@@ -287,6 +292,19 @@ func demangleSingleFunction(fn *profile.Function, options []demangle.Option) {
 		fn.Name = demangled
 		return
 	}
+
+	// OSX has all the symbols prefixed with extra '_' so lets try
+	// once more without it
+	if strings.HasPrefix(fn.SystemName, "_") {
+		// Copy the options because they may be updated by the call.
+		o := make([]demangle.Option, len(options))
+		copy(o, options)
+		if demangled := demangle.Filter(fn.SystemName[1:], o...); demangled != fn.SystemName[1:] {
+			fn.Name = demangled
+			return
+		}
+	}
+
 	// Could not demangle. Apply heuristics in case the name is
 	// already demangled.
 	name := fn.SystemName

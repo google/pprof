@@ -97,6 +97,7 @@ func TestParse(t *testing.T) {
 		{"weblist=line(1000|3000)$,addresses,flat", "cpu"},
 		{"tags,tagfocus=400kb:", "heap_request"},
 		{"tags,tagfocus=+400kb:", "heap_request"},
+		{"tags,relative_percentages,tagfocus=400kb:", "heap_request"},
 		{"dot", "long_name_funcs"},
 		{"text", "long_name_funcs"},
 	}

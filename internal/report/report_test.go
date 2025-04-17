@@ -16,12 +16,15 @@ package report
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/pprof/internal/binutils"
 	"github.com/google/pprof/internal/graph"
@@ -545,5 +548,70 @@ func TestPrintAssemblyErrorMessage(t *testing.T) {
 		if err := PrintAssembly(os.Stdout, rpt, &binutils.Binutils{}, -1); err == nil || err.Error() != tc.want {
 			t.Errorf(`Got "%v", want %q`, err, tc.want)
 		}
+	}
+}
+
+func TestDocURL(t *testing.T) {
+	type testCase struct {
+		input string
+		want  string
+	}
+	for name, c := range map[string]testCase{
+		"empty":    {"", ""},
+		"http":     {"http://example.com/pprof-help", "http://example.com/pprof-help"},
+		"https":    {"https://example.com/pprof-help", "https://example.com/pprof-help"},
+		"relative": {"/foo", ""},
+		"nonhttp":  {"mailto:nobody@example.com", ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			profile := testProfile.Copy()
+			profile.DocURL = c.input
+			rpt := New(profile, &Options{
+				OutputFormat: Dot,
+				Symbol:       regexp.MustCompile(`.`),
+				TrimPath:     "/some/path",
+				SampleValue:  func(v []int64) int64 { return v[1] },
+				SampleUnit:   testProfile.SampleType[1].Unit,
+			})
+			if got := rpt.DocURL(); got != c.want {
+				t.Errorf("bad doc URL %q, expecting %q", got, c.want)
+			}
+		})
+	}
+}
+
+func TestDocURLInLabels(t *testing.T) {
+	const url = "http://example.com/pprof-help"
+	profile := testProfile.Copy()
+	profile.DocURL = url
+	rpt := New(profile, &Options{
+		OutputFormat: Text,
+		Symbol:       regexp.MustCompile(`.`),
+		TrimPath:     "/some/path",
+		SampleValue:  func(v []int64) int64 { return v[1] },
+		SampleUnit:   testProfile.SampleType[1].Unit,
+	})
+
+	labels := fmt.Sprintf("%v", ProfileLabels(rpt))
+	if !strings.Contains(labels, url) {
+		t.Errorf("expected URL %q not found in %s", url, labels)
+	}
+}
+
+func TestProfileLabels(t *testing.T) {
+	// Force the local timezone to UTC for the duration of this function to get a
+	// predictable result out of timezone printing.
+	defer func(prev *time.Location) { time.Local = prev }(time.Local)
+	time.Local = time.UTC
+
+	profile := testProfile.Copy()
+	profile.TimeNanos = time.Unix(131, 0).UnixNano()
+	rpt := New(profile, &Options{
+		SampleValue: func(v []int64) int64 { return v[1] },
+	})
+
+	const want = "Time: 1970-01-01 00:02:11 UTC"
+	if labels := ProfileLabels(rpt); !slices.Contains(labels, want) {
+		t.Errorf("wanted to find a label containing %q, but found none in %v", want, labels)
 	}
 }

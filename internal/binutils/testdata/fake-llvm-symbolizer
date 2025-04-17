@@ -22,22 +22,18 @@ IFS=" "
 while read line; do
   # line has form:
   #    filename 0xaddr
-  # Emit dummy output that matches llvm-symbolizer output format.
+  # Emit dummy output that matches llvm-symbolizer JSON output format.
   set -- ${line}
   kind=$1
   fname=$2
   addr=$3
   case ${kind} in
   CODE)
-    echo "Inlined_${addr}"
-    echo "${fname}.h"
-    echo "Func_${addr}"
-    echo "${fname}.c:2:1"
-    echo;;
+    echo "{\"Address\":\"${addr}\",\"ModuleName\":\"${fname}\",\"Symbol\":[{\"Column\":0,\"FileName\":\"${fname}.h\",\"FunctionName\":\"Inlined_${addr}\",\"Line\":0,\"StartLine\":0},{\"Column\":1,\"FileName\":\"${fname}.c\",\"FunctionName\":\"Func_${addr}\",\"Line\":2,\"StartLine\":2}]}"
+    ;;
   DATA)
-    echo "${fname}_${addr}"
-    echo "${addr} 8"
-    echo;;
-  *) echo ${kind} ${fname} ${addr};;
+    echo "{\"Address\":\"${addr}\",\"ModuleName\":\"${fname}\",\"Data\":{\"Name\":\"${fname}_${addr}\",\"Size\":\"0x8\",\"Start\":\"${addr}\"}}"
+    ;;
+  *) exit 1;;
   esac
 done
