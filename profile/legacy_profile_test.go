@@ -59,7 +59,7 @@ func TestLegacyProfileType(t *testing.T) {
 }
 
 func TestCpuParse(t *testing.T) {
-	// profileString is a legacy encoded profile, represnted by words separated by ":"
+	// profileString is a legacy encoded profile, represented by words separated by ":"
 	// Each sample has the form value : N : stack1..stackN
 	// EOF is represented as "0:1:0"
 	profileString := "1:3:100:999:100:"                                      // sample with bogus 999 and duplicate leaf

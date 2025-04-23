@@ -206,7 +206,7 @@ func (ut UnitType) findByAlias(alias string) *Unit {
 	return nil
 }
 
-// sniffUnit simpifies the input alias and returns the unit associated with the
+// sniffUnit simplifies the input alias and returns the unit associated with the
 // specified alias. It returns nil if the unit with such alias is not found.
 func (ut UnitType) sniffUnit(unit string) *Unit {
 	unit = strings.ToLower(unit)

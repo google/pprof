@@ -490,7 +490,7 @@ func (sp *sourcePrinter) addStack(addr uint64, frames []plugin.Frame) {
 		file.lines[f.Line] = append(file.lines[f.Line], sourceInst{addr, stack})
 
 		// Remember the first function name encountered per source line
-		// and assume that that line belongs to that function.
+		// and assume that line belongs to that function.
 		if _, ok := file.funcName[f.Line]; !ok {
 			file.funcName[f.Line] = f.Func
 		}

@@ -119,7 +119,7 @@ func TestParseError(t *testing.T) {
 
 func TestParseConcatentated(t *testing.T) {
 	prof := testProfile1.Copy()
-	// Write the profile twice to buffer to create concatented profile.
+	// Write the profile twice to buffer to create concatenated profile.
 	var buf bytes.Buffer
 	prof.Write(&buf)
 	prof.Write(&buf)

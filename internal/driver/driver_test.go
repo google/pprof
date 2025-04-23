@@ -1050,7 +1050,7 @@ var autoCompleteTests = []struct {
 	{"t", "t"},                            // many matches
 	{"top abc", "top abc"},                // no function name match
 	{"top mangledM", "top mangledMALLOC"}, // single function name match
-	{"top cmd cmd mangledM", "top cmd cmd mangledMALLOC"},
+	{"top cmd mangledM", "top cmd mangledMALLOC"},
 	{"top mangled", "top mangled"},                      // many function name matches
 	{"cmd mangledM", "cmd mangledM"},                    // invalid command
 	{"top mangledM cmd", "top mangledM cmd"},            // cursor misplaced
