@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -187,7 +188,7 @@ func printCurrentOptions(p *profile.Profile, ui plugin.UI) {
 		comment := ""
 		switch {
 		case len(f.choices) > 0:
-			values := append([]string{}, f.choices...)
+			values := slices.Clone(f.choices)
 			sort.Strings(values)
 			comment = "[" + strings.Join(values, " | ") + "]"
 		case n == "sample_index":
