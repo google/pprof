@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -320,10 +321,8 @@ func TestDisasmIntelSyntax(t *testing.T) {
 
 func findSymbol(syms []*plugin.Sym, name string) *plugin.Sym {
 	for _, s := range syms {
-		for _, n := range s.Name {
-			if n == name {
-				return s
-			}
+		if slices.Contains(s.Name, name) {
+			return s
 		}
 	}
 	return nil

@@ -16,6 +16,7 @@ package profile
 
 import (
 	"errors"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -192,7 +193,7 @@ var profileDecoder = []decoder{
 		err := decodeMessage(b, x)
 		b.tmpLines = x.Line[:0]
 		// Copy to shrink size and detach from shared space.
-		x.Line = append([]Line(nil), x.Line...)
+		x.Line = slices.Clone(x.Line)
 		return err
 	},
 	// repeated Function function = 5
