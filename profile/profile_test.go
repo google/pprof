@@ -1940,3 +1940,71 @@ func BenchmarkWrite(b *testing.B) {
 		}
 	}
 }
+
+func TestMappingUnsymbolizable(t *testing.T) {
+	testcases := []struct {
+		desc               string
+		file               string
+		wantUnsymbolizable bool
+	}{
+		{
+			desc:               "regular file is symbolizable",
+			file:               "/usr/bin/program",
+			wantUnsymbolizable: false,
+		},
+		{
+			desc:               "vdso mapping is unsymbolizable",
+			file:               "[vdso]",
+			wantUnsymbolizable: true,
+		},
+		{
+			desc:               "vsyscall mapping is unsymbolizable",
+			file:               "[vsyscall]",
+			wantUnsymbolizable: true,
+		},
+		{
+			desc:               "kernel mapping is unsymbolizable",
+			file:               "[kernel.kallsyms]_text",
+			wantUnsymbolizable: true,
+		},
+		{
+			desc:               "any bracket-prefixed file is unsymbolizable",
+			file:               "[some_other_mapping]",
+			wantUnsymbolizable: true,
+		},
+		{
+			desc:               "linux-vdso module is unsymbolizable",
+			file:               "/lib/linux-vdso.so.1",
+			wantUnsymbolizable: true,
+		},
+		{
+			desc:               "dri device file is unsymbolizable",
+			file:               "/dev/dri/by-id/pci-0000_01_00_0-card0",
+			wantUnsymbolizable: true,
+		},
+		{
+			desc:               "anon mapping is unsymbolizable",
+			file:               "//anon",
+			wantUnsymbolizable: true,
+		},
+		{
+			desc:               "empty file is unsymbolizable",
+			file:               "",
+			wantUnsymbolizable: true,
+		},
+		{
+			desc:               "memfd file without deleted suffix is unsymbolizable",
+			file:               "/memfd:some-memory-file",
+			wantUnsymbolizable: true,
+		},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.desc, func(t *testing.T) {
+			m := &Mapping{File: tc.file}
+			got := m.Unsymbolizable()
+			if got != tc.wantUnsymbolizable {
+				t.Errorf("Mapping.Unsymbolizable() for file %q = %v, want %v", tc.file, got, tc.wantUnsymbolizable)
+			}
+		})
+	}
+}
