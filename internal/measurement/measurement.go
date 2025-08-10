@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -115,7 +116,9 @@ func compatibleValueTypes(v1, v2 *profile.ValueType) bool {
 		return true
 	}
 	for _, ut := range UnitTypes {
-		if ut.sniffUnit(v1.Unit) != nil && ut.sniffUnit(v2.Unit) != nil {
+		_, u1 := ut.sniffUnit(v1.Unit)
+		_, u2 := ut.sniffUnit(v2.Unit)
+		if u1 && u2 {
 			return true
 		}
 	}
@@ -153,6 +156,10 @@ func Label(value int64, unit string) string {
 // ScaledLabel scales the passed-in measurement (if necessary) and
 // returns the label used to describe a float measurement.
 func ScaledLabel(value int64, fromUnit, toUnit string) string {
+	// hot path
+	if fromUnit == "" && toUnit == "count" {
+		return strconv.FormatInt(value, 10)
+	}
 	v, u := Scale(value, fromUnit, toUnit)
 	sv := strings.TrimSuffix(fmt.Sprintf("%.2f", v), ".00")
 	if sv == "0" || sv == "-0" {
@@ -196,18 +203,18 @@ type UnitType struct {
 
 // findByAlias returns the unit associated with the specified alias. It returns
 // nil if the unit with such alias is not found.
-func (ut UnitType) findByAlias(alias string) *Unit {
+func (ut UnitType) findByAlias(alias string) (Unit, bool) {
 	for _, u := range ut.Units {
 		if slices.Contains(u.aliases, alias) {
-			return &u
+			return u, true
 		}
 	}
-	return nil
+	return Unit{}, false
 }
 
 // sniffUnit simplifies the input alias and returns the unit associated with the
 // specified alias. It returns nil if the unit with such alias is not found.
-func (ut UnitType) sniffUnit(unit string) *Unit {
+func (ut UnitType) sniffUnit(unit string) (Unit, bool) {
 	unit = strings.ToLower(unit)
 	if len(unit) > 2 {
 		unit = strings.TrimSuffix(unit, "s")
@@ -239,8 +246,8 @@ func (ut UnitType) autoScale(value float64) (float64, string, bool) {
 // toUnit is not in the unitType, the value will be returned in terms of the
 // default unitType.
 func (ut UnitType) convertUnit(value int64, fromUnitStr, toUnitStr string) (float64, string, bool) {
-	fromUnit := ut.sniffUnit(fromUnitStr)
-	if fromUnit == nil {
+	fromUnit, ok := ut.sniffUnit(fromUnitStr)
+	if !ok {
 		return 0, "", false
 	}
 	v := float64(value) * fromUnit.Factor
@@ -250,8 +257,8 @@ func (ut UnitType) convertUnit(value int64, fromUnitStr, toUnitStr string) (floa
 		}
 		return v / ut.DefaultUnit.Factor, ut.DefaultUnit.CanonicalName, true
 	}
-	toUnit := ut.sniffUnit(toUnitStr)
-	if toUnit == nil {
+	toUnit, ok := ut.sniffUnit(toUnitStr)
+	if !ok {
 		return v / ut.DefaultUnit.Factor, ut.DefaultUnit.CanonicalName, true
 	}
 	return v / toUnit.Factor, toUnit.CanonicalName, true
