@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.23', '1.24', 'tip']
+        go: ['1.24', '1.25', 'tip']
         # Supported macOS versions can be found in
         # https://github.com/actions/virtual-environments#available-environments.
         os: ['macos-13', 'macos-14']
@@ -62,10 +62,10 @@ jobs:
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         if: matrix.go == 'tip'
         with:
-          # Bootstrapping go tip requires 1.22.6
+          # Bootstrapping go tip requires 1.24
           # Include cache directives to allow proper caching. Without them, we
           # get setup-go "Restore cache failed" warnings.
-          go-version: 1.22
+          go-version: 1.24
           cache: true
           cache-dependency-path: '**/go.sum'
 
@@ -114,7 +114,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.23', '1.24', 'tip']
+        go: ['1.24', '1.25', 'tip']
         os: ['ubuntu-24.04', 'ubuntu-22.04']
     steps:
       - name: Checkout the repo
@@ -136,10 +136,10 @@ jobs:
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         if: matrix.go == 'tip'
         with:
-          # Bootstrapping go tip requires 1.22.6
+          # Bootstrapping go tip requires 1.24
           # Include cache directives to allow proper caching. Without them, we
           # get setup-go "Restore cache failed" warnings.
-          go-version: 1.22
+          go-version: 1.24
           cache: true
           cache-dependency-path: '**/go.sum'
 
@@ -202,11 +202,11 @@ jobs:
           file: ${{ env.WORKING_DIR }}/coverage.txt
 
   test-windows:
-    runs-on: windows-2019
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.23', '1.24']
+        go: ['1.24', '1.25']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
