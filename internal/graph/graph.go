@@ -158,6 +158,42 @@ type NodeInfo struct {
 	Objfile           string
 }
 
+// comparePrintableName compares NodeInfo lexicographically the same way as `i.PrintableName() < right.PrintableName()`, but much more performant.
+func (i *NodeInfo) comparePrintableName(right NodeInfo) (equal bool, less bool) {
+	if right == *i {
+		return true, false
+	}
+
+	if i.Address != 0 && right.Address != 0 {
+		l := fmt.Sprintf("%016x", i.Address)
+		r := fmt.Sprintf("%016x", right.Address)
+		if l != r {
+			return false, l < r
+		}
+	} else if i.Address != 0 || right.Address != 0 {
+		// fallback
+		return false, i.PrintableName() < right.PrintableName()
+	}
+
+	if i.Name != "" && right.Name != "" {
+		if i.Name != right.Name {
+			return false, i.Name < right.Name
+		}
+	} else if i.Name != "" || right.Name != "" {
+		// fallback
+		return false, i.PrintableName() < right.PrintableName()
+	}
+
+	if i.File != "" && right.File != "" {
+		if i.File != right.File {
+			return false, i.File < right.File
+		}
+	}
+
+	// fallback
+	return false, i.PrintableName() < right.PrintableName()
+}
+
 // PrintableName calls the Node's Formatter function with a single space separator.
 func (i *NodeInfo) PrintableName() string {
 	return strings.Join(i.NameComponents(), " ")
@@ -526,7 +562,22 @@ func joinLabels(s *profile.Sample) string {
 		return ""
 	}
 
-	var labels []string
+	// Hot path optimization: single key with single value
+	if len(s.Label) == 1 {
+		for key, vals := range s.Label {
+			if len(vals) == 1 {
+				return key + ":" + vals[0]
+			}
+			break
+		}
+	}
+
+	totalLen := 0
+	for _, vals := range s.Label {
+		totalLen += len(vals)
+	}
+
+	labels := make([]string, 0, totalLen)
 	for key, vals := range s.Label {
 		for _, v := range vals {
 			labels = append(labels, key+":"+v)
@@ -583,17 +634,16 @@ func (nm NodeMap) findOrInsertLine(l *profile.Location, li profile.Line, o *Opti
 		objfile = m.File
 	}
 
-	if ni := nodeInfo(l, li, objfile, o); ni != nil {
-		return nm.FindOrInsertNode(*ni, o.KeptNodes)
-	}
-	return nil
+	ni := nodeInfo(l, li, objfile, o)
+
+	return nm.FindOrInsertNode(ni, o.KeptNodes)
 }
 
-func nodeInfo(l *profile.Location, line profile.Line, objfile string, o *Options) *NodeInfo {
+func nodeInfo(l *profile.Location, line profile.Line, objfile string, o *Options) NodeInfo {
 	if line.Function == nil {
-		return &NodeInfo{Address: l.Address, Objfile: objfile}
+		return NodeInfo{Address: l.Address, Objfile: objfile}
 	}
-	ni := &NodeInfo{
+	ni := NodeInfo{
 		Address:  l.Address,
 		Lineno:   int(line.Line),
 		Columnno: int(line.Column),
@@ -785,7 +835,14 @@ func (g *Graph) TrimLowFrequencyTags(tagCutoff int64) {
 }
 
 func trimLowFreqTags(tags TagMap, minValue int64) TagMap {
-	kept := TagMap{}
+	keptCount := 0
+	for _, t := range tags {
+		if abs64(t.Flat) >= minValue || abs64(t.Cum) >= minValue {
+			keptCount++
+		}
+	}
+
+	kept := make(TagMap, keptCount)
 	for s, t := range tags {
 		if abs64(t.Flat) >= minValue || abs64(t.Cum) >= minValue {
 			kept[s] = t
@@ -951,8 +1008,9 @@ func (ns Nodes) Sort(o NodeOrder) error {
 				if iv, jv := abs64(l.Flat), abs64(r.Flat); iv != jv {
 					return iv > jv
 				}
-				if iv, jv := l.Info.PrintableName(), r.Info.PrintableName(); iv != jv {
-					return iv < jv
+				equal, leftLess := l.Info.comparePrintableName(r.Info)
+				if !equal {
+					return leftLess
 				}
 				if iv, jv := abs64(l.Cum), abs64(r.Cum); iv != jv {
 					return iv > jv
@@ -969,8 +1027,9 @@ func (ns Nodes) Sort(o NodeOrder) error {
 				if iv, jv := abs64(l.Cum), abs64(r.Cum); iv != jv {
 					return iv > jv
 				}
-				if iv, jv := l.Info.PrintableName(), r.Info.PrintableName(); iv != jv {
-					return iv < jv
+				equal, leftLess := l.Info.comparePrintableName(r.Info)
+				if !equal {
+					return leftLess
 				}
 				return compareNodes(l, r)
 			},
@@ -1012,8 +1071,9 @@ func (ns Nodes) Sort(o NodeOrder) error {
 			if iv, jv := abs64(score[l]), abs64(score[r]); iv != jv {
 				return iv > jv
 			}
-			if iv, jv := l.Info.PrintableName(), r.Info.PrintableName(); iv != jv {
-				return iv < jv
+			equal, leftLess := l.Info.comparePrintableName(r.Info)
+			if !equal {
+				return leftLess
 			}
 			if iv, jv := abs64(l.Flat), abs64(r.Flat); iv != jv {
 				return iv > jv
