@@ -51,5 +51,10 @@ if [ "$RUN_GOLANGCI_LINTER" != "false" ];  then
   (cd browsertests && golangci-lint run --timeout=3m ./...)
 fi
 
-gofmt -s -d .
-(cd browsertests && gofmt -s -d .)
+# A workaround for gofmt returning zero exit code even if there is diff.
+# See https://github.com/golang/go/issues/46289.
+gofmt_or_fail() {
+  test -z "$(gofmt -d -s . | tee /dev/stderr)"
+}
+gofmt_or_fail
+(cd browsertests && gofmt_or_fail)
