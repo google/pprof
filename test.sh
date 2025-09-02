@@ -32,8 +32,19 @@ fi
 PKG=$(go list -f '{{if .TestGoFiles}} {{.ImportPath}} {{end}}' ./...)
 
 go test $PKG
-(cd browsertests && go test ./...)
-(cd browsertests && go test -race ./...)
+
+retry() {
+  for i in {1..3}; do
+    [[ $i == 1 ]] || sleep 10  # Backing off after a failed attempt.
+    "${@}" && return 0
+  done
+  return 1
+}
+
+# Retry browser tests in case of error since they are flaky.
+# See https://github.com/google/pprof/issues/925.
+(cd browsertests && retry go test ./...)
+(cd browsertests && retry go test -race ./...)
 
 # Skip browsertests since it test-only code and gives no useful coverage info
 for d in $PKG; do
