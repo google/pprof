@@ -59,7 +59,7 @@ func Diff(b1, b2 []byte) (data []byte, err error) {
 		err = nil
 	}
 	if err != nil {
-		data = []byte(fmt.Sprintf("diff failed: %v\nb1: %q\nb2: %q\n", err, b1, b2))
+		data = fmt.Appendf(nil, "diff failed: %v\nb1: %q\nb2: %q\n", err, b1, b2)
 		err = nil
 	}
 	return

@@ -18,6 +18,7 @@ package measurement
 import (
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 	"time"
 
@@ -197,10 +198,8 @@ type UnitType struct {
 // nil if the unit with such alias is not found.
 func (ut UnitType) findByAlias(alias string) *Unit {
 	for _, u := range ut.Units {
-		for _, a := range u.aliases {
-			if alias == a {
-				return &u
-			}
+		if slices.Contains(u.aliases, alias) {
+			return &u
 		}
 	}
 	return nil

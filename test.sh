@@ -32,8 +32,19 @@ fi
 PKG=$(go list -f '{{if .TestGoFiles}} {{.ImportPath}} {{end}}' ./...)
 
 go test $PKG
-(cd browsertests && go test ./...)
-(cd browsertests && go test -race ./...)
+
+retry() {
+  for i in {1..3}; do
+    [[ $i == 1 ]] || sleep 10  # Backing off after a failed attempt.
+    "${@}" && return 0
+  done
+  return 1
+}
+
+# Retry browser tests in case of error since they are flaky.
+# See https://github.com/google/pprof/issues/925.
+(cd browsertests && retry go test ./...)
+(cd browsertests && retry go test -race ./...)
 
 # Skip browsertests since it test-only code and gives no useful coverage info
 for d in $PKG; do
@@ -51,5 +62,10 @@ if [ "$RUN_GOLANGCI_LINTER" != "false" ];  then
   (cd browsertests && golangci-lint run --timeout=3m ./...)
 fi
 
-gofmt -s -d .
-(cd browsertests && gofmt -s -d .)
+# A workaround for gofmt returning zero exit code even if there is diff.
+# See https://github.com/golang/go/issues/46289.
+gofmt_or_fail() {
+  test -z "$(gofmt -d -s . | tee /dev/stderr)"
+}
+gofmt_or_fail
+(cd browsertests && gofmt_or_fail)
