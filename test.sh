@@ -65,7 +65,7 @@ fi
 # A workaround for gofmt returning zero exit code even if there is diff.
 # See https://github.com/golang/go/issues/46289.
 gofmt_or_fail() {
-  test -z "$(gofmt -d -s . | tee /dev/stderr)"
+  test -z "$(gofmt -d -s . | tee >(cat >&2))"
 }
 gofmt_or_fail
 (cd browsertests && gofmt_or_fail)
