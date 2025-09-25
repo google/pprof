@@ -615,3 +615,21 @@ func TestProfileLabels(t *testing.T) {
 		t.Errorf("wanted to find a label containing %q, but found none in %v", want, labels)
 	}
 }
+
+func BenchmarkReportNewTrimmedGraph(b *testing.B) {
+	data := proftest.LargeProfile(b)
+	prof, err := profile.Parse(bytes.NewBuffer(data))
+	if err != nil {
+		b.Fatal(err)
+	}
+	rep := NewDefault(prof, Options{})
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		g, _, _, _ := rep.newTrimmedGraph()
+		if g == nil {
+			b.Fatal("empty graph")
+		}
+	}
+}
