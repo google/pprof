@@ -21,26 +21,30 @@ jobs:
         go: ['1.24', '1.25', 'tip']
         # Supported macOS versions can be found in
         # https://github.com/actions/virtual-environments#available-environments.
-        os: ['macos-13', 'macos-14']
+        os: ['macos-14', 'macos-15']
         # Supported Xcode versions can be found in:
-        # - https://github.com/actions/virtual-environments/blob/main/images/macos/macos-13-Readme.md#xcode
         # - https://github.com/actions/virtual-environments/blob/main/images/macos/macos-14-Readme.md#xcode
-        xcode-version: ['16.2', '16.1', '15.4', '15.3', '15.2', '15.1', '15.0.1', '14.3.1', '14.2', '14.1']
+        # - https://github.com/actions/virtual-environments/blob/main/images/macos/macos-15-Readme.md#xcode
+        xcode-version: ['26.0', '16.4', '16.3', '16.2', '16.1', '16.0', '15.4', '15.3', '15.2', '15.1', '15.0.1']
         exclude:
-          - os: 'macos-13'
-            xcode-version: '16.2'
-          - os: 'macos-13'
-            xcode-version: '16.1'
-          - os: 'macos-13'
+          - os: 'macos-14'
+            xcode-version: '26.0'
+          - os: 'macos-14'
+            xcode-version: '16.4'
+          - os: 'macos-14'
+            xcode-version: '16.3'
+          - os: 'macos-14'
+            xcode-version: '16.0'
+          - os: 'macos-15'
             xcode-version: '15.4'
-          - os: 'macos-13'
+          - os: 'macos-15'
             xcode-version: '15.3'
-          - os: 'macos-14'
-            xcode-version: '14.3.1'
-          - os: 'macos-14'
-            xcode-version: '14.2'
-          - os: 'macos-14'
-            xcode-version: '14.1'
+          - os: 'macos-15'
+            xcode-version: '15.2'
+          - os: 'macos-15'
+            xcode-version: '15.1'
+          - os: 'macos-15'
+            xcode-version: '15.0.1'
 
     steps:
       - name: Checkout the repo
