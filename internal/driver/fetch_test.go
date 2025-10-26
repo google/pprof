@@ -819,7 +819,10 @@ func selfSignedCert(t *testing.T, host string) (tls.Certificate, []byte, []byte)
 		NotBefore:    time.Now(),
 		NotAfter:     time.Now().Add(10 * time.Minute),
 		IsCA:         true,
-		DNSNames:     []string{host},
+	}
+
+	if host != "" {
+		tmpl.DNSNames = []string{host}
 	}
 
 	b, err = x509.CreateCertificate(rand.Reader, &tmpl, &tmpl, privKey.Public(), privKey)
@@ -830,7 +833,7 @@ func selfSignedCert(t *testing.T, host string) (tls.Certificate, []byte, []byte)
 
 	cert, err := tls.X509KeyPair(bc, bk)
 	if err != nil {
-		t.Fatalf("failed to create TLS key pair: %v", err)
+		t.Fatalf("failed to create TLS key pair for '%s': %v", host, err)
 	}
 	return cert, bc, bk
 }
