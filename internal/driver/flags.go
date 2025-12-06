@@ -44,9 +44,27 @@ func (*GoFlags) String(o, d, c string) *string {
 	return flag.String(o, d, c)
 }
 
+type StringList []string
+
+func newStringList(val []string, p *[]string) *StringList {
+	*p = val
+	return (*StringList)(p)
+}
+
+func (s *StringList) Set(value string) error {
+	*s = append(*s, value)
+	return nil
+}
+
+func (s *StringList) String() string {
+	return "unused"
+}
+
 // StringList implements the plugin.FlagSet interface.
-func (*GoFlags) StringList(o, d, c string) *[]*string {
-	return &[]*string{flag.String(o, d, c)}
+func (*GoFlags) StringList(name string, def []string, usage string) *[]string {
+	s := new([]string)
+	flag.Var(newStringList(def, s), name, usage)
+	return s
 }
 
 // ExtraUsage implements the plugin.FlagSet interface.

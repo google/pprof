@@ -36,7 +36,8 @@ type source struct {
 	Symbolize          string
 	HTTPHostport       string
 	HTTPDisableBrowser bool
-	Comment            string
+	Title              string
+	Comments           []string
 }
 
 // parseFlags parses the command lines through the specified flags package
@@ -45,13 +46,14 @@ type source struct {
 func parseFlags(o *plugin.Options) (*source, []string, error) {
 	flag := o.Flagset
 	// Comparisons.
-	flagDiffBase := flag.StringList("diff_base", "", "Source of base profile for comparison")
-	flagBase := flag.StringList("base", "", "Source of base profile for profile subtraction")
+	flagDiffBase := flag.StringList("diff_base", nil, "Source of base profile for comparison")
+	flagBase := flag.StringList("base", nil, "Source of base profile for profile subtraction")
 	// Source options.
 	flagSymbolize := flag.String("symbolize", "", "Options for profile symbolization")
 	flagBuildID := flag.String("buildid", "", "Override build id for first mapping")
 	flagTimeout := flag.Int("timeout", -1, "Timeout in seconds for fetching a profile")
-	flagAddComment := flag.String("add_comment", "", "Annotation string to record in the profile")
+	flagAddComment := flag.StringList("add_comment", nil, "Annotation string to record in the profile")
+	flagTitle := flag.String("title", "", "Title string to record in the profile")
 	// CPU profile options
 	flagSeconds := flag.Int("seconds", -1, "Length of time for dynamic profiles")
 	// Heap profile options
@@ -144,7 +146,8 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		Symbolize:          *flagSymbolize,
 		HTTPHostport:       *flagHTTP,
 		HTTPDisableBrowser: *flagNoBrowser,
-		Comment:            *flagAddComment,
+		Title:              *flagTitle,
+		Comments:           *flagAddComment,
 	}
 
 	if err := source.addBaseProfiles(*flagBase, *flagDiffBase); err != nil {
@@ -168,7 +171,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 // addBaseProfiles adds the list of base profiles or diff base profiles to
 // the source. This function will return an error if both base and diff base
 // profiles are specified.
-func (source *source) addBaseProfiles(flagBase, flagDiffBase []*string) error {
+func (source *source) addBaseProfiles(flagBase, flagDiffBase []string) error {
 	base, diffBase := dropEmpty(flagBase), dropEmpty(flagDiffBase)
 	if len(base) > 0 && len(diffBase) > 0 {
 		return errors.New("-base and -diff_base flags cannot both be specified")
@@ -183,11 +186,11 @@ func (source *source) addBaseProfiles(flagBase, flagDiffBase []*string) error {
 
 // dropEmpty list takes a slice of string pointers, and outputs a slice of
 // non-empty strings associated with the flag.
-func dropEmpty(list []*string) []string {
+func dropEmpty(list []string) []string {
 	var l []string
 	for _, s := range list {
-		if *s != "" {
-			l = append(l, *s)
+		if s != "" {
+			l = append(l, s)
 		}
 	}
 	return l
