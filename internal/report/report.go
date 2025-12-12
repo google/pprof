@@ -20,8 +20,10 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -82,6 +84,28 @@ type Options struct {
 	TrimPath   string         // Paths to trim from source file paths.
 
 	IntelSyntax bool // Whether or not to print assembly in Intel syntax.
+}
+
+func (o *Options) sourcePaths() []string {
+	sourcePaths := filepath.SplitList(o.SourcePath)
+	if len(sourcePaths) == 0 {
+		// Search for source files in the current directory by default.
+		cwd, err := os.Getwd()
+		if err != nil {
+			cwd = "."
+		}
+		sourcePaths = []string{cwd}
+	}
+
+	// Always search for source files in $GOROOT/src (aka standard packages)
+	// as a fallback.
+	sourcePaths = append(sourcePaths, filepath.Join(runtime.GOROOT(), "src"))
+
+	return sourcePaths
+}
+
+func (o *Options) trimPaths() []string {
+	return filepath.SplitList(o.TrimPath)
 }
 
 // Generate generates a report as directed by the Report.
@@ -240,9 +264,12 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 
 	// Clean up file paths using heuristics.
 	prof := rpt.prof
+	sourcePaths := o.sourcePaths()
+	trimPaths := o.trimPaths()
 	for _, f := range prof.Function {
-		f.Filename = trimPath(f.Filename, o.TrimPath, o.SourcePath)
+		f.Filename = sourceFilename(f.Filename, sourcePaths, trimPaths)
 	}
+
 	// Removes all numeric tags except for the bytes tag prior
 	// to making graph.
 	// TODO: modify to select first numeric tag if no bytes tag
@@ -291,6 +318,27 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	}
 
 	return graph.New(rpt.prof, gopt)
+}
+
+// sourceFilename returns filename path to the given path.
+func sourceFilename(path string, sourcePaths, trimPaths []string) string {
+	f := tryOpenSourceFile(path, sourcePaths, trimPaths)
+	if f == nil {
+		return path
+	}
+	filename := f.Name()
+	_ = f.Close()
+
+	// Trim current directory from filename for simpler readability
+	wd, err := os.Getwd()
+	if err == nil {
+		if !strings.HasSuffix(wd, string(filepath.Separator)) {
+			wd += string(filepath.Separator)
+		}
+		filename = strings.TrimPrefix(filename, wd)
+	}
+
+	return filename
 }
 
 // printProto writes the incoming proto via the writer w.

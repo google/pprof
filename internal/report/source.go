@@ -34,6 +34,7 @@ import (
 	"github.com/google/pprof/internal/measurement"
 	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/profile"
+	"golang.org/x/mod/module"
 )
 
 // printSource prints an annotated source listing, include all
@@ -63,15 +64,7 @@ func printSource(w io.Writer, rpt *Report) error {
 		return fmt.Errorf("no matches found for regexp: %s", o.Symbol)
 	}
 
-	sourcePath := o.SourcePath
-	if sourcePath == "" {
-		wd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("could not stat current dir: %v", err)
-		}
-		sourcePath = wd
-	}
-	reader := newSourceReader(sourcePath, o.TrimPath)
+	reader := newSourceReader(o)
 
 	fmt.Fprintf(w, "Total: %s\n", rpt.formatValue(rpt.total))
 	for _, fn := range functions {
@@ -100,11 +93,12 @@ func printSource(w io.Writer, rpt *Report) error {
 
 		// Print each file associated with this function.
 		for _, fl := range sourceFiles {
-			filename := fl.Info.File
-			fns := fileNodes[filename]
+			path := fl.Info.File
+			fns := fileNodes[path]
 			flatSum, cumSum := fns.Sum()
 
-			fnodes, _, err := getSourceFromFile(filename, reader, fns, 0, 0)
+			fnodes, _, err := getSourceFromFile(path, reader, fns, 0, 0)
+			filename := sourceFilename(path, reader.sourcePaths, reader.trimPaths)
 			fmt.Fprintf(w, "ROUTINE ======================== %s in %s\n", name, filename)
 			fmt.Fprintf(w, "%10s %10s (flat, cum) %s of Total\n",
 				rpt.formatValue(flatSum), rpt.formatValue(cumSum),
@@ -241,15 +235,7 @@ type WebListCall struct {
 // MakeWebList returns an annotated source listing of rpt.
 // rpt.prof should contain inlined call info.
 func MakeWebList(rpt *Report, obj plugin.ObjTool, maxFiles int) (WebListData, error) {
-	sourcePath := rpt.options.SourcePath
-	if sourcePath == "" {
-		wd, err := os.Getwd()
-		if err != nil {
-			return WebListData{}, fmt.Errorf("could not stat current dir: %v", err)
-		}
-		sourcePath = wd
-	}
-	sp := newSourcePrinter(rpt, obj, sourcePath)
+	sp := newSourcePrinter(rpt, obj)
 	if len(sp.interest) == 0 {
 		return WebListData{}, fmt.Errorf("no matches found for regexp: %s", rpt.options.Symbol)
 	}
@@ -257,9 +243,9 @@ func MakeWebList(rpt *Report, obj plugin.ObjTool, maxFiles int) (WebListData, er
 	return sp.generate(maxFiles, rpt), nil
 }
 
-func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourcePrinter {
+func newSourcePrinter(rpt *Report, obj plugin.ObjTool) *sourcePrinter {
 	sp := &sourcePrinter{
-		reader:      newSourceReader(sourcePath, rpt.options.TrimPath),
+		reader:      newSourceReader(rpt.options),
 		synth:       newSynthCode(rpt.prof.Mapping),
 		objectTool:  obj,
 		objects:     map[string]plugin.ObjFile{},
@@ -941,12 +927,11 @@ func getSourceFromFile(file string, reader *sourceReader, fns graph.Nodes, start
 
 // sourceReader provides access to source code with caching of file contents.
 type sourceReader struct {
-	// searchPath is a filepath.ListSeparator-separated list of directories where
-	// source files should be searched.
-	searchPath string
+	// sourcePaths is a list of directories where source files should be searched.
+	sourcePaths []string
 
-	// trimPath is a filepath.ListSeparator-separated list of paths to trim.
-	trimPath string
+	// trimPaths is a list of path prefixes to trim.
+	trimPaths []string
 
 	// files maps from path name to a list of lines.
 	// files[*][0] is unused since line numbering starts at 1.
@@ -957,12 +942,12 @@ type sourceReader struct {
 	errors map[string]error
 }
 
-func newSourceReader(searchPath, trimPath string) *sourceReader {
+func newSourceReader(options *Options) *sourceReader {
 	return &sourceReader{
-		searchPath,
-		trimPath,
-		make(map[string][]string),
-		make(map[string]error),
+		sourcePaths: options.sourcePaths(),
+		trimPaths:   options.trimPaths(),
+		files:       make(map[string][]string),
+		errors:      make(map[string]error),
 	}
 }
 
@@ -976,8 +961,9 @@ func (reader *sourceReader) line(path string, lineno int) (string, bool) {
 	if !ok {
 		// Read and cache file contents.
 		lines = []string{""} // Skip 0th line
-		f, err := openSourceFile(path, reader.searchPath, reader.trimPath)
-		if err != nil {
+		f := tryOpenSourceFile(path, reader.sourcePaths, reader.trimPaths)
+		if f == nil {
+			err := fmt.Errorf("could not find %s at %s", path, strings.Join(reader.sourcePaths, string(filepath.ListSeparator)))
 			reader.errors[path] = err
 		} else {
 			s := bufio.NewScanner(f)
@@ -985,7 +971,7 @@ func (reader *sourceReader) line(path string, lineno int) (string, bool) {
 				lines = append(lines, s.Text())
 			}
 			f.Close()
-			if s.Err() != nil {
+			if err := s.Err(); err != nil {
 				reader.errors[path] = err
 			}
 		}
@@ -997,62 +983,89 @@ func (reader *sourceReader) line(path string, lineno int) (string, bool) {
 	return lines[lineno], true
 }
 
-// openSourceFile opens a source file from a name encoded in a profile. File
-// names in a profile after can be relative paths, so search them in each of
-// the paths in searchPath and their parents. In case the profile contains
-// absolute paths, additional paths may be configured to trim from the source
-// paths in the profile. This effectively turns the path into a relative path
-// searching it using searchPath as usual).
-func openSourceFile(path, searchPath, trim string) (*os.File, error) {
-	path = trimPath(path, trim, searchPath)
-	// If file is still absolute, require file to exist.
+// tryOpenSourceFile opens a source file from the path encoded in a profile.
+func tryOpenSourceFile(path string, sourcePaths, trimPaths []string) *os.File {
+	path = trimPathPrefix(path, trimPaths)
+
 	if filepath.IsAbs(path) {
-		f, err := os.Open(path)
-		return f, err
+		if f := tryOpenFile(path); f != nil {
+			return f
+		}
 	}
-	// Scan each component of the path.
-	for _, dir := range filepath.SplitList(searchPath) {
-		// Search up for every parent of each possible path.
-		for {
+
+	vendoredPath := getVendoredPath(path)
+
+	for _, dir := range sourcePaths {
+		if !filepath.IsAbs(path) {
+			// Try opening the path at dir.
 			filename := filepath.Join(dir, path)
-			if f, err := os.Open(filename); err == nil {
-				return f, nil
+			if f := tryOpenFile(filename); f != nil {
+				return f
 			}
-			parent := filepath.Dir(dir)
-			if parent == dir {
+
+			// Try opening the path at dir/vendor.
+			filename = filepath.Join(dir, "vendor", vendoredPath)
+			if f := tryOpenFile(filename); f != nil {
+				return f
+			}
+
+		}
+
+		// The path may contain arbitrary prefix, which doesn't match the dir.
+		// Try reading the file at the dir with trimmed path prefixes.
+		pathWithoutVolume := strings.TrimPrefix(path, filepath.VolumeName(path))
+		pathTrimmed := strings.TrimPrefix(pathWithoutVolume, string(filepath.Separator))
+		for {
+			filename := filepath.Join(dir, pathTrimmed)
+			if f := tryOpenFile(filename); f != nil {
+				return f
+			}
+
+			n := strings.IndexByte(pathTrimmed, filepath.Separator)
+			if n < 0 {
 				break
 			}
-			dir = parent
+			pathTrimmed = pathTrimmed[n+1:]
 		}
 	}
 
-	return nil, fmt.Errorf("could not find file %s on path %s", path, searchPath)
-}
-
-// trimPath cleans up a path by removing prefixes that are commonly
-// found on profiles plus configured prefixes.
-// TODO(aalexand): Consider optimizing out the redundant work done in this
-// function if it proves to matter.
-func trimPath(path, trimPath, searchPath string) string {
-	// Keep path variable intact as it's used below to form the return value.
-	sPath, searchPath := filepath.ToSlash(path), filepath.ToSlash(searchPath)
-	if trimPath == "" {
-		// If the trim path is not configured, try to guess it heuristically:
-		// search for basename of each search path in the original path and, if
-		// found, strip everything up to and including the basename. So, for
-		// example, given original path "/some/remote/path/my-project/foo/bar.c"
-		// and search path "/my/local/path/my-project" the heuristic will return
-		// "/my/local/path/my-project/foo/bar.c".
-		for _, dir := range filepath.SplitList(searchPath) {
-			want := "/" + filepath.Base(dir) + "/"
-			if found := strings.Index(sPath, want); found != -1 {
-				return path[found+len(want):]
+	if !filepath.IsAbs(path) {
+		// Try opening the path at $GOMODCACHE
+		if modcacheDir := getGomodCacheDir(); modcacheDir != "" {
+			modcachePath := getGomodPath(path)
+			filename := filepath.Join(modcacheDir, modcachePath)
+			if f := tryOpenFile(filename); f != nil {
+				return f
 			}
 		}
 	}
-	// Trim configured trim prefixes.
-	trimPaths := append(filepath.SplitList(filepath.ToSlash(trimPath)), "/proc/self/cwd/./", "/proc/self/cwd/")
+
+	return nil
+}
+
+// getGomodCacheDir returns GOMODCACHE value.
+//
+// See https://go.dev/ref/mod#module-cache .
+func getGomodCacheDir() string {
+	if v, ok := os.LookupEnv("GOMODCACHE"); ok {
+		return v
+	}
+	if v, ok := os.LookupEnv("GOPATH"); ok {
+		return filepath.Join(v, "pkg", "mod")
+	}
+	if v, ok := os.LookupEnv("HOME"); ok {
+		return filepath.Join(v, "go", "pkg", "mod")
+	}
+	return ""
+}
+
+// trimPathPrefix cleans up a path by removing trimPaths prefixes.
+func trimPathPrefix(path string, trimPaths []string) string {
+	// Keep path variable intact as it's used below to form the return value.
+	sPath := filepath.ToSlash(path)
+
 	for _, trimPath := range trimPaths {
+		trimPath = filepath.ToSlash(trimPath)
 		if !strings.HasSuffix(trimPath, "/") {
 			trimPath += "/"
 		}
@@ -1061,6 +1074,67 @@ func trimPath(path, trimPath, searchPath string) string {
 		}
 	}
 	return path
+}
+
+// getGomodPath returns the path under GOMODCACHE for the given path.
+func getGomodPath(path string) string {
+	n := strings.IndexByte(path, '@')
+	if n < 0 {
+		return path
+	}
+	gomodPath := path[:n]
+
+	tail := ""
+	gomodVersion := path[n+1:]
+	if n := strings.IndexByte(gomodVersion, filepath.Separator); n >= 0 {
+		tail = gomodVersion[n:]
+		gomodVersion = gomodVersion[:n]
+	}
+
+	gomodPathEscaped, err := module.EscapePath(gomodPath)
+	if err != nil {
+		gomodPathEscaped = gomodPath
+	}
+	gomodVersionEscaped, err := module.EscapeVersion(gomodVersion)
+	if err != nil {
+		gomodVersionEscaped = gomodVersion
+	}
+	return gomodPathEscaped + "@" + gomodVersionEscaped + tail
+}
+
+// getVendoredPath strips @v... from the repo@v.../package path.
+func getVendoredPath(path string) string {
+	n := strings.IndexByte(path, '@')
+	if n < 0 {
+		return path
+	}
+	prefix := path[:n]
+	suffix := path[n+1:]
+	n = strings.IndexByte(suffix, filepath.Separator)
+	if n < 0 {
+		return prefix
+	}
+	return prefix + suffix[n:]
+}
+
+func tryOpenFile(filename string) *os.File {
+	if filename == "" {
+		return nil
+	}
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil
+	}
+	stat, err := f.Stat()
+	if err != nil {
+		_ = f.Close()
+		return nil
+	}
+	if stat.IsDir() {
+		_ = f.Close()
+		return nil
+	}
+	return f
 }
 
 func indentation(line string) int {
