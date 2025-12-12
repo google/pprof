@@ -146,7 +146,7 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 		return
 	}
 
-	// Variuos ELF program headers for unit tests.
+	// Various ELF program headers for unit tests.
 	tinyHeaders := []elf.ProgHeader{
 		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0xc80, Memsz: 0xc80, Align: 0x200000},
 		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xc80, Vaddr: 0x200c80, Paddr: 0x200c80, Filesz: 0x1f0, Memsz: 0x1f0, Align: 0x200000},

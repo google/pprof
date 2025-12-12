@@ -617,7 +617,7 @@ func TestHTTPSInsecure(t *testing.T) {
 	defer os.RemoveAll(tempdir)
 
 	// pprof writes to $HOME/pprof by default which is not necessarily
-	// writeable (e.g. on a Debian buildd) so set $HOME to something we
+	// writeable (e.g. on a Debian build) so set $HOME to something we
 	// know we can write to for the duration of the test.
 	os.Setenv(homeEnv(), tempdir)
 	defer os.Setenv(homeEnv(), saveHome)
@@ -690,7 +690,7 @@ func TestHTTPSWithServerCertFetch(t *testing.T) {
 	defer os.RemoveAll(tempdir)
 
 	// pprof writes to $HOME/pprof by default which is not necessarily
-	// writeable (e.g. on a Debian buildd) so set $HOME to something we
+	// writeable (e.g. on a Debian build) so set $HOME to something we
 	// know we can write to for the duration of the test.
 	os.Setenv(homeEnv(), tempdir)
 	defer os.Setenv(homeEnv(), saveHome)

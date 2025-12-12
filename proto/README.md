@@ -5,7 +5,7 @@ This is a description of the profile.proto format.
 Profile.proto is a data representation for profile data. It is independent of
 the type of data being collected and the sampling process used to collect that
 data. On disk, it is represented as a gzip-compressed protocol buffer, described
-at src/proto/profile.proto
+in [profile.proto](profile.proto).
 
 A profile in this context refers to a collection of samples, each one
 representing measurements performed at a certain point in the life of a job. A

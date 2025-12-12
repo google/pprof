@@ -61,6 +61,7 @@ func TestParse(t *testing.T) {
 		{"text,files,flat", "heap"},
 		{"text,files,flat,focus=[12]00,taghide=[X3]00", "heap"},
 		{"text,inuse_objects,flat", "heap"},
+		{"text,inuse_objects,flat,all_frames", "heap"},
 		{"text,lines,cum,hide=line[X3]0", "cpu"},
 		{"text,lines,cum,show=[12]00", "cpu"},
 		{"text,lines,cum,hide=line[X3]0,focus=[12]00", "cpu"},
@@ -97,6 +98,7 @@ func TestParse(t *testing.T) {
 		{"weblist=line(1000|3000)$,addresses,flat", "cpu"},
 		{"tags,tagfocus=400kb:", "heap_request"},
 		{"tags,tagfocus=+400kb:", "heap_request"},
+		{"tags,relative_percentages,tagfocus=400kb:", "heap_request"},
 		{"dot", "long_name_funcs"},
 		{"text", "long_name_funcs"},
 	}
@@ -269,6 +271,7 @@ func solutionFilename(source string, f *testFlags) string {
 	name = addString(name, f, []string{"seconds"})
 	name = addString(name, f, []string{"call_tree"})
 	name = addString(name, f, []string{"text", "tree", "callgrind", "dot", "svg", "tags", "dot", "traces", "disasm", "peek", "weblist", "topproto", "comments"})
+	name = addString(name, f, []string{"all_frames"})
 	if f.strings["focus"] != "" || f.strings["tagfocus"] != "" {
 		name = append(name, "focus")
 	}
@@ -1049,7 +1052,7 @@ var autoCompleteTests = []struct {
 	{"t", "t"},                            // many matches
 	{"top abc", "top abc"},                // no function name match
 	{"top mangledM", "top mangledMALLOC"}, // single function name match
-	{"top cmd cmd mangledM", "top cmd cmd mangledMALLOC"},
+	{"top cmd mangledM", "top cmd mangledMALLOC"},
 	{"top mangled", "top mangled"},                      // many function name matches
 	{"cmd mangledM", "cmd mangledM"},                    // invalid command
 	{"top mangledM cmd", "top mangledM cmd"},            // cursor misplaced

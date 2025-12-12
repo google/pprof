@@ -47,19 +47,12 @@ func maybeSkipBrowserTest(t *testing.T) {
 	t.Skip("chrome not available")
 }
 
-// browserDeadline is the deadline to use for browser tests. This is long to
-// reduce flakiness in CI workflows.
-const browserDeadline = time.Second * 60
-
 func TestTopTable(t *testing.T) {
 	maybeSkipBrowserTest(t)
 
 	prof := makeFakeProfile()
 	server := makeTestServer(t, prof)
-	ctx, cancel := context.WithTimeout(context.Background(), browserDeadline)
-	defer cancel()
-	ctx, cancel = chromedp.NewContext(ctx)
-	defer cancel()
+	ctx := newContext(context.Background(), t)
 
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(server.URL+"/top"),
@@ -83,14 +76,11 @@ func TestFlameGraph(t *testing.T) {
 
 	prof := makeFakeProfile()
 	server := makeTestServer(t, prof)
-	ctx, cancel := context.WithTimeout(context.Background(), browserDeadline)
-	defer cancel()
-	ctx, cancel = chromedp.NewContext(ctx)
-	defer cancel()
+	ctx := newContext(context.Background(), t)
 
 	var ignored []byte // Some chromedp.Evaluate() versions wants non-nil result argument
 	err := chromedp.Run(ctx,
-		chromedp.Navigate(server.URL+"/flamegraph"),
+		chromedp.Navigate(server.URL),
 		chromedp.Evaluate(jsTestFixture, &ignored),
 		eval(t, jsCheckFlame),
 	)
@@ -107,10 +97,7 @@ func TestSource(t *testing.T) {
 
 	prof := makeFakeProfile()
 	server := makeTestServer(t, prof)
-	ctx, cancel := context.WithTimeout(context.Background(), browserDeadline)
-	defer cancel()
-	ctx, cancel = chromedp.NewContext(ctx)
-	defer cancel()
+	ctx := newContext(context.Background(), t)
 
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(server.URL+"/source?f=F3"),
@@ -122,6 +109,28 @@ func TestSource(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func newContext(ctx context.Context, t *testing.T) context.Context {
+	opts := append(chromedp.DefaultExecAllocatorOptions[:],
+		// Ubuntu 23+ enables AppArmor in a way that conflicts with Chrome's usage
+		// of unprivileged user namespaces as part of the sandboxing. Since our
+		// test does not visit any external websites, we don't really need the
+		// sandbox, so disable it.
+		chromedp.NoSandbox,
+	)
+
+	// browserDeadline is the deadline to use for browser tests. This is long to
+	// reduce flakiness in CI workflows.
+	const browserDeadline = time.Second * 90
+
+	ctx, cancel := chromedp.NewExecAllocator(ctx, opts...)
+	t.Cleanup(cancel)
+	ctx, cancel = context.WithTimeout(ctx, browserDeadline)
+	t.Cleanup(cancel)
+	ctx, cancel = chromedp.NewContext(ctx)
+	t.Cleanup(cancel)
+	return ctx
 }
 
 // matchRegexp is a chromedp.Action that fetches the text of the first
