@@ -169,13 +169,15 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0xe10, Vaddr: 0x600e10, Paddr: 0x600e10, Filesz: 0x230, Memsz: 0x238, Align: 0x200000},
 	}
 	mediumHeaders := []elf.ProgHeader{
-		{Type: elf.PT_PHDR, Flags: elf.PF_R, Off: 0x40, Vaddr: 0x40, Paddr: 0x40, Filesz: 0x268, Memsz: 0x268, Align: 8},
-		{Type: elf.PT_INTERP, Flags: elf.PF_R, Off: 0x2a8, Vaddr: 0x2a8, Paddr: 0x2a8, Filesz: 0x28, Memsz: 0x28, Align: 1},
-		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0x51800, Memsz: 0x51800, Align: 0x200000},
-		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x51800, Vaddr: 0x251800, Paddr: 0x251800, Filesz: 0x24a8, Memsz: 0x24e8, Align: 0x200000},
-		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x53d00, Vaddr: 0x453d00, Paddr: 0x453d00, Filesz: 0x13a58, Memsz: 0x91a198, Align: 0x200000},
-		{Type: elf.PT_TLS, Flags: elf.PF_R, Off: 0x51800, Vaddr: 0x51800, Paddr: 0x51800, Filesz: 0x0, Memsz: 0x38, Align: 0x8},
-		{Type: elf.PT_DYNAMIC, Flags: elf.PF_R | elf.PF_W, Off: 0x51d00, Vaddr: 0x251d00, Paddr: 0x251d00, Filesz: 0x1ef0, Memsz: 0x1ef0, Align: 8},
+		{Type: elf.PT_PHDR, Flags: elf.PF_R, Off: 0x40, Vaddr: 0x40, Paddr: 0x40, Filesz: 0x2d8, Memsz: 0x2d8, Align: 8},
+		{Type: elf.PT_INTERP, Flags: elf.PF_R, Off: 0x318, Vaddr: 0x318, Paddr: 0x318, Filesz: 0x28, Memsz: 0x28, Align: 1},
+		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0x354ca0, Memsz: 0x354ca0, Align: 0x200000},
+		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x400000, Vaddr: 600000, Paddr: 600000, Filesz: 0x0083b8, Memsz: 0x009000, Align: 0x200000},
+		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x600000, Vaddr: 0xa00000, Paddr: 0xa00000, Filesz: 0x007030, Memsz: 0x9cf090, Align: 0x200000},
+		{Type: elf.PT_LOAD, Flags: elf.PF_R, Off: 0x7cf090, Vaddr: 0x15cf090, Paddr: 0x15cf090, Filesz: 0x028460, Memsz: 0x028460, Align: 0x200000},
+		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x7f7500, Vaddr: 0x17f7500, Paddr: 0x17f7500, Filesz: 0x001f80, Memsz: 0x5bdd9a0, Align: 0x200000},
+		{Type: elf.PT_TLS, Flags: elf.PF_R, Off: 0x407740, Vaddr: 0x607740, Paddr: 0x607740, Filesz: 0x98, Memsz: 0x350, Align: 0x40},
+		{Type: elf.PT_DYNAMIC, Flags: elf.PF_R | elf.PF_W, Off: 0x407920, Vaddr: 0x607920, Paddr: 0x607920, Filesz: 0x230, Memsz: 0x230, Align: 8},
 	}
 	largeHeaders := []elf.ProgHeader{
 		{Type: elf.PT_PHDR, Flags: elf.PF_R, Off: 0x40, Vaddr: 0x40, Paddr: 0x40, Filesz: 0x268, Memsz: 0x268, Align: 8},
@@ -185,6 +187,19 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x2ffbe440, Vaddr: 0x303be440, Paddr: 0x303be440, Filesz: 0x4637c0, Memsz: 0xc91610, Align: 0x200000},
 		{Type: elf.PT_TLS, Flags: elf.PF_R, Off: 0x2ec5d2c0, Vaddr: 0x2ee5d2c0, Paddr: 0x2ee5d2c0, Filesz: 0x120, Memsz: 0x103f8, Align: 0x40},
 		{Type: elf.PT_DYNAMIC, Flags: elf.PF_R | elf.PF_W, Off: 0x2ffbc9e0, Vaddr: 0x301bc9e0, Paddr: 0x301bc9e0, Filesz: 0x1f0, Memsz: 0x1f0, Align: 8},
+	}
+	largeHeadersWithRoSegment := []elf.ProgHeader{
+		{Type: elf.PT_PHDR, Flags: elf.PF_R, Off: 0x40, Vaddr: 0x40, Paddr: 0x40, Filesz: 0x348, Memsz: 0x348, Align: 8},
+		{Type: elf.PT_INTERP, Flags: elf.PF_R, Off: 0x388, Vaddr: 0x388, Paddr: 0x388, Filesz: 0x28, Memsz: 0x28, Align: 1},
+		{Type: elf.PT_LOAD, Flags: elf.PF_R, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0x81c5628, Memsz: 0x81c5628, Align: 0x200000},
+		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x81c6000, Vaddr: 0x83c6000, Paddr: 0x83c6000, Filesz: 0x1af7fb0, Memsz: 0x1af7fb0, Align: 0x200000},
+		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0x9cbdfc0, Vaddr: 0xa0bdfc0, Paddr: 0xa0bdfc0, Filesz: 0x16e68fc0, Memsz: 0x16e68fc0, Align: 0x200000},
+		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x20c00000, Vaddr: 0x21200000, Paddr: 0x21200000, Filesz: 0x1c602f8, Memsz: 0x1c61000, Align: 0x200000},
+		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x22a00000, Vaddr: 0x23200000, Paddr: 0x23200000, Filesz: 0x120ed30, Memsz: 0x1d2c2e0, Align: 0x200000},
+		{Type: elf.PT_LOAD, Flags: elf.PF_R, Off: 0x23d2c2e0, Vaddr: 0x2512c2e0, Paddr: 0x2512c2e0, Filesz: 0x2cbc4dc, Memsz: 0x2cbc4dc, Align: 0x200000},
+		{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x269e87c0, Vaddr: 0x27fe87c0, Paddr: 0x27fe87c0, Filesz: 0x6f43c8, Memsz: 0x736e00, Align: 0x200000},
+		{Type: elf.PT_TLS, Flags: elf.PF_R, Off: 0x22840200, Vaddr: 0x22e40200, Paddr: 0x22e40200, Filesz: 0x298, Memsz: 0x5428, Align: 0x40},
+		{Type: elf.PT_DYNAMIC, Flags: elf.PF_R | elf.PF_W, Off: 0x2285daa0, Vaddr: 0x22e5daa0, Paddr: 0x22e5daa0, Filesz: 0x250, Memsz: 0x250, Align: 8},
 	}
 	ffmpegHeaders := []elf.ProgHeader{
 		{Type: elf.PT_PHDR, Flags: elf.PF_R, Off: 0x40, Vaddr: 0x200040, Paddr: 0x200040, Filesz: 0x1f8, Memsz: 0x1f8, Align: 8},
@@ -323,8 +338,8 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 			desc:        "medium file large mapping that includes all address space matches executable segment, b/179920361",
 			phdrs:       mediumHeaders,
 			pgoff:       0,
-			memsz:       0xd6e000,
-			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0x51800, Memsz: 0x51800, Align: 0x200000}},
+			memsz:       0x73d5000,
+			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0, Vaddr: 0, Paddr: 0, Filesz: 0x354ca0, Memsz: 0x354ca0, Align: 0x200000}},
 		},
 		{
 			desc:        "large file executable mapping matches executable segment",
@@ -346,6 +361,16 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 			pgoff:       0x2ffbe000,
 			memsz:       0xb11000,
 			wantHeaders: []*elf.ProgHeader{{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x2ffbe440, Vaddr: 0x303be440, Paddr: 0x303be440, Filesz: 0x4637c0, Memsz: 0xc91610, Align: 0x200000}},
+		},
+		{
+			desc:  "large file with RO segment executable mapping includes executable segment",
+			phdrs: largeHeadersWithRoSegment,
+			pgoff: 0x9c00000,
+			memsz: 0x16f27000,
+			wantHeaders: []*elf.ProgHeader{
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_W, Off: 0x81c6000, Vaddr: 0x83c6000, Paddr: 0x83c6000, Filesz: 0x1af7fb0, Memsz: 0x1af7fb0, Align: 0x200000},
+				{Type: elf.PT_LOAD, Flags: elf.PF_R | elf.PF_X, Off: 0x9cbdfc0, Vaddr: 0xa0bdfc0, Paddr: 0xa0bdfc0, Filesz: 0x16e68fc0, Memsz: 0x16e68fc0, Align: 0x200000},
+			},
 		},
 		{
 			desc:        "sentry headers, mapping for last page of executable segment matches executable segment",
