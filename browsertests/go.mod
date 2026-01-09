@@ -1,6 +1,8 @@
 module github.com/google/pprof/browsertests
 
-go 1.24.9
+go 1.24.0
+
+toolchain go1.24.9
 
 // Use the version of pprof in this directory tree.
 replace github.com/google/pprof => ../
