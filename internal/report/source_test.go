@@ -120,7 +120,7 @@ func testSourceMapping(t *testing.T, zeroAddress bool) {
 	}
 }
 
-func TestOpenSourceFile(t *testing.T) {
+func TestSourceFilename(t *testing.T) {
 	tempdir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
@@ -128,57 +128,144 @@ func TestOpenSourceFile(t *testing.T) {
 	const lsep = string(filepath.ListSeparator)
 	for _, tc := range []struct {
 		desc       string
-		searchPath string
+		sourcePath string
 		trimPath   string
 		fs         []string
 		path       string
 		wantPath   string // If empty, error is wanted.
 	}{
 		{
-			desc:     "exact absolute path is found",
+			desc:     "exact absolute path",
 			fs:       []string{"foo/bar.cc"},
 			path:     "$dir/foo/bar.cc",
 			wantPath: "$dir/foo/bar.cc",
 		},
 		{
-			desc:       "exact relative path is found",
-			searchPath: "$dir",
+			desc:     "exact absolute path not found",
+			fs:       []string{"abc.cc"},
+			path:     "/aaa/foo/bar.cc",
+			wantPath: "/aaa/foo/bar.cc",
+		},
+		{
+			desc:       "exact relative path",
+			sourcePath: "$dir",
 			fs:         []string{"foo/bar.cc"},
 			path:       "foo/bar.cc",
 			wantPath:   "$dir/foo/bar.cc",
+		},
+		{
+			desc:       "exact relative path not found",
+			sourcePath: "$dir",
+			fs:         []string{"baz.cc"},
+			path:       "foo/bar.cc",
+			wantPath:   "foo/bar.cc",
+		},
+		{
+			desc:       "exact relative path in vendor",
+			sourcePath: "$dir",
+			fs:         []string{"vendor/foo/bar.cc"},
+			path:       "foo/bar.cc",
+			wantPath:   "$dir/vendor/foo/bar.cc",
+		},
+		{
+			desc:       "exact relative path in vendor not found",
+			sourcePath: "$dir",
+			fs:         []string{"vendor/bar.cc"},
+			path:       "foo/bar.cc",
+			wantPath:   "foo/bar.cc",
+		},
+		{
+			desc:       "exact relative path with module version in vendor",
+			sourcePath: "$dir",
+			fs:         []string{"vendor/foo/bar.cc"},
+			path:       "foo@v1.2.3/bar.cc",
+			wantPath:   "$dir/vendor/foo/bar.cc",
+		},
+		{
+			desc:       "exact relative path with module version in vendor not found",
+			sourcePath: "$dir",
+			fs:         []string{"vendor/bar.cc"},
+			path:       "foo@v1.2.3/bar.cc",
+			wantPath:   "foo@v1.2.3/bar.cc",
 		},
 		{
 			desc:       "multiple search path",
-			searchPath: "some/path" + lsep + "$dir",
+			sourcePath: "some/path" + lsep + "$dir",
 			fs:         []string{"foo/bar.cc"},
 			path:       "foo/bar.cc",
 			wantPath:   "$dir/foo/bar.cc",
 		},
 		{
-			desc:       "relative path is found in parent dir",
-			searchPath: "$dir/foo/bar",
-			fs:         []string{"bar.cc", "foo/bar/baz.cc"},
-			path:       "bar.cc",
-			wantPath:   "$dir/bar.cc",
-		},
-		{
 			desc:       "trims configured prefix",
-			searchPath: "$dir",
+			sourcePath: "$dir",
 			trimPath:   "some-path" + lsep + "/some/remote/path",
 			fs:         []string{"my-project/foo/bar.cc"},
 			path:       "/some/remote/path/my-project/foo/bar.cc",
 			wantPath:   "$dir/my-project/foo/bar.cc",
 		},
 		{
-			desc:       "trims heuristically",
-			searchPath: "$dir/my-project",
+			desc:       "trims configured prefix not found",
+			sourcePath: "$dir",
+			trimPath:   "/some/remote/path",
+			fs:         []string{"my-project/foo/baz.cc"},
+			path:       "/some/remote/path/my-project/foo/bar.cc",
+			wantPath:   "/some/remote/path/my-project/foo/bar.cc",
+		},
+		{
+			desc:       "heuristic trims different prefixes from relative path",
+			sourcePath: "$dir",
+			fs:         []string{"bar.cc"},
+			path:       "github.com/x/foo/bar.cc",
+			wantPath:   "$dir/bar.cc",
+		},
+		{
+			desc:       "heuristic trims different prefixes from relative path not found",
+			sourcePath: "$dir",
+			fs:         []string{"baz.cc"},
+			path:       "github.com/x/foo/bar.cc",
+			wantPath:   "github.com/x/foo/bar.cc",
+		},
+		{
+			desc:       "heuristic trims different prefixes from absolute path",
+			sourcePath: "$dir",
+			fs:         []string{"foo/bar.cc"},
+			path:       "/x/foo/bar.cc",
+			wantPath:   "$dir/foo/bar.cc",
+		},
+		{
+			desc:       "heuristic trims different prefixes from absolute path not found",
+			sourcePath: "$dir",
+			fs:         []string{"foo/baz.cc"},
+			path:       "/x/foo/bar.cc",
+			wantPath:   "/x/foo/bar.cc",
+		},
+		{
+			desc:       "heuristic trims same directory",
+			sourcePath: "$dir/my-project",
 			fs:         []string{"my-project/foo/bar.cc"},
 			path:       "/some/remote/path/my-project/foo/bar.cc",
 			wantPath:   "$dir/my-project/foo/bar.cc",
 		},
 		{
-			desc: "error when not found",
-			path: "foo.cc",
+			desc:       "heuristic trims same directory not found",
+			sourcePath: "$dir/my-project",
+			fs:         []string{"my-project/foo/baz.cc"},
+			path:       "/some/remote/path/my-project/foo/bar.cc",
+			wantPath:   "/some/remote/path/my-project/foo/bar.cc",
+		},
+		{
+			desc:       "heuristic trims different directory",
+			sourcePath: "$dir/my-local-project",
+			fs:         []string{"my-local-project/foo/bar.cc"},
+			path:       "/some/remote/path/my-project/foo/bar.cc",
+			wantPath:   "$dir/my-local-project/foo/bar.cc",
+		},
+		{
+			desc:       "heuristic trims different directory not found",
+			sourcePath: "$dir/my-local-project",
+			fs:         []string{"my-local-project/foo/baz.cc"},
+			path:       "/some/remote/path/my-project/foo/bar.cc",
+			wantPath:   "/some/remote/path/my-project/foo/bar.cc",
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -197,19 +284,16 @@ func TestOpenSourceFile(t *testing.T) {
 					t.Fatalf("failed to create file %q: %v", path, err)
 				}
 			}
-			tc.searchPath = filepath.FromSlash(strings.Replace(tc.searchPath, "$dir", tempdir, -1))
+			tc.sourcePath = filepath.FromSlash(strings.Replace(tc.sourcePath, "$dir", tempdir, -1))
 			tc.path = filepath.FromSlash(strings.Replace(tc.path, "$dir", tempdir, 1))
 			tc.wantPath = filepath.FromSlash(strings.Replace(tc.wantPath, "$dir", tempdir, 1))
-			if file, err := openSourceFile(tc.path, tc.searchPath, tc.trimPath); err != nil && tc.wantPath != "" {
-				t.Errorf("openSourceFile(%q, %q, %q) = err %v, want path %q", tc.path, tc.searchPath, tc.trimPath, err, tc.wantPath)
-			} else if err == nil {
-				defer file.Close()
-				gotPath := file.Name()
-				if tc.wantPath == "" {
-					t.Errorf("openSourceFile(%q, %q, %q) = %q, want error", tc.path, tc.searchPath, tc.trimPath, gotPath)
-				} else if gotPath != tc.wantPath {
-					t.Errorf("openSourceFile(%q, %q, %q) = %q, want path %q", tc.path, tc.searchPath, tc.trimPath, gotPath, tc.wantPath)
-				}
+
+			sourcePaths := filepath.SplitList(tc.sourcePath)
+			trimPaths := filepath.SplitList(tc.trimPath)
+
+			filename := sourceFilename(tc.path, sourcePaths, trimPaths)
+			if filename != tc.wantPath {
+				t.Errorf("sourceFilename(%q, %q, %q) = %q, want %q", tc.path, tc.sourcePath, tc.trimPath, filename, tc.wantPath)
 			}
 		})
 	}

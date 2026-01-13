@@ -127,7 +127,7 @@ func (s *StackSet) makeInitialStacks(rpt *Report) {
 			return i
 		}
 
-		fileName := trimPath(fn.Filename, rpt.options.TrimPath, rpt.options.SourcePath)
+		fileName := sourceFilename(fn.Filename, rpt.options.sourcePaths(), rpt.options.trimPaths())
 		x := StackSource{
 			FileName: fileName,
 			Inlined:  inlined,
