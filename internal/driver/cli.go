@@ -36,7 +36,7 @@ type source struct {
 	Symbolize          string
 	HTTPHostport       string
 	HTTPDisableBrowser bool
-	Comment            string
+	Comment            []string
 	AllFrames          bool
 }
 
@@ -52,7 +52,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 	flagSymbolize := flag.String("symbolize", "", "Options for profile symbolization")
 	flagBuildID := flag.String("buildid", "", "Override build id for first mapping")
 	flagTimeout := flag.Int("timeout", -1, "Timeout in seconds for fetching a profile")
-	flagAddComment := flag.String("add_comment", "", "Free-form annotation to add to the profile")
+	flagAddComment := flag.StringList("add_comment", "", "Free-form annotation to add to the profile")
 	flagAllFrames := flag.Bool("all_frames", false, "Ignore drop_frames and keep_frames regexps")
 	// CPU profile options
 	flagSeconds := flag.Int("seconds", -1, "Length of time for dynamic profiles")
@@ -146,7 +146,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		Symbolize:          *flagSymbolize,
 		HTTPHostport:       *flagHTTP,
 		HTTPDisableBrowser: *flagNoBrowser,
-		Comment:            *flagAddComment,
+		Comment:            dropEmpty(*flagAddComment),
 		AllFrames:          *flagAllFrames,
 	}
 

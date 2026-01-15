@@ -89,8 +89,8 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 	p.RemoveUninteresting()
 	unsourceMappings(p)
 
-	if s.Comment != "" {
-		p.Comments = append(p.Comments, s.Comment)
+	if len(s.Comment) > 0 {
+		p.Comments = append(p.Comments, s.Comment...)
 	}
 
 	// Save a copy of the merged profile if there is at least one remote source.

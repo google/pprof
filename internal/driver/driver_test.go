@@ -80,6 +80,7 @@ func TestParse(t *testing.T) {
 		{"dot,addresses,flat,ignore=[X3]002,focus=[X1]000", "contention"},
 		{"dot,files,cum", "contention"},
 		{"comments,add_comment=some-comment", "cpu"},
+		{"comments,add_comment=comment1,add_comment=comment2", "cpu"},
 		{"comments", "heap"},
 		{"tags", "cpu"},
 		{"tags,tagignore=tag[13],tagfocus=key[12]", "cpu"},
@@ -251,6 +252,11 @@ func addFlags(f *testFlags, flags []string) {
 				f.ints[fields[0]] = i
 			} else {
 				f.strings[fields[0]] = fields[1]
+				// Add support for string lists
+				if f.stringLists == nil {
+					f.stringLists = make(map[string][]string)
+				}
+				f.stringLists[fields[0]] = append(f.stringLists[fields[0]], fields[1])
 			}
 		}
 	}
@@ -284,6 +290,9 @@ func solutionFilename(source string, f *testFlags) string {
 	name = addString(name, f, []string{"hide", "show"})
 	if f.strings["unit"] != "minimum" {
 		name = addString(name, f, []string{"unit"})
+	}
+	if len(f.stringLists["add_comment"]) > 1 {
+		name = append(name, "multiple_comments")
 	}
 	return strings.Join(name, ".")
 }
@@ -341,13 +350,15 @@ func (f testFlags) String(s, d, c string) *string {
 
 func (f testFlags) StringList(s, d, c string) *[]*string {
 	if t, ok := f.stringLists[s]; ok {
+		fmt.Printf("DEBUG: StringList found %s: %v\n", s, t)
 		// convert slice of strings to slice of string pointers before returning.
 		tp := make([]*string, len(t))
-		for i, v := range t {
-			tp[i] = &v
+		for i := range t {
+			tp[i] = &t[i]
 		}
 		return &tp
 	}
+	fmt.Printf("DEBUG: StringList NOT found %s\n", s)
 	return &[]*string{}
 }
 
