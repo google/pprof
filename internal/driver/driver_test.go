@@ -350,15 +350,13 @@ func (f testFlags) String(s, d, c string) *string {
 
 func (f testFlags) StringList(s, d, c string) *[]*string {
 	if t, ok := f.stringLists[s]; ok {
-		fmt.Printf("DEBUG: StringList found %s: %v\n", s, t)
 		// convert slice of strings to slice of string pointers before returning.
 		tp := make([]*string, len(t))
-		for i := range t {
-			tp[i] = &t[i]
+		for i, v := range t {
+			tp[i] = &v
 		}
 		return &tp
 	}
-	fmt.Printf("DEBUG: StringList NOT found %s\n", s)
 	return &[]*string{}
 }
 

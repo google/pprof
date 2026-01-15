@@ -36,7 +36,7 @@ type source struct {
 	Symbolize          string
 	HTTPHostport       string
 	HTTPDisableBrowser bool
-	Comment            []string
+	Comments           []string
 	AllFrames          bool
 }
 
@@ -146,7 +146,7 @@ func parseFlags(o *plugin.Options) (*source, []string, error) {
 		Symbolize:          *flagSymbolize,
 		HTTPHostport:       *flagHTTP,
 		HTTPDisableBrowser: *flagNoBrowser,
-		Comment:            dropEmpty(*flagAddComment),
+		Comments:           dropEmpty(*flagAddComment),
 		AllFrames:          *flagAllFrames,
 	}
 
