@@ -197,7 +197,7 @@ func TestOpenSourceFile(t *testing.T) {
 					t.Fatalf("failed to create file %q: %v", path, err)
 				}
 			}
-			tc.searchPath = filepath.FromSlash(strings.Replace(tc.searchPath, "$dir", tempdir, -1))
+			tc.searchPath = filepath.FromSlash(strings.ReplaceAll(tc.searchPath, "$dir", tempdir))
 			tc.path = filepath.FromSlash(strings.Replace(tc.path, "$dir", tempdir, 1))
 			tc.wantPath = filepath.FromSlash(strings.Replace(tc.wantPath, "$dir", tempdir, 1))
 			if file, err := openSourceFile(tc.path, tc.searchPath, tc.trimPath); err != nil && tc.wantPath != "" {

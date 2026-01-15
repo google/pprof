@@ -195,11 +195,11 @@ func TestParse(t *testing.T) {
 			if runtime.GOOS == "windows" {
 				if flags[0] == "dot" {
 					// The .dot test has the paths inside strings, so \ must be escaped.
-					sbuf = bytes.Replace(sbuf, []byte("testdata/"), []byte(`testdata\\`), -1)
-					sbuf = bytes.Replace(sbuf, []byte("/path/to/"), []byte(`\\path\\to\\`), -1)
+					sbuf = bytes.ReplaceAll(sbuf, []byte("testdata/"), []byte(`testdata\\`))
+					sbuf = bytes.ReplaceAll(sbuf, []byte("/path/to/"), []byte(`\\path\\to\\`))
 				} else {
-					sbuf = bytes.Replace(sbuf, []byte("testdata/"), []byte(`testdata\`), -1)
-					sbuf = bytes.Replace(sbuf, []byte("/path/to/"), []byte(`\path\to\`), -1)
+					sbuf = bytes.ReplaceAll(sbuf, []byte("testdata/"), []byte(`testdata\`))
+					sbuf = bytes.ReplaceAll(sbuf, []byte("/path/to/"), []byte(`\path\to\`))
 				}
 			}
 

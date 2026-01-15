@@ -87,9 +87,9 @@ func TestSource(t *testing.T) {
 		if runtime.GOOS == "windows" {
 			if tc.rpt.options.OutputFormat == Dot {
 				// The .dot test has the paths inside strings, so \ must be escaped.
-				gold = bytes.Replace(gold, []byte("testdata/"), []byte(`testdata\\`), -1)
+				gold = bytes.ReplaceAll(gold, []byte("testdata/"), []byte(`testdata\\`))
 			} else {
-				gold = bytes.Replace(gold, []byte("testdata/"), []byte(`testdata\`), -1)
+				gold = bytes.ReplaceAll(gold, []byte("testdata/"), []byte(`testdata\`))
 			}
 		}
 		if string(b.String()) != string(gold) {

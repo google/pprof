@@ -272,7 +272,7 @@ func skipUnlessWindowsAmd64(t *testing.T) {
 
 func testDisasm(t *testing.T, intelSyntax bool) {
 	_, llvmObjdump, buObjdump := findObjdump([]string{""})
-	if !(llvmObjdump || buObjdump) {
+	if !llvmObjdump && !buObjdump {
 		t.Skip("cannot disasm: no objdump tool available")
 	}
 
