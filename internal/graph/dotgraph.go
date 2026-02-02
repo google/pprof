@@ -247,7 +247,7 @@ func (b *builder) addNodelets(node *Node, nodeID int) bool {
 			continue
 		}
 		weight := b.config.FormatValue(w)
-		nodelets += fmt.Sprintf(`N%d_%d [label = "%s" id="N%d_%d" fontsize=8 shape=box3d tooltip="%s"]`+"\n", nodeID, i, t.Name, nodeID, i, weight)
+		nodelets += fmt.Sprintf(`N%d_%d [label = "%s" id="N%d_%d" fontsize=8 shape=box3d tooltip="%s"]`+"\n", nodeID, i, escapeForDotCentered(t.Name), nodeID, i, weight)
 		nodelets += fmt.Sprintf(`N%d -> N%d_%d [label=" %s" weight=100 tooltip="%s" labeltooltip="%s"]`+"\n", nodeID, nodeID, i, weight, weight, weight)
 		if nts := lnts[t.Name]; nts != nil {
 			nodelets += b.numericNodelets(nts, maxNodelets, flatTags, fmt.Sprintf(`N%d_%d`, nodeID, i))
@@ -274,7 +274,7 @@ func (b *builder) numericNodelets(nts []*Tag, maxNumNodelets int, flatTags bool,
 		}
 		if w != 0 {
 			weight := b.config.FormatValue(w)
-			nodelets += fmt.Sprintf(`N%s_%d [label = "%s" id="N%s_%d" fontsize=8 shape=box3d tooltip="%s"]`+"\n", source, j, t.Name, source, j, weight)
+			nodelets += fmt.Sprintf(`N%s_%d [label = "%s" id="N%s_%d" fontsize=8 shape=box3d tooltip="%s"]`+"\n", source, j, escapeForDotCentered(t.Name), source, j, weight)
 			nodelets += fmt.Sprintf(`%s -> N%s_%d [label=" %s" weight=100 tooltip="%s" labeltooltip="%s"%s]`+"\n", source, source, j, weight, weight, weight, attr)
 		}
 	}
@@ -486,9 +486,16 @@ func escapeAllForDot(in []string) []string {
 	return out
 }
 
-// escapeForDot escapes double quotes and backslashes, and replaces Graphviz's
-// "center" character (\n) with a left-justified character.
+// escapeForDot escapes double quotes and backslashes, and replaces newlines
+// with a left-justified escape (\l).
 // See https://graphviz.org/docs/attr-types/escString/ for more info.
 func escapeForDot(str string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(str, `\`, `\\`), `"`, `\"`), "\n", `\l`)
+}
+
+// escapeForDotCentered escapes double quotes and backslashes, and replaces
+// newlines with Graphviz's center escape (\n).
+// See https://graphviz.org/docs/attr-types/escString/ for more info.
+func escapeForDotCentered(str string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(str, `\`, `\\`), `"`, `\"`), "\n", `\n`)
 }
