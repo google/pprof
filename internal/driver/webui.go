@@ -212,6 +212,9 @@ func defaultWebServer(args *plugin.HTTPServerArgs) error {
 	mux := http.NewServeMux()
 	mux.Handle("/ui/", http.StripPrefix("/ui", handler))
 	mux.Handle("/", redirectWithQuery("/ui", http.StatusTemporaryRedirect))
+	// Enable self-profiling handlers if net/http/pprof is imported by the main
+	// program.
+	mux.HandleFunc("/debug/pprof/", http.DefaultServeMux.ServeHTTP)
 	s := &http.Server{Handler: mux}
 	return s.Serve(ln)
 }
