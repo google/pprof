@@ -77,6 +77,10 @@ func TestSymbolizationPath(t *testing.T) {
 		{"", "", "fghij10001", filepath.Join(tempdir, "pprof/binaries/fg/hij10001.debug"), 0},
 		{"/nowhere:/alternate/architecture", "/usr/bin/binary", "fedcb10000", "/usr/bin/binary", 1},
 		{"/nowhere:/alternate/architecture", "/usr/bin/binary", "abcde10002", "/usr/bin/binary", 1},
+		// A single-character BuildID must not panic when the LLVM debug-file
+		// lookup slices BuildID[:2] / BuildID[2:]. Prior to the fix, this caused
+		// a "slice bounds out of range" panic.
+		{"", "/usr/bin/binary", "X", "/usr/bin/binary", 0},
 	} {
 		os.Setenv("PPROF_BINARY_PATH", tc.env)
 		p := &profile.Profile{
