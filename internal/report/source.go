@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"sort"
 	"strconv"
@@ -1007,26 +1008,93 @@ func openSourceFile(path, searchPath, trim string) (*os.File, error) {
 	path = trimPath(path, trim, searchPath)
 	// If file is still absolute, require file to exist.
 	if filepath.IsAbs(path) {
-		f, err := os.Open(path)
-		return f, err
-	}
-	// Scan each component of the path.
-	for _, dir := range filepath.SplitList(searchPath) {
-		// Search up for every parent of each possible path.
-		for {
-			filename := filepath.Join(dir, path)
-			if f, err := os.Open(filename); err == nil {
-				return f, nil
-			}
-			parent := filepath.Dir(dir)
-			if parent == dir {
-				break
-			}
-			dir = parent
+		if f, err := tryOpenFile(path); err == nil {
+			return f, nil
 		}
+	} else {
+		// Scan each component of the path.
+		for _, dir := range filepath.SplitList(searchPath) {
+			// Search up for every parent of each possible path.
+			for {
+				filename := filepath.Join(dir, path)
+				if f, err := tryOpenFile(filename); err == nil {
+					return f, nil
+				}
+				parent := filepath.Dir(dir)
+				if parent == dir {
+					break
+				}
+				dir = parent
+			}
+		}
+	}
+	// Fall back to looking for Go standard library sources under the local
+	// $GOROOT/src, since profiles from Go programs refer to standard library
+	// files under the GOROOT of the machine where the program was built.
+	if f, err := openGorootSourceFile(path, gorootSrc); err == nil {
+		return f, nil
 	}
 
 	return nil, fmt.Errorf("could not find file %s on path %s", path, searchPath)
+}
+
+// tryOpenFile opens the file at filename if it exists and is not a directory,
+// which os.Open would also happily open.
+func tryOpenFile(filename string) (*os.File, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	stat, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return nil, err
+	}
+	if stat.IsDir() {
+		f.Close()
+		return nil, fmt.Errorf("%s is a directory", filename)
+	}
+	return f, nil
+}
+
+// gorootSrc is the directory holding the Go standard library sources, if
+// known. runtime.GOROOT honors the $GOROOT environment variable and otherwise
+// reports the GOROOT this binary was built with, which is the Go installation
+// used to `go install` pprof in the common case.
+var gorootSrc = func() string {
+	if goroot := runtime.GOROOT(); goroot != "" {
+		return filepath.Join(goroot, "src")
+	}
+	return ""
+}()
+
+// openGorootSourceFile tries to open a Go standard library source file under
+// gorootSrc. Binaries built without -trimpath record standard library files
+// under the build machine's GOROOT (e.g. /usr/local/go/src/runtime/proc.go),
+// which may not exist locally, so resolve the path components after a "/src/"
+// component against gorootSrc. Binaries built with -trimpath record them
+// relative to $GOROOT/src (e.g. runtime/proc.go), so resolve relative paths
+// against gorootSrc directly.
+func openGorootSourceFile(path, gorootSrc string) (*os.File, error) {
+	if gorootSrc == "" {
+		return nil, fmt.Errorf("GOROOT is not known")
+	}
+	if !filepath.IsAbs(path) {
+		if f, err := tryOpenFile(filepath.Join(gorootSrc, path)); err == nil {
+			return f, nil
+		}
+	}
+	sPath := filepath.ToSlash(path)
+	for {
+		i := strings.Index(sPath, "/src/")
+		if i == -1 {
+			return nil, fmt.Errorf("could not find file %s under %s", path, gorootSrc)
+		}
+		sPath = sPath[i+len("/src/"):]
+		if f, err := tryOpenFile(filepath.Join(gorootSrc, filepath.FromSlash(sPath))); err == nil {
+			return f, nil
+		}
+	}
 }
 
 // trimPath cleans up a path by removing prefixes that are commonly
