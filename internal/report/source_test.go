@@ -180,6 +180,12 @@ func TestOpenSourceFile(t *testing.T) {
 			desc: "error when not found",
 			path: "foo.cc",
 		},
+		{
+			desc:       "directory is not matched",
+			searchPath: "$dir",
+			fs:         []string{"foo/bar.cc"},
+			path:       "foo",
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			defer func() {
@@ -210,6 +216,131 @@ func TestOpenSourceFile(t *testing.T) {
 				} else if gotPath != tc.wantPath {
 					t.Errorf("openSourceFile(%q, %q, %q) = %q, want path %q", tc.path, tc.searchPath, tc.trimPath, gotPath, tc.wantPath)
 				}
+			}
+		})
+	}
+}
+
+func TestOpenGorootSourceFile(t *testing.T) {
+	gorootSrc := filepath.Join(t.TempDir(), "goroot", "src")
+	for _, f := range []string{"runtime/proc.go", "fmt/print.go"} {
+		path := filepath.Join(gorootSrc, filepath.FromSlash(f))
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatalf("failed to create dir for %q: %v", path, err)
+		}
+		if err := os.WriteFile(path, nil, 0644); err != nil {
+			t.Fatalf("failed to create file %q: %v", path, err)
+		}
+	}
+	for _, tc := range []struct {
+		desc     string
+		path     string
+		noGoroot bool
+		wantPath string // Relative to gorootSrc. If empty, error is wanted.
+	}{
+		{
+			desc:     "absolute path under a foreign GOROOT",
+			path:     "/usr/local/go/src/runtime/proc.go",
+			wantPath: "runtime/proc.go",
+		},
+		{
+			desc:     "absolute path with multiple src components",
+			path:     "/home/user/src/go/src/fmt/print.go",
+			wantPath: "fmt/print.go",
+		},
+		{
+			desc:     "relative path from a -trimpath build",
+			path:     "runtime/proc.go",
+			wantPath: "runtime/proc.go",
+		},
+		{
+			desc: "absolute path without a src component",
+			path: "/usr/local/go/runtime/proc.go",
+		},
+		{
+			desc: "file missing from GOROOT",
+			path: "/usr/local/go/src/runtime/missing.go",
+		},
+		{
+			desc:     "unknown GOROOT",
+			path:     "/usr/local/go/src/runtime/proc.go",
+			noGoroot: true,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			src := gorootSrc
+			if tc.noGoroot {
+				src = ""
+			}
+			path := filepath.FromSlash(tc.path)
+			f, err := openGorootSourceFile(path, src)
+			if tc.wantPath == "" {
+				if err == nil {
+					gotPath := f.Name()
+					f.Close()
+					t.Fatalf("openGorootSourceFile(%q) = %q, want error", path, gotPath)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("openGorootSourceFile(%q) = err %v, want path %q", path, err, tc.wantPath)
+			}
+			defer f.Close()
+			if want := filepath.Join(src, filepath.FromSlash(tc.wantPath)); f.Name() != want {
+				t.Errorf("openGorootSourceFile(%q) = %q, want %q", path, f.Name(), want)
+			}
+		})
+	}
+}
+
+func TestOpenSourceFileGorootFallback(t *testing.T) {
+	fakeGorootSrc := filepath.Join(t.TempDir(), "goroot", "src")
+	path := filepath.Join(fakeGorootSrc, "runtime", "proc.go")
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		t.Fatalf("failed to create dir for %q: %v", path, err)
+	}
+	if err := os.WriteFile(path, nil, 0644); err != nil {
+		t.Fatalf("failed to create file %q: %v", path, err)
+	}
+	savedGorootSrc := gorootSrc
+	gorootSrc = fakeGorootSrc
+	defer func() { gorootSrc = savedGorootSrc }()
+
+	for _, tc := range []struct {
+		desc    string
+		path    string
+		wantErr bool
+	}{
+		{
+			desc: "absolute path under a foreign GOROOT",
+			path: "/usr/local/go/src/runtime/proc.go",
+		},
+		{
+			desc: "relative path from a -trimpath build",
+			path: "runtime/proc.go",
+		},
+		{
+			desc:    "not found under GOROOT falls through to error",
+			path:    "runtime/missing.go",
+			wantErr: true,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			f, err := openSourceFile(filepath.FromSlash(tc.path), "", "")
+			if tc.wantErr {
+				if err == nil {
+					gotPath := f.Name()
+					f.Close()
+					t.Fatalf("openSourceFile(%q) = %q, want error", tc.path, gotPath)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("openSourceFile(%q) = err %v, want path %q", tc.path, err, path)
+			}
+			defer f.Close()
+			if f.Name() != path {
+				t.Errorf("openSourceFile(%q) = %q, want %q", tc.path, f.Name(), path)
 			}
 		})
 	}
