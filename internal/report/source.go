@@ -49,7 +49,7 @@ func printSource(w io.Writer, rpt *Report) error {
 	var functions graph.Nodes
 	functionNodes := make(map[string]graph.Nodes)
 	for _, n := range g.Nodes {
-		if !o.Symbol.MatchString(n.Info.Name) {
+		if o.Symbol != nil && !o.Symbol.MatchString(n.Info.Name) {
 			continue
 		}
 		if functionNodes[n.Info.Name] == nil {
@@ -60,7 +60,11 @@ func printSource(w io.Writer, rpt *Report) error {
 	functions.Sort(graph.NameOrder)
 
 	if len(functionNodes) == 0 {
-		return fmt.Errorf("no matches found for regexp: %s", o.Symbol)
+		symStr := ""
+		if o.Symbol != nil {
+			symStr = o.Symbol.String()
+		}
+		return fmt.Errorf("no matches found for regexp: %s", symStr)
 	}
 
 	sourcePath := o.SourcePath
@@ -251,7 +255,11 @@ func MakeWebList(rpt *Report, obj plugin.ObjTool, maxFiles int) (WebListData, er
 	}
 	sp := newSourcePrinter(rpt, obj, sourcePath)
 	if len(sp.interest) == 0 {
-		return WebListData{}, fmt.Errorf("no matches found for regexp: %s", rpt.options.Symbol)
+		symStr := ""
+		if rpt.options.Symbol != nil {
+			symStr = rpt.options.Symbol.String()
+		}
+		return WebListData{}, fmt.Errorf("no matches found for regexp: %s", symStr)
 	}
 	defer sp.close()
 	return sp.generate(maxFiles, rpt), nil

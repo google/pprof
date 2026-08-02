@@ -397,8 +397,10 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 	// If the regexp source can be parsed as an address, also match
 	// functions that land on that address.
 	var address *uint64
-	if hex, err := strconv.ParseUint(o.Symbol.String(), 0, 64); err == nil {
-		address = &hex
+	if o.Symbol != nil {
+		if hex, err := strconv.ParseUint(o.Symbol.String(), 0, 64); err == nil {
+			address = &hex
+		}
 	}
 
 	fmt.Fprintln(w, "Total:", rpt.formatValue(rpt.total))
@@ -436,7 +438,11 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 	if len(syms) == 0 {
 		// The symbol regexp case
 		if address == nil {
-			return fmt.Errorf("no matches found for regexp %s", o.Symbol)
+			symStr := ""
+			if o.Symbol != nil {
+				symStr = o.Symbol.String()
+			}
+			return fmt.Errorf("no matches found for regexp %s", symStr)
 		}
 
 		// The address case
