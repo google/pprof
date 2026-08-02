@@ -6,6 +6,10 @@ on:
   pull_request:
   schedule:
     - cron: '0 2 * * *' # Run every day, at 2AM UTC.
+
+permissions:
+  contents: read
+
 env:
   GOPATH: ${{ github.workspace }}
   WORKING_DIR: ./src/github.com/google/pprof/
@@ -18,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.24', '1.25', 'tip']
+        go: ['1.25', '1.26']
         # Supported macOS versions can be found in
         # https://github.com/actions/virtual-environments#available-environments.
         os: ['macos-14', 'macos-15']
@@ -53,37 +57,13 @@ jobs:
           path: ${{ env.WORKING_DIR }}
 
       - name: Update Go version using setup-go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        if: matrix.go != 'tip'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           # Include cache directives to allow proper caching. Without them, we
           # get setup-go "Restore cache failed" warnings.
           go-version: ${{ matrix.go }}
           cache: true
           cache-dependency-path: '**/go.sum'
-
-      - name: Install Go bootstrap compiler
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        if: matrix.go == 'tip'
-        with:
-          # Bootstrapping go tip requires 1.24
-          # Include cache directives to allow proper caching. Without them, we
-          # get setup-go "Restore cache failed" warnings.
-          go-version: 1.24
-          cache: true
-          cache-dependency-path: '**/go.sum'
-
-      - name: Update Go version manually
-        if: matrix.go == 'tip'
-        working-directory: ${{ github.workspace }}
-        run: |
-          git clone https://go.googlesource.com/go $HOME/gotip
-          cd $HOME/gotip/src
-          ./make.bash
-          echo "GOROOT=$HOME/gotip" >> $GITHUB_ENV
-          echo "RUN_STATICCHECK=false" >> $GITHUB_ENV
-          echo "RUN_GOLANGCI_LINTER=false" >> $GITHUB_ENV
-          echo "$HOME/gotip/bin:$PATH" >> $GITHUB_PATH
 
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
@@ -120,7 +100,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.24', '1.25', 'tip']
+        go: ['1.25', '1.26']
         os: ['ubuntu-24.04', 'ubuntu-22.04']
     steps:
       - name: Checkout the repo
@@ -129,37 +109,13 @@ jobs:
           path: ${{ env.WORKING_DIR }}
 
       - name: Update Go version using setup-go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        if: matrix.go != 'tip'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           # Include cache directives to allow proper caching. Without them, we
           # get setup-go "Restore cache failed" warnings.
           go-version: ${{ matrix.go }}
           cache: true
           cache-dependency-path: '**/go.sum'
-
-      - name: Install Go bootstrap compiler
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        if: matrix.go == 'tip'
-        with:
-          # Bootstrapping go tip requires 1.24
-          # Include cache directives to allow proper caching. Without them, we
-          # get setup-go "Restore cache failed" warnings.
-          go-version: 1.24
-          cache: true
-          cache-dependency-path: '**/go.sum'
-
-      - name: Update Go version manually
-        if: matrix.go == 'tip'
-        working-directory: ${{ github.workspace }}
-        run: |
-          git clone https://go.googlesource.com/go $HOME/gotip
-          cd $HOME/gotip/src
-          ./make.bash
-          echo "GOROOT=$HOME/gotip" >> $GITHUB_ENV
-          echo "RUN_STATICCHECK=false" >> $GITHUB_ENV
-          echo "RUN_GOLANGCI_LINTER=false" >> $GITHUB_ENV
-          echo "$HOME/gotip/bin" >> $GITHUB_PATH
 
       - name: Check chrome for browser tests
         run: |
@@ -214,7 +170,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.24', '1.25']
+        go: ['1.25', '1.26']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -222,7 +178,7 @@ jobs:
           path: ${{ env.WORKING_DIR }}
 
       - name: Update Go version using setup-go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           # Include cache directives to allow proper caching. Without them, we
           # get setup-go "Restore cache failed" warnings.
