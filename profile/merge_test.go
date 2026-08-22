@@ -201,6 +201,38 @@ func TestLocationIDMap(t *testing.T) {
 	}
 }
 
+func TestMergePreservesInlineFrameColumns(t *testing.T) {
+	profileWithColumn := func(column int64) *Profile {
+		functions := []*Function{
+			{ID: 1, Name: "foo", Filename: "x.go"},
+			{ID: 2, Name: "bar", Filename: "x.go"},
+		}
+		location := &Location{
+			ID:      1,
+			Address: 0x1000,
+			Line: []Line{
+				{Function: functions[0], Line: 10, Column: column},
+				{Function: functions[1], Line: 20, Column: 7},
+			},
+		}
+		return &Profile{
+			PeriodType: &ValueType{Type: "cpu", Unit: "nanoseconds"},
+			SampleType: []*ValueType{{Type: "samples", Unit: "count"}},
+			Sample:     []*Sample{{Location: []*Location{location}, Value: []int64{1}}},
+			Location:   []*Location{location},
+			Function:   functions,
+		}
+	}
+
+	merged, err := Merge([]*Profile{profileWithColumn(3), profileWithColumn(9)})
+	if err != nil {
+		t.Fatalf("Merge() failed: %v", err)
+	}
+	if got, want := len(merged.Location), 2; got != want {
+		t.Fatalf("Merge() produced %d locations, want %d", got, want)
+	}
+}
+
 func BenchmarkMerge(b *testing.B) {
 	data := proftest.LargeProfile(b)
 	for n := 1; n <= 2; n++ { // Merge either 1 or 2 instances.
