@@ -17,6 +17,8 @@ package measurement
 import (
 	"math"
 	"testing"
+
+	"github.com/google/pprof/profile"
 )
 
 func TestScale(t *testing.T) {
@@ -37,6 +39,10 @@ func TestScale(t *testing.T) {
 		{2048, "mb", "auto", 2, "GB"},
 		{3.1536e7, "s", "auto", 8760, "hrs"},
 		{-1, "s", "ms", -1000, "ms"},
+		{1, "μs", "ms", 0.001, "ms"},
+		{2000, "μs", "auto", 2, "ms"},
+		{1, "μS", "ns", 1000, "ns"},
+		{1, "us", "μs", 1, "us"},
 		{1, "foo", "count", 1, ""},
 		{1, "foo", "bar", 1, "bar"},
 		{2000, "count", "count", 2000, ""},
@@ -73,4 +79,42 @@ func floatEqual(a, b float64) bool {
 	diff := math.Abs(a - b)
 	avg := (math.Abs(a) + math.Abs(b)) / 2
 	return diff/avg < 0.0001
+}
+
+func TestCommonValueType(t *testing.T) {
+	for _, tc := range []struct {
+		desc     string
+		in       []*profile.ValueType
+		wantUnit string
+		wantErr  bool
+	}{
+		{
+			desc:     "microseconds and milliseconds are compatible",
+			in:       []*profile.ValueType{{Type: "cpu", Unit: "ms"}, {Type: "cpu", Unit: "μs"}},
+			wantUnit: "μs",
+		},
+		{
+			desc:     "microseconds and seconds are compatible",
+			in:       []*profile.ValueType{{Type: "cpu", Unit: "μs"}, {Type: "cpu", Unit: "s"}},
+			wantUnit: "μs",
+		},
+		{
+			desc:    "time and memory units are incompatible",
+			in:      []*profile.ValueType{{Type: "cpu", Unit: "μs"}, {Type: "cpu", Unit: "kb"}},
+			wantErr: true,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			got, err := CommonValueType(tc.in)
+			if gotErr := err != nil; gotErr != tc.wantErr {
+				t.Fatalf("CommonValueType(%v) error = %v, want error presence %v", tc.in, err, tc.wantErr)
+			}
+			if tc.wantErr {
+				return
+			}
+			if got == nil || got.Unit != tc.wantUnit {
+				t.Errorf("CommonValueType(%v) = %v, want unit %q", tc.in, got, tc.wantUnit)
+			}
+		})
+	}
 }
