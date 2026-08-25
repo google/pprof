@@ -189,7 +189,7 @@ jobs:
       - name: Fetch Windows dependency
         uses: crazy-max/ghaction-chocolatey@dfdcf5bba9c0a16358a21c13a06ec5c89024b3ac # v4.1.0
         with:
-          args: install graphviz llvm
+          args: install --stop-on-first-failure graphviz llvm
 
       - name: Run the test
         run: |
