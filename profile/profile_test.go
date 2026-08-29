@@ -16,6 +16,7 @@ package profile
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -115,6 +116,33 @@ func TestParseError(t *testing.T) {
 			t.Errorf("got nil, want error for input #%d", i)
 		}
 	}
+}
+
+func TestWriteCloseError(t *testing.T) {
+	wantErr := errors.New("write failed")
+	w := &errorAfterNWriter{
+		n:   10, // Allow Write to emit the gzip header before Close fails.
+		err: wantErr,
+	}
+
+	if err := new(Profile).Write(w); !errors.Is(err, wantErr) {
+		t.Fatalf("Write() error = %v, want %v", err, wantErr)
+	}
+}
+
+type errorAfterNWriter struct {
+	n   int
+	err error
+}
+
+func (w *errorAfterNWriter) Write(p []byte) (int, error) {
+	if len(p) <= w.n {
+		w.n -= len(p)
+		return len(p), nil
+	}
+	n := w.n
+	w.n = 0
+	return n, w.err
 }
 
 func TestParseConcatentated(t *testing.T) {
