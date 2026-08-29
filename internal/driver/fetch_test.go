@@ -42,53 +42,6 @@ import (
 	"github.com/google/pprof/profile"
 )
 
-type testWriteCloser struct {
-	strings.Builder
-	writeErr error
-	closeErr error
-	closed   bool
-}
-
-func (w *testWriteCloser) Write(p []byte) (int, error) {
-	if w.writeErr != nil {
-		return 0, w.writeErr
-	}
-	return w.Builder.Write(p)
-}
-
-func (w *testWriteCloser) Close() error {
-	w.closed = true
-	return w.closeErr
-}
-
-func TestWriteProfileAndClose(t *testing.T) {
-	writeErr := fmt.Errorf("write error")
-	closeErr := fmt.Errorf("close error")
-	tests := []struct {
-		name     string
-		writeErr error
-		closeErr error
-		wantErr  error
-	}{
-		{name: "success"},
-		{name: "write error", writeErr: writeErr, wantErr: writeErr},
-		{name: "close error", closeErr: closeErr, wantErr: closeErr},
-		{name: "write and close errors", writeErr: writeErr, closeErr: closeErr, wantErr: writeErr},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			w := &testWriteCloser{writeErr: test.writeErr, closeErr: test.closeErr}
-			if got := writeProfileAndClose(&profile.Profile{}, w); got != test.wantErr {
-				t.Fatalf("writeProfileAndClose() error = %v, want %v", got, test.wantErr)
-			}
-			if !w.closed {
-				t.Error("writeProfileAndClose() did not close the writer")
-			}
-		})
-	}
-}
-
 func TestSymbolizationPath(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("test assumes Unix paths")

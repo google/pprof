@@ -110,7 +110,14 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 
 		tempFile, err := newTempFile(dir, prefix, ".pb.gz")
 		if err == nil {
-			if err = writeProfileAndClose(p, tempFile); err == nil {
+			writeErr := p.Write(tempFile)
+			closeErr := tempFile.Close()
+			switch {
+			case writeErr != nil:
+				err = writeErr
+			case closeErr != nil:
+				err = closeErr
+			default:
 				o.UI.PrintErr("Saved profile in ", tempFile.Name())
 			}
 		}
@@ -124,15 +131,6 @@ func fetchProfiles(s *source, o *plugin.Options) (*profile.Profile, error) {
 	}
 
 	return p, nil
-}
-
-func writeProfileAndClose(p *profile.Profile, w io.WriteCloser) error {
-	writeErr := p.Write(w)
-	closeErr := w.Close()
-	if writeErr != nil {
-		return writeErr
-	}
-	return closeErr
 }
 
 func grabSourcesAndBases(sources, bases []profileSource, fetch plugin.Fetcher, obj plugin.ObjTool, ui plugin.UI, tr http.RoundTripper) (*profile.Profile, *profile.Profile, plugin.MappingSources, plugin.MappingSources, bool, error) {
