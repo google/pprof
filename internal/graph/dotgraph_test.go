@@ -92,6 +92,25 @@ func TestComposeWithTagsAndResidualEdge(t *testing.T) {
 	compareGraphs(t, buf.Bytes(), "compose3.dot")
 }
 
+func TestComposeWithTagsThatNeedEscaping(t *testing.T) {
+	g := baseGraph()
+	a, c := baseAttrsAndConfig()
+
+	// A label tag whose name contains a double quote must be escaped in the
+	// generated DOT; otherwise the `label = "..."` attribute is malformed and
+	// the whole graph fails to render (golang/pprof#769).
+	g.Nodes[0].LabelTags["a"] = &Tag{
+		Name: `range_str:"{quote}"`,
+		Cum:  10,
+		Flat: 10,
+	}
+
+	var buf bytes.Buffer
+	ComposeDot(&buf, g, a, c)
+
+	compareGraphs(t, buf.Bytes(), "compose10.dot")
+}
+
 func TestComposeWithNestedTags(t *testing.T) {
 	g := baseGraph()
 	a, c := baseAttrsAndConfig()
