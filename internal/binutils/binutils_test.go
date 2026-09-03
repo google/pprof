@@ -975,3 +975,54 @@ func TestELFKernelOffset(t *testing.T) {
 
 	}
 }
+
+func TestToolPaths(t *testing.T) {
+	for _, tc := range []struct {
+		desc   string
+		config string
+		want   map[string][]string
+	}{
+		{
+			desc:   "absolute Windows path is a path, not a tool named C",
+			config: `C:\tools\bin`,
+			want:   map[string][]string{"": {`C:\tools\bin`}},
+		},
+		{
+			desc:   "tool name keeps the rest of the entry, colon and all",
+			config: `objdump:C:\tools\bin`,
+			want:   map[string][]string{"objdump": {`C:\tools\bin`}},
+		},
+		{
+			desc:   "every tool name initTools looks up is recognized",
+			config: "llvm-symbolizer:/a,addr2line:/b,nm:/c,objdump:/d",
+			want: map[string][]string{
+				"llvm-symbolizer": {"/a"},
+				"addr2line":       {"/b"},
+				"nm":              {"/c"},
+				"objdump":         {"/d"},
+			},
+		},
+		{
+			desc:   "path holding a colon is not split",
+			config: "/opt/gnu:2.41/bin",
+			want:   map[string][]string{"": {"/opt/gnu:2.41/bin"}},
+		},
+		{
+			desc:   "unknown prefix stays part of the path",
+			config: "objdunp:/typo/bin",
+			want:   map[string][]string{"": {"objdunp:/typo/bin"}},
+		},
+		{
+			desc:   "mixed entries",
+			config: `nm:/usr/bin,C:\tools\bin`,
+			want: map[string][]string{
+				"nm": {"/usr/bin"},
+				"":   {`C:\tools\bin`},
+			},
+		},
+	} {
+		if got := toolPaths(tc.config); !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("%s: toolPaths(%q) = %v; want %v", tc.desc, tc.config, got, tc.want)
+		}
+	}
+}
