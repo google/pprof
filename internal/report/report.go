@@ -523,7 +523,7 @@ func symbolsFromBinaries(prof *profile.Profile, g *graph.Graph, rx *regexp.Regex
 	// samples and are matched to the regexp.
 	fileHasSamplesAndMatched := make(map[string]bool)
 	for _, n := range g.Nodes {
-		if name := n.Info.PrintableName(); rx.MatchString(name) && n.Info.Objfile != "" {
+		if n.Info.Objfile != "" && (rx.MatchString(n.Info.Name) || rx.MatchString(n.Info.PrintableName())) {
 			fileHasSamplesAndMatched[n.Info.Objfile] = true
 		}
 	}
