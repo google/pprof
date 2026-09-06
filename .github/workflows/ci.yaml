@@ -85,7 +85,11 @@ jobs:
           go version
           ./test.sh
 
+      # Only upload code coverage for the main repository. Forks typically
+      # do not have Codecov configured, and we want to avoid failing the CI
+      # run in that case.
       - name: Code coverage
+        if: github.repository == 'google/pprof'
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           files: ${{ env.WORKING_DIR }}/coverage.txt
@@ -158,7 +162,11 @@ jobs:
           go version
           ./test.sh
 
+      # Only upload code coverage for the main repository. Forks typically
+      # do not have Codecov configured, and we want to avoid failing the CI
+      # run in that case.
       - name: Code coverage
+        if: github.repository == 'google/pprof'
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           files: ${{ env.WORKING_DIR }}/coverage.txt
