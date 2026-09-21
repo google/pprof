@@ -172,6 +172,57 @@ func TestWebListRecursion(t *testing.T) {
 	}
 }
 
+// TestWebListRecursionTotals checks that a sample is counted once for a line
+// and for a function even if recursion puts several of their instructions on
+// the stack.
+func TestWebListRecursionTotals(t *testing.T) {
+	fn := &profile.Function{Name: "fib", Filename: "fib.go"}
+	base := &profile.Location{Address: 1, Line: []profile.Line{{Function: fn, Line: 10}}}
+	call1 := &profile.Location{Address: 2, Line: []profile.Line{{Function: fn, Line: 12}}}
+	call2 := &profile.Location{Address: 3, Line: []profile.Line{{Function: fn, Line: 12}}}
+	prof := &profile.Profile{
+		Sample: []*profile.Sample{{
+			Value:    []int64{5},
+			Location: []*profile.Location{base, call2, call1, call1},
+		}},
+	}
+	rpt := &Report{
+		prof: prof,
+		options: &Options{
+			Symbol:      regexp.MustCompile("fib"),
+			SampleValue: func(s []int64) int64 { return s[0] },
+		},
+		formatValue: func(v int64) string { return fmt.Sprint(v) },
+	}
+
+	result, err := MakeWebList(rpt, nil, -1)
+	if err != nil {
+		t.Fatalf("MakeWebList returned unexpected error: %v", err)
+	}
+	if len(result.Files) != 1 || len(result.Files[0].Funcs) != 1 {
+		t.Fatalf("got %v, want one file with one function", result)
+	}
+	wf := result.Files[0].Funcs[0]
+	// The sample has three instructions of the function on its stack.
+	if wf.Cumulative != "5" {
+		t.Errorf("function: got cum %s, want 5", wf.Cumulative)
+	}
+	found := false
+	for _, l := range wf.Lines {
+		if l.Line != 12 {
+			continue
+		}
+		found = true
+		// The sample has two instructions of the line on its stack.
+		if l.Cumulative != "5" {
+			t.Errorf("line 12: got cum %s, want 5", l.Cumulative)
+		}
+	}
+	if !found {
+		t.Errorf("line 12 not found in output: %v", result)
+	}
+}
+
 func TestOpenSourceFile(t *testing.T) {
 	tempdir, err := os.MkdirTemp("", "")
 	if err != nil {

@@ -28,6 +28,7 @@ import (
 
 	"github.com/google/pprof/internal/binutils"
 	"github.com/google/pprof/internal/graph"
+	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/internal/proftest"
 	"github.com/google/pprof/profile"
 )
@@ -548,6 +549,82 @@ func TestPrintAssemblyErrorMessage(t *testing.T) {
 		if err := PrintAssembly(os.Stdout, rpt, &binutils.Binutils{}, -1); err == nil || err.Error() != tc.want {
 			t.Errorf(`Got "%v", want %q`, err, tc.want)
 		}
+	}
+}
+
+// recursiveObjTool is an object tool for a binary with a single function, fib,
+// that has the instructions in recursiveInsts.
+type recursiveObjTool struct{}
+
+var recursiveInsts = []plugin.Inst{
+	{Addr: 0x1000, Text: "base case"},
+	{Addr: 0x1001, Text: "call fib(n-1)"},
+	{Addr: 0x1002, Text: "call fib(n-2)"},
+}
+
+func (recursiveObjTool) Open(file string, start, limit, offset uint64, relocationSymbol string) (plugin.ObjFile, error) {
+	return recursiveObjFile{}, nil
+}
+
+func (recursiveObjTool) Disasm(file string, start, end uint64, intelSyntax bool) ([]plugin.Inst, error) {
+	return recursiveInsts, nil
+}
+
+type recursiveObjFile struct{}
+
+func (recursiveObjFile) Name() string                        { return "fib.bin" }
+func (recursiveObjFile) ObjAddr(addr uint64) (uint64, error) { return addr, nil }
+func (recursiveObjFile) BuildID() string                     { return "" }
+func (recursiveObjFile) Close() error                        { return nil }
+
+func (recursiveObjFile) SourceLine(addr uint64) ([]plugin.Frame, error) {
+	return nil, nil
+}
+
+func (recursiveObjFile) Symbols(r *regexp.Regexp, addr uint64) ([]*plugin.Sym, error) {
+	return []*plugin.Sym{{Name: []string{"fib"}, File: "fib.bin", Start: 0x1000, End: 0x1003}}, nil
+}
+
+// TestPrintAssemblyRecursion checks that a sample is counted once for a
+// function even if recursion puts several of its instructions on the stack.
+func TestPrintAssemblyRecursion(t *testing.T) {
+	m := &profile.Mapping{ID: 1, Start: 0x1000, Limit: 0x2000, File: "fib.bin"}
+	fn := &profile.Function{ID: 1, Name: "fib", SystemName: "fib", Filename: "fib.go"}
+	var locs []*profile.Location
+	for i, inst := range recursiveInsts {
+		locs = append(locs, &profile.Location{
+			ID:      uint64(i + 1),
+			Mapping: m,
+			Address: inst.Addr,
+			Line:    []profile.Line{{Function: fn, Line: 10}},
+		})
+	}
+	prof := &profile.Profile{
+		SampleType: []*profile.ValueType{{Type: "samples", Unit: "count"}},
+		Sample: []*profile.Sample{{
+			Value:    []int64{5},
+			Location: []*profile.Location{locs[0], locs[2], locs[1], locs[1]},
+		}},
+		Location: locs,
+		Function: []*profile.Function{fn},
+		Mapping:  []*profile.Mapping{m},
+	}
+	rpt := New(prof, &Options{
+		OutputFormat: Dis,
+		Symbol:       regexp.MustCompile("fib"),
+		SampleValue:  func(v []int64) int64 { return v[0] },
+		SampleUnit:   "count",
+	})
+
+	var b bytes.Buffer
+	if err := PrintAssembly(&b, rpt, recursiveObjTool{}, -1); err != nil {
+		t.Fatalf("PrintAssembly returned unexpected error: %v", err)
+	}
+	// Each of the three instructions has a cumulative value of 5, and so
+	// does the function.
+	want := regexp.MustCompile(`(?m)^ +5 +5 \(flat, cum\) +100% of Total$`)
+	if !want.Match(b.Bytes()) {
+		t.Errorf("output does not match %v:\n%s", want, b.String())
 	}
 }
 
