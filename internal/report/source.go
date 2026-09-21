@@ -73,6 +73,27 @@ func printSource(w io.Writer, rpt *Report) error {
 	}
 	reader := newSourceReader(sourcePath, o.TrimPath)
 
+	// Compute the cumulative value of each function in each file. It is not
+	// the sum over the nodes of the function, since a sample of a recursive
+	// function is in the cumulative value of several of them.
+	type funcFile struct{ name, file string }
+	funcCum := cumByGroup(rpt.prof,
+		func(sample *profile.Sample) int64 { return o.SampleValue(sample.Value) },
+		func(dst []funcFile, loc *profile.Location) []funcFile {
+			for _, line := range loc.Line {
+				if line.Function == nil {
+					continue
+				}
+				// Match the name and file of the nodes created by newGraph.
+				ff := funcFile{name: line.Function.Name}
+				if fname := line.Function.Filename; fname != "" {
+					ff.file = filepath.Clean(fname)
+				}
+				dst = append(dst, ff)
+			}
+			return dst
+		})
+
 	fmt.Fprintf(w, "Total: %s\n", rpt.formatValue(rpt.total))
 	for _, fn := range functions {
 		name := fn.Info.Name
@@ -102,7 +123,8 @@ func printSource(w io.Writer, rpt *Report) error {
 		for _, fl := range sourceFiles {
 			filename := fl.Info.File
 			fns := fileNodes[filename]
-			flatSum, cumSum := fns.Sum()
+			flatSum, _ := fns.Sum()
+			cumSum := funcCum[funcFile{name, filename}]
 
 			fnodes, _, err := getSourceFromFile(filename, reader, fns, 0, 0)
 			fmt.Fprintf(w, "ROUTINE ======================== %s in %s\n", name, filename)
@@ -132,6 +154,8 @@ type sourcePrinter struct {
 	sym        *regexp.Regexp             // May be nil
 	files      map[string]*sourceFile     // Set of files to print.
 	insts      map[uint64]instructionInfo // Instructions of interest (keyed by address).
+	instAt     map[uint64]uint64          // Address of the instruction at a sampled address.
+	groupCum   map[sourceGroup]int64      // Cumulative value of lines and functions to print.
 
 	// Set of function names that we are interested in (because they had
 	// a sample and match sym).
@@ -164,6 +188,7 @@ type sourceFile struct {
 	flat     int64
 	lines    map[int][]sourceInst // Instructions to show per line
 	funcName map[int]string       // Function name per line
+	funcs    []sourceFunction     // Functions to show
 }
 
 // sourceInst holds information for an instruction to be displayed.
@@ -178,6 +203,14 @@ type sourceFunction struct {
 	name       string
 	begin, end int // Line numbers (end is not included in the range)
 	flat, cum  int64
+}
+
+// sourceGroup identifies instructions whose samples are reported together:
+// the instructions of a line, or of a function if isFunc is set.
+type sourceGroup struct {
+	file   *sourceFile
+	isFunc bool
+	index  int // Line number, or index in file.funcs if isFunc.
 }
 
 // addressRange is a range of addresses plus the object file that contains it.
@@ -266,6 +299,7 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 		sym:         rpt.options.Symbol,
 		files:       map[string]*sourceFile{},
 		insts:       map[uint64]instructionInfo{},
+		instAt:      map[uint64]uint64{},
 		prettyNames: map[string]string{},
 		interest:    map[string]bool{},
 	}
@@ -307,14 +341,11 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 	}
 
 	// Extract sample counts and compute set of interesting functions.
+	seen := make(map[uint64]bool) // Addresses seen in the current sample.
 	for _, sample := range rpt.prof.Sample {
-		value := rpt.options.SampleValue(sample.Value)
-		if rpt.options.SampleMeanDivisor != nil {
-			div := rpt.options.SampleMeanDivisor(sample.Value)
-			if div != 0 {
-				value /= div
-			}
-		}
+		value := sampleValue(rpt, sample)
+
+		clear(seen)
 
 		// Find call-sites matching sym.
 		for i := len(sample.Location) - 1; i >= 0; i-- {
@@ -326,13 +357,14 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 				sp.prettyNames[line.Function.SystemName] = line.Function.Name
 			}
 
-			addr := loc.Address
-			if addr == 0 {
-				// Some profiles are missing valid addresses.
-				addr = sp.synth.address(loc)
-			}
+			addr := sp.address(loc)
 
-			cum[addr] += value
+			// Count the sample once per address, even if the address is
+			// on the stack multiple times due to recursion.
+			if !seen[addr] {
+				seen[addr] = true
+				cum[addr] += value
+			}
 			if i == 0 {
 				flat[addr] += value
 			}
@@ -358,6 +390,27 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 	sp.expandAddresses(rpt, addrs, flat)
 	sp.initSamples(flat, cum)
 	return sp
+}
+
+// sampleValue returns the value of sample to report in the listing.
+func sampleValue(rpt *Report, sample *profile.Sample) int64 {
+	value := rpt.options.SampleValue(sample.Value)
+	if rpt.options.SampleMeanDivisor != nil {
+		div := rpt.options.SampleMeanDivisor(sample.Value)
+		if div != 0 {
+			value /= div
+		}
+	}
+	return value
+}
+
+// address returns the address to use for loc.
+func (sp *sourcePrinter) address(loc *profile.Location) uint64 {
+	if loc.Address != 0 {
+		return loc.Address
+	}
+	// Some profiles are missing valid addresses.
+	return sp.synth.address(loc)
 }
 
 func (sp *sourcePrinter) close() {
@@ -600,12 +653,45 @@ func (sp *sourcePrinter) initSamples(flat, cum map[uint64]int64) {
 		for p := addr; p < instEnd; p++ {
 			inst.flat += flat[p]
 			inst.cum += cum[p]
+			if _, ok := cum[p]; ok {
+				sp.instAt[p] = addr
+			}
 		}
 		sp.insts[addr] = inst
 	}
 }
 
+// countGroups computes the cumulative values of the lines and functions to
+// print. They are not sums over instructions, since a sample of a recursive
+// function is in the cumulative value of several instructions.
+func (sp *sourcePrinter) countGroups(rpt *Report) {
+	groups := map[uint64][]sourceGroup{} // Groups by instruction address.
+	for _, f := range sp.files {
+		f.funcs = sp.functions(f)
+		for i, fn := range f.funcs {
+			for l := fn.begin; l < fn.end; l++ {
+				for _, x := range f.lines[l] {
+					groups[x.addr] = append(groups[x.addr],
+						sourceGroup{file: f, index: l},
+						sourceGroup{file: f, isFunc: true, index: i})
+				}
+			}
+		}
+	}
+	sp.groupCum = cumByGroup(rpt.prof,
+		func(sample *profile.Sample) int64 { return sampleValue(rpt, sample) },
+		func(dst []sourceGroup, loc *profile.Location) []sourceGroup {
+			inst, ok := sp.instAt[sp.address(loc)]
+			if !ok {
+				return dst
+			}
+			return append(dst, groups[inst]...)
+		})
+}
+
 func (sp *sourcePrinter) generate(maxFiles int, rpt *Report) WebListData {
+	sp.countGroups(rpt)
+
 	// Finalize per-file counts.
 	for _, file := range sp.files {
 		seen := map[uint64]bool{}
@@ -650,7 +736,8 @@ func (sp *sourcePrinter) generate(maxFiles int, rpt *Report) WebListData {
 
 func (sp *sourcePrinter) generateFile(f *sourceFile, rpt *Report) WebListFile {
 	var result WebListFile
-	for _, fn := range sp.functions(f) {
+	for i, fn := range f.funcs {
+		fn.cum = sp.groupCum[sourceGroup{file: f, isFunc: true, index: i}]
 		if fn.cum == 0 {
 			continue
 		}
@@ -681,13 +768,13 @@ func (sp *sourcePrinter) generateFile(f *sourceFile, rpt *Report) WebListFile {
 
 			// Make list of assembly instructions.
 			asm = asm[:0]
-			var flatSum, cumSum int64
+			var flatSum int64
+			cumSum := sp.groupCum[sourceGroup{file: f, index: l}]
 			var lastAddr uint64
 			for _, inst := range f.lines[l] {
 				addr := inst.addr
 				x := sp.insts[addr]
 				flatSum += x.flat
-				cumSum += x.cum
 				startsBlock := (addr != lastAddr+uint64(sp.insts[lastAddr].length))
 				lastAddr = addr
 
@@ -735,9 +822,7 @@ func (sp *sourcePrinter) functions(f *sourceFile) []sourceFunction {
 
 		fn := sourceFunction{name: name, begin: l, end: l + 1}
 		for _, x := range f.lines[l] {
-			inst := sp.insts[x.addr]
-			fn.flat += inst.flat
-			fn.cum += inst.cum
+			fn.flat += sp.insts[x.addr].flat
 		}
 
 		// See if we should merge into preceding function.
@@ -746,7 +831,6 @@ func (sp *sourcePrinter) functions(f *sourceFile) []sourceFunction {
 			if l-last.end < mergeLimit && last.name == name {
 				last.end = l + 1
 				last.flat += fn.flat
-				last.cum += fn.cum
 				funcs[len(funcs)-1] = last
 				continue
 			}

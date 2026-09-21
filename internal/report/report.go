@@ -293,6 +293,33 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 	return graph.New(rpt.prof, gopt)
 }
 
+// cumByGroup returns the cumulative value of groups of locations. A sample
+// is counted once for a group even if several of its locations belong to the
+// group, as happens with recursion. Adding up the cumulative values of the
+// locations in a group would count such a sample several times.
+//
+// value returns the value of a sample, and appendGroups appends the groups
+// that loc belongs to to dst.
+func cumByGroup[K comparable](prof *profile.Profile, value func(*profile.Sample) int64, appendGroups func(dst []K, loc *profile.Location) []K) map[K]int64 {
+	cum := make(map[K]int64)
+	seen := make(map[K]bool) // Groups seen in the current sample.
+	var groups []K
+	for _, sample := range prof.Sample {
+		v := value(sample)
+		clear(seen)
+		for _, loc := range sample.Location {
+			groups = appendGroups(groups[:0], loc)
+			for _, g := range groups {
+				if !seen[g] {
+					seen[g] = true
+					cum[g] += v
+				}
+			}
+		}
+	}
+	return cum
+}
+
 // printProto writes the incoming proto via the writer w.
 // If the divide_by option has been specified, samples are scaled appropriately.
 func printProto(w io.Writer, rpt *Report) error {
@@ -446,12 +473,28 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 		return fmt.Errorf("address 0x%x found in binary, but the corresponding symbols do not have samples in the profile", *address)
 	}
 
+	// Compute the cumulative value of each symbol. It is not the sum over the
+	// nodes of the symbol, since a sample of a recursive function is in the
+	// cumulative value of several of them.
+	symsAt := make(map[uint64][]*objSymbol) // Symbols by address of their nodes.
+	for _, s := range syms {
+		for _, n := range symNodes[s] {
+			symsAt[n.Info.Address] = append(symsAt[n.Info.Address], s)
+		}
+	}
+	symCum := cumByGroup(prof,
+		func(sample *profile.Sample) int64 { return o.SampleValue(sample.Value) },
+		func(dst []*objSymbol, loc *profile.Location) []*objSymbol {
+			return append(dst, symsAt[loc.Address]...)
+		})
+
 	// Correlate the symbols from the binary with the profile samples.
 	for _, s := range syms {
 		sns := symNodes[s]
 
 		// Gather samples for this symbol.
-		flatSum, cumSum := sns.Sum()
+		flatSum, _ := sns.Sum()
+		cumSum := symCum[s]
 
 		// Get the function assembly.
 		insts, err := obj.Disasm(s.sym.File, s.sym.Start, s.sym.End, o.IntelSyntax)
