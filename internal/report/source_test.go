@@ -120,6 +120,58 @@ func testSourceMapping(t *testing.T, zeroAddress bool) {
 	}
 }
 
+// TestWebListRecursion checks that a sample is counted once for an address
+// even if recursion puts that address on the stack multiple times.
+func TestWebListRecursion(t *testing.T) {
+	fn := &profile.Function{Name: "fac", Filename: "fac.go"}
+	base := &profile.Location{Address: 1, Line: []profile.Line{{Function: fn, Line: 10}}}
+	call := &profile.Location{Address: 2, Line: []profile.Line{{Function: fn, Line: 12}}}
+	prof := &profile.Profile{
+		Sample: []*profile.Sample{
+			// The recursive call is the leaf as well as an outer frame.
+			{Value: []int64{5}, Location: []*profile.Location{call, call, call}},
+			// The recursion bottoms out in the base case.
+			{Value: []int64{7}, Location: []*profile.Location{base, call, call}},
+		},
+	}
+	rpt := &Report{
+		prof: prof,
+		options: &Options{
+			Symbol:      regexp.MustCompile("fac"),
+			SampleValue: func(s []int64) int64 { return s[0] },
+		},
+		formatValue: func(v int64) string { return fmt.Sprint(v) },
+	}
+
+	result, err := MakeWebList(rpt, nil, -1)
+	if err != nil {
+		t.Fatalf("MakeWebList returned unexpected error: %v", err)
+	}
+	found := false
+	for _, f := range result.Files {
+		for _, wf := range f.Funcs {
+			for _, l := range wf.Lines {
+				if l.Line != 12 {
+					continue
+				}
+				found = true
+				// Both samples reach this line, and each is counted once.
+				if l.Cumulative != "12" {
+					t.Errorf("line 12: got cum %s, want 12", l.Cumulative)
+				}
+				// Only the first sample has its leaf here, and flat is
+				// counted even though cum is not counted again.
+				if l.Flat != "5" {
+					t.Errorf("line 12: got flat %s, want 5", l.Flat)
+				}
+			}
+		}
+	}
+	if !found {
+		t.Errorf("line 12 not found in output: %v", result)
+	}
+}
+
 func TestOpenSourceFile(t *testing.T) {
 	tempdir, err := os.MkdirTemp("", "")
 	if err != nil {

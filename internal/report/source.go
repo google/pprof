@@ -307,6 +307,7 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 	}
 
 	// Extract sample counts and compute set of interesting functions.
+	seen := make(map[uint64]bool) // Addresses seen in the current sample.
 	for _, sample := range rpt.prof.Sample {
 		value := rpt.options.SampleValue(sample.Value)
 		if rpt.options.SampleMeanDivisor != nil {
@@ -315,6 +316,8 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 				value /= div
 			}
 		}
+
+		clear(seen)
 
 		// Find call-sites matching sym.
 		for i := len(sample.Location) - 1; i >= 0; i-- {
@@ -332,7 +335,12 @@ func newSourcePrinter(rpt *Report, obj plugin.ObjTool, sourcePath string) *sourc
 				addr = sp.synth.address(loc)
 			}
 
-			cum[addr] += value
+			// Count the sample once per address, even if the address is
+			// on the stack multiple times due to recursion.
+			if !seen[addr] {
+				seen[addr] = true
+				cum[addr] += value
+			}
 			if i == 0 {
 				flat[addr] += value
 			}
