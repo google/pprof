@@ -150,6 +150,18 @@ func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 	compareGraphs(t, buf.Bytes(), "compose7.dot")
 }
 
+func TestComposeWithFilenamesThatNeedEscaping(t *testing.T) {
+	g := baseGraph()
+	a, c := baseAttrsAndConfig()
+	g.Nodes[0].Info = NodeInfo{Name: "src", File: `src/file"name.cc`, Lineno: 10}
+	g.Nodes[1].Info = NodeInfo{File: "src/file\nname.cc"}
+
+	var buf bytes.Buffer
+	ComposeDot(&buf, g, a, c)
+
+	compareGraphs(t, buf.Bytes(), "compose_filenames.dot")
+}
+
 func TestComposeWithCommentsWithNewlines(t *testing.T) {
 	g := baseGraph()
 	a, c := baseAttrsAndConfig()
@@ -298,6 +310,46 @@ func TestMultilinePrintableName(t *testing.T) {
 	want := fmt.Sprintf(`%016x\ntest1\ntest2\ntest3\nfile.cc:999\n`, 123)
 	if got := multilinePrintableName(ni); got != want {
 		t.Errorf("multilinePrintableName(%#v) == %q, want %q", ni, got, want)
+	}
+}
+
+func TestMultilinePrintableNameWithFilenamesThatNeedEscaping(t *testing.T) {
+	for _, tc := range []struct {
+		desc string
+		file string
+		want string
+	}{
+		{
+			desc: "double quote",
+			file: `src/file"name.cc`,
+			want: `file\"name.cc`,
+		},
+		{
+			desc: "newline",
+			file: "src/file\nname.cc",
+			want: `file\lname.cc`,
+		},
+		{
+			desc: "backslash",
+			file: `src/file\name.cc`,
+			want: `file\\name.cc`,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			if tc.desc == "backslash" && filepath.Separator == '\\' {
+				// On Windows a backslash separates path components.
+				t.Skip("backslashes cannot be part of a Windows filename")
+			}
+			ni := NodeInfo{Name: "pkg.fn", File: tc.file, Lineno: 10, Columnno: 2}
+			original := ni
+			want := `pkg\nfn\n` + tc.want + `:10:2\n`
+			if got := multilinePrintableName(&ni); got != want {
+				t.Errorf("multilinePrintableName(%#v) = %q, want %q", ni, got, want)
+			}
+			if ni != original {
+				t.Errorf("multilinePrintableName changed NodeInfo: got %#v, want %#v", ni, original)
+			}
+		})
 	}
 }
 
