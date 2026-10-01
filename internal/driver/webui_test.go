@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"regexp"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 
@@ -120,6 +121,9 @@ func TestWebInterface(t *testing.T) {
 			continue
 		}
 		result := string(data)
+		if !strings.Contains(result, "<div>Sampling: 1ms (cpu)</div>") {
+			t.Errorf("response for %s is missing the sampling period", c.path)
+		}
 		for _, w := range c.want {
 			if match, _ := regexp.MatchString(w, result); !match {
 				t.Errorf("response for %s does not match "+
@@ -153,6 +157,51 @@ func TestWebInterface(t *testing.T) {
 		}
 	}
 	wg.Wait()
+}
+
+func TestWebInterfaceSampling(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		period     int64
+		periodType *profile.ValueType
+		want       string
+	}{
+		{"cpu", 10000000, &profile.ValueType{Type: "cpu", Unit: "nanoseconds"}, "Sampling: 10ms (cpu)"},
+		{"heap", 524288, &profile.ValueType{Type: "space", Unit: "bytes"}, "Sampling: 512kB (space)"},
+		{"count", 1, &profile.ValueType{Type: "allocations", Unit: "count"}, "Sampling: 1 (allocations)"},
+		{"empty type", 524288, &profile.ValueType{Unit: "bytes"}, "Sampling: 512kB"},
+		{"empty unit", 7, &profile.ValueType{Type: "events"}, "Sampling: 7 (events)"},
+		{"escaped type", 524288, &profile.ValueType{Type: "space <tag> & samples", Unit: "bytes"}, "Sampling: 512kB (space &lt;tag&gt; &amp; samples)"},
+		{"missing period type", 10000000, nil, ""},
+		{"zero period", 0, &profile.ValueType{Type: "cpu", Unit: "nanoseconds"}, ""},
+		{"negative period", -1, &profile.ValueType{Type: "cpu", Unit: "nanoseconds"}, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prof := makeFakeProfile()
+			prof.Period, prof.PeriodType = tc.period, tc.periodType
+			server := makeTestServer(t, prof)
+			res, err := http.Get(server.URL + "/top")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer res.Body.Close()
+			if res.StatusCode != http.StatusOK {
+				t.Fatalf("response status = %s, want 200 OK", res.Status)
+			}
+			data, err := io.ReadAll(res.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			result := string(data)
+			if tc.want == "" {
+				if strings.Contains(result, "<div>Sampling:") {
+					t.Error("sampling period shown without valid sampling metadata")
+				}
+			} else if !strings.Contains(result, "<div>"+tc.want+"</div>") {
+				t.Errorf("response is missing %q", tc.want)
+			}
+		})
+	}
 }
 
 // Implement fake object file support.
