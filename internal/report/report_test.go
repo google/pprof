@@ -28,6 +28,7 @@ import (
 
 	"github.com/google/pprof/internal/binutils"
 	"github.com/google/pprof/internal/graph"
+	"github.com/google/pprof/internal/plugin"
 	"github.com/google/pprof/internal/proftest"
 	"github.com/google/pprof/profile"
 )
@@ -508,6 +509,96 @@ func TestComputeTotal(t *testing.T) {
 		})
 	}
 }
+
+func TestPrintAssemblySymbolEnd(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		end        uint64
+		sampleAddr uint64
+		lastAddr   uint64
+	}{
+		{"last instruction", 0x1001, 0x1000, 0x1001},
+		{"sample at last byte", 0x1001, 0x1001, 0x1001},
+		{"single byte symbol", 0x1000, 0x1000, 0x1000},
+		{"unknown symbol end", ^uint64(0), 0x1000, 0x1001},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			mapping := &profile.Mapping{ID: 1, File: "testbin", Start: 0x1000, Limit: 0x2000}
+			function := &profile.Function{ID: 1, Name: "function"}
+			location := &profile.Location{
+				ID: 1, Mapping: mapping, Address: tc.sampleAddr,
+				Line: []profile.Line{{Function: function}},
+			}
+			prof := &profile.Profile{
+				SampleType: []*profile.ValueType{{Type: "samples", Unit: "count"}},
+				Sample:     []*profile.Sample{{Location: []*profile.Location{location}, Value: []int64{7}}},
+				Mapping:    []*profile.Mapping{mapping},
+				Location:   []*profile.Location{location},
+				Function:   []*profile.Function{function},
+			}
+			obj := assemblyObjTool{
+				symbol: &plugin.Sym{Name: []string{"function"}, File: "testbin", Start: 0x1000, End: tc.end},
+				insts:  []plugin.Inst{{Addr: tc.lastAddr, Text: "RET"}, {Addr: tc.lastAddr + 1, Text: "next symbol"}},
+			}
+			if tc.lastAddr > obj.symbol.Start {
+				obj.insts = append([]plugin.Inst{{Addr: obj.symbol.Start, Text: "NOP"}}, obj.insts...)
+			}
+			rpt := NewDefault(prof, Options{OutputFormat: Dis, Symbol: regexp.MustCompile("function")})
+			var buf bytes.Buffer
+			if err := PrintAssembly(&buf, rpt, obj, -1); err != nil {
+				t.Fatal(err)
+			}
+			output := buf.String()
+			if want := fmt.Sprintf("%x: RET", tc.lastAddr); !strings.Contains(output, want) {
+				t.Errorf("missing last instruction %q in:\n%s", want, output)
+			}
+			if tc.end != ^uint64(0) && strings.Contains(output, "next symbol") {
+				t.Errorf("disassembled beyond the symbol:\n%s", output)
+			}
+			if want := fmt.Sprintf("%10s %10s (flat, cum)", "7", "7"); !strings.Contains(output, want) {
+				t.Errorf("missing sample totals %q in:\n%s", want, output)
+			}
+			if tc.sampleAddr == tc.lastAddr {
+				if want := fmt.Sprintf("%10s %10s %10x: RET", "7", "7", tc.lastAddr); !strings.Contains(output, want) {
+					t.Errorf("missing last-instruction sample %q in:\n%s", want, output)
+				}
+			}
+		})
+	}
+}
+
+type assemblyObjTool struct {
+	symbol *plugin.Sym
+	insts  []plugin.Inst
+}
+
+func (o assemblyObjTool) Open(string, uint64, uint64, uint64, string) (plugin.ObjFile, error) {
+	return assemblyObjFile{symbol: o.symbol}, nil
+}
+
+func (o assemblyObjTool) Disasm(_ string, start, end uint64, _ bool) ([]plugin.Inst, error) {
+	var insts []plugin.Inst
+	for _, inst := range o.insts {
+		if inst.Addr >= start && inst.Addr < end {
+			insts = append(insts, inst)
+		}
+	}
+	return insts, nil
+}
+
+type assemblyObjFile struct {
+	symbol *plugin.Sym
+}
+
+func (o assemblyObjFile) Symbols(*regexp.Regexp, uint64) ([]*plugin.Sym, error) {
+	return []*plugin.Sym{o.symbol}, nil
+}
+
+func (assemblyObjFile) ObjAddr(addr uint64) (uint64, error)       { return addr, nil }
+func (assemblyObjFile) Close() error                              { return nil }
+func (o assemblyObjFile) Name() string                            { return o.symbol.File }
+func (assemblyObjFile) BuildID() string                           { return "" }
+func (assemblyObjFile) SourceLine(uint64) ([]plugin.Frame, error) { return nil, nil }
 
 func TestPrintAssemblyErrorMessage(t *testing.T) {
 	profile := readProfile(filepath.Join("testdata", "sample.cpu"), t)
