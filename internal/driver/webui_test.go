@@ -91,6 +91,8 @@ func TestWebInterface(t *testing.T) {
 			[]string{"300ms.*F1", "200ms.*300ms.*F2"}, false},
 		{"/disasm?f=" + url.QueryEscape("F[12]"),
 			[]string{"f1:asm", "f2:asm"}, false},
+		{"/disasm?f=" + url.QueryEscape("^F2$"),
+			[]string{"ROUTINE ======================== F2"}, false},
 		{"/flamegraph", []string{
 			"File: testbin",
 			// Check that interesting frames are included.
@@ -168,7 +170,7 @@ func (f fakeObj) SourceLine(addr uint64) ([]plugin.Frame, error) {
 	return nil, fmt.Errorf("SourceLine unimplemented")
 }
 func (f fakeObj) Symbols(r *regexp.Regexp, addr uint64) ([]*plugin.Sym, error) {
-	return []*plugin.Sym{
+	syms := []*plugin.Sym{
 		{
 			Name: []string{"F1"}, File: fakeSource,
 			Start: addrBase, End: addrBase + 10,
@@ -181,7 +183,17 @@ func (f fakeObj) Symbols(r *regexp.Regexp, addr uint64) ([]*plugin.Sym, error) {
 			Name: []string{"F3"}, File: fakeSource,
 			Start: addrBase + 20, End: addrBase + 30,
 		},
-	}, nil
+	}
+	if r == nil {
+		return syms, nil
+	}
+	var matched []*plugin.Sym
+	for _, sym := range syms {
+		if r.MatchString(sym.Name[0]) {
+			matched = append(matched, sym)
+		}
+	}
+	return matched, nil
 }
 
 type fakeObjTool struct{}
