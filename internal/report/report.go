@@ -594,6 +594,8 @@ func (o orderSyms) Less(i, j int) bool { return o.less(o.v[i], o.v[j]) }
 func (o orderSyms) Swap(i, j int)      { o.v[i], o.v[j] = o.v[j], o.v[i] }
 
 // nodesPerSymbol classifies nodes into a group of symbols.
+// A node belongs to a symbol when its object address is in the inclusive
+// range [sym.Start, sym.End].
 func nodesPerSymbol(ns graph.Nodes, symbols []*objSymbol) map[*objSymbol]graph.Nodes {
 	symNodes := make(map[*objSymbol]graph.Nodes)
 	for _, s := range symbols {

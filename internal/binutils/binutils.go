@@ -271,8 +271,8 @@ func findExe(cmd string, paths []string) (string, bool) {
 	return cmd, false
 }
 
-// Disasm returns the assembly instructions for the specified address range
-// of a binary.
+// Disasm returns the assembly instructions in the address range [start, end)
+// of a binary, including start and excluding end.
 func (bu *Binutils) Disasm(file string, start, end uint64, intelSyntax bool) ([]plugin.Inst, error) {
 	b := bu.get()
 	if !b.objdumpFound {
