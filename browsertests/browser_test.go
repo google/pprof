@@ -111,6 +111,111 @@ func TestSource(t *testing.T) {
 	}
 }
 
+func TestProfileDetails(t *testing.T) {
+	maybeSkipBrowserTest(t)
+
+	prof := makeFakeProfile()
+	prof.Comments = []string{"RSS is unavailable on this platform", "Use <bytes> & samples", "#hidden comment"}
+	server := makeTestServer(t, prof)
+	for _, path := range []string{"/flamegraph", "/graph", "/top", "/source?f=F3", "/peek?f=F3", "/disasm?f=F3"} {
+		t.Run(path, func(t *testing.T) {
+			if path == "/graph" {
+				if _, err := exec.LookPath("dot"); err != nil {
+					t.Skip("graphviz not available")
+				}
+			}
+			ctx := newContext(context.Background(), t)
+			err := chromedp.Run(ctx,
+				chromedp.Navigate(server.URL+path),
+				chromedp.WaitVisible(`#details`, chromedp.ByID),
+				checkDetailsButton(),
+				chromedp.WaitNotVisible(`#detailsbox`, chromedp.ByID),
+
+				// Open the profile information using the visible control.
+				chromedp.Click(`#details`, chromedp.ByID),
+				chromedp.WaitVisible(`#detailsbox`, chromedp.ByID),
+				checkDetailsExpanded("true"),
+				matchInOrder(t, "#detailsbox", "RSS is unavailable on this platform", "Use <bytes> & samples"),
+				chromedp.ActionFunc(func(ctx context.Context) error {
+					var text string
+					if err := chromedp.Text(`#detailsbox`, &text, chromedp.ByID).Do(ctx); err != nil {
+						return err
+					}
+					if strings.Contains(text, "hidden comment") {
+						return fmt.Errorf("hidden comment appeared in profile information: %s", text)
+					}
+					return nil
+				}),
+
+				// A native button supports both Space and Enter without navigating.
+				chromedp.Focus(`#details`, chromedp.ByID),
+				chromedp.KeyEvent(" "),
+				chromedp.WaitNotVisible(`#detailsbox`, chromedp.ByID),
+				checkDetailsExpanded("false"),
+				chromedp.KeyEvent("\r"),
+				chromedp.WaitVisible(`#detailsbox`, chromedp.ByID),
+				checkDetailsExpanded("true"),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestProfileDetailsWithoutComments(t *testing.T) {
+	maybeSkipBrowserTest(t)
+	for _, comments := range [][]string{nil, {"#hidden comment"}} {
+		t.Run(fmt.Sprint(comments), func(t *testing.T) {
+			prof := makeFakeProfile()
+			prof.Comments = comments
+			server := makeTestServer(t, prof)
+			ctx := newContext(context.Background(), t)
+			if err := chromedp.Run(ctx,
+				chromedp.Navigate(server.URL+"/top"),
+				chromedp.WaitVisible(`#details`, chromedp.ByID),
+				checkDetailsButton(),
+				chromedp.Click(`#details`, chromedp.ByID),
+				chromedp.WaitVisible(`#detailsbox`, chromedp.ByID),
+				matchRegexp(t, "#detailsbox", `File: test\b`),
+			); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func checkDetailsButton() chromedp.ActionFunc {
+	return func(ctx context.Context) error {
+		var ok bool
+		if err := chromedp.Evaluate(`(() => {
+			const button = document.getElementById('details');
+			return button.tagName === 'BUTTON' && button.querySelector('svg[aria-hidden="true"]') !== null &&
+				button.getAttribute('aria-label').includes('profile') &&
+				button.getAttribute('aria-controls') === 'detailsbox';
+		})()`, &ok).Do(ctx); err != nil {
+			return err
+		}
+		if !ok {
+			return fmt.Errorf("profile information has no labeled button with an information icon")
+		}
+		return checkDetailsExpanded("false").Do(ctx)
+	}
+}
+
+func checkDetailsExpanded(want string) chromedp.ActionFunc {
+	return func(ctx context.Context) error {
+		var got string
+		if err := chromedp.AttributeValue(`#details`, "aria-expanded", &got, nil, chromedp.ByID).Do(ctx); err != nil {
+			return err
+		}
+		if got != want {
+			return fmt.Errorf("profile information aria-expanded = %q, want %q", got, want)
+		}
+		return nil
+	}
+}
+
 func newContext(ctx context.Context, t *testing.T) context.Context {
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		// Ubuntu 23+ enables AppArmor in a way that conflicts with Chrome's usage
