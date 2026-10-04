@@ -83,6 +83,7 @@ func compileTagFilter(name, value string, numLabelUnits map[string]string, ui pl
 		return nil, err
 	}
 
+	expression := value
 	tagValuePair := strings.SplitN(value, "=", 2)
 	var wantKey string
 	if len(tagValuePair) == 2 {
@@ -90,8 +91,15 @@ func compileTagFilter(name, value string, numLabelUnits map[string]string, ui pl
 		value = tagValuePair[1]
 	}
 
-	if numFilter := parseTagFilterRange(value); numFilter != nil {
+	numFilter, unit, rangeErr := parseTagFilterRange(value)
+	if rangeErr != nil {
+		ui.PrintErr(fmt.Sprintf("%s: %v in %q; interpreting as regexp", name, rangeErr, expression))
+	}
+	if numFilter != nil {
 		ui.PrintErr(name, ":Interpreted '", value, "' as range, not regexp")
+		if incompatible := incompatibleTagUnits(wantKey, unit, numLabelUnits); len(incompatible) != 0 {
+			ui.PrintErr(fmt.Sprintf("%s: range %q has unit %q, incompatible with numeric tag units: %s", name, value, tagUnitName(unit), strings.Join(incompatible, ", ")))
+		}
 		labelFilter := func(vals []int64, unit string) bool {
 			for _, val := range vals {
 				if numFilter(val, unit) {
@@ -158,17 +166,42 @@ func compileTagFilter(name, value string, numLabelUnits map[string]string, ui pl
 	}, nil
 }
 
-// parseTagFilterRange returns a function to checks if a value is
-// contained on the range described by a string. It can recognize
+// incompatibleTagUnits reports selected numeric tags only when none of them
+// can match the filter's unit. Use the same conversion as the range predicate.
+func incompatibleTagUnits(wantKey, unit string, numLabelUnits map[string]string) []string {
+	var incompatible []string
+	for key, labelUnit := range numLabelUnits {
+		if wantKey != "" && key != wantKey {
+			continue
+		}
+		if _, convertedUnit := measurement.Scale(0, labelUnit, unit); convertedUnit == unit {
+			return nil
+		}
+		incompatible = append(incompatible, fmt.Sprintf("%q (%q)", key, tagUnitName(labelUnit)))
+	}
+	slices.Sort(incompatible)
+	return incompatible
+}
+
+func tagUnitName(unit string) string {
+	if unit == "" {
+		return "count"
+	}
+	return unit
+}
+
+// parseTagFilterRange returns a predicate and its unit for a numeric range.
+// If the range bounds have incompatible units, it returns an error explaining
+// why the filter must be interpreted as a regexp instead. It can recognize
 // strings of the form:
 // "32kb" -- matches values == 32kb
 // ":64kb" -- matches values <= 64kb
 // "4mb:" -- matches values >= 4mb
 // "12kb:64mb" -- matches values between 12kb and 64mb (both included).
-func parseTagFilterRange(filter string) func(int64, string) bool {
+func parseTagFilterRange(filter string) (func(int64, string) bool, string, error) {
 	ranges := tagFilterRangeRx.FindAllStringSubmatch(filter, 2)
 	if len(ranges) == 0 {
-		return nil // No ranges were identified
+		return nil, "", nil // No ranges were identified
 	}
 	v, err := strconv.ParseInt(ranges[0][1], 10, 64)
 	if err != nil {
@@ -181,34 +214,34 @@ func parseTagFilterRange(filter string) func(int64, string) bool {
 			return func(v int64, u string) bool {
 				sv, su := measurement.Scale(v, u, unit)
 				return su == unit && sv == scaledValue
-			}
+			}, unit, nil
 		case match + ":":
 			return func(v int64, u string) bool {
 				sv, su := measurement.Scale(v, u, unit)
 				return su == unit && sv >= scaledValue
-			}
+			}, unit, nil
 		case ":" + match:
 			return func(v int64, u string) bool {
 				sv, su := measurement.Scale(v, u, unit)
 				return su == unit && sv <= scaledValue
-			}
+			}, unit, nil
 		}
-		return nil
+		return nil, "", nil
 	}
 	if filter != ranges[0][0]+":"+ranges[1][0] {
-		return nil
+		return nil, "", nil
 	}
 	if v, err = strconv.ParseInt(ranges[1][1], 10, 64); err != nil {
 		panic(fmt.Errorf("failed to parse int %s: %v", ranges[1][1], err))
 	}
 	scaledValue2, unit2 := measurement.Scale(v, ranges[1][2], unit)
 	if unit != unit2 {
-		return nil
+		return nil, "", fmt.Errorf("range bounds have incompatible units %q and %q", tagUnitName(unit), tagUnitName(unit2))
 	}
 	return func(v int64, u string) bool {
 		sv, su := measurement.Scale(v, u, unit)
 		return su == unit && sv >= scaledValue && sv <= scaledValue2
-	}
+	}, unit, nil
 }
 
 func warnNoMatches(match bool, option string, ui plugin.UI) {
