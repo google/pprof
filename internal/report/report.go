@@ -454,7 +454,13 @@ func PrintAssembly(w io.Writer, rpt *Report, obj plugin.ObjTool, maxFuncs int) e
 		flatSum, cumSum := sns.Sum()
 
 		// Get the function assembly.
-		insts, err := obj.Disasm(s.sym.File, s.sym.Start, s.sym.End, o.IntelSyntax)
+		// Symbol ends are inclusive, but Disasm expects an exclusive end.
+		// Keep the unknown end of the final nm symbol from wrapping to zero.
+		end := s.sym.End
+		if end != ^uint64(0) {
+			end++
+		}
+		insts, err := obj.Disasm(s.sym.File, s.sym.Start, end, o.IntelSyntax)
 		if err != nil {
 			return err
 		}
@@ -588,12 +594,14 @@ func (o orderSyms) Less(i, j int) bool { return o.less(o.v[i], o.v[j]) }
 func (o orderSyms) Swap(i, j int)      { o.v[i], o.v[j] = o.v[j], o.v[i] }
 
 // nodesPerSymbol classifies nodes into a group of symbols.
+// A node belongs to a symbol when its object address is in the inclusive
+// range [sym.Start, sym.End].
 func nodesPerSymbol(ns graph.Nodes, symbols []*objSymbol) map[*objSymbol]graph.Nodes {
 	symNodes := make(map[*objSymbol]graph.Nodes)
 	for _, s := range symbols {
 		// Gather samples for this symbol.
 		for _, n := range ns {
-			if address, err := s.file.ObjAddr(n.Info.Address); err == nil && address >= s.sym.Start && address < s.sym.End {
+			if address, err := s.file.ObjAddr(n.Info.Address); err == nil && address >= s.sym.Start && address <= s.sym.End {
 				symNodes[s] = append(symNodes[s], n)
 			}
 		}
