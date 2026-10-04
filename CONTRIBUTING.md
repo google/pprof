@@ -3,43 +3,48 @@ Want to contribute? Great: read the page (including the small print at the end).
 # Before you contribute
 
 As an individual, sign the [Google Individual Contributor License
-Agreement](https://cla.developers.google.com/about/google-individual) (CLA)
-online. This is required for any of your code to be accepted.
+Agreement](https://cla.developers.google.com/about/google-individual) online.
+All submissions to Google Open Source projects need to follow Google's
+Contributor License Agreement (CLA), which covers any original work of
+authorship included in the submission. This doesn't prohibit the use of coding
+assistance tools, including tool-, AI-, or machine-generated code, as long as
+these submissions abide by the CLA's requirements.
 
-Before you start working on a larger contribution, get in touch with us first
-through the issue tracker with your idea so that we can help out and possibly
-guide you. Coordinating up front makes it much easier to avoid frustration later
-on.
+It is recommended that you first explicitly volunteer through the issue tracker
+and get a "go-ahead" for the work before sending any pull requests. This will
+make it less likely for your work to be declined.
 
 # What to expect
 
-All submissions (including by project members) are done via GitHub pull requests
-and require a code review by a project member.
+The pprof source code is in Go with a bit of JavaScript, CSS and HTML. We expect
+pull requests to be good, concise, clean code following style and practices for
+the language the contribution is in.
 
-We expect contributions to be good, clean code following style and practices for
-the language the contribution is in. The pprof source code is in Go with a bit
-of JavaScript, CSS and HTML. If you are new to Go, read [Effective
-Go](https://golang.org/doc/effective_go.html) and the [summary on typical
-comments during Go code
-reviews](https://github.com/golang/go/wiki/CodeReviewComments).
+Changes made with coding assistance tools, including AI, may be accepted as long
+as they comply with the applicable Google CLA terms and the AI-integrated tool
+is not listed as an author or co-author. It is important that the human author
+carefully reviews the AI-assisted solution to make sure it is correct and
+reasonably concise for the problem.
 
-All contributions should include automated tests for the change. We are
-continuously improving pprof automated testing and we can't accept changes that
-are not helping that direction. Code coverage numbers are automatically
-published in each pull request - we expect that number to go up.  Note that
-adding a good test often requires more time than the fix itself - this is
-expected and you should be prepared for that time investment.
+All contributions should include automated tests. Code coverage is automatically
+published in each pull request - we expect coverage to go up (or at least not
+decrease) in every pull request.
 
-Contributions that do not meet the above guidelines will get less attention and
-will be slow to get accepted or won't be accepted at all. We will also likely
-refuse to accept changes that have fairly limited audience but will require us
-to commit to maintain them for foreseeable future. This includes support for
-specific platforms, making internal pprof APIs public, etc.
+We expect most pull requests to be authored by active users of the tool.
+Empirically, contributions that are not a solution to an acute problem someone
+is having in their workflow tend to be lower quality and take longer to
+converge, and are more likely to be rejected.
+
+Contributions that do not meet the above guidelines will be slow to get accepted
+or will be rejected. We will also likely reject changes that are low priority,
+have limited audience, take too many feedback iterations to converge, or require
+non-trivial maintenance (e.g., support for specific platforms, making internal
+pprof APIs public).
 
 # Development
 
-The commands below assume `/tmp/pprof` as the location for the source code.
-You can change it to a directory of your choice.
+The commands below assume `/tmp/pprof` as the location for the source code. You
+can change it to a directory of your choice.
 
 To get the source code, run
 
