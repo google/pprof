@@ -141,13 +141,28 @@ func TestComposeWithStandardGraphAndURL(t *testing.T) {
 func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 	g := baseGraph()
 	a, c := baseAttrsAndConfig()
-	g.Nodes[0].Info = NodeInfo{Name: `var"src"`}
-	g.Nodes[1].Info = NodeInfo{Name: `var"#dest#"`}
+	g.Nodes[0].Info = NodeInfo{Name: `var"src"`, File: `src/file"name.cc`, Lineno: 10, Columnno: 2}
+	g.Nodes[1].Info = NodeInfo{Name: `var"#dest#"`, File: "src/file\nname.cc"}
 
 	var buf bytes.Buffer
 	ComposeDot(&buf, g, a, c)
 
 	compareGraphs(t, buf.Bytes(), "compose7.dot")
+}
+
+func TestComposeWithFilenamesWithBackslashes(t *testing.T) {
+	if filepath.Separator == '\\' {
+		t.Skip("backslashes cannot be part of a Windows filename")
+	}
+	g := baseGraph()
+	a, c := baseAttrsAndConfig()
+	g.Nodes[0].Info = NodeInfo{Name: "src", File: `src/file\name.cc`, Lineno: 10}
+	g.Nodes[1].Info = NodeInfo{Name: "dest"}
+
+	var buf bytes.Buffer
+	ComposeDot(&buf, g, a, c)
+
+	compareGraphs(t, buf.Bytes(), "compose_filename_backslash.dot")
 }
 
 func TestComposeWithCommentsWithNewlines(t *testing.T) {
