@@ -4,6 +4,9 @@
 
 # Introduction
 
+IMPORTANT: Read [CONTRIBUTING.md](CONTRIBUTING.md) if you consider making a
+pprof contribution.
+
 pprof is a tool for visualization and analysis of profiling data.
 
 pprof reads a collection of profiling samples in profile.proto format and
@@ -108,7 +111,5 @@ so required tools like `addr2line` and `nm` are available to `pprof`.
 ## Further documentation
 
 See [doc/README.md](doc/README.md) for more detailed end-user documentation.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution documentation.
 
 See [proto/README.md](proto/README.md) for a description of the profile.proto format.
