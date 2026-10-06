@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.25', '1.26']
+        go: ['1.26', '1.27']
         # Supported macOS versions can be found in
         # https://github.com/actions/virtual-environments#available-environments.
         os: ['macos-14', 'macos-15']
@@ -104,7 +104,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.25', '1.26']
+        go: ['1.26', '1.27']
         os: ['ubuntu-24.04', 'ubuntu-22.04']
     steps:
       - name: Checkout the repo
@@ -178,7 +178,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.25', '1.26']
+        go: ['1.26', '1.27']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
