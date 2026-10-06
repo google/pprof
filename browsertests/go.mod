@@ -1,6 +1,6 @@
 module github.com/google/pprof/browsertests
 
-go 1.25.0
+go 1.26.0
 
 // Use the version of pprof in this directory tree.
 replace github.com/google/pprof => ../
