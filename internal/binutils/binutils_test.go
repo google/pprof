@@ -839,6 +839,34 @@ func TestELFObjAddr(t *testing.T) {
 	}
 }
 
+func TestELFObjAddrOutOfRangeDoesNotLatchError(t *testing.T) {
+	name := filepath.Join("testdata", "exe_linux_64")
+	b := binrep{}
+	o, err := b.openELF(name, 0x5400000, 0x5401000, 0, "")
+	if err != nil {
+		t.Fatalf("openELF failed: %v", err)
+	}
+
+	// 1. First call with an out-of-range address (e.g. from kernel or another mapping).
+	if _, err := o.ObjAddr(0x1000); err == nil {
+		t.Errorf("ObjAddr(0x1000) succeeded, want error for out-of-range address")
+	}
+
+	// 2. Subsequent call with a valid address should succeed and not inherit the previous error.
+	got, err := o.ObjAddr(0x5400400)
+	if err != nil {
+		t.Fatalf("ObjAddr(0x5400400) failed after out-of-range address: %v", err)
+	}
+	if want := uint64(0x400400); got != want {
+		t.Errorf("ObjAddr(0x5400400) = %x, want %x", got, want)
+	}
+
+	// 3. Subsequent out-of-range address still returns an error.
+	if _, err := o.ObjAddr(0x1000); err == nil {
+		t.Errorf("ObjAddr(0x1000) succeeded, want error")
+	}
+}
+
 type buf struct {
 	data []byte
 }
