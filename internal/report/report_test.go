@@ -724,3 +724,45 @@ func BenchmarkReportNewTrimmedGraph(b *testing.B) {
 		}
 	}
 }
+
+type mockRangeObjFile struct {
+	name         string
+	start, limit uint64
+	base         uint64
+}
+
+func (m *mockRangeObjFile) Name() string { return m.name }
+func (m *mockRangeObjFile) ObjAddr(addr uint64) (uint64, error) {
+	if addr < m.start || addr >= m.limit {
+		return 0, fmt.Errorf("out of range: %x outside [%x, %x]", addr, m.start, m.limit)
+	}
+	return addr - m.base, nil
+}
+func (m *mockRangeObjFile) BuildID() string                                { return "" }
+func (m *mockRangeObjFile) SourceLine(addr uint64) ([]plugin.Frame, error) { return nil, nil }
+func (m *mockRangeObjFile) Symbols(r *regexp.Regexp, addr uint64) ([]*plugin.Sym, error) {
+	return nil, nil
+}
+func (m *mockRangeObjFile) Close() error { return nil }
+
+func TestNodesPerSymbol(t *testing.T) {
+	file1 := &mockRangeObjFile{name: "app", start: 0x400000, limit: 0x402000, base: 0x400000}
+	sym := &objSymbol{
+		sym:  &plugin.Sym{Name: []string{"do_work"}, File: "app", Start: 0x1000, End: 0x1100},
+		file: file1,
+	}
+
+	nodes := graph.Nodes{
+		{Info: graph.NodeInfo{Address: 0x7f001000}}, // libc/kernel address (out of range for file1)
+		{Info: graph.NodeInfo{Address: 0x401050}},   // in range: 0x401050 - 0x400000 = 0x1050 (inside [0x1000, 0x1100))
+		{Info: graph.NodeInfo{Address: 0x401200}},   // in range for file1, but outside [0x1000, 0x1100)
+	}
+
+	res := nodesPerSymbol(nodes, []*objSymbol{sym})
+	if len(res[sym]) != 1 {
+		t.Fatalf("got %d matching nodes, want 1", len(res[sym]))
+	}
+	if res[sym][0].Info.Address != 0x401050 {
+		t.Errorf("got node address %x, want 0x401050", res[sym][0].Info.Address)
+	}
+}
