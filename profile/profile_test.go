@@ -1919,6 +1919,35 @@ func TestEncodeDecodeDocURL(t *testing.T) {
 	}
 }
 
+// TestEncodeNumLabelUnitsMismatch checks that a sample whose NumUnit slice is
+// shorter than its NumLabel slice for a key can still be encoded. SetNumLabel
+// does not require the two slices to have the same length, so such profiles can
+// occur in practice; previously preEncode indexed NumUnit[k][i] while iterating
+// NumLabel[k] and panicked with a slice out-of-range error.
+func TestEncodeNumLabelUnitsMismatch(t *testing.T) {
+	p := &Profile{
+		PeriodType: &ValueType{Type: "space", Unit: "bytes"},
+		SampleType: []*ValueType{{Type: "space", Unit: "bytes"}},
+		Sample: []*Sample{{
+			Value:    []int64{1},
+			NumLabel: map[string][]int64{"bytes": {1, 2, 3}},
+			NumUnit:  map[string][]string{"bytes": {"by"}},
+		}},
+	}
+
+	var buf bytes.Buffer
+	if err := p.Write(&buf); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	out, err := Parse(&buf)
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if got, want := out.Sample[0].NumLabel["bytes"], []int64{1, 2, 3}; !reflect.DeepEqual(got, want) {
+		t.Errorf("NumLabel[bytes] = %v, want %v", got, want)
+	}
+}
+
 // parallel runs n copies of fn in parallel.
 func parallel(n int, fn func()) {
 	var wg sync.WaitGroup

@@ -419,6 +419,19 @@ func TestCreateNodes(t *testing.T) {
 	}
 }
 
+// TestNumLabelUnitsMismatch checks that building a graph does not panic when a
+// sample's NumUnit slice is shorter than its NumLabel slice for a key. Such
+// samples are allowed by profile.SetNumLabel; addSample previously indexed
+// units[i] for every numeric value and panicked with a slice out-of-range error.
+func TestNumLabelUnitsMismatch(t *testing.T) {
+	testProfile := nodeTestProfile()
+	testProfile.Sample[0].NumLabel = map[string][]int64{"bytes": {1, 2, 3}}
+	testProfile.Sample[0].NumUnit = map[string][]string{"bytes": {"by"}}
+
+	// Should not panic.
+	New(testProfile, &Options{SampleValue: func(v []int64) int64 { return v[0] }})
+}
+
 func TestShortenFunctionName(t *testing.T) {
 	type testCase struct {
 		name string

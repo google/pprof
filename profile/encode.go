@@ -65,7 +65,7 @@ func (p *Profile) preEncode() {
 			units := s.NumUnit[k]
 			for i, v := range vs {
 				var unitX int64
-				if len(units) != 0 {
+				if i < len(units) {
 					unitX = addString(strings, units[i])
 				}
 				s.labelX = append(s.labelX,
