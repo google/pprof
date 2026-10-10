@@ -575,6 +575,9 @@ func TestTagFilter(t *testing.T) {
 			for l := range s.NumLabel {
 				tags[l] = true
 			}
+			for l := range s.NumUnit {
+				tags[l] = true
+			}
 		}
 		return tags
 	}
@@ -586,6 +589,7 @@ func TestTagFilter(t *testing.T) {
 		{nil, regexp.MustCompile("key[12]"), true, true, 1},
 	} {
 		prof := testProfile1.Copy()
+		prof.SetNumLabel("key2", []int64{10}, []string{"bytes"})
 		gim, gem := prof.FilterTagsByName(tc.include, tc.exclude)
 		if gim != tc.im {
 			t.Errorf("Filter #%d, got include match=%v, want %v", tx, gim, tc.im)
