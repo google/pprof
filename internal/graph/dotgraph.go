@@ -390,7 +390,7 @@ func multilinePrintableName(info *NodeInfo) string {
 	infoCopy.Name = strings.ReplaceAll(infoCopy.Name, "[...]", "[…]")
 	infoCopy.Name = strings.ReplaceAll(infoCopy.Name, ".", `\n`)
 	if infoCopy.File != "" {
-		infoCopy.File = filepath.Base(infoCopy.File)
+		infoCopy.File = escapeForDot(filepath.Base(infoCopy.File))
 	}
 	return strings.Join(infoCopy.NameComponents(), `\n`) + `\n`
 }
