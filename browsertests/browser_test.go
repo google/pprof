@@ -55,16 +55,16 @@ func TestTopTable(t *testing.T) {
 	server := makeTestServer(t, prof)
 	ctx := newContext(context.Background(), t)
 
-	err := chromedp.Run(ctx,
+	err := chromedp.Do(ctx,
 		chromedp.Navigate(server.URL+"/top"),
-		chromedp.WaitVisible(`#toptable`, chromedp.ByID),
+		chromedp.WaitVisible(chromedp.ID(`#toptable`)),
 
 		// Check that fake profile entries show up in the right order.
 		matchRegexp(t, "#node0", `200ms.*F2`),
 		matchInOrder(t, "#toptable", "F2", "F3", "F1"),
 
 		// Check sorting by cumulative count.
-		chromedp.Click(`#cumhdr1`, chromedp.ByID),
+		chromedp.Click(chromedp.ID(`#cumhdr1`)),
 		matchInOrder(t, "#toptable", "F1", "F2", "F3"),
 	)
 	if err != nil {
@@ -89,10 +89,10 @@ func TestSamplingDetails(t *testing.T) {
 			prof.Period, prof.PeriodType = tc.period, tc.periodType
 			server := makeTestServer(t, prof)
 			ctx := newContext(context.Background(), t)
-			if err := chromedp.Run(ctx,
+			if err := chromedp.Do(ctx,
 				chromedp.Navigate(server.URL+"/top"),
-				chromedp.Click(`#details`, chromedp.ByID),
-				chromedp.WaitVisible(`#detailsbox`, chromedp.ByID),
+				chromedp.Click(chromedp.ID(`#details`)),
+				chromedp.WaitVisible(chromedp.ID(`#detailsbox`)),
 				matchRegexp(t, "#detailsbox", tc.want),
 			); err != nil {
 				t.Fatal(err)
@@ -108,10 +108,9 @@ func TestFlameGraph(t *testing.T) {
 	server := makeTestServer(t, prof)
 	ctx := newContext(context.Background(), t)
 
-	var ignored []byte // Some chromedp.Evaluate() versions wants non-nil result argument
-	err := chromedp.Run(ctx,
+	err := chromedp.Do(ctx,
 		chromedp.Navigate(server.URL),
-		chromedp.Evaluate(jsTestFixture, &ignored),
+		chromedp.Evaluate[chromedp.Void](jsTestFixture),
 		eval(t, jsCheckFlame),
 	)
 	if err != nil {
@@ -129,9 +128,9 @@ func TestSource(t *testing.T) {
 	server := makeTestServer(t, prof)
 	ctx := newContext(context.Background(), t)
 
-	err := chromedp.Run(ctx,
+	err := chromedp.Do(ctx,
 		chromedp.Navigate(server.URL+"/source?f=F3"),
-		chromedp.WaitVisible(`#content`, chromedp.ByID),
+		chromedp.WaitVisible(chromedp.ID(`#content`)),
 		matchRegexp(t, "#content", `F3`),            // Header
 		matchRegexp(t, "#content", `Total:.*100ms`), // Total for function
 		matchRegexp(t, "#content", `\b22\b.*100ms`), // Line 22
@@ -165,10 +164,9 @@ func newContext(ctx context.Context, t *testing.T) context.Context {
 
 // matchRegexp is a chromedp.Action that fetches the text of the first
 // node that matched query and checks that the text matches regexp re.
-func matchRegexp(t *testing.T, query, re string) chromedp.ActionFunc {
-	return func(ctx context.Context) error {
-		var value string
-		err := chromedp.Text(query, &value, chromedp.ByQuery).Do(ctx)
+func matchRegexp(t *testing.T, query, re string) chromedp.Action[chromedp.Void] {
+	return chromedp.Func(func(ctx context.Context, target *chromedp.Target) error {
+		value, err := chromedp.Text(chromedp.CSS(query))(ctx, target)
 		if err != nil {
 			return fmt.Errorf("text %s: %v", query, err)
 		}
@@ -181,16 +179,15 @@ func matchRegexp(t *testing.T, query, re string) chromedp.ActionFunc {
 			return fmt.Errorf("%s: did not find %q in\n%s", query, re, value)
 		}
 		return nil
-	}
+	})
 }
 
 // matchInOrder is a chromedp.Action that fetches the text of the first
 // node that matched query and checks that the supplied sequence of
 // strings occur in order in the text.
-func matchInOrder(t *testing.T, query string, sequence ...string) chromedp.ActionFunc {
-	return func(ctx context.Context) error {
-		var value string
-		err := chromedp.Text(query, &value, chromedp.ByQuery).Do(ctx)
+func matchInOrder(t *testing.T, query string, sequence ...string) chromedp.Action[chromedp.Void] {
+	return chromedp.Func(func(ctx context.Context, target *chromedp.Target) error {
+		value, err := chromedp.Text(chromedp.CSS(query))(ctx, target)
 		if err != nil {
 			return fmt.Errorf("text %s: %v", query, err)
 		}
@@ -204,16 +201,15 @@ func matchInOrder(t *testing.T, query string, sequence ...string) chromedp.Actio
 			remaining = remaining[pos+len(s):]
 		}
 		return nil
-	}
+	})
 }
 
 // eval runs the specified javascript in the browser. The javascript must
 // return an [][]any, where each of the []any starts with either "LOG" or
 // "ERROR" (see testdata/testfixture.js).
-func eval(t *testing.T, js string) chromedp.ActionFunc {
-	return func(ctx context.Context) error {
-		var result [][]any
-		err := chromedp.Evaluate(js, &result).Do(ctx)
+func eval(t *testing.T, js string) chromedp.Action[chromedp.Void] {
+	return chromedp.Func(func(ctx context.Context, target *chromedp.Target) error {
+		result, err := chromedp.Evaluate[[][]any](js)(ctx, target)
 		if err != nil {
 			return err
 		}
@@ -227,7 +223,7 @@ func eval(t *testing.T, js string) chromedp.ActionFunc {
 			}
 		}
 		return nil
-	}
+	})
 }
 
 //go:embed testdata/testfixture.js

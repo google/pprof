@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.25', '1.26']
+        go: ['1.26', '1.27']
         # Supported macOS versions can be found in
         # https://github.com/actions/virtual-environments#available-environments.
         os: ['macos-14', 'macos-15']
@@ -75,8 +75,8 @@ jobs:
           brew install graphviz
           # Do not let tools interfere with the main module's go.mod.
           cd && go mod init tools
-          go install honnef.co/go/tools/cmd/staticcheck@2025.1.1
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0
+          go install honnef.co/go/tools/cmd/staticcheck@2026.2.1
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
           # Add PATH for installed tools.
           echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
 
@@ -104,7 +104,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.25', '1.26']
+        go: ['1.26', '1.27']
         os: ['ubuntu-24.04', 'ubuntu-22.04']
     steps:
       - name: Checkout the repo
@@ -148,8 +148,8 @@ jobs:
           sudo apt-get install graphviz
           # Do not let tools interfere with the main module's go.mod.
           cd && go mod init tools
-          go install honnef.co/go/tools/cmd/staticcheck@2025.1.1
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0
+          go install honnef.co/go/tools/cmd/staticcheck@2026.2.1
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
           # Add PATH for installed tools.
           echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
 
@@ -178,7 +178,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.25', '1.26']
+        go: ['1.26', '1.27']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
