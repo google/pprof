@@ -135,11 +135,11 @@ func TestFindProgHeaderForMapping(t *testing.T) {
 			}
 			return
 		}
-		if _, err := builder.WriteString(fmt.Sprintf("%#v", *headers[0])); err != nil {
+		if _, err := fmt.Fprintf(&builder, "%#v", *headers[0]); err != nil {
 			t.Error("Failed to append first header to the builder")
 		}
 		for i, h := range headers[1:] {
-			if _, err := builder.WriteString(fmt.Sprintf(", %#v", *h)); err != nil {
+			if _, err := fmt.Fprintf(&builder, ", %#v", *h); err != nil {
 				t.Errorf("Failed to append header %d to the builder", i+1)
 			}
 		}
