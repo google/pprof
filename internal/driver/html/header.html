@@ -78,7 +78,14 @@
   </div>
 
   <div class="description">
-    <a title="{{.Help.details}}" href="#" id="details">{{.Title}}</a>
+    <button type="button" title="{{.Help.details}}" id="details"
+            aria-label="Show profile information for {{.Title}}" aria-expanded="false" aria-controls="detailsbox">
+      {{.Title}}
+      <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M11 10h2v7h-2zM11 6h2v2h-2z" fill="currentColor"/>
+      </svg>
+    </button>
     <div id="detailsbox">
       {{range .Legend}}<div>{{.}}</div>{{end}}
     </div>
