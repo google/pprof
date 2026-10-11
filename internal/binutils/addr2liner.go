@@ -147,7 +147,8 @@ func (d *addr2Liner) readFrame() (plugin.Frame, bool) {
 		funcname = ""
 	}
 
-	if fileline == "??:0" {
+	// GNU addr2line prints "??:0" or "??:?" for an unknown file and line.
+	if fileline == "??:0" || fileline == "??:?" {
 		fileline = ""
 	} else {
 		if i := strings.LastIndex(fileline, ":"); i >= 0 {
