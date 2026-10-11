@@ -1026,3 +1026,27 @@ func TestToolPaths(t *testing.T) {
 		}
 	}
 }
+
+func TestAddr2LinerUnknownLocation(t *testing.T) {
+	// Regression test for https://github.com/google/pprof/issues/1044.
+	// GNU addr2line 2.40 prints "??:?" for a location with no file and line
+	// info, which must be treated as an empty filename just like "??:0".
+	for _, fileline := range []string{"??:0", "??:?"} {
+		a := addr2Liner{rw: &mockAddr2liner{
+			output: []string{"??", fileline},
+		}}
+		frame, end := a.readFrame()
+		if end {
+			t.Fatalf("readFrame(%q): unexpected end of data", fileline)
+		}
+		if frame.Func != "" {
+			t.Errorf("readFrame(%q): Func = %q, want empty", fileline, frame.Func)
+		}
+		if frame.File != "" {
+			t.Errorf("readFrame(%q): File = %q, want empty", fileline, frame.File)
+		}
+		if frame.Line != 0 {
+			t.Errorf("readFrame(%q): Line = %d, want 0", fileline, frame.Line)
+		}
+	}
+}
