@@ -6,6 +6,10 @@ on:
   pull_request:
   schedule:
     - cron: '0 2 * * *' # Run every day, at 2AM UTC.
+
+permissions:
+  contents: read
+
 env:
   GOPATH: ${{ github.workspace }}
   WORKING_DIR: ./src/github.com/google/pprof/
@@ -18,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.24', '1.25', 'tip']
+        go: ['1.26', '1.27']
         # Supported macOS versions can be found in
         # https://github.com/actions/virtual-environments#available-environments.
         os: ['macos-14', 'macos-15']
@@ -48,42 +52,18 @@ jobs:
 
     steps:
       - name: Checkout the repo
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: ${{ env.WORKING_DIR }}
 
       - name: Update Go version using setup-go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
-        if: matrix.go != 'tip'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           # Include cache directives to allow proper caching. Without them, we
           # get setup-go "Restore cache failed" warnings.
           go-version: ${{ matrix.go }}
           cache: true
           cache-dependency-path: '**/go.sum'
-
-      - name: Install Go bootstrap compiler
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
-        if: matrix.go == 'tip'
-        with:
-          # Bootstrapping go tip requires 1.24
-          # Include cache directives to allow proper caching. Without them, we
-          # get setup-go "Restore cache failed" warnings.
-          go-version: 1.24
-          cache: true
-          cache-dependency-path: '**/go.sum'
-
-      - name: Update Go version manually
-        if: matrix.go == 'tip'
-        working-directory: ${{ github.workspace }}
-        run: |
-          git clone https://go.googlesource.com/go $HOME/gotip
-          cd $HOME/gotip/src
-          ./make.bash
-          echo "GOROOT=$HOME/gotip" >> $GITHUB_ENV
-          echo "RUN_STATICCHECK=false" >> $GITHUB_ENV
-          echo "RUN_GOLANGCI_LINTER=false" >> $GITHUB_ENV
-          echo "$HOME/gotip/bin:$PATH" >> $GITHUB_PATH
 
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
@@ -95,8 +75,11 @@ jobs:
           brew install graphviz
           # Do not let tools interfere with the main module's go.mod.
           cd && go mod init tools
-          go install honnef.co/go/tools/cmd/staticcheck@2025.1.1
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0
+          # TODO: Switch back to a tagged release once one newer than 2026.2.1
+          # is out, see https://github.com/dominikh/go-tools/issues/1832.
+          # 2026.2.1 can't read Go 1.27.2+ export data (version 5).
+          go install honnef.co/go/tools/cmd/staticcheck@452d5bb86b45
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
           # Add PATH for installed tools.
           echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
 
@@ -105,8 +88,12 @@ jobs:
           go version
           ./test.sh
 
+      # Only upload code coverage for the main repository. Forks typically
+      # do not have Codecov configured, and we want to avoid failing the CI
+      # run in that case.
       - name: Code coverage
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        if: github.repository == 'google/pprof'
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           files: ${{ env.WORKING_DIR }}/coverage.txt
           fail_ci_if_error: true
@@ -120,46 +107,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.24', '1.25', 'tip']
+        go: ['1.26', '1.27']
         os: ['ubuntu-24.04', 'ubuntu-22.04']
     steps:
       - name: Checkout the repo
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: ${{ env.WORKING_DIR }}
 
       - name: Update Go version using setup-go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
-        if: matrix.go != 'tip'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           # Include cache directives to allow proper caching. Without them, we
           # get setup-go "Restore cache failed" warnings.
           go-version: ${{ matrix.go }}
           cache: true
           cache-dependency-path: '**/go.sum'
-
-      - name: Install Go bootstrap compiler
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
-        if: matrix.go == 'tip'
-        with:
-          # Bootstrapping go tip requires 1.24
-          # Include cache directives to allow proper caching. Without them, we
-          # get setup-go "Restore cache failed" warnings.
-          go-version: 1.24
-          cache: true
-          cache-dependency-path: '**/go.sum'
-
-      - name: Update Go version manually
-        if: matrix.go == 'tip'
-        working-directory: ${{ github.workspace }}
-        run: |
-          git clone https://go.googlesource.com/go $HOME/gotip
-          cd $HOME/gotip/src
-          ./make.bash
-          echo "GOROOT=$HOME/gotip" >> $GITHUB_ENV
-          echo "RUN_STATICCHECK=false" >> $GITHUB_ENV
-          echo "RUN_GOLANGCI_LINTER=false" >> $GITHUB_ENV
-          echo "$HOME/gotip/bin" >> $GITHUB_PATH
 
       - name: Check chrome for browser tests
         run: |
@@ -188,8 +151,11 @@ jobs:
           sudo apt-get install graphviz
           # Do not let tools interfere with the main module's go.mod.
           cd && go mod init tools
-          go install honnef.co/go/tools/cmd/staticcheck@2025.1.1
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0
+          # TODO: Switch back to a tagged release once one newer than 2026.2.1
+          # is out, see https://github.com/dominikh/go-tools/issues/1832.
+          # 2026.2.1 can't read Go 1.27.2+ export data (version 5).
+          go install honnef.co/go/tools/cmd/staticcheck@452d5bb86b45
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
           # Add PATH for installed tools.
           echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
 
@@ -202,8 +168,12 @@ jobs:
           go version
           ./test.sh
 
+      # Only upload code coverage for the main repository. Forks typically
+      # do not have Codecov configured, and we want to avoid failing the CI
+      # run in that case.
       - name: Code coverage
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        if: github.repository == 'google/pprof'
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           files: ${{ env.WORKING_DIR }}/coverage.txt
           fail_ci_if_error: true
@@ -214,15 +184,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.24', '1.25']
+        go: ['1.26', '1.27']
     steps:
       - name: Checkout the repo
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: ${{ env.WORKING_DIR }}
 
       - name: Update Go version using setup-go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           # Include cache directives to allow proper caching. Without them, we
           # get setup-go "Restore cache failed" warnings.
@@ -231,9 +201,9 @@ jobs:
           cache-dependency-path: '**/go.sum'
 
       - name: Fetch Windows dependency
-        uses: crazy-max/ghaction-chocolatey@dff3862348493b11fba2fbc49147b6d2dfe09b66 # v4.0.0
+        uses: crazy-max/ghaction-chocolatey@dfdcf5bba9c0a16358a21c13a06ec5c89024b3ac # v4.1.0
         with:
-          args: install graphviz llvm
+          args: install --stop-on-first-failure graphviz llvm
 
       - name: Run the test
         run: |
@@ -257,6 +227,6 @@ jobs:
     - test-windows
     steps:
     - name: Decide whether the needed jobs succeeded or failed
-      uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe # v1.2.2
+      uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # v1.3.0
       with:
         jobs: ${{ toJSON(needs) }}
