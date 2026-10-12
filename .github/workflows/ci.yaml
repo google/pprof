@@ -75,7 +75,10 @@ jobs:
           brew install graphviz
           # Do not let tools interfere with the main module's go.mod.
           cd && go mod init tools
-          go install honnef.co/go/tools/cmd/staticcheck@2026.2.1
+          # TODO: Switch back to a tagged release once one newer than 2026.2.1
+          # is out, see https://github.com/dominikh/go-tools/issues/1832.
+          # 2026.2.1 can't read Go 1.27.2+ export data (version 5).
+          go install honnef.co/go/tools/cmd/staticcheck@452d5bb86b45
           go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
           # Add PATH for installed tools.
           echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
@@ -148,7 +151,10 @@ jobs:
           sudo apt-get install graphviz
           # Do not let tools interfere with the main module's go.mod.
           cd && go mod init tools
-          go install honnef.co/go/tools/cmd/staticcheck@2026.2.1
+          # TODO: Switch back to a tagged release once one newer than 2026.2.1
+          # is out, see https://github.com/dominikh/go-tools/issues/1832.
+          # 2026.2.1 can't read Go 1.27.2+ export data (version 5).
+          go install honnef.co/go/tools/cmd/staticcheck@452d5bb86b45
           go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
           # Add PATH for installed tools.
           echo "$GOPATH/bin:$PATH" >> $GITHUB_PATH
