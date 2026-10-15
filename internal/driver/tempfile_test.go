@@ -2,9 +2,30 @@ package driver
 
 import (
 	"os"
+	"runtime"
 	"sync"
 	"testing"
 )
+
+func TestNewTempFilePermissions(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("file permission bits are not meaningful on Windows")
+	}
+	f, err := newTempFile(t.TempDir(), "profile", ".tmp")
+	if err != nil {
+		t.Fatalf("newTempFile(): got %v, want no error", err)
+	}
+	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		t.Fatalf("Stat(): got %v, want no error", err)
+	}
+	// Temp files can hold profile data, so they must not be readable or
+	// writable by group or other users.
+	if perm := fi.Mode().Perm(); perm&0077 != 0 {
+		t.Errorf("newTempFile() created a file with mode %#o, want no group/other access", perm)
+	}
+}
 
 func TestNewTempFile(t *testing.T) {
 	const n = 100
