@@ -6,6 +6,9 @@ import (
 )
 
 func TestDiffEqual(t *testing.T) {
+	// Clear PATH to ensure Diff does not rely on an external diff tool when inputs are equal.
+	t.Setenv("PATH", "")
+
 	for _, tc := range []struct {
 		name   string
 		b1, b2 []byte
