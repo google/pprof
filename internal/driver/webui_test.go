@@ -314,6 +314,37 @@ func TestIsLocalHost(t *testing.T) {
 	}
 }
 
+func TestWebServerHandlerLocalOnly(t *testing.T) {
+	handler := webServerHandler(&plugin.HTTPServerArgs{
+		Host: "localhost",
+		Handlers: map[string]http.Handler{
+			"/top": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+		},
+	})
+	for _, tc := range []struct {
+		remoteAddr, host string
+		wantCode         int
+	}{
+		{"127.0.0.1:5000", "localhost:8080", http.StatusOK},
+		{"127.0.0.1:5000", "127.0.0.1:8080", http.StatusOK},
+		{"[::1]:5000", "[::1]:8080", http.StatusOK},
+		{"127.0.0.1:5000", "localhost", http.StatusOK},
+		{"192.0.2.1:5000", "localhost:8080", http.StatusForbidden},
+		// DNS rebinding: local client, but the browser sends the attacker's host.
+		{"127.0.0.1:5000", "attacker.example:8080", http.StatusForbidden},
+		{"127.0.0.1:5000", "attacker.example", http.StatusForbidden},
+	} {
+		req := httptest.NewRequest(http.MethodGet, "/ui/top", nil)
+		req.RemoteAddr = tc.remoteAddr
+		req.Host = tc.host
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != tc.wantCode {
+			t.Errorf("remote %s, host %s: got status %d, want %d", tc.remoteAddr, tc.host, rec.Code, tc.wantCode)
+		}
+	}
+}
+
 func BenchmarkTop(b *testing.B)   { benchmarkURL(b, "/top", false) }
 func BenchmarkFlame(b *testing.B) { benchmarkURL(b, "/flamegraph", false) }
 func BenchmarkDot(b *testing.B)   { benchmarkURL(b, "/", true) }

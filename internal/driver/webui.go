@@ -187,12 +187,24 @@ func defaultWebServer(args *plugin.HTTPServerArgs) error {
 	if err != nil {
 		return err
 	}
+	s := &http.Server{Handler: webServerHandler(args)}
+	return s.Serve(ln)
+}
+
+func webServerHandler(args *plugin.HTTPServerArgs) http.Handler {
 	isLocal := isLocalhost(args.Host)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if isLocal {
 			// Only allow local clients
 			host, _, err := net.SplitHostPort(req.RemoteAddr)
 			if err != nil || !isLocalhost(host) {
+				http.Error(w, "permission denied", http.StatusForbidden)
+				return
+			}
+			// Also require a local Host header, so that a web page whose
+			// domain has been DNS-rebound to a loopback address cannot
+			// read from the server.
+			if !isLocalhost(hostWithoutPort(req.Host)) {
 				http.Error(w, "permission denied", http.StatusForbidden)
 				return
 			}
@@ -212,8 +224,15 @@ func defaultWebServer(args *plugin.HTTPServerArgs) error {
 	mux := http.NewServeMux()
 	mux.Handle("/ui/", http.StripPrefix("/ui", handler))
 	mux.Handle("/", redirectWithQuery("/ui", http.StatusTemporaryRedirect))
-	s := &http.Server{Handler: mux}
-	return s.Serve(ln)
+	return mux
+}
+
+// hostWithoutPort returns the host part of a Host header value.
+func hostWithoutPort(hostport string) string {
+	if host, _, err := net.SplitHostPort(hostport); err == nil {
+		return host
+	}
+	return hostport
 }
 
 // redirectWithQuery responds with a given redirect code, preserving query
