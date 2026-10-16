@@ -132,8 +132,8 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options, d
 			"/source":       http.HandlerFunc(ui.source),
 			"/peek":         http.HandlerFunc(ui.peek),
 			"/flamegraph":   http.HandlerFunc(ui.stackView),
-			"/saveconfig":   http.HandlerFunc(ui.saveConfig),
-			"/deleteconfig": http.HandlerFunc(ui.deleteConfig),
+			"/saveconfig":   configHandler(http.MethodPost, ui.saveConfig),
+			"/deleteconfig": configHandler(http.MethodDelete, ui.deleteConfig),
 			"/download": http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				w.Header().Set("Content-Type", "application/vnd.google.protobuf+gzip")
 				w.Header().Set("Content-Disposition", "attachment;filename=profile.pb.gz")
@@ -447,6 +447,21 @@ func (ui *webInterface) peek(w http.ResponseWriter, req *http.Request) {
 	ui.render(w, req, "plaintext", rpt, errList, legend, webArgs{
 		TextBody: out.String(),
 	})
+}
+
+// configHandler wraps a handler that modifies the settings file. It only
+// accepts the given method and rejects cross-origin browser requests, so
+// that other web sites open in the user's browser cannot change or delete
+// saved configurations.
+func configHandler(method string, h http.HandlerFunc) http.Handler {
+	return http.NewCrossOriginProtection().Handler(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.Method != method {
+			w.Header().Set("Allow", method)
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		h(w, req)
+	}))
 }
 
 // saveConfig saves URL configuration.
