@@ -7,26 +7,6 @@ import (
 	"testing"
 )
 
-func TestNewTempFilePermissions(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("file permission bits are not meaningful on Windows")
-	}
-	f, err := newTempFile(t.TempDir(), "profile", ".tmp")
-	if err != nil {
-		t.Fatalf("newTempFile(): got %v, want no error", err)
-	}
-	defer f.Close()
-	fi, err := f.Stat()
-	if err != nil {
-		t.Fatalf("Stat(): got %v, want no error", err)
-	}
-	// Temp files can hold profile data, so they must not be readable or
-	// writable by group or other users.
-	if perm := fi.Mode().Perm(); perm&0077 != 0 {
-		t.Errorf("newTempFile() created a file with mode %#o, want no group/other access", perm)
-	}
-}
-
 func TestNewTempFile(t *testing.T) {
 	const n = 100
 	// Line up ready to execute goroutines with a read-write lock.
@@ -66,6 +46,13 @@ func TestNewTempFile(t *testing.T) {
 			break
 		}
 		names[name] = true
+		// Temp files can hold profile data, so they must not be accessible
+		// by group or other users.
+		if fi, err := os.Stat(name); err != nil {
+			t.Errorf("Stat(%s): got error %v, want no error", name, err)
+		} else if perm := fi.Mode().Perm(); runtime.GOOS != "windows" && perm&0077 != 0 {
+			t.Errorf("temp file %s has mode %#o, want no group/other access", name, perm)
+		}
 	}
 	if err := cleanupTempFiles(); err != nil {
 		t.Errorf("cleanupTempFiles(): got error %v, want no error", err)
