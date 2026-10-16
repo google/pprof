@@ -150,6 +150,29 @@ func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 	compareGraphs(t, buf.Bytes(), "compose7.dot")
 }
 
+func TestComposeWithTagsThatNeedEscaping(t *testing.T) {
+	g := baseGraph()
+	a, c := baseAttrsAndConfig()
+	g.Nodes[0].LabelTags["a"] = &Tag{
+		Name: `label"quote"` + "\nline2",
+		Cum:  10,
+		Flat: 10,
+	}
+	g.Nodes[0].NumericTags[""] = TagMap{
+		"b": &Tag{
+			Name: `numeric"quote"` + "\nline2",
+			Cum:  20,
+			Flat: 20,
+			Unit: "ms",
+		},
+	}
+
+	var buf bytes.Buffer
+	ComposeDot(&buf, g, a, c)
+
+	compareGraphs(t, buf.Bytes(), "compose8.dot")
+}
+
 func TestComposeWithCommentsWithNewlines(t *testing.T) {
 	g := baseGraph()
 	a, c := baseAttrsAndConfig()
