@@ -326,6 +326,7 @@ func TestWebServerHandlerLocalOnly(t *testing.T) {
 		wantCode         int
 	}{
 		{"127.0.0.1:5000", "localhost:8080", http.StatusOK},
+		{"127.0.0.1:5000", "LocalHost:8080", http.StatusOK},
 		{"127.0.0.1:5000", "127.0.0.1:8080", http.StatusOK},
 		{"[::1]:5000", "[::1]:8080", http.StatusOK},
 		{"127.0.0.1:5000", "localhost", http.StatusOK},
@@ -333,6 +334,7 @@ func TestWebServerHandlerLocalOnly(t *testing.T) {
 		// DNS rebinding: local client, but the browser sends the attacker's host.
 		{"127.0.0.1:5000", "attacker.example:8080", http.StatusForbidden},
 		{"127.0.0.1:5000", "attacker.example", http.StatusForbidden},
+		{"127.0.0.1:5000", "", http.StatusForbidden},
 	} {
 		req := httptest.NewRequest(http.MethodGet, "/ui/top", nil)
 		req.RemoteAddr = tc.remoteAddr

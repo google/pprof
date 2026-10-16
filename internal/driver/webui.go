@@ -204,7 +204,7 @@ func webServerHandler(args *plugin.HTTPServerArgs) http.Handler {
 			// Also require a local Host header, so that a web page whose
 			// domain has been DNS-rebound to a loopback address cannot
 			// read from the server.
-			if !isLocalhost(hostWithoutPort(req.Host)) {
+			if !isLocalhost(strings.ToLower(hostWithoutPort(req.Host))) {
 				http.Error(w, "permission denied", http.StatusForbidden)
 				return
 			}
