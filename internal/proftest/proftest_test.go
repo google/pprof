@@ -5,13 +5,11 @@ import (
 )
 
 func TestDiff(t *testing.T) {
-	// Clear PATH to ensure Diff does not rely on an external diff tool when inputs are equal.
-	t.Setenv("PATH", "")
-
 	for _, tc := range []struct {
-		name     string
-		b1, b2   []byte
-		wantDiff bool
+		name      string
+		b1, b2    []byte
+		emptyPATH bool
+		wantDiff  bool
 	}{
 		{
 			name:     "both nil",
@@ -32,6 +30,13 @@ func TestDiff(t *testing.T) {
 			wantDiff: false,
 		},
 		{
+			name:      "equal non-empty content without diff in PATH",
+			b1:        []byte("line 1\nline 2\n"),
+			b2:        []byte("line 1\nline 2\n"),
+			emptyPATH: true,
+			wantDiff:  false,
+		},
+		{
 			name:     "unequal content",
 			b1:       []byte("hello\n"),
 			b2:       []byte("world\n"),
@@ -39,6 +44,9 @@ func TestDiff(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.emptyPATH {
+				t.Setenv("PATH", "")
+			}
 			diff, err := Diff(tc.b1, tc.b2)
 			if err != nil {
 				t.Fatalf("Diff unexpected error: %v", err)
