@@ -155,6 +155,66 @@ func TestWebInterface(t *testing.T) {
 	wg.Wait()
 }
 
+func TestConfigHandlersRejectCrossOrigin(t *testing.T) {
+	// Keep the settings file out of the user's config directory.
+	dir := t.TempDir()
+	for _, env := range []string{"HOME", "home", "XDG_CONFIG_HOME", "AppData"} {
+		t.Setenv(env, dir)
+	}
+	fname, err := settingsFileName()
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := makeTestServer(t, makeFakeProfile())
+
+	hasConfig := func(name string) bool {
+		s, err := readSettings(fname)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, c := range s.Configs {
+			if c.Name == name {
+				return true
+			}
+		}
+		return false
+	}
+
+	for _, c := range []struct {
+		desc, method, path string
+		header             map[string]string
+		wantCode           int
+		wantConfig         bool
+	}{
+		{"get save", http.MethodGet, "/saveconfig?config=c1", nil, http.StatusMethodNotAllowed, false},
+		{"cross-site save", http.MethodPost, "/saveconfig?config=c1", map[string]string{"Sec-Fetch-Site": "cross-site"}, http.StatusForbidden, false},
+		{"cross-origin save", http.MethodPost, "/saveconfig?config=c1", map[string]string{"Origin": "http://example.com"}, http.StatusForbidden, false},
+		{"same-origin save", http.MethodPost, "/saveconfig?config=c1", map[string]string{"Sec-Fetch-Site": "same-origin"}, http.StatusOK, true},
+		{"get delete", http.MethodGet, "/deleteconfig?config=c1", nil, http.StatusMethodNotAllowed, true},
+		{"cross-site delete", http.MethodDelete, "/deleteconfig?config=c1", map[string]string{"Sec-Fetch-Site": "cross-site"}, http.StatusForbidden, true},
+		{"same-origin delete", http.MethodDelete, "/deleteconfig?config=c1", map[string]string{"Sec-Fetch-Site": "same-origin"}, http.StatusOK, false},
+	} {
+		req, err := http.NewRequest(c.method, server.URL+c.path, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for k, v := range c.header {
+			req.Header.Set(k, v)
+		}
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res.Body.Close()
+		if res.StatusCode != c.wantCode {
+			t.Errorf("%s: got status %d, want %d", c.desc, res.StatusCode, c.wantCode)
+		}
+		if got := hasConfig("c1"); got != c.wantConfig {
+			t.Errorf("%s: config saved = %v, want %v", c.desc, got, c.wantConfig)
+		}
+	}
+}
+
 // Implement fake object file support.
 
 const addrBase = 0x1000
