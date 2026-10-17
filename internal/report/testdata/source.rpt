@@ -33,7 +33,7 @@ ROUTINE ======================== main in testdata/source1
          .          .      6:source1 line 6;
          .          .      7:source1 line 7;
 ROUTINE ======================== tee in testdata/source2
-     11100      21100 (flat, cum) 189.90% of Total
+     11100      11100 (flat, cum) 99.90% of Total
          .          .      1:source2 line 1;
       1000      11000      2:source2 line 2;
          .          .      3:source2 line 3;
