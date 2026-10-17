@@ -110,6 +110,38 @@ func TestSource(t *testing.T) {
 	}
 }
 
+func TestProfileDetails(t *testing.T) {
+	maybeSkipBrowserTest(t)
+
+	prof := makeFakeProfile()
+	prof.Comments = []string{"RSS is unavailable on this platform"}
+	server := makeTestServer(t, prof)
+	ctx := newContext(context.Background(), t)
+	err := chromedp.Do(ctx,
+		chromedp.Navigate(server.URL+"/top"),
+		chromedp.WaitVisible(chromedp.ID(`#details`)),
+
+		// Space and Enter do not open profile information without button focus.
+		chromedp.KeyEvent(" "),
+		chromedp.WaitNotVisible(chromedp.ID(`#detailsbox`)),
+		chromedp.KeyEvent("\r"),
+		chromedp.WaitNotVisible(chromedp.ID(`#detailsbox`)),
+		chromedp.Click(chromedp.ID(`#details`)),
+		chromedp.WaitVisible(chromedp.ID(`#detailsbox`)),
+		matchRegexp(t, "#detailsbox", "RSS is unavailable on this platform"),
+
+		// Keyboard activation works when the button has focus.
+		chromedp.Focus(chromedp.ID(`#details`)),
+		chromedp.KeyEvent(" "),
+		chromedp.WaitNotVisible(chromedp.ID(`#detailsbox`)),
+		chromedp.KeyEvent("\r"),
+		chromedp.WaitVisible(chromedp.ID(`#detailsbox`)),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func newContext(ctx context.Context, t *testing.T) context.Context {
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		// Ubuntu 23+ enables AppArmor in a way that conflicts with Chrome's usage
