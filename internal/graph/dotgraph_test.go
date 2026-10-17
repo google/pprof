@@ -141,7 +141,7 @@ func TestComposeWithStandardGraphAndURL(t *testing.T) {
 func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 	g := baseGraph()
 	a, c := baseAttrsAndConfig()
-	g.Nodes[0].Info = NodeInfo{Name: `var"src"`}
+	g.Nodes[0].Info = NodeInfo{Name: `var"src"`, File: `src/file"name.cc`, Lineno: 10, Columnno: 2}
 	g.Nodes[1].Info = NodeInfo{Name: `var"#dest#"`}
 
 	var buf bytes.Buffer
