@@ -150,6 +150,33 @@ func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 	compareGraphs(t, buf.Bytes(), "compose7.dot")
 }
 
+func TestComposeEscapesFileAndTitleInDot(t *testing.T) {
+	// A mapping/object file name and the graph title come from the profile and
+	// are attacker-controlled. A double quote in any of them must be escaped so
+	// it cannot break out of the quoted dot attribute and inject new attributes
+	// (e.g. a URL= that Graphviz turns into a javascript: link in the SVG).
+	g := baseGraph()
+	a, c := baseAttrsAndConfig()
+	g.Nodes[0].Info = NodeInfo{Name: "fn", File: `/src/evil.go" peripheries=3`, Lineno: 1}
+	g.Nodes[1].Info = NodeInfo{Address: 0x10, Objfile: `/lib/evil.so" peripheries=3`}
+	c.Title = `prof" bgcolor="red`
+
+	var buf bytes.Buffer
+	ComposeDot(&buf, g, a, c)
+	out := buf.String()
+
+	for _, raw := range []string{`evil.go" peripheries=3`, `evil.so" peripheries=3`, `prof" bgcolor="red`} {
+		if strings.Contains(out, raw) {
+			t.Errorf("unescaped %q in dot output allows attribute injection:\n%s", raw, out)
+		}
+	}
+	for _, escaped := range []string{`evil.go\" peripheries=3`, `evil.so\" peripheries=3`, `prof\" bgcolor=\"red`} {
+		if !strings.Contains(out, escaped) {
+			t.Errorf("expected escaped %q in dot output:\n%s", escaped, out)
+		}
+	}
+}
+
 func TestComposeWithCommentsWithNewlines(t *testing.T) {
 	g := baseGraph()
 	a, c := baseAttrsAndConfig()
