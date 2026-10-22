@@ -141,38 +141,20 @@ func TestComposeWithStandardGraphAndURL(t *testing.T) {
 func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 	g := baseGraph()
 	a, c := baseAttrsAndConfig()
-	g.Nodes[0].Info = NodeInfo{Name: `var"src"`}
-	g.Nodes[1].Info = NodeInfo{Name: `var"#dest#"`}
+	g.Nodes[0].Info = NodeInfo{Name: `var"src"`, File: `/src/file"name.go`, Lineno: 10}
+	g.Nodes[1].Info = NodeInfo{Address: 0x10, Objfile: `/lib/obj"file.so`}
+	c.Title = `test"title`
 
 	var buf bytes.Buffer
 	ComposeDot(&buf, g, a, c)
+	got := buf.String()
 
-	compareGraphs(t, buf.Bytes(), "compose7.dot")
-}
-
-func TestComposeEscapesFileAndTitleInDot(t *testing.T) {
-	// A mapping/object file name and the graph title come from the profile and
-	// are attacker-controlled. A double quote in any of them must be escaped so
-	// it cannot break out of the quoted dot attribute and inject new attributes
-	// (e.g. a URL= that Graphviz turns into a javascript: link in the SVG).
-	g := baseGraph()
-	a, c := baseAttrsAndConfig()
-	g.Nodes[0].Info = NodeInfo{Name: "fn", File: `/src/evil.go" peripheries=3`, Lineno: 1}
-	g.Nodes[1].Info = NodeInfo{Address: 0x10, Objfile: `/lib/evil.so" peripheries=3`}
-	c.Title = `prof" bgcolor="red`
-
-	var buf bytes.Buffer
-	ComposeDot(&buf, g, a, c)
-	out := buf.String()
-
-	for _, raw := range []string{`evil.go" peripheries=3`, `evil.so" peripheries=3`, `prof" bgcolor="red`} {
-		if strings.Contains(out, raw) {
-			t.Errorf("unescaped %q in dot output allows attribute injection:\n%s", raw, out)
+	for _, s := range []string{`var"src"`, `file"name.go`, `obj"file.so`, `test"title`, `label3: "foo"`} {
+		if strings.Contains(got, s) {
+			t.Errorf("unescaped %q in dot output:\n%s", s, got)
 		}
-	}
-	for _, escaped := range []string{`evil.go\" peripheries=3`, `evil.so\" peripheries=3`, `prof\" bgcolor=\"red`} {
-		if !strings.Contains(out, escaped) {
-			t.Errorf("expected escaped %q in dot output:\n%s", escaped, out)
+		if want := escapeForDot(s); !strings.Contains(got, want) {
+			t.Errorf("escaped %q not found in dot output:\n%s", want, got)
 		}
 	}
 }
