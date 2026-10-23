@@ -110,7 +110,7 @@ func (b *builder) start() {
 	if b.config.Title != "" {
 		graphname = b.config.Title
 	}
-	fmt.Fprintln(b, `digraph "`+graphname+`" {`)
+	fmt.Fprintln(b, `digraph "`+escapeForDot(graphname)+`" {`)
 	fmt.Fprintln(b, `node [style=filled fillcolor="#f8f8f8"]`)
 }
 
@@ -132,7 +132,7 @@ func (b *builder) addLegend() {
 		fmt.Fprintf(b, ` URL="%s" target="_blank"`, b.config.LegendURL)
 	}
 	if b.config.Title != "" {
-		fmt.Fprintf(b, ` tooltip="%s"`, b.config.Title)
+		fmt.Fprintf(b, ` tooltip="%s"`, escapeForDot(b.config.Title))
 	}
 	fmt.Fprintf(b, "] }\n")
 }
@@ -390,7 +390,10 @@ func multilinePrintableName(info *NodeInfo) string {
 	infoCopy.Name = strings.ReplaceAll(infoCopy.Name, "[...]", "[…]")
 	infoCopy.Name = strings.ReplaceAll(infoCopy.Name, ".", `\n`)
 	if infoCopy.File != "" {
-		infoCopy.File = filepath.Base(infoCopy.File)
+		infoCopy.File = escapeForDot(filepath.Base(infoCopy.File))
+	}
+	if infoCopy.Objfile != "" {
+		infoCopy.Objfile = escapeForDot(filepath.Base(infoCopy.Objfile))
 	}
 	return strings.Join(infoCopy.NameComponents(), `\n`) + `\n`
 }

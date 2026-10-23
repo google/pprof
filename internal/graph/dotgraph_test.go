@@ -141,13 +141,29 @@ func TestComposeWithStandardGraphAndURL(t *testing.T) {
 func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 	g := baseGraph()
 	a, c := baseAttrsAndConfig()
-	g.Nodes[0].Info = NodeInfo{Name: `var"src"`}
-	g.Nodes[1].Info = NodeInfo{Name: `var"#dest#"`}
+	g.Nodes[0].Info = NodeInfo{Name: `var"src"`, File: `/src/file"name.go`, Lineno: 10}
+	g.Nodes[1].Info = NodeInfo{Address: 0x10, Objfile: `/lib/obj"file.so`}
+	c.Title = `test"title`
+	c.Labels = []string{"legend", `label"text`}
 
 	var buf bytes.Buffer
 	ComposeDot(&buf, g, a, c)
+	got := buf.String()
 
-	compareGraphs(t, buf.Bytes(), "compose7.dot")
+	for _, tc := range []struct{ raw, escaped string }{
+		{`var"src"`, `var\"src\"`},
+		{`file"name.go`, `file\"name.go`},
+		{`obj"file.so`, `obj\"file.so`},
+		{`test"title`, `test\"title`},
+		{`label"text`, `label\"text`},
+	} {
+		if strings.Contains(got, tc.raw) {
+			t.Errorf("unescaped %q in dot output:\n%s", tc.raw, got)
+		}
+		if !strings.Contains(got, tc.escaped) {
+			t.Errorf("escaped %q not found in dot output:\n%s", tc.escaped, got)
+		}
+	}
 }
 
 func TestComposeWithCommentsWithNewlines(t *testing.T) {
