@@ -110,7 +110,7 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options, d
 		ui.help[n] = c.description
 	}
 	maps.Copy(ui.help, configHelp)
-	ui.help["details"] = "Show information about the profile and this view"
+	ui.help["details"] = "Show profile comments and information about this view"
 	ui.help["graph"] = "Display profile as a directed graph"
 	ui.help["flamegraph"] = "Display profile as a flame graph"
 	ui.help["reset"] = "Show the entire profile"
