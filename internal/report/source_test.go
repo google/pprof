@@ -338,3 +338,27 @@ func readProfile(fname string, t *testing.T) *profile.Profile {
 
 	return p
 }
+
+func BenchmarkTrimPath(b *testing.B) {
+	const lsep = string(filepath.ListSeparator)
+	trim := "/remote/path" + lsep + "/another/path"
+	search := "/local/search" + lsep + "/second/search"
+	path := "/remote/path/project/pkg/file.go"
+
+	b.Run("SingleCall", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_ = trimPath(path, trim, search)
+		}
+	})
+
+	b.Run("Repeated", func(b *testing.B) {
+		trimmer := newPathTrimmer(trim, search)
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_ = trimmer.trim(path)
+		}
+	})
+}

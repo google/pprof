@@ -240,8 +240,9 @@ func (rpt *Report) newGraph(nodes graph.NodeSet) *graph.Graph {
 
 	// Clean up file paths using heuristics.
 	prof := rpt.prof
+	trimmer := newPathTrimmer(o.TrimPath, o.SourcePath)
 	for _, f := range prof.Function {
-		f.Filename = trimPath(f.Filename, o.TrimPath, o.SourcePath)
+		f.Filename = trimmer.trim(f.Filename)
 	}
 	// Removes all numeric tags except for the bytes tag prior
 	// to making graph.

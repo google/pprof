@@ -114,6 +114,7 @@ func (s *StackSet) makeInitialStacks(rpt *Report) {
 	srcs := map[key]int{} // Sources identified so far.
 	seenFunctions := map[string]bool{}
 	unknownIndex := 1
+	trimmer := newPathTrimmer(rpt.options.TrimPath, rpt.options.SourcePath)
 
 	getSrc := func(line profile.Line, inlined bool) int {
 		fn := line.Function
@@ -127,7 +128,7 @@ func (s *StackSet) makeInitialStacks(rpt *Report) {
 			return i
 		}
 
-		fileName := trimPath(fn.Filename, rpt.options.TrimPath, rpt.options.SourcePath)
+		fileName := trimmer.trim(fn.Filename)
 		x := StackSource{
 			FileName: fileName,
 			Inlined:  inlined,

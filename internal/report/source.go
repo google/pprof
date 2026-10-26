@@ -953,8 +953,7 @@ type sourceReader struct {
 	// source files should be searched.
 	searchPath string
 
-	// trimPath is a filepath.ListSeparator-separated list of paths to trim.
-	trimPath string
+	trimmer *pathTrimmer
 
 	// files maps from path name to a list of lines.
 	// files[*][0] is unused since line numbering starts at 1.
@@ -967,10 +966,10 @@ type sourceReader struct {
 
 func newSourceReader(searchPath, trimPath string) *sourceReader {
 	return &sourceReader{
-		searchPath,
-		trimPath,
-		make(map[string][]string),
-		make(map[string]error),
+		searchPath: searchPath,
+		trimmer:    newPathTrimmer(trimPath, searchPath),
+		files:      make(map[string][]string),
+		errors:     make(map[string]error),
 	}
 }
 
@@ -984,7 +983,7 @@ func (reader *sourceReader) line(path string, lineno int) (string, bool) {
 	if !ok {
 		// Read and cache file contents.
 		lines = []string{""} // Skip 0th line
-		f, err := openSourceFile(path, reader.searchPath, reader.trimPath)
+		f, err := openSourceFileWithTrimmer(path, reader.searchPath, reader.trimmer)
 		if err != nil {
 			reader.errors[path] = err
 		} else {
@@ -1012,7 +1011,13 @@ func (reader *sourceReader) line(path string, lineno int) (string, bool) {
 // paths in the profile. This effectively turns the path into a relative path
 // searching it using searchPath as usual).
 func openSourceFile(path, searchPath, trim string) (*os.File, error) {
-	path = trimPath(path, trim, searchPath)
+	return openSourceFileWithTrimmer(path, searchPath, newPathTrimmer(trim, searchPath))
+}
+
+func openSourceFileWithTrimmer(path, searchPath string, trimmer *pathTrimmer) (*os.File, error) {
+	if trimmer != nil {
+		path = trimmer.trim(path)
+	}
 	// If file is still absolute, require file to exist.
 	if filepath.IsAbs(path) {
 		f, err := os.Open(path)
@@ -1037,38 +1042,53 @@ func openSourceFile(path, searchPath, trim string) (*os.File, error) {
 	return nil, fmt.Errorf("could not find file %s on path %s", path, searchPath)
 }
 
-// trimPath cleans up a path by removing prefixes that are commonly
-// found on profiles plus configured prefixes.
-// TODO(aalexand): Consider optimizing out the redundant work done in this
-// function if it proves to matter.
-func trimPath(path, trimPath, searchPath string) string {
-	// Keep path variable intact as it's used below to form the return value.
-	sPath, searchPath := filepath.ToSlash(path), filepath.ToSlash(searchPath)
+// pathTrimmer cleans up file paths by removing prefixes commonly found on profiles
+// plus configured prefixes.
+type pathTrimmer struct {
+	heuristicDirs []string
+	trimPaths     []string
+}
+
+func newPathTrimmer(trimPath, searchPath string) *pathTrimmer {
+	t := &pathTrimmer{}
 	if trimPath == "" {
-		// If the trim path is not configured, try to guess it heuristically:
-		// search for basename of each search path in the original path and, if
-		// found, strip everything up to and including the basename. So, for
-		// example, given original path "/some/remote/path/my-project/foo/bar.c"
-		// and search path "/my/local/path/my-project" the heuristic will return
-		// "/my/local/path/my-project/foo/bar.c".
-		for _, dir := range filepath.SplitList(searchPath) {
-			want := "/" + filepath.Base(dir) + "/"
-			if found := strings.Index(sPath, want); found != -1 {
-				return path[found+len(want):]
-			}
+		dirs := filepath.SplitList(filepath.ToSlash(searchPath))
+		t.heuristicDirs = make([]string, 0, len(dirs))
+		for _, dir := range dirs {
+			t.heuristicDirs = append(t.heuristicDirs, "/"+filepath.Base(dir)+"/")
 		}
 	}
-	// Trim configured trim prefixes.
-	trimPaths := append(filepath.SplitList(filepath.ToSlash(trimPath)), "/proc/self/cwd/./", "/proc/self/cwd/")
-	for _, trimPath := range trimPaths {
-		if !strings.HasSuffix(trimPath, "/") {
-			trimPath += "/"
+	parts := filepath.SplitList(filepath.ToSlash(trimPath))
+	t.trimPaths = make([]string, 0, len(parts)+2)
+	for _, p := range parts {
+		if !strings.HasSuffix(p, "/") {
+			p += "/"
 		}
+		t.trimPaths = append(t.trimPaths, p)
+	}
+	t.trimPaths = append(t.trimPaths, "/proc/self/cwd/./", "/proc/self/cwd/")
+	return t
+}
+
+func (t *pathTrimmer) trim(path string) string {
+	sPath := filepath.ToSlash(path)
+	for _, want := range t.heuristicDirs {
+		if found := strings.Index(sPath, want); found != -1 {
+			return path[found+len(want):]
+		}
+	}
+	for _, trimPath := range t.trimPaths {
 		if strings.HasPrefix(sPath, trimPath) {
 			return path[len(trimPath):]
 		}
 	}
 	return path
+}
+
+// trimPath cleans up a path by removing prefixes that are commonly
+// found on profiles plus configured prefixes.
+func trimPath(path, trimPath, searchPath string) string {
+	return newPathTrimmer(trimPath, searchPath).trim(path)
 }
 
 func indentation(line string) int {
