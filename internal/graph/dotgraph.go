@@ -322,7 +322,7 @@ func (b *builder) addEdge(edge *Edge, from, to int, hasNodelets bool) {
 }
 
 // dotColor returns a color for the given score (between -1.0 and
-// 1.0), with -1.0 colored green, 0.0 colored grey, and 1.0 colored
+// 1.0), with -1.0 colored blue, 0.0 colored grey, and 1.0 colored
 // red. If isBackground is true, then a light (low-saturation)
 // color is returned (suitable for use as a background color);
 // otherwise, a darker color is returned (suitable for use as a
@@ -371,13 +371,14 @@ func dotColor(score float64, isBackground bool) string {
 
 	var r, g, b float64 // red, green, blue
 	if score < 0.0 {
-		g = value
+		b = value
 		r = value * (1 + saturation*score)
+		g = value * (1 + saturation*score)
 	} else {
 		r = value
 		g = value * (1 - saturation*score)
+		b = value * (1 - saturation)
 	}
-	b = value * (1 - saturation)
 	return fmt.Sprintf("#%02x%02x%02x", uint8(r*255.0), uint8(g*255.0), uint8(b*255.0))
 }
 
