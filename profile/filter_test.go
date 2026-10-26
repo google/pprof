@@ -602,3 +602,43 @@ func TestTagFilter(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkFilterSamplesByName(b *testing.B) {
+	data := proftest.LargeProfile(b)
+	baseProf, err := ParseData(data)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	// Pre-copy a fixed pool to avoid O(b.N) large-profile allocations. Each
+	// iteration restores one slot from baseProf outside the timed region.
+	const poolSize = 10
+	pool := make([]*Profile, poolSize)
+	for i := range pool {
+		pool[i] = baseProf.Copy()
+	}
+
+	for _, tc := range []struct {
+		name string
+		hide *regexp.Regexp
+	}{
+		// sparse: hide matches a single specific function; most samples unaffected.
+		{"sparse_hide", regexp.MustCompile("line2000")},
+		// dense: hide matches a broad prefix; nearly every sample has hidden
+		// locations, exercising the per-sample allocation path most heavily.
+		{"dense_hide", regexp.MustCompile("line[0-9]")},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				idx := i % poolSize
+				b.StartTimer()
+				pool[idx].FilterSamplesByName(nil, nil, tc.hide, nil)
+				b.StopTimer()
+				// Restore slot outside timed region so next rotation starts fresh.
+				pool[idx] = baseProf.Copy()
+			}
+		})
+	}
+}
+
