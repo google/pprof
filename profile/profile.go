@@ -142,7 +142,17 @@ type Location struct {
 	IsFolded bool
 
 	mappingIDX uint64
+
+	// hasInlinedLinesOnly is set to true when the outermost (non-inlined) line
+	// was removed by a show/hide filter. All remaining lines in this location
+	// were physically inlined into that removed outermost frame.
+	hasInlinedLinesOnly bool
 }
+
+// HasInlinedLinesOnly reports whether all remaining lines in this location are
+// inlined frames. This can happen when a show/hide filter removes the outermost
+// non-inlined frame from the location.
+func (l *Location) HasInlinedLinesOnly() bool { return l.hasInlinedLinesOnly }
 
 // Line corresponds to Profile.Line
 type Line struct {

@@ -875,10 +875,13 @@ func printTraces(w io.Writer, rpt *Report) error {
 		var stack []stk
 		for _, loc := range sample.Location {
 			nodes := locations[loc.ID]
+			allInline := loc.HasInlinedLinesOnly()
 			for i, n := range nodes {
-				// The inline flag may be inaccurate if 'show' or 'hide' filter is
-				// used. See https://github.com/google/pprof/issues/511.
-				inline := i != len(nodes)-1
+				// A frame is inline when it is not the outermost frame of its
+				// physical location. After show/hide filtering the outermost
+				// frame may have been removed; in that case every surviving
+				// frame is still physically inlined.
+				inline := allInline || i != len(nodes)-1
 				stack = append(stack, stk{&n.Info, inline})
 			}
 		}
