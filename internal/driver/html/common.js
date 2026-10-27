@@ -422,11 +422,9 @@ function viewer(baseUrl, nodes, options) {
     e.preventDefault();
     const detailsText = document.getElementById('detailsbox');
     if (detailsText != null) {
-      if (detailsText.style.display === 'block') {
-        detailsText.style.display = 'none';
-      } else {
-        detailsText.style.display = 'block';
-      }
+      const expanded = detailsText.style.display !== 'block';
+      detailsText.style.display = expanded ? 'block' : 'none';
+      e.currentTarget.setAttribute('aria-expanded', expanded);
     }
   }
 
