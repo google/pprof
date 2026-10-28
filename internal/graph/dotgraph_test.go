@@ -398,3 +398,26 @@ func tagString(t []*Tag) string {
 	}
 	return strings.Join(ret, ":")
 }
+
+func TestDotColor(t *testing.T) {
+	testcases := []struct {
+		score        float64
+		isBackground bool
+		want         string
+	}{
+		{-1.0, false, "#0000b2"}, // Negative is blue
+		{-1.0, true, "#d5d5ed"},  // Negative background is light blue
+		{1.0, false, "#b20000"},  // Positive is red
+		{1.0, true, "#edd5d5"},   // Positive background is light red
+		{0.0, false, "#b2b2b2"},  // Neutral is grey
+		{0.0, true, "#ededed"},   // Neutral background is light grey
+	}
+
+	for _, tc := range testcases {
+		got := dotColor(tc.score, tc.isBackground)
+		if got != tc.want {
+			t.Errorf("dotColor(%v, %v) = %s; want %s", tc.score, tc.isBackground, got, tc.want)
+		}
+	}
+}
+
