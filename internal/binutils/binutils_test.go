@@ -77,8 +77,27 @@ func TestAddr2Liner(t *testing.T) {
 	a.rw.close()
 }
 
+func TestAddr2LinerUnknownFileLine(t *testing.T) {
+	for _, fileline := range []string{"??:0", "??:?"} {
+		t.Run(fileline, func(t *testing.T) {
+			a := addr2Liner{rw: &mockAddr2liner{unknownFileLine: fileline}}
+
+			s, err := a.addrInfo(0xa000)
+			if err != nil {
+				t.Fatalf("addrInfo(0xa000): %v", err)
+			}
+
+			want := []plugin.Frame{{Func: "funa000"}}
+			if !reflect.DeepEqual(s, want) {
+				t.Errorf("addrInfo(0xa000): got %+v, want %+v", s, want)
+			}
+		})
+	}
+}
+
 type mockAddr2liner struct {
-	output []string
+	output          []string
+	unknownFileLine string
 }
 
 func (a *mockAddr2liner) write(s string) error {
@@ -102,6 +121,8 @@ func (a *mockAddr2liner) write(s string) error {
 		lines = []string{"fun8000", "file8000:8000", "fun7000", "file7000:7000", "fun6000", "file6000:6000", "fun5000", "file5000:5000", "fun4000", "file4000:4000", "_ZNSt6vectorIS_IS_IiSaIiEESaIS1_EESaIS3_EEixEm", "file3000:3000", "_ZNSaIiEC1Ev.clone18", "file2000:2000", "_Z3fooid.clone2", "file1000:1000"}
 	case "9000":
 		lines = []string{"fun9000", "file9000:9000", "fun8000", "file8000:8000", "fun7000", "file7000:7000", "fun6000", "file6000:6000", "fun5000", "file5000:5000", "fun4000", "file4000:4000", "_ZNSt6vectorIS_IS_IiSaIiEESaIS1_EESaIS3_EEixEm", "file3000:3000", "_ZNSaIiEC1Ev.clone18", "file2000:2000", "_Z3fooid.clone2", "file1000:1000"}
+	case "a000":
+		lines = []string{"funa000", a.unknownFileLine}
 	default:
 		lines = []string{"??", "??:0"}
 	}
@@ -836,6 +857,34 @@ func TestELFObjAddr(t *testing.T) {
 				t.Errorf("got ObjAddr %x; want %x\n", got, tc.wantObjAddr)
 			}
 		})
+	}
+}
+
+func TestELFObjAddrOutOfRangeDoesNotLatchError(t *testing.T) {
+	name := filepath.Join("testdata", "exe_linux_64")
+	b := binrep{}
+	o, err := b.openELF(name, 0x5400000, 0x5401000, 0, "")
+	if err != nil {
+		t.Fatalf("openELF failed: %v", err)
+	}
+
+	// 1. First call with an out-of-range address (e.g. from kernel or another mapping).
+	if _, err := o.ObjAddr(0x1000); err == nil {
+		t.Errorf("ObjAddr(0x1000) succeeded, want error for out-of-range address")
+	}
+
+	// 2. Subsequent call with a valid address should succeed and not inherit the previous error.
+	got, err := o.ObjAddr(0x5400400)
+	if err != nil {
+		t.Fatalf("ObjAddr(0x5400400) failed after out-of-range address: %v", err)
+	}
+	if want := uint64(0x400400); got != want {
+		t.Errorf("ObjAddr(0x5400400) = %x, want %x", got, want)
+	}
+
+	// 3. Subsequent out-of-range address still returns an error.
+	if _, err := o.ObjAddr(0x1000); err == nil {
+		t.Errorf("ObjAddr(0x1000) succeeded, want error")
 	}
 }
 
