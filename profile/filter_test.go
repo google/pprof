@@ -641,4 +641,3 @@ func BenchmarkFilterSamplesByName(b *testing.B) {
 		})
 	}
 }
-
