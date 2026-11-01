@@ -420,4 +420,3 @@ func TestDotColor(t *testing.T) {
 		}
 	}
 }
-
