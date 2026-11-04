@@ -150,6 +150,39 @@ func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 	compareGraphs(t, buf.Bytes(), "compose7.dot")
 }
 
+func TestComposeWithTagNamesThatNeedEscaping(t *testing.T) {
+	g := baseGraph()
+	a, c := baseAttrsAndConfig()
+
+	// Add tags with quotes and backslashes to Node 1.
+	g.Nodes[0].LabelTags[`tag"with"quotes`] = &Tag{
+		Name: `tag"with"quotes`,
+		Cum:  10,
+		Flat: 10,
+	}
+	g.Nodes[0].NumericTags[""] = TagMap{
+		`num"tag"`: &Tag{
+			Name: `num"tag"`,
+			Cum:  20,
+			Flat: 20,
+			Unit: "ms",
+		},
+	}
+
+	var buf bytes.Buffer
+	ComposeDot(&buf, g, a, c)
+
+	dot := buf.String()
+	wantLabel := `label = "tag\"with\"quotes"`
+	if !strings.Contains(dot, wantLabel) {
+		t.Errorf("expected dot output to contain %q, but got:\n%s", wantLabel, dot)
+	}
+	wantNumLabel := `label = "num\"tag\""`
+	if !strings.Contains(dot, wantNumLabel) {
+		t.Errorf("expected dot output to contain %q, but got:\n%s", wantNumLabel, dot)
+	}
+}
+
 func TestComposeWithCommentsWithNewlines(t *testing.T) {
 	g := baseGraph()
 	a, c := baseAttrsAndConfig()
