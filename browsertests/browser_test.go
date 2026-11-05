@@ -27,6 +27,7 @@ import (
 	_ "embed"
 
 	"github.com/chromedp/chromedp"
+	"github.com/google/pprof/profile"
 )
 
 func maybeSkipBrowserTest(t *testing.T) {
@@ -68,6 +69,35 @@ func TestTopTable(t *testing.T) {
 	)
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestSamplingDetails(t *testing.T) {
+	maybeSkipBrowserTest(t)
+
+	for _, tc := range []struct {
+		name       string
+		period     int64
+		periodType *profile.ValueType
+		want       string
+	}{
+		{"cpu", 10000000, &profile.ValueType{Type: "cpu", Unit: "nanoseconds"}, `Sampling: 10ms \(cpu\)`},
+		{"heap", 524288, &profile.ValueType{Type: "space", Unit: "bytes"}, `Sampling: 512kB \(space\)`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prof := makeFakeProfile()
+			prof.Period, prof.PeriodType = tc.period, tc.periodType
+			server := makeTestServer(t, prof)
+			ctx := newContext(context.Background(), t)
+			if err := chromedp.Do(ctx,
+				chromedp.Navigate(server.URL+"/top"),
+				chromedp.Click(chromedp.ID(`#details`)),
+				chromedp.WaitVisible(chromedp.ID(`#detailsbox`)),
+				matchRegexp(t, "#detailsbox", tc.want),
+			); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 
