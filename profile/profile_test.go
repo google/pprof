@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -1953,6 +1954,84 @@ func BenchmarkParse(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
+	}
+}
+
+func BenchmarkParseLabels(b *testing.B) {
+	base, err := ParseData(proftest.LargeProfile(b))
+	if err != nil {
+		b.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name   string
+		mutate func(*Profile)
+	}{
+		{
+			name: "num_label",
+			mutate: func(p *Profile) {
+				for _, s := range p.Sample {
+					s.NumLabel = map[string][]int64{"bytes": {512}}
+				}
+			},
+		},
+		{
+			name: "num_label_with_unit",
+			mutate: func(p *Profile) {
+				p.SetNumLabel("bytes", []int64{512}, []string{"bytes"})
+			},
+		},
+		{
+			name: "string_label",
+			mutate: func(p *Profile) {
+				p.SetLabel("key", []string{"value"})
+			},
+		},
+		{
+			name: "many_labels",
+			mutate: func(p *Profile) {
+				for i := 0; i < 8; i++ {
+					p.SetLabel(fmt.Sprintf("key%d", i), []string{"value"})
+				}
+				for _, s := range p.Sample {
+					s.NumLabel = map[string][]int64{"bytes": {512}}
+				}
+			},
+		},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			p := base.Copy()
+			tc.mutate(p)
+			var buf bytes.Buffer
+			if err := p.WriteUncompressed(&buf); err != nil {
+				b.Fatal(err)
+			}
+			raw := buf.Bytes()
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if _, err := ParseData(raw); err != nil {
+					b.Fatal(err)
+				}
+			}
+			b.StopTimer()
+
+			runtime.GC()
+			runtime.GC()
+			var m1, m2 runtime.MemStats
+			runtime.ReadMemStats(&m1)
+			parsed, err := ParseData(raw)
+			if err != nil {
+				b.Fatal(err)
+			}
+			runtime.GC()
+			runtime.GC()
+			runtime.ReadMemStats(&m2)
+			runtime.KeepAlive(parsed)
+			if m2.HeapAlloc > m1.HeapAlloc {
+				b.ReportMetric(float64(m2.HeapAlloc-m1.HeapAlloc), "inuse-B/op")
+			}
+		})
 	}
 }
 
