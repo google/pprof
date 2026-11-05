@@ -24,6 +24,8 @@ import (
 
 	"github.com/chzyer/readline"
 	"github.com/google/pprof/driver"
+
+	_ "net/http/pprof" // Enable profiling pprof itself in the web UI mode.
 )
 
 func main() {
