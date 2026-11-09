@@ -141,13 +141,29 @@ func TestComposeWithStandardGraphAndURL(t *testing.T) {
 func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 	g := baseGraph()
 	a, c := baseAttrsAndConfig()
-	g.Nodes[0].Info = NodeInfo{Name: `var"src"`}
-	g.Nodes[1].Info = NodeInfo{Name: `var"#dest#"`}
+	g.Nodes[0].Info = NodeInfo{Name: `var"src"`, File: `/src/file"name.go`, Lineno: 10}
+	g.Nodes[1].Info = NodeInfo{Address: 0x10, Objfile: `/lib/obj"file.so`}
+	c.Title = `test"title`
+	c.Labels = []string{"legend", `label"text`}
 
 	var buf bytes.Buffer
 	ComposeDot(&buf, g, a, c)
+	got := buf.String()
 
-	compareGraphs(t, buf.Bytes(), "compose7.dot")
+	for _, tc := range []struct{ raw, escaped string }{
+		{`var"src"`, `var\"src\"`},
+		{`file"name.go`, `file\"name.go`},
+		{`obj"file.so`, `obj\"file.so`},
+		{`test"title`, `test\"title`},
+		{`label"text`, `label\"text`},
+	} {
+		if strings.Contains(got, tc.raw) {
+			t.Errorf("unescaped %q in dot output:\n%s", tc.raw, got)
+		}
+		if !strings.Contains(got, tc.escaped) {
+			t.Errorf("escaped %q not found in dot output:\n%s", tc.escaped, got)
+		}
+	}
 }
 
 func TestComposeWithTagNamesThatNeedEscaping(t *testing.T) {
@@ -430,4 +446,26 @@ func tagString(t []*Tag) string {
 		ret = append(ret, fmt.Sprintln(s))
 	}
 	return strings.Join(ret, ":")
+}
+
+func TestDotColor(t *testing.T) {
+	testcases := []struct {
+		score        float64
+		isBackground bool
+		want         string
+	}{
+		{-1.0, false, "#0000b2"}, // Negative is blue
+		{-1.0, true, "#d5d5ed"},  // Negative background is light blue
+		{1.0, false, "#b20000"},  // Positive is red
+		{1.0, true, "#edd5d5"},   // Positive background is light red
+		{0.0, false, "#b2b2b2"},  // Neutral is grey
+		{0.0, true, "#ededed"},   // Neutral background is light grey
+	}
+
+	for _, tc := range testcases {
+		got := dotColor(tc.score, tc.isBackground)
+		if got != tc.want {
+			t.Errorf("dotColor(%v, %v) = %s; want %s", tc.score, tc.isBackground, got, tc.want)
+		}
+	}
 }
