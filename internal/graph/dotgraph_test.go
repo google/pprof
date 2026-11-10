@@ -142,9 +142,21 @@ func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 	g := baseGraph()
 	a, c := baseAttrsAndConfig()
 	g.Nodes[0].Info = NodeInfo{Name: `var"src"`, File: `/src/file"name.go`, Lineno: 10}
+	g.Nodes[0].LabelTags["a"] = &Tag{Name: "tag\"one\"\ntag\"two\"", Flat: 10, Cum: 10}
+	g.Nodes[0].NumericTags[""] = TagMap{"b": &Tag{Name: `num"tag"`, Flat: 20, Cum: 20}}
+	a.Nodes[g.Nodes[0]] = &DotNodeAttributes{Shape: `bad"shape`, URL: `http://example.com/"node`}
 	g.Nodes[1].Info = NodeInfo{Address: 0x10, Objfile: `/lib/obj"file.so`}
+	a.Nodes[g.Nodes[1]] = &DotNodeAttributes{
+		Formatter: func(ni *NodeInfo) string {
+			return multilinePrintableName(ni) + "fmt\"line1\nfmt\"line2\n"
+		},
+	}
 	c.Title = `test"title`
+	c.LegendURL = `http://example.com/"legend`
 	c.Labels = []string{"legend", `label"text`}
+	c.FormatValue = func(v int64) string {
+		return strconv.FormatInt(v, 10) + `u"nit`
+	}
 
 	var buf bytes.Buffer
 	ComposeDot(&buf, g, a, c)
@@ -156,6 +168,15 @@ func TestComposeWithNamesThatNeedEscaping(t *testing.T) {
 		{`obj"file.so`, `obj\"file.so`},
 		{`test"title`, `test\"title`},
 		{`label"text`, `label\"text`},
+		{"tag\"one\"", `tag\"one\"\ntag\"two\"`},
+		{"tag\"two\"", `tag\"one\"\ntag\"two\"`},
+		{`num"tag"`, `num\"tag\"`},
+		{`bad"shape`, `shape="bad\"shape"`},
+		{`http://example.com/"node`, `http://example.com/\"node`},
+		{`http://example.com/"legend`, `http://example.com/\"legend`},
+		{`u"nit`, `u\"nit`},
+		{`fmt"line1`, `fmt\"line1\nfmt\"line2\n`},
+		{`fmt"line2`, `fmt\"line1\nfmt\"line2\n`},
 	} {
 		if strings.Contains(got, tc.raw) {
 			t.Errorf("unescaped %q in dot output:\n%s", tc.raw, got)
@@ -311,7 +332,7 @@ func TestMultilinePrintableName(t *testing.T) {
 		Lineno:  999,
 	}
 
-	want := fmt.Sprintf(`%016x\ntest1\ntest2\ntest3\nfile.cc:999\n`, 123)
+	want := fmt.Sprintf("%016x\ntest1\ntest2\ntest3\nfile.cc:999\n", 123)
 	if got := multilinePrintableName(ni); got != want {
 		t.Errorf("multilinePrintableName(%#v) == %q, want %q", ni, got, want)
 	}
@@ -364,46 +385,6 @@ func TestTagCollapse(t *testing.T) {
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("collapse to %d, got:\n%v\nwant:\n%v", len(tc), tagString(got), tagString(want))
 		}
-	}
-}
-
-func TestEscapeForDot(t *testing.T) {
-	for _, tc := range []struct {
-		desc  string
-		input []string
-		want  []string
-	}{
-		{
-			desc:  "with multiple doubles quotes",
-			input: []string{`label: "foo" and "bar"`},
-			want:  []string{`label: \"foo\" and \"bar\"`},
-		},
-		{
-			desc:  "with graphviz center line character",
-			input: []string{"label: foo \n bar"},
-			want:  []string{`label: foo \l bar`},
-		},
-		{
-			desc:  "with two backslashes",
-			input: []string{`label: \\`},
-			want:  []string{`label: \\\\`},
-		},
-		{
-			desc:  "with two double quotes together",
-			input: []string{`label: ""`},
-			want:  []string{`label: \"\"`},
-		},
-		{
-			desc:  "with multiple labels",
-			input: []string{`label1: "foo"`, `label2: "bar"`},
-			want:  []string{`label1: \"foo\"`, `label2: \"bar\"`},
-		},
-	} {
-		t.Run(tc.desc, func(t *testing.T) {
-			if got := escapeAllForDot(tc.input); !reflect.DeepEqual(got, tc.want) {
-				t.Errorf("escapeAllForDot(%s) = %s, want %s", tc.input, got, tc.want)
-			}
-		})
 	}
 }
 
