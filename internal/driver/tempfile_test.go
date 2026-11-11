@@ -2,6 +2,7 @@ package driver
 
 import (
 	"os"
+	"runtime"
 	"sync"
 	"testing"
 )
@@ -45,6 +46,13 @@ func TestNewTempFile(t *testing.T) {
 			break
 		}
 		names[name] = true
+		// Temp files can hold profile data, so they must not be accessible
+		// by group or other users.
+		if fi, err := os.Stat(name); err != nil {
+			t.Errorf("Stat(%s): got error %v, want no error", name, err)
+		} else if perm := fi.Mode().Perm(); runtime.GOOS != "windows" && perm&0077 != 0 {
+			t.Errorf("temp file %s has mode %#o, want no group/other access", name, perm)
+		}
 	}
 	if err := cleanupTempFiles(); err != nil {
 		t.Errorf("cleanupTempFiles(): got error %v, want no error", err)

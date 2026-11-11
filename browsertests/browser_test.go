@@ -56,7 +56,7 @@ func TestTopTable(t *testing.T) {
 	ctx := newContext(context.Background(), t)
 
 	err := chromedp.Do(ctx,
-		chromedp.Navigate(server.URL+"/top"),
+		chromedp.Navigate(server.URL+"/ui/top"),
 		chromedp.WaitVisible(chromedp.ID(`#toptable`)),
 
 		// Check that fake profile entries show up in the right order.
@@ -90,7 +90,7 @@ func TestSamplingDetails(t *testing.T) {
 			server := makeTestServer(t, prof)
 			ctx := newContext(context.Background(), t)
 			if err := chromedp.Do(ctx,
-				chromedp.Navigate(server.URL+"/top"),
+				chromedp.Navigate(server.URL+"/ui/top"),
 				chromedp.Click(chromedp.ID(`#details`)),
 				chromedp.WaitVisible(chromedp.ID(`#detailsbox`)),
 				matchRegexp(t, "#detailsbox", tc.want),
@@ -129,11 +129,97 @@ func TestSource(t *testing.T) {
 	ctx := newContext(context.Background(), t)
 
 	err := chromedp.Do(ctx,
-		chromedp.Navigate(server.URL+"/source?f=F3"),
+		chromedp.Navigate(server.URL+"/ui/source?f=F3"),
 		chromedp.WaitVisible(chromedp.ID(`#content`)),
 		matchRegexp(t, "#content", `F3`),            // Header
 		matchRegexp(t, "#content", `Total:.*100ms`), // Total for function
 		matchRegexp(t, "#content", `\b22\b.*100ms`), // Line 22
+
+		// Inline assembly starts hidden, toggles visible when the live source line
+		// is clicked, and hides again on a second click.
+		chromedp.WaitNotVisible(chromedp.CSS(`.asm`)),
+		chromedp.Click(chromedp.CSS(`.livesrc`)),
+		chromedp.WaitVisible(chromedp.CSS(`.asm`)),
+		matchRegexp(t, ".asm", `d3:asm`),
+		chromedp.Click(chromedp.CSS(`.livesrc`)),
+		chromedp.WaitNotVisible(chromedp.CSS(`.asm`)),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGraph(t *testing.T) {
+	maybeSkipBrowserTest(t)
+
+	prof := makeFakeProfile()
+	server := makeTestServer(t, prof)
+	ctx := newContext(context.Background(), t)
+
+	err := chromedp.Do(ctx,
+		chromedp.Navigate(server.URL+"/ui/graph"),
+		chromedp.WaitVisible(chromedp.ID(`#graph0`)),
+		matchRegexp(t, "#graph", `F1`),
+		matchRegexp(t, "#graph", `F2`),
+		matchRegexp(t, "#graph", `F3`),
+
+		// Clicking a graph node highlights its polygon and enables Refine links.
+		clickElementCenter(`#node1 polygon`),
+		chromedp.Poll[chromedp.Void](`document.querySelector('#node1 polygon').style.fill !== ''`),
+		chromedp.Evaluate[chromedp.Void](`
+			document.getElementById('focus').dispatchEvent(new Event('mouseenter'));
+		`),
+		chromedp.Poll[chromedp.Void](`new URL(document.getElementById('focus').href).searchParams.get('f') === '^F2$'`),
+
+		// Clicking the selected node again unselects it.
+		clickElementCenter(`#node1 polygon`),
+		chromedp.Poll[chromedp.Void](`document.querySelector('#node1 polygon').style.fill === ''`),
+
+		// Entering a search regex selects matching nodes and updates Refine links.
+		chromedp.SendKeys(chromedp.ID(`#search`), "F3"),
+		chromedp.Poll[chromedp.Void](`Array.from(document.querySelectorAll('#graph0 .node polygon')).filter(p => p.style.fill !== '').length === 1`),
+		chromedp.Evaluate[chromedp.Void](`
+			document.getElementById('focus').dispatchEvent(new Event('mouseenter'));
+		`),
+		chromedp.Poll[chromedp.Void](`new URL(document.getElementById('focus').href).searchParams.get('f') === 'F3'`),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestConfigSaveDelete(t *testing.T) {
+	maybeSkipBrowserTest(t)
+
+	dir := t.TempDir()
+	for _, env := range []string{"HOME", "XDG_CONFIG_HOME", "AppData"} {
+		t.Setenv(env, dir)
+	}
+
+	prof := makeFakeProfile()
+	server := makeTestServer(t, prof)
+	ctx := newContext(context.Background(), t)
+
+	err := chromedp.Do(ctx,
+		chromedp.Navigate(server.URL+"/ui/top?f=F2"),
+		chromedp.WaitVisible(chromedp.ID(`#toptable`)),
+
+		// Open Config -> Save as..., save as "mycfg" (triggers POST /ui/saveconfig
+		// and reloads the page).
+		chromedp.Evaluate[chromedp.Void](`document.getElementById('save-config').click()`),
+		chromedp.WaitVisible(chromedp.ID(`#save-dialog`)),
+		chromedp.SendKeys(chromedp.ID(`#save-name`), "mycfg"),
+		chromedp.Click(chromedp.ID(`#save-confirm`)),
+		chromedp.WaitReady(chromedp.CSS(`.menu-delete-btn[data-config="mycfg"]`)),
+
+		// Delete "mycfg" via the menu delete button and confirm dialog (triggers
+		// DELETE /ui/deleteconfig).
+		chromedp.Evaluate[chromedp.Void](`
+			document.querySelector('.menu-delete-btn[data-config="mycfg"]').click();
+		`),
+		chromedp.WaitVisible(chromedp.ID(`#delete-dialog`)),
+		chromedp.Click(chromedp.ID(`#delete-confirm`)),
+		chromedp.WaitNotPresent(chromedp.CSS(`.menu-delete-btn[data-config="mycfg"]`)),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -147,6 +233,8 @@ func newContext(ctx context.Context, t *testing.T) context.Context {
 		// test does not visit any external websites, we don't really need the
 		// sandbox, so disable it.
 		chromedp.NoSandbox,
+		// Ensure desktop width (>= 800px) so .header input (#search) is visible.
+		chromedp.WindowSize(1280, 800),
 	)
 
 	// browserDeadline is the deadline to use for browser tests. This is long to
@@ -158,8 +246,46 @@ func newContext(ctx context.Context, t *testing.T) context.Context {
 	ctx, cancel = context.WithTimeout(ctx, browserDeadline)
 	t.Cleanup(cancel)
 	ctx, cancel = chromedp.NewContext(ctx)
-	t.Cleanup(cancel)
+	console := chromedp.Console(ctx)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for msg, err := range console {
+			if err != nil {
+				return
+			}
+			if msg.Type == chromedp.ConsoleError || msg.IsException() {
+				// Ignore Chrome's routine 404 when probing /favicon.ico.
+				if msg.Source == "network" && strings.Contains(msg.URL, "favicon.ico") {
+					continue
+				}
+				t.Errorf("browser console %s: %s (source=%s url=%s)", msg.Type, msg.Text, msg.Source, msg.URL)
+			}
+		}
+	}()
+	t.Cleanup(func() {
+		cancel()
+		<-done
+	})
 	return ctx
+}
+
+// clickElementCenter clicks the center of the first element matching query
+// using bounding-client coordinates (which works on transformed SVG shapes
+// where DOM.getBoxModel does not).
+func clickElementCenter(query string) chromedp.Action[chromedp.Void] {
+	return chromedp.Func(func(ctx context.Context, target *chromedp.Target) error {
+		js := fmt.Sprintf(`(() => {
+			const r = document.querySelector(%q).getBoundingClientRect();
+			return [r.left + r.width / 2, r.top + r.height / 2];
+		})()`, query)
+		coords, err := chromedp.Evaluate[[]float64](js)(ctx, target)
+		if err != nil {
+			return err
+		}
+		_, err = chromedp.MouseClickXY(coords[0], coords[1])(ctx, target)
+		return err
+	})
 }
 
 // matchRegexp is a chromedp.Action that fetches the text of the first

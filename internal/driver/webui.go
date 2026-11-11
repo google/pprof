@@ -25,7 +25,6 @@ import (
 	gourl "net/url"
 	"os"
 	"os/exec"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -132,8 +131,8 @@ func serveWebInterface(hostport string, p *profile.Profile, o *plugin.Options, d
 			"/source":       http.HandlerFunc(ui.source),
 			"/peek":         http.HandlerFunc(ui.peek),
 			"/flamegraph":   http.HandlerFunc(ui.stackView),
-			"/saveconfig":   http.HandlerFunc(ui.saveConfig),
-			"/deleteconfig": http.HandlerFunc(ui.deleteConfig),
+			"/saveconfig":   configHandler(http.MethodPost, ui.saveConfig),
+			"/deleteconfig": configHandler(http.MethodDelete, ui.deleteConfig),
 			"/download": http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				w.Header().Set("Content-Type", "application/vnd.google.protobuf+gzip")
 				w.Header().Set("Content-Disposition", "attachment;filename=profile.pb.gz")
@@ -187,15 +186,18 @@ func defaultWebServer(args *plugin.HTTPServerArgs) error {
 	if err != nil {
 		return err
 	}
+	s := &http.Server{Handler: webServerHandler(args)}
+	return s.Serve(ln)
+}
+
+func webServerHandler(args *plugin.HTTPServerArgs) http.Handler {
 	isLocal := isLocalhost(args.Host)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if isLocal {
-			// Only allow local clients
-			host, _, err := net.SplitHostPort(req.RemoteAddr)
-			if err != nil || !isLocalhost(host) {
-				http.Error(w, "permission denied", http.StatusForbidden)
-				return
-			}
+		if isLocal && (!isLocalhostHostPort(req.RemoteAddr) || !isLocalhostHostPort(req.Host)) {
+			// Require both a loopback peer and a local Host header (to block DNS
+			// rebinding from untrusted web pages open in the user's browser).
+			http.Error(w, "permission denied", http.StatusForbidden)
+			return
 		}
 		h := args.Handlers[req.URL.Path]
 		if h == nil {
@@ -212,8 +214,7 @@ func defaultWebServer(args *plugin.HTTPServerArgs) error {
 	mux := http.NewServeMux()
 	mux.Handle("/ui/", http.StripPrefix("/ui", handler))
 	mux.Handle("/", redirectWithQuery("/ui", http.StatusTemporaryRedirect))
-	s := &http.Server{Handler: mux}
-	return s.Serve(ln)
+	return mux
 }
 
 // redirectWithQuery responds with a given redirect code, preserving query
@@ -229,7 +230,15 @@ func redirectWithQuery(path string, code int) http.HandlerFunc {
 }
 
 func isLocalhost(host string) bool {
-	return slices.Contains([]string{"localhost", "127.0.0.1", "[::1]", "::1"}, host)
+	host = strings.TrimPrefix(strings.TrimSuffix(host, "]"), "[")
+	return strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback()
+}
+
+func isLocalhostHostPort(hostport string) bool {
+	if host, _, err := net.SplitHostPort(hostport); err == nil {
+		hostport = host
+	}
+	return isLocalhost(hostport)
 }
 
 func openBrowser(url string, o *plugin.Options) {
@@ -454,6 +463,21 @@ func (ui *webInterface) peek(w http.ResponseWriter, req *http.Request) {
 	ui.render(w, req, "plaintext", rpt, errList, legend, webArgs{
 		TextBody: out.String(),
 	})
+}
+
+// configHandler wraps a handler that modifies the settings file. It only
+// accepts the given method and rejects cross-origin browser requests, so
+// that other web sites open in the user's browser cannot change or delete
+// saved configurations.
+func configHandler(method string, h http.HandlerFunc) http.Handler {
+	return http.NewCrossOriginProtection().Handler(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.Method != method {
+			w.Header().Set("Allow", method)
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		h(w, req)
+	}))
 }
 
 // saveConfig saves URL configuration.
