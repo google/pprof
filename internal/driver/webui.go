@@ -25,7 +25,6 @@ import (
 	gourl "net/url"
 	"os"
 	"os/exec"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -187,15 +186,18 @@ func defaultWebServer(args *plugin.HTTPServerArgs) error {
 	if err != nil {
 		return err
 	}
+	s := &http.Server{Handler: webServerHandler(args)}
+	return s.Serve(ln)
+}
+
+func webServerHandler(args *plugin.HTTPServerArgs) http.Handler {
 	isLocal := isLocalhost(args.Host)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if isLocal {
-			// Only allow local clients
-			host, _, err := net.SplitHostPort(req.RemoteAddr)
-			if err != nil || !isLocalhost(host) {
-				http.Error(w, "permission denied", http.StatusForbidden)
-				return
-			}
+		if isLocal && (!isLocalhostHostPort(req.RemoteAddr) || !isLocalhostHostPort(req.Host)) {
+			// Require both a loopback peer and a local Host header (to block DNS
+			// rebinding from untrusted web pages open in the user's browser).
+			http.Error(w, "permission denied", http.StatusForbidden)
+			return
 		}
 		h := args.Handlers[req.URL.Path]
 		if h == nil {
@@ -212,8 +214,7 @@ func defaultWebServer(args *plugin.HTTPServerArgs) error {
 	mux := http.NewServeMux()
 	mux.Handle("/ui/", http.StripPrefix("/ui", handler))
 	mux.Handle("/", redirectWithQuery("/ui", http.StatusTemporaryRedirect))
-	s := &http.Server{Handler: mux}
-	return s.Serve(ln)
+	return mux
 }
 
 // redirectWithQuery responds with a given redirect code, preserving query
@@ -229,7 +230,15 @@ func redirectWithQuery(path string, code int) http.HandlerFunc {
 }
 
 func isLocalhost(host string) bool {
-	return slices.Contains([]string{"localhost", "127.0.0.1", "[::1]", "::1"}, host)
+	host = strings.TrimPrefix(strings.TrimSuffix(host, "]"), "[")
+	return strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback()
+}
+
+func isLocalhostHostPort(hostport string) bool {
+	if host, _, err := net.SplitHostPort(hostport); err == nil {
+		hostport = host
+	}
+	return isLocalhost(hostport)
 }
 
 func openBrowser(url string, o *plugin.Options) {
