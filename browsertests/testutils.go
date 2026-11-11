@@ -19,16 +19,21 @@ func makeTestServer(t testing.TB, prof *profile.Profile) *httptest.Server {
 		t.Skip("test assumes tcp available")
 	}
 
-	// Custom http server creator
+	// Custom http server creator that serves under /ui/ matching defaultWebServer.
 	var server *httptest.Server
 	serverCreated := make(chan bool)
 	creator := func(a *driver.HTTPServerArgs) error {
-		server = httptest.NewServer(http.HandlerFunc(
-			func(w http.ResponseWriter, r *http.Request) {
-				if h := a.Handlers[r.URL.Path]; h != nil {
-					h.ServeHTTP(w, r)
-				}
-			}))
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if h := a.Handlers[r.URL.Path]; h != nil {
+				h.ServeHTTP(w, r)
+				return
+			}
+			http.NotFound(w, r)
+		})
+		mux := http.NewServeMux()
+		mux.Handle("/ui/", http.StripPrefix("/ui", handler))
+		mux.Handle("/", http.RedirectHandler("/ui/", http.StatusTemporaryRedirect))
+		server = httptest.NewServer(mux)
 		serverCreated <- true
 		return nil
 	}
