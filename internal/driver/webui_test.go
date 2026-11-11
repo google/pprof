@@ -362,7 +362,7 @@ func TestGetHostAndPort(t *testing.T) {
 }
 
 func TestIsLocalHost(t *testing.T) {
-	for _, s := range []string{"localhost:10000", "[::1]:10000", "127.0.0.1:10000"} {
+	for _, s := range []string{"localhost:10000", "LocalHost:10000", "[::1]:10000", "127.0.0.1:10000", "127.0.0.2:10000"} {
 		host, _, err := net.SplitHostPort(s)
 		if err != nil {
 			t.Error("unexpected error when splitting", s)
@@ -370,6 +370,45 @@ func TestIsLocalHost(t *testing.T) {
 		}
 		if !isLocalhost(host) {
 			t.Errorf("host %s from %s not considered local", host, s)
+		}
+	}
+}
+
+func TestWebServerHandlerLocalOnly(t *testing.T) {
+	for _, serverHost := range []string{"localhost", "LocalHost", "127.0.0.1", "::1"} {
+		handler := webServerHandler(&plugin.HTTPServerArgs{
+			Host: serverHost,
+			Handlers: map[string]http.Handler{
+				"/top": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+			},
+		})
+		for _, tc := range []struct {
+			remoteAddr, host string
+			wantCode         int
+		}{
+			{"127.0.0.1:5000", "localhost:8080", http.StatusOK},
+			{"127.0.0.1:5000", "LocalHost:8080", http.StatusOK},
+			{"127.0.0.1:5000", "localhost", http.StatusOK},
+			{"127.0.0.1:5000", "127.0.0.1:8080", http.StatusOK},
+			{"127.0.0.2:5000", "127.0.0.2:8080", http.StatusOK},
+			{"[::1]:5000", "[::1]:8080", http.StatusOK},
+			{"[::1]:5000", "[::1]", http.StatusOK},
+			{"192.0.2.1:5000", "localhost:8080", http.StatusForbidden},
+			// DNS rebinding: local client, but the browser sends the attacker's host.
+			{"127.0.0.1:5000", "attacker.example:8080", http.StatusForbidden},
+			{"127.0.0.1:5000", "attacker.example", http.StatusForbidden},
+			{"127.0.0.1:5000", "localhost@attacker.example", http.StatusForbidden},
+			{"127.0.0.1:5000", "", http.StatusForbidden},
+		} {
+			req := httptest.NewRequest(http.MethodGet, "/ui/top", nil)
+			req.RemoteAddr = tc.remoteAddr
+			req.Host = tc.host
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+			if rec.Code != tc.wantCode {
+				t.Errorf("server %s, remote %s, host %q: got status %d, want %d",
+					serverHost, tc.remoteAddr, tc.host, rec.Code, tc.wantCode)
+			}
 		}
 	}
 }
