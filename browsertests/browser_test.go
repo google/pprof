@@ -162,7 +162,7 @@ func TestConfigSaveDelete(t *testing.T) {
 	maybeSkipBrowserTest(t)
 
 	dir := t.TempDir()
-	for _, env := range []string{"HOME", "XDG_CONFIG_HOME"} {
+	for _, env := range []string{"HOME", "XDG_CONFIG_HOME", "AppData"} {
 		t.Setenv(env, dir)
 	}
 
