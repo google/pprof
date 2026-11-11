@@ -20,6 +20,7 @@ import (
 	"os/exec"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -196,7 +197,61 @@ func TestConfigSaveDelete(t *testing.T) {
 	}
 }
 
-func newContext(ctx context.Context, t *testing.T) context.Context {
+// TestCSPBlocksInjectedScripts checks that the Content-Security-Policy of the
+// web UI stops the browser from running scripts that are not part of pprof,
+// as would be the case for markup injected through profile data.
+func TestCSPBlocksInjectedScripts(t *testing.T) {
+	maybeSkipBrowserTest(t)
+
+	prof := makeFakeProfile()
+	server := makeTestServer(t, prof)
+	// The browser logs a console error for each script it blocks.
+	ctx := newContext(context.Background(), t, "Content Security Policy")
+
+	err := chromedp.Do(ctx,
+		chromedp.Navigate(server.URL+"/ui/top"),
+		chromedp.WaitVisible(chromedp.ID(`#toptable`)),
+
+		// Add an inline script, an inline event handler and a javascript:
+		// link to the page, and trigger each of them.
+		chromedp.Evaluate[chromedp.Void](`
+			window.cspRan = [];
+			window.cspBlocked = 0;
+			document.addEventListener('securitypolicyviolation', () => { window.cspBlocked++; });
+
+			const script = document.createElement('script');
+			script.textContent = 'window.cspRan.push("script")';
+			document.body.appendChild(script);
+
+			const holder = document.createElement('div');
+			holder.innerHTML =
+				'<div id="csp-handler" onclick="window.cspRan.push(\'handler\')"></div>' +
+				'<a id="csp-link" href="javascript:void(window.cspRan.push(\'link\'))"></a>';
+			document.body.appendChild(holder);
+			document.getElementById('csp-handler').click();
+			document.getElementById('csp-link').click();
+		`),
+		chromedp.Poll[chromedp.Void](`window.cspBlocked >= 3 || window.cspRan.length > 0`),
+		chromedp.Func(func(ctx context.Context, target *chromedp.Target) error {
+			ran, err := chromedp.Evaluate[string](`window.cspRan.join(",")`)(ctx, target)
+			if err != nil {
+				return err
+			}
+			if ran != "" {
+				return fmt.Errorf("injected scripts ran: %s", ran)
+			}
+			return nil
+		}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// newContext returns a context for driving a new browser tab. Any error
+// logged to the browser console fails the test, unless the error text
+// contains one of wantErrors.
+func newContext(ctx context.Context, t *testing.T, wantErrors ...string) context.Context {
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		// Ubuntu 23+ enables AppArmor in a way that conflicts with Chrome's usage
 		// of unprivileged user namespaces as part of the sandboxing. Since our
@@ -227,6 +282,9 @@ func newContext(ctx context.Context, t *testing.T) context.Context {
 			if msg.Type == chromedp.ConsoleError || msg.IsException() {
 				// Ignore Chrome's routine 404 when probing /favicon.ico.
 				if msg.Source == "network" && strings.Contains(msg.URL, "favicon.ico") {
+					continue
+				}
+				if slices.ContainsFunc(wantErrors, func(s string) bool { return strings.Contains(msg.Text, s) }) {
 					continue
 				}
 				t.Errorf("browser console %s: %s (source=%s url=%s)", msg.Type, msg.Text, msg.Source, msg.URL)
