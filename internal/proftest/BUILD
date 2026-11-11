@@ -13,3 +13,9 @@ go_library(
     srcs = ["proftest.go"],
     embedsrcs = ["testdata/large.cpu"],
 )
+
+go_test(
+    name = "proftest_test",
+    srcs = ["proftest_test.go"],
+    embed = [":proftest"],
+)

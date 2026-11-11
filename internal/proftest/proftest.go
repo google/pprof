@@ -17,6 +17,7 @@
 package proftest
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -35,6 +36,9 @@ var flagLargeProfile = flag.String("large_profile", "", "The name of a file that
 // differences. It is meant for testing purposes to display the
 // differences between expected and actual output.
 func Diff(b1, b2 []byte) (data []byte, err error) {
+	if bytes.Equal(b1, b2) {
+		return nil, nil
+	}
 	f1, err := os.CreateTemp("", "proto_test")
 	if err != nil {
 		return nil, err

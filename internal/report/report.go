@@ -306,7 +306,19 @@ func printProto(w io.Writer, rpt *Report) error {
 			}
 		}
 	}
+	// Make the selected sample type the default of the saved profile, so that
+	// its consumers open on the same sample type.
+	p.DefaultSampleType = o.SampleType
 	return p.Write(w)
+}
+
+// sampleTypeLabel returns the sample type as displayed in reports, i.e. with a
+// "mean_" prefix if the report shows per-sample means.
+func (o *Options) sampleTypeLabel() string {
+	if o.SampleMeanDivisor != nil {
+		return "mean_" + o.SampleType
+	}
+	return o.SampleType
 }
 
 // printTopProto writes a list of the hottest routines in a profile as a profile.proto.
@@ -946,7 +958,7 @@ func printCallgrind(w io.Writer, rpt *Report) error {
 	nodeNames := getDisambiguatedNames(g)
 
 	fmt.Fprintln(w, "positions: instr line")
-	fmt.Fprintln(w, "events:", o.SampleType+"("+o.OutputUnit+")")
+	fmt.Fprintln(w, "events:", o.sampleTypeLabel()+"("+o.OutputUnit+")")
 
 	objfiles := make(map[string]int)
 	files := make(map[string]int)
@@ -1182,7 +1194,7 @@ func ProfileLabels(rpt *Report) []string {
 		}
 	}
 	if o.SampleType != "" {
-		label = append(label, "Type: "+o.SampleType)
+		label = append(label, "Type: "+o.sampleTypeLabel())
 	}
 	if url := prof.DocURL; url != "" {
 		label = append(label, "Doc: "+url)
