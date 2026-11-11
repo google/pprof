@@ -264,6 +264,77 @@ func TestConfigHandlersRejectCrossOrigin(t *testing.T) {
 	}
 }
 
+func TestWebInterfaceCSP(t *testing.T) {
+	server := makeTestServer(t, makeFakeProfile())
+	_, err := exec.LookPath("dot")
+	haveDot := err == nil
+
+	scriptTag := regexp.MustCompile(`<script\b[^>]*>`)
+	nonceFromCSP := regexp.MustCompile(`script-src 'nonce-([^']+)'`)
+	seenNonces := make(map[string]string)
+
+	for _, tc := range []struct{ name, path string }{
+		{"top", "/top"},
+		{"flamegraph", "/flamegraph"},
+		{"source", "/source?f=F1"},
+		{"peek", "/peek?f=F1"},
+		{"disasm", "/disasm?f=F1"},
+		{"graph", "/graph"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.name == "graph" && !haveDot {
+				t.Skip("skipping since dot (graphviz) does not seem to be installed")
+			}
+			res, err := http.Get(server.URL + tc.path)
+			if err != nil {
+				t.Fatalf("GET %s: %v", tc.path, err)
+			}
+			bodyBytes, err := io.ReadAll(res.Body)
+			res.Body.Close()
+			if err != nil {
+				t.Fatalf("reading %s: %v", tc.path, err)
+			}
+			body := string(bodyBytes)
+
+			if got := res.Header.Get("X-Content-Type-Options"); got != "nosniff" {
+				t.Errorf("X-Content-Type-Options = %q, want nosniff", got)
+			}
+			csp := res.Header.Get("Content-Security-Policy")
+			m := nonceFromCSP.FindStringSubmatch(csp)
+			if m == nil {
+				t.Fatalf("Content-Security-Policy = %q, missing script-src nonce", csp)
+			}
+			nonce := m[1]
+			if prev, dup := seenNonces[nonce]; dup {
+				t.Errorf("reused CSP nonce %q from %s", nonce, prev)
+			}
+			seenNonces[nonce] = tc.name
+
+			tags := scriptTag.FindAllString(body, -1)
+			if len(tags) == 0 {
+				t.Errorf("got no <script> tags, want at least one")
+			}
+			wantAttr := `nonce="` + nonce + `"`
+			for _, tag := range tags {
+				if !strings.Contains(tag, wantAttr) {
+					t.Errorf("script tag %q missing %s", tag, wantAttr)
+				}
+			}
+		})
+	}
+
+	t.Run("download", func(t *testing.T) {
+		dl, err := http.Get(server.URL + "/download")
+		if err != nil {
+			t.Fatalf("GET /download: %v", err)
+		}
+		dl.Body.Close()
+		if got := dl.Header.Get("X-Content-Type-Options"); got != "nosniff" {
+			t.Errorf("X-Content-Type-Options = %q, want nosniff", got)
+		}
+	})
+}
+
 // Implement fake object file support.
 
 const addrBase = 0x1000
