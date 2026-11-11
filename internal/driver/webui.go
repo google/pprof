@@ -315,6 +315,13 @@ func (ui *webInterface) render(w http.ResponseWriter, req *http.Request, tmpl st
 	rpt *report.Report, errList, legend []string, data webArgs) {
 	nonce := rand.Text()
 	data.CSPNonce = nonce
+	if p := ui.prof; p.Period > 0 && p.PeriodType != nil {
+		sampling := measurement.Label(p.Period, p.PeriodType.Unit)
+		if p.PeriodType.Type != "" {
+			sampling += " (" + p.PeriodType.Type + ")"
+		}
+		legend = append(legend, "Sampling: "+sampling)
+	}
 	data.SampleTypes = sampleTypes(ui.prof)
 	data.Help = ui.help
 	data.Configs = configMenu(ui.settingsFile, *req.URL)
