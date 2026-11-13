@@ -73,6 +73,32 @@ func printSource(w io.Writer, rpt *Report) error {
 	}
 	reader := newSourceReader(sourcePath, o.TrimPath)
 
+	// Cumulative value of each function in each file. A sample is counted
+	// once, even if recursion puts the function on its stack several times.
+	type funcFile struct{ name, file string }
+	funcCum := make(map[funcFile]int64)
+	seen := make(map[funcFile]bool) // Seen in the current sample.
+	for _, sample := range rpt.prof.Sample {
+		v := o.SampleValue(sample.Value)
+		clear(seen)
+		for _, loc := range sample.Location {
+			for _, line := range loc.Line {
+				if line.Function == nil {
+					continue
+				}
+				// Match the name and file of the nodes created by newGraph.
+				ff := funcFile{name: line.Function.Name}
+				if fname := line.Function.Filename; fname != "" {
+					ff.file = filepath.Clean(fname)
+				}
+				if !seen[ff] {
+					seen[ff] = true
+					funcCum[ff] += v
+				}
+			}
+		}
+	}
+
 	fmt.Fprintf(w, "Total: %s\n", rpt.formatValue(rpt.total))
 	for _, fn := range functions {
 		name := fn.Info.Name
@@ -102,7 +128,8 @@ func printSource(w io.Writer, rpt *Report) error {
 		for _, fl := range sourceFiles {
 			filename := fl.Info.File
 			fns := fileNodes[filename]
-			flatSum, cumSum := fns.Sum()
+			flatSum, _ := fns.Sum()
+			cumSum := funcCum[funcFile{name, filename}]
 
 			fnodes, _, err := getSourceFromFile(filename, reader, fns, 0, 0)
 			fmt.Fprintf(w, "ROUTINE ======================== %s in %s\n", name, filename)
