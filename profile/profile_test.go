@@ -827,8 +827,7 @@ func TestScale(t *testing.T) {
 	}
 }
 
-// TestScaleN tests that ScaleN() only drops samples whose values are all
-// zero after scaling, including values that are not scaled.
+// TestScaleN tests ScaleN().
 func TestScaleN(t *testing.T) {
 	for _, tc := range []struct {
 		desc        string
