@@ -809,10 +809,9 @@ func (p *Profile) ScaleN(ratios []float64) error {
 		keepSample := false
 		for i, v := range s.Value {
 			if ratios[i] != 1 {
-				val := int64(math.Round(float64(v) * ratios[i]))
-				s.Value[i] = val
-				keepSample = keepSample || val != 0
+				s.Value[i] = int64(math.Round(float64(v) * ratios[i]))
 			}
+			keepSample = keepSample || s.Value[i] != 0
 		}
 		if keepSample {
 			p.Sample[fillIdx] = s
