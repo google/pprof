@@ -58,7 +58,10 @@ func (p *Profile) FilterSamplesByName(focus, ignore, hide, show *regexp.Regexp) 
 	for _, sample := range p.Sample {
 		if focusedAndNotIgnored(sample.Location, focusOrIgnore) {
 			if len(hidden) > 0 {
-				var locs []*Location
+				// Reuse the sample's own backing array to avoid a per-sample
+				// heap allocation. Capacity is always sufficient because we
+				// can only keep a subset of the original locations.
+				locs := sample.Location[:0]
 				for _, loc := range sample.Location {
 					if !hidden[loc.ID] {
 						locs = append(locs, loc)
