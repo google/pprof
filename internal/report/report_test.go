@@ -766,3 +766,70 @@ func TestNodesPerSymbol(t *testing.T) {
 		t.Errorf("got node address %x, want 0x401050", res[sym][0].Info.Address)
 	}
 }
+
+// TestPrintTracesInlineFilter is a regression test for
+// https://github.com/google/pprof/issues/511.
+// When -show or -hide removes the outermost (non-inlined) frame of a location,
+// the remaining frames must still be reported as (inline).
+func TestPrintTracesInlineFilter(t *testing.T) {
+	newProfile := func() *profile.Profile {
+		fn1 := &profile.Function{ID: 1, Name: "inlined_fn", Filename: "a.go"}
+		fn2 := &profile.Function{ID: 2, Name: "outermost_fn", Filename: "a.go"}
+		mapping := &profile.Mapping{ID: 1, HasFunctions: true}
+		loc := &profile.Location{
+			ID:      1,
+			Mapping: mapping,
+			Line: []profile.Line{
+				{Function: fn1, Line: 5},  // innermost / inlined
+				{Function: fn2, Line: 10}, // outermost / non-inlined
+			},
+		}
+		return &profile.Profile{
+			SampleType: []*profile.ValueType{{Type: "samples", Unit: "count"}},
+			Sample: []*profile.Sample{
+				{Location: []*profile.Location{loc}, Value: []int64{1}},
+			},
+			Location: []*profile.Location{loc},
+			Function: []*profile.Function{fn1, fn2},
+			Mapping:  []*profile.Mapping{mapping},
+		}
+	}
+
+	testCases := []struct {
+		name string
+		hide *regexp.Regexp
+		show *regexp.Regexp
+	}{
+		{
+			name: "show filter keeps only inlined_fn",
+			show: regexp.MustCompile("inlined_fn"),
+		},
+		{
+			name: "hide filter drops outermost_fn",
+			hide: regexp.MustCompile("outermost_fn"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			p := newProfile()
+			p.FilterSamplesByName(nil, nil, tc.hide, tc.show)
+
+			var buf bytes.Buffer
+			rpt := New(p, &Options{
+				OutputFormat: Traces,
+				SampleValue:  func(v []int64) int64 { return v[0] },
+				SampleUnit:   "count",
+			})
+			if err := Generate(&buf, rpt, nil); err != nil {
+				t.Fatalf("Generate: %v", err)
+			}
+
+			got := buf.String()
+			if !strings.Contains(got, "(inline)") || !strings.Contains(got, "inlined_fn") {
+				t.Errorf("expected 'inlined_fn' with '(inline)' marker in traces output, got:\n%s", got)
+			}
+		})
+	}
+}
+

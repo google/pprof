@@ -39,17 +39,26 @@ func (p *Profile) FilterSamplesByName(focus, ignore, hide, show *regexp.Regexp) 
 
 		if hide != nil && l.matchesName(hide) {
 			hm = true
+			origHadInlines := len(l.Line) > 1
+			origOutermost := l.outermostLine()
 			l.Line = l.unmatchedLines(hide)
 			if len(l.Line) == 0 {
 				hidden[l.ID] = true
+			} else if origHadInlines && origOutermost != l.outermostLine() {
+				l.hasInlinedLinesOnly = true
 			}
 		}
 		if show != nil {
+			origHadInlines := len(l.Line) > 1
+			origOutermost := l.outermostLine()
 			l.Line = l.matchedLines(show)
 			if len(l.Line) == 0 {
 				hidden[l.ID] = true
 			} else {
 				hnm = true
+				if origHadInlines && origOutermost != l.outermostLine() {
+					l.hasInlinedLinesOnly = true
+				}
 			}
 		}
 	}
@@ -207,6 +216,16 @@ func (loc *Location) unmatchedLines(re *regexp.Regexp) []Line {
 		lines = append(lines, ln)
 	}
 	return lines
+}
+
+// outermostLine returns the outermost (last) line in the location, or Line{}
+// if the location has no lines. The outermost line is the non-inlined callee
+// that physically contains all other (inlined) lines.
+func (loc *Location) outermostLine() Line {
+	if n := len(loc.Line); n > 0 {
+		return loc.Line[n-1]
+	}
+	return Line{}
 }
 
 // matchedLines returns the lines in the location that match
