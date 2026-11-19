@@ -248,6 +248,38 @@ func TestCSPBlocksInjectedScripts(t *testing.T) {
 	}
 }
 
+func TestProfileDetails(t *testing.T) {
+	maybeSkipBrowserTest(t)
+
+	prof := makeFakeProfile()
+	prof.Comments = []string{"RSS is unavailable on this platform"}
+	server := makeTestServer(t, prof)
+	ctx := newContext(context.Background(), t)
+	err := chromedp.Do(ctx,
+		chromedp.Navigate(server.URL+"/ui/top"),
+		chromedp.WaitVisible(chromedp.ID(`#details`)),
+
+		// Space and Enter do not open profile information without button focus.
+		chromedp.KeyEvent(" "),
+		chromedp.WaitNotVisible(chromedp.ID(`#detailsbox`)),
+		chromedp.KeyEvent("\r"),
+		chromedp.WaitNotVisible(chromedp.ID(`#detailsbox`)),
+		chromedp.Click(chromedp.ID(`#details`)),
+		chromedp.WaitVisible(chromedp.ID(`#detailsbox`)),
+		matchRegexp(t, "#detailsbox", "RSS is unavailable on this platform"),
+
+		// Keyboard activation works when the button has focus.
+		chromedp.Focus(chromedp.ID(`#details`)),
+		chromedp.KeyEvent(" "),
+		chromedp.WaitNotVisible(chromedp.ID(`#detailsbox`)),
+		chromedp.KeyEvent("\r"),
+		chromedp.WaitVisible(chromedp.ID(`#detailsbox`)),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 // newContext returns a context for driving a new browser tab. Any error
 // logged to the browser console fails the test, unless the error text
 // contains one of wantErrors.

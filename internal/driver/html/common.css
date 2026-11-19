@@ -45,6 +45,18 @@ a {
   text-align: right;
   white-space: nowrap;
 }
+#details {
+  background: #fff;
+  border: 1px solid #d1d2d3;
+  border-radius: 3px;
+  color: #2a66d9;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.25em 0.5em;
+}
+#details svg {
+  vertical-align: middle;
+}
 @media screen and (max-width: 799px) {
   .header input {
     display: none;
