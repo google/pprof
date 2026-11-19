@@ -32,21 +32,14 @@ display: none;
 }
 </style>
   <script type="text/javascript">
-function pprof_toggle_asm(e) {
-  var target;
-  if (!e) e = window.event;
-  if (e.target) target = e.target;
-  else if (e.srcElement) target = e.srcElement;
 
-  if (target) {
-    var asm = target.nextSibling;
-    if (asm && asm.className == "asm") {
-      asm.style.display = (asm.style.display == "block" ? "" : "block");
-      e.preventDefault();
-      return false;
-    }
+document.addEventListener("click", function(e) {
+  var asm = e.target.nextSibling;
+  if (asm && asm.className == "asm") {
+    asm.style.display = (asm.style.display == "block" ? "" : "block");
+    e.preventDefault();
   }
-}
+});
 </script>
 </head>
 <body>
@@ -54,7 +47,7 @@ function pprof_toggle_asm(e) {
 <div class="legend">File: testbinary<br>
 Type: cpu<br>
 Duration: 10s, Total samples = 1.12s (11.20%)<br>Total: 1.12s</div><h2>line1000</h2><p class="filename">testdata/file1000.src</p>
-<pre onClick="pprof_toggle_asm(event)">
+<pre>
   Total:       1.10s      1.10s (flat, cum) 98.21%
 <span class=line>      1</span> <span class=livesrc>       1.10s      1.10s           line1 </span><span class=asm>               1.10s      1.10s     1000:     instruction one                                                              <span class=unimportant>file1000.src:1</span>
                    .          .     1001:     instruction two                                                              <span class=unimportant>file1000.src:1</span>
@@ -70,7 +63,7 @@ Duration: 10s, Total samples = 1.12s (11.20%)<br>Total: 1.12s</div><h2>line1000<
 <span class=line>      7</span> <span class=nop>           .          .           line7 </span>
 </pre>
 <h2>line3000</h2><p class="filename">testdata/file3000.src</p>
-<pre onClick="pprof_toggle_asm(event)">
+<pre>
   Total:        10ms      1.12s (flat, cum)   100%
 <span class=line>      1</span> <span class=nop>           .          .           line1 </span>
 <span class=line>      2</span> <span class=nop>           .          .           line2 </span>

@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -826,6 +827,59 @@ func TestScale(t *testing.T) {
 	}
 }
 
+// TestScaleN tests ScaleN().
+func TestScaleN(t *testing.T) {
+	for _, tc := range []struct {
+		desc        string
+		ratios      []float64
+		wantSamples [][]int64
+	}{
+		{
+			desc:   "unscaled non-zero values keep samples",
+			ratios: []float64{1, 0.0001},
+			wantSamples: [][]int64{
+				{1000, 0},
+				{100, 0},
+				{10, 0},
+				{10000, 1},
+				{1, 0},
+			},
+		},
+		{
+			desc:   "scaled non-zero values keep samples",
+			ratios: []float64{0.0001, 1},
+			wantSamples: [][]int64{
+				{0, 1000},
+				{0, 100},
+				{0, 10},
+				{1, 10000},
+				{0, 1},
+			},
+		},
+		{
+			desc:   "samples with all values scaled to zero are dropped",
+			ratios: []float64{0.0001, 0.0001},
+			wantSamples: [][]int64{
+				{1, 1},
+			},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			p := testProfile1.Copy()
+			if err := p.ScaleN(tc.ratios); err != nil {
+				t.Fatalf("ScaleN(%v) = %v", tc.ratios, err)
+			}
+			var gotSamples [][]int64
+			for _, s := range p.Sample {
+				gotSamples = append(gotSamples, s.Value)
+			}
+			if !reflect.DeepEqual(gotSamples, tc.wantSamples) {
+				t.Errorf("ScaleN(%v) got sample values %v, want %v", tc.ratios, gotSamples, tc.wantSamples)
+			}
+		})
+	}
+}
+
 // TestMergeMain tests merge leaves the main binary in place.
 func TestMergeMain(t *testing.T) {
 	prof := testProfile1.Copy()
@@ -1051,10 +1105,14 @@ func TestNormalizeByDifferentProfile(t *testing.T) {
 	expectedSampleValues := [][]int64{
 		{20, 1000},
 		{2, 100},
+		{0, 10},
 		{199, 10000},
 		{0, 1},
 	}
 
+	if got, want := len(p.Sample), len(expectedSampleValues); got != want {
+		t.Fatalf("got %d samples, want %d", got, want)
+	}
 	for i, s := range p.Sample {
 		for j, v := range s.Value {
 			if v != expectedSampleValues[i][j] {
@@ -1953,6 +2011,84 @@ func BenchmarkParse(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
+	}
+}
+
+func BenchmarkParseLabels(b *testing.B) {
+	base, err := ParseData(proftest.LargeProfile(b))
+	if err != nil {
+		b.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name   string
+		mutate func(*Profile)
+	}{
+		{
+			name: "num_label",
+			mutate: func(p *Profile) {
+				for _, s := range p.Sample {
+					s.NumLabel = map[string][]int64{"bytes": {512}}
+				}
+			},
+		},
+		{
+			name: "num_label_with_unit",
+			mutate: func(p *Profile) {
+				p.SetNumLabel("bytes", []int64{512}, []string{"bytes"})
+			},
+		},
+		{
+			name: "string_label",
+			mutate: func(p *Profile) {
+				p.SetLabel("key", []string{"value"})
+			},
+		},
+		{
+			name: "many_labels",
+			mutate: func(p *Profile) {
+				for i := 0; i < 8; i++ {
+					p.SetLabel(fmt.Sprintf("key%d", i), []string{"value"})
+				}
+				for _, s := range p.Sample {
+					s.NumLabel = map[string][]int64{"bytes": {512}}
+				}
+			},
+		},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			p := base.Copy()
+			tc.mutate(p)
+			var buf bytes.Buffer
+			if err := p.WriteUncompressed(&buf); err != nil {
+				b.Fatal(err)
+			}
+			raw := buf.Bytes()
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if _, err := ParseData(raw); err != nil {
+					b.Fatal(err)
+				}
+			}
+			b.StopTimer()
+
+			runtime.GC()
+			runtime.GC()
+			var m1, m2 runtime.MemStats
+			runtime.ReadMemStats(&m1)
+			parsed, err := ParseData(raw)
+			if err != nil {
+				b.Fatal(err)
+			}
+			runtime.GC()
+			runtime.GC()
+			runtime.ReadMemStats(&m2)
+			runtime.KeepAlive(parsed)
+			if m2.HeapAlloc > m1.HeapAlloc {
+				b.ReportMetric(float64(m2.HeapAlloc-m1.HeapAlloc), "inuse-B/op")
+			}
+		})
 	}
 }
 

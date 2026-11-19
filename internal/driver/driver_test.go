@@ -88,6 +88,8 @@ func TestParse(t *testing.T) {
 		{"traces", "cpu"},
 		{"traces,addresses", "cpu"},
 		{"traces", "heap_tags"},
+		{"raw", "heap"},
+		{"raw,sample_index=inuse_objects", "heap"},
 		{"dot,alloc_space,flat,focus=[234]00", "heap_alloc"},
 		{"dot,alloc_space,flat,tagshow=[2]00", "heap_alloc"},
 		{"dot,alloc_space,flat,hide=line.*1?23?", "heap_alloc"},
@@ -130,6 +132,13 @@ func TestParse(t *testing.T) {
 				f.bools["proto"] = false
 				f.bools["topproto"] = true
 				f.bools["addresses"] = true
+			}
+			// The sample index also applies to the proto-generating invocation,
+			// so that the generated profile records the selection.
+			for _, flag := range flags {
+				if si, ok := strings.CutPrefix(flag, "sample_index="); ok {
+					f.strings["sample_index"] = si
+				}
 			}
 
 			// First pprof invocation to save the profile into a profile.proto.
@@ -192,7 +201,9 @@ func TestParse(t *testing.T) {
 			if err != nil {
 				t.Fatalf("reading solution file %s: %v", solution, err)
 			}
-			if runtime.GOOS == "windows" {
+			// The raw output prints file names as stored in the profile, so it
+			// does not use OS-specific path separators.
+			if runtime.GOOS == "windows" && flags[0] != "raw" {
 				if flags[0] == "dot" {
 					// The .dot test has the paths inside strings, so \ must be escaped.
 					sbuf = bytes.ReplaceAll(sbuf, []byte("testdata/"), []byte(`testdata\\`))
@@ -267,10 +278,13 @@ func solutionFilename(source string, f *testFlags) string {
 	name = addString(name, f, []string{"functions", "filefunctions", "files", "lines", "addresses"})
 	name = addString(name, f, []string{"noinlines"})
 	name = addString(name, f, []string{"inuse_space", "inuse_objects", "alloc_space", "alloc_objects"})
+	if f.strings["sample_index"] != "" {
+		name = append(name, "sample_index")
+	}
 	name = addString(name, f, []string{"relative_percentages"})
 	name = addString(name, f, []string{"seconds"})
 	name = addString(name, f, []string{"call_tree"})
-	name = addString(name, f, []string{"text", "tree", "callgrind", "dot", "svg", "tags", "dot", "traces", "disasm", "peek", "weblist", "topproto", "comments"})
+	name = addString(name, f, []string{"text", "tree", "callgrind", "dot", "svg", "tags", "dot", "traces", "disasm", "peek", "weblist", "topproto", "comments", "raw"})
 	name = addString(name, f, []string{"all_frames"})
 	if f.strings["focus"] != "" || f.strings["tagfocus"] != "" {
 		name = append(name, "focus")

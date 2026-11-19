@@ -152,6 +152,13 @@ var all = &Profile{
 				"size": {"bytes"},
 			},
 		},
+		{
+			Location: []*Location{testL[0]},
+			Value:    []int64{50, 60},
+			NumLabel: map[string][]int64{
+				"bytes": {512},
+			},
+		},
 	},
 	Function: testF,
 	Mapping:  testM,
@@ -166,6 +173,12 @@ func TestMarshalUnmarshal(t *testing.T) {
 	all2, err := Parse(&buf)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	for i, s := range all2.Sample {
+		if s.labelX != nil {
+			t.Errorf("sample %d: labelX not cleared after decode: %v", i, s.labelX)
+		}
 	}
 
 	js1 := proftest.EncodeJSON(&all)

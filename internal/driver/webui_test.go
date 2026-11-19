@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"regexp"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 
@@ -153,6 +154,137 @@ func TestWebInterface(t *testing.T) {
 		}
 	}
 	wg.Wait()
+}
+
+func TestConfigHandlersRejectCrossOrigin(t *testing.T) {
+	// Keep the settings file out of the user's config directory.
+	dir := t.TempDir()
+	for _, env := range []string{"HOME", "home", "XDG_CONFIG_HOME", "AppData"} {
+		t.Setenv(env, dir)
+	}
+	fname, err := settingsFileName()
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := makeTestServer(t, makeFakeProfile())
+
+	hasConfig := func(name string) bool {
+		s, err := readSettings(fname)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, c := range s.Configs {
+			if c.Name == name {
+				return true
+			}
+		}
+		return false
+	}
+
+	for _, c := range []struct {
+		desc, method, path string
+		header             map[string]string
+		wantCode           int
+		wantConfig         bool
+	}{
+		{"get save", http.MethodGet, "/saveconfig?config=c1", nil, http.StatusMethodNotAllowed, false},
+		{"cross-site save", http.MethodPost, "/saveconfig?config=c1", map[string]string{"Sec-Fetch-Site": "cross-site"}, http.StatusForbidden, false},
+		{"cross-origin save", http.MethodPost, "/saveconfig?config=c1", map[string]string{"Origin": "http://example.com"}, http.StatusForbidden, false},
+		{"same-origin save", http.MethodPost, "/saveconfig?config=c1", map[string]string{"Sec-Fetch-Site": "same-origin"}, http.StatusOK, true},
+		{"get delete", http.MethodGet, "/deleteconfig?config=c1", nil, http.StatusMethodNotAllowed, true},
+		{"cross-site delete", http.MethodDelete, "/deleteconfig?config=c1", map[string]string{"Sec-Fetch-Site": "cross-site"}, http.StatusForbidden, true},
+		{"same-origin delete", http.MethodDelete, "/deleteconfig?config=c1", map[string]string{"Sec-Fetch-Site": "same-origin"}, http.StatusOK, false},
+	} {
+		req, err := http.NewRequest(c.method, server.URL+c.path, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for k, v := range c.header {
+			req.Header.Set(k, v)
+		}
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res.Body.Close()
+		if res.StatusCode != c.wantCode {
+			t.Errorf("%s: got status %d, want %d", c.desc, res.StatusCode, c.wantCode)
+		}
+		if got := hasConfig("c1"); got != c.wantConfig {
+			t.Errorf("%s: config saved = %v, want %v", c.desc, got, c.wantConfig)
+		}
+	}
+}
+
+func TestWebInterfaceCSP(t *testing.T) {
+	server := makeTestServer(t, makeFakeProfile())
+	_, err := exec.LookPath("dot")
+	haveDot := err == nil
+
+	scriptTag := regexp.MustCompile(`<script\b[^>]*>`)
+	nonceFromCSP := regexp.MustCompile(`script-src 'nonce-([^']+)'`)
+	seenNonces := make(map[string]string)
+
+	for _, tc := range []struct{ name, path string }{
+		{"top", "/top"},
+		{"flamegraph", "/flamegraph"},
+		{"source", "/source?f=F1"},
+		{"peek", "/peek?f=F1"},
+		{"disasm", "/disasm?f=F1"},
+		{"graph", "/graph"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.name == "graph" && !haveDot {
+				t.Skip("skipping since dot (graphviz) does not seem to be installed")
+			}
+			res, err := http.Get(server.URL + tc.path)
+			if err != nil {
+				t.Fatalf("GET %s: %v", tc.path, err)
+			}
+			bodyBytes, err := io.ReadAll(res.Body)
+			res.Body.Close()
+			if err != nil {
+				t.Fatalf("reading %s: %v", tc.path, err)
+			}
+			body := string(bodyBytes)
+
+			if got := res.Header.Get("X-Content-Type-Options"); got != "nosniff" {
+				t.Errorf("X-Content-Type-Options = %q, want nosniff", got)
+			}
+			csp := res.Header.Get("Content-Security-Policy")
+			m := nonceFromCSP.FindStringSubmatch(csp)
+			if m == nil {
+				t.Fatalf("Content-Security-Policy = %q, missing script-src nonce", csp)
+			}
+			nonce := m[1]
+			if prev, dup := seenNonces[nonce]; dup {
+				t.Errorf("reused CSP nonce %q from %s", nonce, prev)
+			}
+			seenNonces[nonce] = tc.name
+
+			tags := scriptTag.FindAllString(body, -1)
+			if len(tags) == 0 {
+				t.Errorf("got no <script> tags, want at least one")
+			}
+			wantAttr := `nonce="` + nonce + `"`
+			for _, tag := range tags {
+				if !strings.Contains(tag, wantAttr) {
+					t.Errorf("script tag %q missing %s", tag, wantAttr)
+				}
+			}
+		})
+	}
+
+	t.Run("download", func(t *testing.T) {
+		dl, err := http.Get(server.URL + "/download")
+		if err != nil {
+			t.Fatalf("GET /download: %v", err)
+		}
+		dl.Body.Close()
+		if got := dl.Header.Get("X-Content-Type-Options"); got != "nosniff" {
+			t.Errorf("X-Content-Type-Options = %q, want nosniff", got)
+		}
+	})
 }
 
 // Implement fake object file support.
@@ -302,7 +434,7 @@ func TestGetHostAndPort(t *testing.T) {
 }
 
 func TestIsLocalHost(t *testing.T) {
-	for _, s := range []string{"localhost:10000", "[::1]:10000", "127.0.0.1:10000"} {
+	for _, s := range []string{"localhost:10000", "LocalHost:10000", "[::1]:10000", "127.0.0.1:10000", "127.0.0.2:10000"} {
 		host, _, err := net.SplitHostPort(s)
 		if err != nil {
 			t.Error("unexpected error when splitting", s)
@@ -310,6 +442,45 @@ func TestIsLocalHost(t *testing.T) {
 		}
 		if !isLocalhost(host) {
 			t.Errorf("host %s from %s not considered local", host, s)
+		}
+	}
+}
+
+func TestWebServerHandlerLocalOnly(t *testing.T) {
+	for _, serverHost := range []string{"localhost", "LocalHost", "127.0.0.1", "::1"} {
+		handler := webServerHandler(&plugin.HTTPServerArgs{
+			Host: serverHost,
+			Handlers: map[string]http.Handler{
+				"/top": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+			},
+		})
+		for _, tc := range []struct {
+			remoteAddr, host string
+			wantCode         int
+		}{
+			{"127.0.0.1:5000", "localhost:8080", http.StatusOK},
+			{"127.0.0.1:5000", "LocalHost:8080", http.StatusOK},
+			{"127.0.0.1:5000", "localhost", http.StatusOK},
+			{"127.0.0.1:5000", "127.0.0.1:8080", http.StatusOK},
+			{"127.0.0.2:5000", "127.0.0.2:8080", http.StatusOK},
+			{"[::1]:5000", "[::1]:8080", http.StatusOK},
+			{"[::1]:5000", "[::1]", http.StatusOK},
+			{"192.0.2.1:5000", "localhost:8080", http.StatusForbidden},
+			// DNS rebinding: local client, but the browser sends the attacker's host.
+			{"127.0.0.1:5000", "attacker.example:8080", http.StatusForbidden},
+			{"127.0.0.1:5000", "attacker.example", http.StatusForbidden},
+			{"127.0.0.1:5000", "localhost@attacker.example", http.StatusForbidden},
+			{"127.0.0.1:5000", "", http.StatusForbidden},
+		} {
+			req := httptest.NewRequest(http.MethodGet, "/ui/top", nil)
+			req.RemoteAddr = tc.remoteAddr
+			req.Host = tc.host
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+			if rec.Code != tc.wantCode {
+				t.Errorf("server %s, remote %s, host %q: got status %d, want %d",
+					serverHost, tc.remoteAddr, tc.host, rec.Code, tc.wantCode)
+			}
 		}
 	}
 }
