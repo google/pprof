@@ -160,13 +160,68 @@ func initTools(b *binrep, config string) {
 	paths := toolPaths(config)
 
 	defaultPath := paths[""]
-	b.llvmSymbolizer, b.llvmSymbolizerFound = chooseExe([]string{"llvm-symbolizer"}, []string{}, append(paths["llvm-symbolizer"], defaultPath...))
+	b.llvmSymbolizer, b.llvmSymbolizerFound = findLLVMSymbolizer(append(paths["llvm-symbolizer"], defaultPath...))
 	b.addr2line, b.addr2lineFound = chooseExe([]string{"addr2line"}, []string{"gaddr2line"}, append(paths["addr2line"], defaultPath...))
 	// The "-n" option is supported by LLVM since 2011. The output of llvm-nm
 	// and GNU nm with "-n" option is interchangeable for our purposes, so we do
 	// not need to differrentiate them.
 	b.nm, b.nmFound = chooseExe([]string{"llvm-nm", "nm"}, []string{"gnm"}, append(paths["nm"], defaultPath...))
 	b.objdump, b.objdumpFound, b.isLLVMObjdump = findObjdump(append(paths["objdump"], defaultPath...))
+}
+
+func findLLVMSymbolizer(paths []string) (string, bool) {
+	if binary, found := findExe("llvm-symbolizer", paths); found {
+		return binary, true
+	}
+	for _, path := range paths {
+		dirs := []string{path}
+		if path == "" {
+			dirs = filepath.SplitList(os.Getenv("PATH"))
+		}
+		for _, dir := range dirs {
+			// Like exec.LookPath, avoid finding tools through a relative PATH entry.
+			// A directory explicitly passed in -tools can still be relative.
+			if path == "" && !filepath.IsAbs(dir) {
+				continue
+			}
+			if binary := findVersionedLLVMSymbolizer(dir); binary != "" {
+				return binary, true
+			}
+		}
+	}
+	return "", false
+}
+
+// findVersionedLLVMSymbolizer picks the highest major version in dir.
+func findVersionedLLVMSymbolizer(dir string) string {
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return ""
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return ""
+	}
+	var best string
+	var bestVersion uint64
+	for _, entry := range entries {
+		name := entry.Name()
+		if runtime.GOOS == "windows" {
+			name = strings.TrimSuffix(strings.ToLower(name), ".exe")
+		}
+		suffix, ok := strings.CutPrefix(name, "llvm-symbolizer-")
+		if !ok {
+			continue
+		}
+		version, err := strconv.ParseUint(suffix, 10, 64)
+		if err != nil || (best != "" && version <= bestVersion) {
+			continue
+		}
+		if binary, err := exec.LookPath(filepath.Join(dir, entry.Name())); err == nil {
+			best, bestVersion = binary, version
+		}
+	}
+	return best
 }
 
 // findObjdump finds and returns path to preferred objdump binary.

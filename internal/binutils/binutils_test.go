@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -264,6 +265,78 @@ func TestSetTools(t *testing.T) {
 	bu := &Binutils{}
 	bu.SetTools("")
 	bu.SetTools("")
+}
+
+func TestVersionedLLVMSymbolizer(t *testing.T) {
+	for _, tc := range []struct {
+		desc   string
+		files  []string
+		config bool
+		want   string
+	}{
+		{
+			desc:  "versioned executable on PATH",
+			files: []string{"first/llvm-symbolizer-14"},
+			want:  "first/llvm-symbolizer-14",
+		},
+		{
+			desc:  "unversioned executable takes precedence",
+			files: []string{"first/llvm-symbolizer-14", "second/llvm-symbolizer"},
+			want:  "second/llvm-symbolizer",
+		},
+		{
+			desc:  "highest numeric version in the first directory",
+			files: []string{"first/llvm-symbolizer-9", "first/llvm-symbolizer-14", "second/llvm-symbolizer-21"},
+			want:  "first/llvm-symbolizer-14",
+		},
+		{
+			desc:   "configured directory is searched first",
+			files:  []string{"configured/llvm-symbolizer-14", "first/llvm-symbolizer-21"},
+			config: true,
+			want:   "configured/llvm-symbolizer-14",
+		},
+		{
+			desc:  "non-numeric suffix and directories are ignored",
+			files: []string{"first/llvm-symbolizer-helper", "first/llvm-symbolizer-24/not-a-binary"},
+		},
+		{
+			desc:  "relative PATH entries are ignored",
+			files: []string{"relative/llvm-symbolizer-14"},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			root := t.TempDir()
+			t.Chdir(root)
+			t.Setenv("PATH", strings.Join([]string{filepath.Join(root, "first"), filepath.Join(root, "second"), "relative"}, string(os.PathListSeparator)))
+
+			exeExt := ""
+			if runtime.GOOS == "windows" {
+				exeExt = ".exe"
+			}
+			for _, rel := range tc.files {
+				file := filepath.Join(root, filepath.FromSlash(rel)+exeExt)
+				if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(file, nil, 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			bu := &Binutils{}
+			if tc.config {
+				bu.SetTools("llvm-symbolizer:" + filepath.Join(root, "configured") + ",")
+			}
+			var want string
+			if tc.want != "" {
+				want = filepath.Join(root, filepath.FromSlash(tc.want)+exeExt)
+			}
+			got := bu.get()
+			if got.llvmSymbolizer != want || got.llvmSymbolizerFound != (want != "") {
+				t.Errorf("llvm-symbolizer = (%q, %t), want (%q, %t)", got.llvmSymbolizer, got.llvmSymbolizerFound, want, want != "")
+			}
+		})
+	}
 }
 
 func TestSetFastSymbolization(t *testing.T) {
